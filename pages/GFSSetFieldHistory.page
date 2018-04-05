@@ -1,0 +1,168 @@
+<apex:page controller="GFSSetFieldHistoryController" action="{!checkNamespace}">
+    <apex:outputPanel id="urlPanel">
+    <script>
+    function getFieldList(){
+        FieldList();
+    }
+    
+    //Create Remote Settings
+    function createTriggerRSS(){
+        var binding = new XMLHttpRequest();
+        var request = 
+                '<?xml version="1.0" encoding="utf-8"?>' + 
+                '<env:Envelope xmlns:env="http://schemas.xmlsoap.org/soap/envelope/" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">'+
+                    '<env:Header>' + 
+                        '<urn:SessionHeader xmlns:urn="http://soap.sforce.com/2006/04/metadata">' + 
+                            '<urn:sessionId>{!$Api.Session_ID}</urn:sessionId>' + 
+                        '</urn:SessionHeader>' + 
+                    '</env:Header>' + 
+                    '<env:Body>' +
+                        '<createMetadata xmlns="http://soap.sforce.com/2006/04/metadata">' + 
+                            '<metadata xsi:type="RemoteSiteSetting">' + 
+                                '<fullName>GFSHistoryTriggerEndpoint</fullName>' + 
+                                '<description>This remote site id for metadata API endpoint</description>' + 
+                                '<disableProtocolSecurity>false</disableProtocolSecurity>' + 
+                                '<isActive>true</isActive>' + 
+                                '<url>{!baseURL}</url>' +
+                            '</metadata>' +
+                        '</createMetadata>' +
+                    '</env:Body>' + 
+                '</env:Envelope>';        
+                
+        binding.open('POST', 'https://{!Host}/services/Soap/m/31.0');
+        binding.setRequestHeader('SOAPAction','""');
+        binding.setRequestHeader('Content-Type', 'text/xml');
+        binding.onreadystatechange = 
+                function() { 
+                    if(this.readyState==4) {
+                        var parser = new DOMParser();
+                        var doc  = parser.parseFromString(this.response, 'application/xml');
+                        var errors = doc.getElementsByTagName('errors');
+                        var messageText = '';
+                        for(var errorIdx = 0; errorIdx < errors.length; errorIdx++)
+                            messageText+= errors.item(errorIdx).getElementsByTagName('message').item(0).innerHTML + '\n';
+                    } 
+                }
+        binding.send(request);    
+        createObjectRSS();                            
+    }
+    
+    function createObjectRSS(){
+        var binding = new XMLHttpRequest();
+        var request = 
+                '<?xml version="1.0" encoding="utf-8"?>' + 
+                '<env:Envelope xmlns:env="http://schemas.xmlsoap.org/soap/envelope/" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">'+
+                    '<env:Header>' + 
+                        '<urn:SessionHeader xmlns:urn="http://soap.sforce.com/2006/04/metadata">' + 
+                            '<urn:sessionId>{!$Api.Session_ID}</urn:sessionId>' + 
+                        '</urn:SessionHeader>' + 
+                    '</env:Header>' + 
+                    '<env:Body>' +
+                        '<createMetadata xmlns="http://soap.sforce.com/2006/04/metadata">' + 
+                            '<metadata xsi:type="RemoteSiteSetting">' + 
+                                '<fullName>GFSHistoryObjectEndpoint</fullName>' + 
+                                '<description>This remote site id for metadata API endpoint</description>' + 
+                                '<disableProtocolSecurity>false</disableProtocolSecurity>' + 
+                                '<isActive>true</isActive>' + 
+                                '<url>{!objectEndpointURL}</url>' +
+                            '</metadata>' +
+                        '</createMetadata>' +
+                    '</env:Body>' + 
+                '</env:Envelope>';        
+                
+        binding.open('POST', 'https://{!Host}/services/Soap/m/31.0');
+        binding.setRequestHeader('SOAPAction','""');
+        binding.setRequestHeader('Content-Type', 'text/xml');
+        binding.onreadystatechange = 
+                function() { 
+                    if(this.readyState==4) {
+                        var parser = new DOMParser();
+                        var doc  = parser.parseFromString(this.response, 'application/xml');
+                        var errors = doc.getElementsByTagName('errors');
+                        var messageText = '';
+                        for(var errorIdx = 0; errorIdx < errors.length; errorIdx++)
+                            messageText+= errors.item(errorIdx).getElementsByTagName('message').item(0).innerHTML + '\n';
+                        //alert(messageText);
+                    } 
+                }
+        binding.send(request);  
+        setupDone();       
+    }    
+    </script>
+    </apex:outputPanel>
+    <style>
+    .processingBackground{
+        background-color: #fbfbfb; height: 100%; opacity:0.8; width:100%; position: fixed; top: 0px; left: 0px; z-index:1500;
+    }
+    .processingContainer{
+        width: 100px; height: 50px; position: fixed; top: 50%; left: 50%; margin-left: -50px; margin-top: -25px; z-index: 1550;
+    }
+    </style>
+    <apex:form id="fieldForm">
+    <apex:pageMessages ></apex:pageMessages>
+    <apex:outputPanel rendered="{!isAccessible}">
+    <apex:actionstatus id="status">
+        <apex:facet name="start">
+            <div class="processingBackground">                 
+            </div>
+            <div class="processingContainer">
+                <img class="waitingImage" src="/img/loading.gif" title="Please Wait..." />
+                <span class="waitingDescription">Loading...</span>
+            </div>
+        </apex:facet>
+    </apex:actionstatus>
+        <apex:actionFunction action="{!FieldList}" name="FieldList" reRender="fieldForm" Status="status"/>
+        <apex:actionFunction action="{!fetchRemoteSiteUrls}" name="fetchRemoteSiteUrlsfn" reRender="urlPanel,fieldForm" Status="status" onComplete="createTriggerRSS()"/>
+        <apex:actionFunction action="{!doneClicked}" name="setupDone" reRender="fieldForm" Status="status" onComplete=""/>
+        <apex:actionFunction action="{!selectAllFieldsOfObject}" name="selectAllFieldsfn" reRender="fieldForm" Status="status" onComplete="">
+            <apex:param value="" name="chkVal" assignTo="{!selectAllFieldFlag}"/>
+        </apex:actionFunction>
+        <apex:pageblock id="setFieldHistoryBlk">
+            <apex:pageblockButtons rendered="{!NOT(remoteSiteSetupRequired)}">
+                <apex:commandButton value="Next" action="{!nextPage}"/>
+                <apex:commandButton value="Cancel" action="{!cancel}"/>
+            </apex:pageblockButtons>
+            <apex:pageblocksection title="Create Remote Site Settings" rendered="{!remoteSiteSetupRequired}" columns="1">
+                <apex:outputLabel style="line-height:200%">Complete Pre Configuration by clicking below button:</apex:outputLabel>       
+                <apex:commandButton value="Create Remote Site Settings" onComplete="" reRender="" onClick="createTriggerRSS()"/>                                    
+            </apex:pageblocksection>
+            <apex:pageblocksection title="Configured Objects" columns="1">
+                <apex:pageBlockTable value="{!existingRecords}" var="rec">
+                    <apex:column headerValue="Object Name" value="{!rec.Name}"/>
+                    <apex:column headerValue="Field List" value="{!rec.FieldNameList__c}"/>
+                </apex:pageBlockTable>
+            </apex:pageblocksection>
+            <apex:pageblocksection title="Object Selection" rendered="{!NOT(remoteSiteSetupRequired)}">
+                <apex:outputPanel >
+                    <b>Note:</b><apex:outputLabel value=" Field History for following object can not be enabled:"/><br/>
+                    <apex:outputLabel value="Event, Task, Asset Relationship, Campaign Member, Content Version, Duplicate Record Item, Duplicate Record Set, Group, Group Record, Promoted Search Term"/>
+                    <br/><br/>
+                    <apex:outputlabel value="Please Select an Object :   "></apex:outputlabel>
+                    <apex:selectList value="{!selectedObject}" multiselect="false" size="1" onchange="getFieldList();">
+                    <apex:selectoptions value="{!objLabelOptions}" />
+                    </apex:selectList>
+                </apex:outputPanel>
+            </apex:pageblocksection>
+            <apex:pageblocksection columns="3" title="Associated Fields" rendered="{!renderFieldsPanel}"> 
+                <apex:pageblocksectionItem >
+                    <apex:outputPanel ><apex:inputcheckbox value="{!selectAllFields}" onclick="selectAllFieldsfn(this.checked)"/>&nbsp;<b>Select All Fields</b></apex:outputPanel>
+                </apex:pageblocksectionItem>
+                <p></p>
+                <apex:pageblocksectionItem >
+                    <apex:outputPanel ><b>Note:</b> Can not select Long TextArea fields</apex:outputPanel>
+                </apex:pageblocksectionItem>
+                
+                <apex:repeat value="{!fieldWrapperList}" var="field">
+                    <apex:outputPanel rendered="{!IF(field.fieldType == 'TEXTAREA',false,true)}"><apex:inputcheckbox value="{!field.fieldCheck}"  />&nbsp;{!field.fieldName}</apex:outputPanel>
+                    <apex:outputPanel rendered="{!IF(field.fieldType == 'TEXTAREA',true,false)}"><apex:inputcheckbox value="{!field.fieldCheck}"  disabled="true"/>&nbsp;{!field.fieldName}</apex:outputPanel>
+                </apex:repeat>
+            </apex:pageblocksection>
+        </apex:pageblock>
+        </apex:outputPanel>   
+        <apex:outputPanel rendered="{!NOT(isAccessible)}">
+            <apex:pageblock >
+            <apex:outputLabel value="You do not have access to set the Field History. Please contact your Administrator."/>
+            </apex:pageblock>
+        </apex:outputPanel>
+     </apex:form>
+</apex:page>
