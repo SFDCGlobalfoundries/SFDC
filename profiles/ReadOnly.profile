@@ -1469,6 +1469,14 @@
         <layout>Deployment_Request__c-Deployment Request Layout</layout>
     </layoutAssignments>
     <layoutAssignments>
+        <layout>Deployment_Request__c-Deployment Request Layout</layout>
+        <recordType>Deployment_Request__c.DR_Locked</recordType>
+    </layoutAssignments>
+    <layoutAssignments>
+        <layout>Deployment_Request__c-Deployment Request Layout</layout>
+        <recordType>Deployment_Request__c.DR_Unlocked</recordType>
+    </layoutAssignments>
+    <layoutAssignments>
         <layout>DuplicateRecordSet-Duplicate Record Set Layout</layout>
     </layoutAssignments>
     <layoutAssignments>
@@ -1711,6 +1719,16 @@
         <apexPage>GFSSetFieldHistory</apexPage>
         <enabled>false</enabled>
     </pageAccesses>
+    <recordTypeVisibilities>
+        <default>false</default>
+        <recordType>Deployment_Request__c.DR_Locked</recordType>
+        <visible>false</visible>
+    </recordTypeVisibilities>
+    <recordTypeVisibilities>
+        <default>false</default>
+        <recordType>Deployment_Request__c.DR_Unlocked</recordType>
+        <visible>false</visible>
+    </recordTypeVisibilities>
     <recordTypeVisibilities>
         <default>false</default>
         <recordType>Idea.InternalIdeasIdeaRecordType</recordType>
