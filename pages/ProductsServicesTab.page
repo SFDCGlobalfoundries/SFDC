@@ -1,0 +1,73 @@
+<!--
+ Page Name:         ProductsServicesTab
+ Author:            Prosenjit Saha
+ Created Date:      12-June-2014
+ Modified Date:     16-June-2014
+ Reason:            This page displays the Proposals and other details of the Products and Services tab.
+ Change History: 
+ Author: 
+ Modified Date: 
+ Reason: 
+ …….. 
+ ……..
+-->
+
+<apex:page showHeader="false" sidebar="false" tabStyle="Team_Room__c" controller="ProductsServicesController">
+    <style>
+        header {
+            font-weight:bold;
+        }            
+    </style>
+    <apex:pageBlock id="devPageBlock">
+        <!-- Page Button Section starts -->
+        <apex:pageBlockButtons >
+           <apex:form >
+                <apex:commandButton action="{!Beginning}" title="Beginning" value="First" status="status" disabled="{!disablePrevious}" reRender="devPageBlock"/>
+                <apex:commandButton action="{!Previous}" title="Previous" value="Prev" status="status" disabled="{!disablePrevious}" reRender="devPageBlock"/>        
+                <apex:commandButton action="{!Next}" title="Next" value="Next" status="status" disabled="{!disableNext}" reRender="devPageBlock"/>
+                <apex:commandButton action="{!End}" title="End" value="Last" status="status" disabled="{!disableNext}" reRender="devPageBlock"/>
+                <apex:actionStatus id="status" startText="Please Wait..." />        
+           </apex:form>
+        </apex:pageBlockButtons> 
+        <!-- Page Button Section ends --> 
+        
+        <!-- To display informaton in the iframe -->
+        <apex:form >
+            <!-- Proposal View page Section -->
+            <apex:pageblockTable value="{!ProposalList}"
+                                 var="Proposal"
+                                 rendered="{!NOT(ISNULL(ProposalList))}"
+                                 id="ProposalBlock">
+                <!-- display all the columns mentioned in the Field Set named Related_List_Column_for_Team_Room in the Proposal object level -->
+                <apex:repeat value="{!$ObjectType.Apttus_Proposal__Proposal__c.FieldSets.Related_List_Column_for_Team_Room}" 
+                             var="f">               
+                      <apex:column >                                                              
+                          <apex:facet name="header">
+                              <!-- To sort the values on the basis of the columns -->
+                              <apex:commandLink action="{!queryProposals}" 
+                                                value="{!f.Label}{!IF(SortExpression==f.fieldPath,IF(SortDirection='ASC','▲','▼'),'')}" 
+                                                reRender="ProposalBlock">
+                                  <apex:param value="{!f.fieldPath}" 
+                                              name="column" 
+                                              assignTo="{!SortExpression}"/>
+                              </apex:commandLink>                                                                         
+                          </apex:facet> 
+                          <apex:outputField value="{!Proposal[f]}"
+                                            rendered="{!IF(f='Name', False, True)}"/>
+                          <!-- Output Link for proposals -->
+                          <apex:outputPanel rendered="{!IF(f='Name', True, False)}">
+                              <apex:outputLink value="/{!Proposal.Id}" target="_blank">{!Proposal.name}</apex:outputLink>
+                              <!-- <a href="/{!IF(ISPICKVAL($User.UserType,'Standard'),'','GlobalfoundryView/')}{!Proposal.Id}">{!Proposal[f]}</a> -->
+                          </apex:outputPanel>
+                      </apex:column> 
+                </apex:repeat>
+                <apex:column >   
+                    <apex:facet name="header">IP Declaration Form </apex:facet> 
+                    <apex:outputLink value="/{!MapIPDecData[Proposal].id }" target="_blank" rendered="{!NOT(ISBLANK(MapIPDecData [Proposal] ))}">{!MapIPDecData [Proposal].name }</apex:outputLink>
+                </apex:column>
+                <apex:facet name="footer">Showing Page # {!pageNumber} of {!totalPages}</apex:facet>
+            </apex:pageblockTable>
+            
+        </apex:form>
+    </apex:pageBlock>
+</apex:page>

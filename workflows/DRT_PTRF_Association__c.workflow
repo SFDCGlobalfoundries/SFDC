@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Workflow xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fieldUpdates>
+        <fullName>DRT_PTRF_Trigger_Oracle_DB_Sync_Manual</fullName>
+        <field>Trigger_Oracle_DB_Sync_Manual__c</field>
+        <literalValue>0</literalValue>
+        <name>DRT_PTRF_Trigger_Oracle_DB_Sync_Manual</name>
+        <notifyAssignee>false</notifyAssignee>
+        <operation>Literal</operation>
+        <protected>false</protected>
+    </fieldUpdates>
+    <fieldUpdates>
+        <fullName>PrimeDRTPTRF_Set_LastSyncReqTimestamp</fullName>
+        <field>Last_Sync_Request_Timestamp__c</field>
+        <formula>LastModifiedDate</formula>
+        <name>PrimeDRTPTRF_Set_LastSyncReqTimestamp</name>
+        <notifyAssignee>false</notifyAssignee>
+        <operation>Formula</operation>
+        <protected>false</protected>
+    </fieldUpdates>
+    <fieldUpdates>
+        <fullName>PrimeDRTPTRF_Set_Synced_Oracle_DB_False</fullName>
+        <field>Synced_with_Oracle_DB__c</field>
+        <literalValue>0</literalValue>
+        <name>PrimeDRTPTRF_Set_Synced_Oracle_DB_False</name>
+        <notifyAssignee>false</notifyAssignee>
+        <operation>Literal</operation>
+        <protected>false</protected>
+    </fieldUpdates>
+    <outboundMessages>
+        <fullName>DRT_PTRF_OB_Sync_OracleDB</fullName>
+        <apiVersion>30.0</apiVersion>
+        <endpointUrl>https://preprod.foundryview.com/aianoauth/soa-infra/services/SF/SFOracleDRTPTRFUpdate/SFOracleDRTPTRFUpdate_Client</endpointUrl>
+        <fields>DRT_Name__c</fields>
+        <fields>Id</fields>
+        <fields>LastModifiedDate</fields>
+        <fields>PTRFNumber__c</fields>
+        <fields>lastmodifieddate_sgt__c</fields>
+        <includeSessionId>true</includeSessionId>
+        <integrationUser>swift.integration@globalfoundries.com</integrationUser>
+        <name>DRT_PTRF_OB_Sync_OracleDB</name>
+        <protected>false</protected>
+        <useDeadLetterQueue>false</useDeadLetterQueue>
+    </outboundMessages>
+    <rules>
+        <fullName>DRT_PTRF_WF_Sync_DRT_OracleDB</fullName>
+        <actions>
+            <name>DRT_PTRF_Trigger_Oracle_DB_Sync_Manual</name>
+            <type>FieldUpdate</type>
+        </actions>
+        <actions>
+            <name>PrimeDRTPTRF_Set_LastSyncReqTimestamp</name>
+            <type>FieldUpdate</type>
+        </actions>
+        <actions>
+            <name>PrimeDRTPTRF_Set_Synced_Oracle_DB_False</name>
+            <type>FieldUpdate</type>
+        </actions>
+        <actions>
+            <name>DRT_PTRF_OB_Sync_OracleDB</name>
+            <type>OutboundMessage</type>
+        </actions>
+        <active>true</active>
+        <formula>AND( 
+OR(ISPICKVAL(DRT__r.Status__c, &apos;Active&apos;), ISPICKVAL(DRT__r.Status__c, &apos;Inactive&apos;), ISPICKVAL(DRT__r.Status__c, &apos;Closed&apos;), ISPICKVAL(DRT__r.Status__c, &apos;Cancel&apos;)), 
+OR(NOT(CONTAINS(LastModifiedBy.Profile.Name,&apos;Integration&apos;)), AND(NOT(ischanged(Synced_with_Oracle_DB__c)),NOT(ischanged(Error_Message_Oracle_DB__c)),NOT(ischanged(Last_Sync_Request_Timestamp__c))), Trigger_Oracle_DB_Sync_Manual__c ), 
+DRT__r.First_Sync_with_Oracle__c 
+)</formula>
+        <triggerType>onAllChanges</triggerType>
+    </rules>
+</Workflow>

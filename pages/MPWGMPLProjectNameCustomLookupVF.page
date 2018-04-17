@@ -1,0 +1,95 @@
+<!--
+    Author: Shyam Ravindra Nair
+    Description: This serves as a custom lookup to select GMPL Project Name.
+    History: 
+        SNair	06102015    - Code creation.
+-->
+<apex:page id="page"
+	controller="MPWGMPLProjectNameCustomLookupController" sidebar="false"
+	showHeader="false">
+
+	<style>
+.outerdiv {
+	background-repeat: repeat-x;
+	background-position: left top;
+	background: white url(/img/alohaSkin/lookup_bg.png) repeat-x;
+	padding-left: 10px;
+	height: 100%;
+}
+
+.innerdiv {
+	background-image: url(/img/sprites/master.png);
+	background-position: 0px -1202px;
+	width: 32px;
+	height: 32px;
+}
+</style>
+
+	<script type="text/javascript">
+		window.onload = new function() {
+			window.focus();
+		}
+
+		function fillIn(name1,name2) {
+			var winMain=window.opener;
+            if (null==winMain)
+            {
+               winMain=window.parent.opener;
+            }
+            var ele1=winMain.document.getElementById('{!$CurrentPage.parameters.fname1}');
+            ele1.value=name1;
+            var ele2=winMain.document.getElementById('{!$CurrentPage.parameters.fname2}');
+            ele2.value=name2;
+            CloseWindow();
+		}
+
+		function CloseWindow() {
+			var winMain = window.opener;
+			if (null == winMain) {
+				winMain = window.parent.opener;
+			}
+			winMain.closeLookupPopup();
+		}
+	</script>
+
+	<apex:form id="form">
+		<BR />
+		<div class="innerdiv" />
+		<div
+			style="float: left; width: 50px; margin-top: -25px; margin-left: 40px; font-size: 20px;">
+			<h1>Lookup</h1>
+		</div>
+		<BR />
+		<apex:outputPanel style="margin-left:7px;" layout="inline"
+			styleclass="lookup">
+			<apex:inputText value="{!sSearchInput}" id="sSearchInput"
+				maxlength="80" />
+			<apex:commandButton value=" Go " action="{!searchGMPL}" />
+		</apex:outputPanel>
+		<BR />
+
+		<!-- Error messages section -->
+		<apex:outputPanel layout="inline"
+			rendered="{!b_DisplayMinSearchCharacterMessage}"
+			style="font-weight:bold;color:red">Error: Please enter a search string at least 2 characters long.</apex:outputPanel>
+		<apex:outputPanel layout="inline"
+			rendered="{!b_DisplayZeroSearchResultMessage}"
+			style="font-weight:bold;color:red">No records were found based on your criteria</apex:outputPanel>
+
+		<apex:pageBlock id="block">
+			<apex:pageBlockSection title="{!s_PageBlockTableTitle}" id="section"
+				collapsible="false" columns="1"
+				rendered="{!IF(OR(b_DisplayRecentRecords,b_DisplayGMPLRecords),true,false)}">
+				<apex:pageBlockTable value="{!gmplList}" var="gmpl"
+					rendered="{!IF(OR(b_DisplayRecentRecords,b_DisplayGMPLRecords),true,false)}">
+					<apex:column headerValue="{!$ObjectType.GMPL_BX009__c.fields.Name.label}">
+						<apex:outputLink value="#" onclick="fillIn('{!gmpl.Name}','{!gmpl.Id}')">{!gmpl.Name}</apex:outputLink>
+					</apex:column>
+					<apex:column headerValue="{!$ObjectType.GMPL_BX009__c.fields.Geometry__c.label}">
+						<apex:outputField value="{!gmpl.Geometry__c}"/>
+					</apex:column>
+				</apex:pageBlockTable>
+			</apex:pageBlockSection>
+		</apex:pageBlock>
+	</apex:form>
+</apex:page>

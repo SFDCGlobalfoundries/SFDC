@@ -1,0 +1,175 @@
+<!--<!DOCTYPE html> -->
+<apex:page controller="RMA_CommunityViewCtrl" doctype="html-5.0" sidebar="false" showheader="false" standardstyleSheets="false" renderas="pdf"
+											  applyBodyTag="false" applyHtmlTag="false">
+	<html>
+		<head>											  
+			<style>
+		        @media print{
+		            @page {
+		                size: landscape;
+		            }
+		        }  
+		         @page {
+	                size: landscape;
+	                margin: 20mm;
+	                @bottom-center {
+	                    content: "Page " counter(page) " of " counter(pages);
+	                }
+            	}
+	            .page-break {
+	                display:block;
+	                page-break-after:always;
+	            }
+	            body {
+	                font-family: Arial Unicode MS;
+	            }
+	            table {
+				    border-collapse: collapse;
+				}
+				table th {
+					color: #fff;
+					background: #848484;
+					font-weight:bold;
+				}
+				table tr, table td{
+					page-break-inside: avoid;
+					word-wrap: break-word;
+				 }
+				.rmaDetailTable, .invTable{
+					border: 1px solid black;
+					border-collapse: collapse;
+					background-color: #ffb347;
+					width:100%;
+				}
+				
+				.rmaDetailTable tr, .rmaDetailTable td, .rmaDetailTable th{
+					padding: 10px;
+					border: 1px solid black;
+				}
+				.invTable tr, .invTable td, .invTable th{
+					border: 1px solid black;
+				} 
+				.invTable td{
+					overflow-wrap: break-word;
+  					word-break: break-all;
+  					padding: 2px;
+				}
+				.invTable th{
+					padding: 4px;
+				}
+				.numalign{
+					text-align:right; 
+				}
+		    </style>
+		</head>
+		<body><!-- style="display:{!IF(hasChangedUrl, 'none', 'block')}" -->
+			<apex:variable var="foo" value="foo" rendered="{!Not(hasChangedUrl)}">
+				<center>
+			        <table width="100%" style="border:0px;">
+			          <tr>
+			              <td align="center">    
+			                  <apex:image value="{!URLFOR($Resource.GFLogo)}" style="position:relative;background-repeat:repeat-x;left: 0cm; top:0cm;"/>
+			              </td>        
+			              <td align="center" style="font-size:20px;font-weight:bold;"> <h2>Return Material Authorization </h2></td> 
+			          </tr>  
+			        </table>
+			     </center>
+				<table class="rmaDetailTable">
+					<tr>
+						<th>Customer:</th>
+						<td><apex:outputText value="{!rmaWrapObj.CustomerName}"/></td>
+						<th>Fab:</th>
+						<td><apex:outputText value="{!rmaWrapObj.Fabname}"/></td>
+						<th>RMA #:</th> 
+						<td><apex:outputText value="{!rmaWrapObj.RMANumber}"/></td>
+					</tr>
+					<tr>
+						<th>Raise Date:</th>
+						<td><c:RMA_UserLocaleDateTimeFormatter date_Timevalue="{!rmaWrapObj.customerRequestedDate}"/></td>
+						<th>RMA Stage:</th>
+						<td><apex:outputText value="{!rmaWrapObj.Stage}"/></td>
+						<th>Originator:</th>
+						<td><apex:outputText value="{!rmaWrapObj.OwnerName}"/></td>
+					</tr>
+					<tr>
+						<th>Credit Note #:</th>
+						<td><apex:outputText value="{!rmaWrapObj.cn_dn_number}"/></td>
+						<th>Credit Note Date:</th>
+						<td><c:RMA_UserLocaleDateTimeFormatter date_Timevalue="{!rmaWrapObj.cn_dn_date}"/></td>
+						<th>Approved Date:</th>
+						<td><c:RMA_UserLocaleDateTimeFormatter date_Timevalue="{!rmaWrapObj.approvedDate}"/></td>
+					</tr>
+				</table>
+				<br/>
+				<table class="invTable">
+					<thead>
+					<tr>
+						<th>Sl No</th>
+						<th>Invoice # / Invoice Date</th>
+						<th>PO #</th>
+						<th>Lot #</th>
+						<th>Device / Process</th>
+						<th>Wafer Id</th>
+						<th>Wafer Qty</th>
+						<th>Scrap Limit / Wafer Yield (%)</th>
+						<th>Wafer / Die Unit Price</th>
+						<th>Adjusted Unit Price (US $)</th>
+						<th>Total Amount (US $)</th>
+					</tr>
+					</thead>
+					<tbody>
+						<apex:variable var="recCounter" value="{!1}"/>
+						<apex:repeat value="{!rmaRetWrapperList}" var="retInv">
+							<tr>
+								<td><apex:outputText value="{!recCounter}"/></td>
+								<td>
+									<apex:outputText value="{!retInv.Invoice_Number}, {!retInv.Invoice_date}" 
+													 rendered="{!NOT(ISBLANK(retInv.Invoice_Number)) && NOT(ISBLANK(retInv.Invoice_date))}"/>
+								</td>
+								<td><apex:outputText value="{!retInv.Purchase_Order_Number}"/></td>
+								<td><apex:outputText value="{!retInv.Lot_Number}"/></td>
+								<td>
+									<apex:outputText value="{!retInv.Device},  {!retInv.Process}"
+													 rendered="{!NOT(ISBLANK(retInv.Device)) && NOT(ISBLANK(retInv.Process))}"/>
+										 
+								</td>
+								<td>{!retInv.Wafer_Id_CSR_Submission}</td>
+								<td class="numalign"><apex:outputText value="{!retInv.Wafer_Quantity}"/></td>
+								<td class="numalign">
+									<apex:outputText value="{!retInv.Scrap_Limit},  {!retInv.Wafer_Yield}"
+													 rendered="{!NOT(ISBLANK(retInv.Scrap_Limit)) && NOT(ISBLANK(retInv.Wafer_Yield))}" />
+								</td>
+								<td class="numalign">
+									<apex:outputText value="{0, number, ###,##0.00}">
+										<apex:param value="{!retInv.Wafer_Die_Unit_Price}"/>
+									</apex:outputText>
+								</td>
+								<td class="numalign">
+									<apex:outputText value="{0, number, ###,##0.00}">
+										<apex:param value="{!retInv.Adjusted_Unit_Price}"/>
+									</apex:outputText>
+								</td> 
+								<td class="numalign">  
+									<apex:outputText value="{0, number, ###,##0.00}">
+										<apex:param value="{!retInv.Total_Price_Final}"/>
+									</apex:outputText>
+								</td>
+							</tr>
+							<apex:variable var="recCounter" value="{!recCounter + 1}"/>
+						</apex:repeat>
+						<tr> 
+							<td colspan="5"></td>
+							<th>Total:</th>
+							<td class="numalign">{!rmaWrapObj.Total_Wafers_Final}</td>
+							<td colspan="3"></td>
+							<td class="numalign">{!rmaWrapObj.Grand_Total_Final}</td>
+					   </tr>
+				   </tbody>
+				</table>
+			</apex:variable>
+			<apex:variable var="foo" value="foo" rendered="{!hasChangedUrl}">
+				<h1> YOU CAN'T CHEAT ME !!!!</h1>
+			</apex:variable>
+		</body>
+	</html>
+</apex:page>

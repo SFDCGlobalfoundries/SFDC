@@ -1,0 +1,188 @@
+<!--
+ Type Name: VFProvisionSubPDK
+ Author: Cognizant Technology Solutions
+ Created Date: 12-June-2013
+ Reason: This page displays the ability to Provision Documents.
+ Change History:
+ Author: 
+ Modified Date: 
+ Reason: 
+ …….. 
+ ……..
+-->
+
+
+<apex:page standardController="Sub_PDK__c" extensions="ClsProvisionSubPDKController">
+
+<script type="text/javascript">
+    function checkAll(cb,section)
+        {
+            //alert(section);
+            
+            var inputElem = document.getElementsByTagName('input');                     
+            for(var i=0; i<inputElem.length; i++)
+            {                                                   
+                    if(inputElem[i].id.indexOf(section)!=-1){
+                        inputElem[i].checked = cb.checked;
+                        //alert('inside for loop.'+cb.checked);
+                    }               
+            }
+        }
+        
+     function checkContacts(cb,accid){
+        var inputElem = document.getElementsByTagName('input');                            
+        for(var i=0; i<inputElem.length; i++){ 
+            if(inputElem[i].parentNode.getAttribute('rowid')==accid)                                                 
+                inputElem[i].checked = cb.checked;               
+            }
+    }
+</script>
+  <style type="text/css">
+  .highlight{font-weight: bold;
+   }
+  </style>
+<apex:form id="theForm">
+                                         
+        <apex:pageBlock mode="detail" title="PDK Provisioning">
+            
+            <apex:pagemessages id="msg" /> 
+            <apex:pageBlockButtons location="both" rendered="{!editpanel}" >
+                <apex:commandButton value="Provision To Contacts" action="{!insertProvisioningRecords}" status="searchStatus" rendered="{!((isValidProfile)&&(isValidReleaseStatusForProvisioning) && (isNotObsoletePDK))}"  id="btnId"/>&nbsp;&nbsp;            
+                <apex:commandButton value="Add Account" action="{!openSearch}" status="searchStatus" reRender="theForm" rendered="{!((showAddAccounts) && (isNotObsoletePDK))}"/>&nbsp;&nbsp;
+                <apex:commandButton value="Cancel" action="{!cancel}" status="searchStatus" reRender="theForm"/>
+           </apex:pageBlockButtons>
+            
+            <apex:pageblockSection title="PDK Information" columns="2" rendered="{!((isValidProfile)&&(isValidReleaseStatusForProvisioning)&& (isNotObsoletePDK)&& (editpanel))}" >
+
+                <apex:repeat value="{!$ObjectType.Sub_PDK__c.FieldSets.Provisioning_Fields}" var="f">
+                    <apex:outputField value="{!objSubPDK[f]}"/>                     
+                </apex:repeat>
+                                           
+              <!-- <apex:commandLink action="{!openSearch}" rendered="{!showAddAccounts}">
+                  <apex:image url="/img/icon/accounts16.png"/>
+                  Add Account
+              </apex:commandLink> --> 
+                
+            </apex:pageblockSection>
+            
+            <apex:pageBlockSection title="Provision To Contacts" columns="1" rendered="{!((isValidProfile)&&(isValidReleaseStatusForProvisioning)&& (isNotObsoletePDK)&&(editpanel))}" >
+              
+              <apex:pageBlock > 
+                   
+               <apex:repeat value="{!lstAccUserWrapper}" var="accUser" id="provisioningTable">
+                   
+                        <!--apex:outputText value="Customer - {!accUser.accName}"  style="font-weight: bold;font-size:14px"/--> 
+                        <apex:pageBlockSection title="Customer - {!accUser.accName}" columns="1">             
+                  
+                  <!-- apex:pageBlock --> 
+
+ <!---------------------------------------------Cognizant added on 25/11/2013------------------------------------------------->    
+                  <apex:pageBlockTable value="{!accUser.Sortedcontactlist}" var="mapUser" width="100%" rendered="{!accUser.lstUserSize>0}"> 
+                   
+                       <apex:column width="10%">
+                            
+                            <apex:facet name="header">
+                                <apex:inputcheckbox id="selectAllContacts" onclick="checkContacts(this,'{!accUser.accId}')"/>
+                            </apex:facet>
+                           <div id="divid" rowid="{!accUser.accId}">
+                                <apex:inputCheckBox rendered="{!IF(accUser.mapUserIdToChecked[mapUser]=false,True,False)}" value="{!accUser.mapUserIdToChecked[mapUser]}" id="userCheckBox"/>
+                           </div>
+                           
+                       </apex:column>
+                       <apex:column headerValue="Contact Name" width="30%">
+                       
+                          <apex:outputText value="{!mapUserNames[mapUser].Name}"/>
+                      
+                       </apex:column>
+                       <apex:column headerValue="Contact Email" width="30%">
+                            <apex:outputText value="{!mapUserNames[mapUser].Email}"/>
+                       </apex:column>
+                       
+                       <apex:column headerValue="Provisioned" width="50%"> <!--Cognizant added on 25/11/2013---->
+                            <apex:outputText value="{!If(accUser.mapUserIdToChecked[mapUser]=false,'NO','YES')}" style="{!If(accUser.mapUserIdToChecked[mapUser]=false,'Color:Red','Color:Green')}"/> <!--Cognizant added on 25/11/2013---->
+                            
+                       </apex:column>
+                   </apex:pageBlockTable>
+ <!--------------------------------------------------------------------------------------------------------------------->                  
+                  
+                   <apex:outputLabel value="No Active Contacts found corresponding to this Customer for Provisioning" rendered="{!accUser.lstUserSize=0}"/>
+                   
+                   <!-- /apex:pageBlock -->
+                           
+                   </apex:pageBlockSection>               
+                   
+               </apex:repeat> 
+                <apex:outputLabel value="No Customer found for Provisioning" rendered="{!lstAccUserWrapper.size=0}"/>       
+               </apex:pageBlock>
+           </apex:pageBlockSection>
+           
+           <apex:outputpanel id="searchPanel">
+                <apex:outputPanel rendered="{!searchpanel}">
+                    <apex:pageBlockSection title="Search Accounts" columns="1" collapsible="true">
+                        
+                        <apex:outputPanel style="padding-left:30%;padding-top:10%;padding-bottom:10%;">
+                            <a href=""><img src="/img/func_icons/util/help16.png"  title="{!$Label.FV2_Help_Text_Accoun_Search}" onmouseover="this.src='/img/msg_icons/info16.png'" onmouseout="this.src='/img/func_icons/util/help16.png'" /></a>                
+                            <apex:inputText value="{!searchString}" styleClass="ui-corner-all"/> &nbsp;&nbsp;&nbsp;                                       
+                            <apex:commandButton value="Search" action="{!searchAccount}"    reRender="searchresultpanel,msg" status="searchStatus"/>&nbsp;&nbsp;
+                            <apex:commandButton value="Back"   action="{!cancelAddAccount}" reRender="theForm"               status="searchStatus"/>
+                            
+                            <apex:actionStatus id="searchStatus">
+                                <apex:facet name="start" >
+                                    <apex:image url="/img/loading32.gif" height="20px"/>                       
+                                </apex:facet>
+                            </apex:actionStatus>
+                            
+                        </apex:outputPanel>    
+                        
+                        
+                        <apex:outputPanel id="searchresultpanel">
+                            
+                            <apex:outputPanel rendered="{!IF(accountSearchList.size>0,true,false)}">
+                                <apex:commandButton value="Add Selected Accounts" action="{!addSelectedAccounts}" status="addAccountStatus1" reRender="theForm" />&nbsp;&nbsp;
+                                <apex:commandButton value="Cancel"                action="{!cancelAddAccount}"    status="addAccountStatus1" reRender="theForm" />
+                            </apex:outputPanel>
+                            
+                            <apex:actionStatus id="addAccountStatus1">
+                                <apex:facet name="start" >
+                                    <apex:image url="/img/loading32.gif" height="20px"/>                       
+                                </apex:facet>
+                            </apex:actionStatus>
+                            <br/><br/>
+                            <apex:pageBlockTable value="{!accountSearchList}" var="ac" rendered="{!IF(accountSearchList.size>0,true,false)}">
+                                <apex:column >
+                                    <apex:facet name="header">
+                                        <apex:inputcheckbox id="selectAllSearchList" onclick="checkAll(this,'SearchList')" />
+                                    </apex:facet>
+                                                                    
+                                    <apex:inputCheckbox value="{!ac.isChecked}" id="SearchList"/>
+                                </apex:column>
+                              
+                                <apex:repeat value="{!$ObjectType.Account.FieldSets.WhiteListFields}" var="f">
+                                    <apex:column value="{!ac.accountFound[f]}"/>
+                                </apex:repeat>
+                                
+                            </apex:pageBlockTable>
+                            
+                            <apex:outputLabel value="No records found" rendered="{!!IF(accountSearchList.size>0,true,false)}"/>
+                            <br/>
+                            <apex:outputPanel rendered="{!IF(accountSearchList.size>0,true,false)}" style="align:right;">
+                                <apex:commandButton value="Add Selected Accounts" action="{!addSelectedAccounts}" status="addAccountStatus" reRender="theForm" />&nbsp;&nbsp;
+                                <apex:commandButton value="Cancel"                action="{!cancelAddAccount}"    status="addAccountStatus" reRender="theForm" />
+                            </apex:outputPanel>
+                           
+                            <apex:actionStatus id="addAccountStatus">
+                                <apex:facet name="start" >
+                                    <apex:image url="/img/loading32.gif" height="20px"/>                       
+                                </apex:facet>
+                            </apex:actionStatus>
+                            
+                        </apex:outputPanel>
+                    </apex:pageBlockSection>
+                </apex:outputPanel>
+            </apex:outputpanel> 
+            
+      </apex:pageBlock>
+      
+ </apex:form>
+    
+</apex:page>

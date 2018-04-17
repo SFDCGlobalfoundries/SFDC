@@ -1,0 +1,187 @@
+<apex:page standardController="STMTask__c" extensions="STM_ReportTask" id="GenericReport" sidebar="true" title="STM Task: {!STMTask__c.Name}">
+    <apex:stylesheet value="/sCSS/21.0/sprites/1297816277000/Theme3/default/gc/versioning.css" />
+    <style>
+       .style1{
+           font-family: Arial;
+           font-size: 91%;
+           font-weight: bold;
+           text-align: right;
+           color: #4A4A56;
+       }
+       .bPageBlock .pbTitle{
+            white-space: nowrap;
+            width: 1%;
+        }
+    </style>
+    <apex:sectionHeader title="STM Task" subtitle="{!STMTask__c.name}"/>
+    <chatter:feedWithFollowers entityId="{!STMTask__c.Id}" showHeader="true" oncomplete="reload();"/>
+    <apex:form id="theForm">
+        <apex:pageMessages ></apex:pageMessages>
+        
+        <apex:pageBlock >
+            <apex:pageBlockButtons location="top" style="text-align:center;">
+                    <apex:commandButton action="{!Edit}" value="Edit" style="align:center"/>
+                    <apex:commandButton value="Void Task" action="{!voidTask}" rendered="{!AND(NOT(STMTask__c.Cancelled__c),STMTask__c.Status__c != 'Submitted',STMTask__c.Status__c != 'Approved')}"
+                                        onclick="return confirm('Are you sure you want to Void the Task?');"/>
+                    <apex:commandButton value="Initiate FTP" action="{!initiateFTP}" 
+                        rendered="{!AND(STMTask__c.Status__c == 'Approved',!STMTask__c.FTP_Initiated__c,OR(isCEIntiateFTP, $Profile.Name == 'System Administrator'))}"
+                        onclick="return confirm('Are you sure you want to Initiate FTP?');"/>
+                    <apex:commandButton value="Send Email" action="{!redirectSendEmail}" 
+                        rendered="{!AND(STMTask__c.Status__c == 'Approved',OR(isCEIntiateFTP, isQA, $Profile.Name == 'System Administrator', $Profile.Name == 'GF System Admin'))}"/>
+                    <apex:commandButton value="Submit for Approval" action="{!submitForApproval}" rendered="{!OR(STMTask__c.Status__c == 'Draft',STMTask__c.Status__c == 'Rejected(Pending Originator/Assignee Action)')}"
+                        onclick="return confirm('Once you submit this record for approval, you might not be able to edit it or recall it from the approval process depending on your settings. Continue?');"/>
+            </apex:pageBlockButtons>
+            
+            <!-- for selecting the report type for which the task has been created. -->
+            <apex:pageBlockSection id="SearchSection"> 
+                <apex:outputField value="{!STMTask__c.ReportCategory__c}"/>
+                <apex:outputField value="{!STMTask__c.Account__c}" />
+                <apex:outputField value="{!STMTask__c.Report_Project_Profile__c}"/>
+                <apex:outputField value="{!STMTask__c.Report_Due_Date__c}"/>
+                <apex:outputField value="{!STMTask__c.FTP_Initiated__c}"/>
+                <apex:outputField value="{!STMTask__c.Cancelled__c}"/>
+                <apex:outputField value="{!STMTask__c.FTP_Done__c}"/>
+                <apex:outputField value="{!STMTask__c.Approval_Stage__c}"/>
+                <apex:inputhidden value="{!STMTask__c.Approval_Criteria_Met__c}"/>
+                <apex:inputhidden value="{!STMTask__c.CreatedById}"/>             
+            </apex:pageBlockSection>
+            
+            <!-- Details from the task -->
+            <apex:pageBlockSection id="ReportSection" columns="1"> 
+                
+                <apex:tabPanel switchType="client" selectedTab="opportunties" id="theTabPanel" styleClass="theTabPanel">
+                    
+                    <apex:tab label="Report Details" name="Report Details" id="ReportDetails">
+                        <apex:pageBlockSection title="Report Details" columns="2">
+                            <apex:outputField value="{!STMTask__c.Name}"/>
+                            <apex:outputField value="{!STMTask__c.Frequency__c}"/>
+                            <apex:outputField value="{!STMTask__c.Status__c}"/>
+                            <!--<apex:outputField value="{!STMTask__c.Submitted_On__c}"/>-->
+                            <!--<apex:outputField value="{!STMTask__c.Escalated_On__c}"/>-->
+                            <apex:outputField value="{!STMTask__c.Count_of_Attachments__c}"/>
+                        </apex:pageblockSection>
+                        <apex:pageBlockSection title="Source System Owners" columns="2">
+                            <apex:outputField value="{!STMTask__c.Source_System_Owner_1__c}" rendered="{!!ISNULL(STMTask__c.Source_System_Owner_1__c)}"/>
+                            <apex:outputField value="{!STMTask__c.Source_System_Owner_2__c}" rendered="{!!ISNULL(STMTask__c.Source_System_Owner_2__c)}"/>
+                            <apex:outputField value="{!STMTask__c.Source_System_Owner_3__c}" rendered="{!!ISNULL(STMTask__c.Source_System_Owner_3__c)}"/>
+                            <apex:outputField value="{!STMTask__c.Source_System_Owner_4__c}" rendered="{!!ISNULL(STMTask__c.Source_System_Owner_4__c)}"/>
+                            <apex:outputField value="{!STMTask__c.Source_System_Owner_5__c}" rendered="{!!ISNULL(STMTask__c.Source_System_Owner_5__c)}"/>
+                        </apex:pageblockSection>
+                    </apex:tab>
+                    
+                     <apex:tab label="Workflow Details" name="Workflow Details" id="WorkflowDetails">
+                        <apex:pageBlockSection title="Assignee Wokflow Details" columns="2">
+                            <apex:outputField value="{!STMTask__c.SendToAssignee__c}"/>
+                            <apex:outputField value="{!STMTask__c.Assignee_1__c}" rendered="{!NOT(ISNULL(STMTask__c.Assignee_1__c))}"/>
+                            <apex:outputField value="{!STMTask__c.Assignee_2__c}" rendered="{!NOT(ISNULL(STMTask__c.Assignee_2__c))}"/>
+                            <apex:outputField value="{!STMTask__c.Assignee_3__c}" rendered="{!NOT(ISNULL(STMTask__c.Assignee_3__c))}"/>
+                            <apex:outputField value="{!STMTask__c.Assignee_4__c}" rendered="{!NOT(ISNULL(STMTask__c.Assignee_4__c))}"/>
+                            <apex:outputField value="{!STMTask__c.Assignee_5__c}" rendered="{!NOT(ISNULL(STMTask__c.Assignee_5__c))}"/>
+                            <apex:outputField value="{!STMTask__c.Assignee_6__c}" rendered="{!NOT(ISNULL(STMTask__c.Assignee_6__c))}"/>
+                            <apex:outputField value="{!STMTask__c.Assignee_7__c}" rendered="{!NOT(ISNULL(STMTask__c.Assignee_7__c))}"/>
+                            <apex:outputField value="{!STMTask__c.Assignee_8__c}" rendered="{!NOT(ISNULL(STMTask__c.Assignee_8__c))}"/>
+                            <apex:outputField value="{!STMTask__c.Assignee_9__c}" rendered="{!NOT(ISNULL(STMTask__c.Assignee_9__c))}"/>
+                            <apex:outputField value="{!STMTask__c.Assignee_10__c}" rendered="{!NOT(ISNULL(STMTask__c.Assignee_10__c))}"/>
+                        </apex:pageblockSection>
+                        <apex:pageBlockSection title="Supervisor Wokflow Details" columns="2">
+                            <apex:outputField value="{!STMTask__c.SendToSupervisor__c}"/>
+                            <apex:outputField value="{!STMTask__c.Supervisor_1__c}" rendered="{!NOT(ISNULL(STMTask__c.Supervisor_1__c))}"/>
+                            <apex:outputField value="{!STMTask__c.Supervisor_2__c}" rendered="{!NOT(ISNULL(STMTask__c.Supervisor_2__c))}"/>
+                            <apex:outputField value="{!STMTask__c.Supervisor_3__c}" rendered="{!NOT(ISNULL(STMTask__c.Supervisor_3__c))}"/>
+                            <apex:outputField value="{!STMTask__c.Supervisor_4__c}" rendered="{!NOT(ISNULL(STMTask__c.Supervisor_4__c))}"/>
+                            <apex:outputField value="{!STMTask__c.Supervisor_5__c}" rendered="{!NOT(ISNULL(STMTask__c.Supervisor_5__c))}"/>
+                        </apex:pageblockSection>
+                        <apex:pageBlockSection title="QA Wokflow Details" columns="2">
+                            <apex:outputField value="{!STMTask__c.SendToQA__c}"/>
+                            <apex:outputField value="{!STMTask__c.QA_1__c}" rendered="{!NOT(ISNULL(STMTask__c.QA_1__c))}"/>
+                            <apex:outputField value="{!STMTask__c.QA_2__c}" rendered="{!NOT(ISNULL(STMTask__c.QA_2__c))}"/>
+                            <apex:outputField value="{!STMTask__c.QA_3__c}" rendered="{!NOT(ISNULL(STMTask__c.QA_3__c))}"/>
+                            <apex:outputField value="{!STMTask__c.QA_4__c}" rendered="{!NOT(ISNULL(STMTask__c.QA_4__c))}"/>
+                            <apex:outputField value="{!STMTask__c.QA_5__c}" rendered="{!NOT(ISNULL(STMTask__c.QA_5__c))}"/>
+                        </apex:pageblockSection>
+                        <apex:pageBlockSection title="CE Wokflow Details" columns="2">
+                            <apex:outputField value="{!STMTask__c.CE_1__c}" rendered="{!NOT(ISNULL(STMTask__c.CE_1__c))}"/>
+                            <apex:outputField value="{!STMTask__c.CE_2__c}" rendered="{!NOT(ISNULL(STMTask__c.CE_2__c))}"/>
+                            <apex:outputField value="{!STMTask__c.CE_3__c}" rendered="{!NOT(ISNULL(STMTask__c.CE_3__c))}"/>
+                            <apex:outputField value="{!STMTask__c.CE_4__c}" rendered="{!NOT(ISNULL(STMTask__c.CE_4__c))}"/>
+                            <apex:outputField value="{!STMTask__c.CE_5__c}" rendered="{!NOT(ISNULL(STMTask__c.CE_5__c))}"/>
+                        </apex:pageblockSection>
+                    </apex:tab>
+                    <!--
+                    <apex:tab label="Escalation Details" name="Escalation Details" id="EscalationDetails">
+                        <apex:pageBlockSection title="Assignee Escalation Details" columns="2">
+                            <apex:outputField value="{!STMTask__c.Escalation_for_Assignee__c}"/>
+                            <apex:outputField value="{!STMTask__c.Days_for_Assignee_Escalation__c}"/>
+                            <apex:outputField value="{!taskChild.Assignee_Esc_1__c}" rendered="{!If(taskChild.Assignee_Esc_1__r.name = 'test User',false,true)}"/>
+                            <apex:outputField value="{!taskChild.Assignee_Esc_2__c}" rendered="{!If(taskChild.Assignee_Esc_2__r.name = 'test User',false,true)}"/>
+                            <apex:outputField value="{!taskChild.Assignee_Esc_3__c}" rendered="{!If(taskChild.Assignee_Esc_3__r.name = 'test User',false,true)}"/>
+                            <apex:outputField value="{!taskChild.Assignee_Esc_4__c}" rendered="{!If(taskChild.Assignee_Esc_4__r.name = 'test User',false,true)}"/>
+                            <apex:outputField value="{!taskChild.Assignee_Esc_5__c}" rendered="{!If(taskChild.Assignee_Esc_5__r.name = 'test User',false,true)}"/>
+                        </apex:pageblockSection>
+                        <apex:pageBlockSection title="Supervisor Escalation Details" columns="2">
+                            <apex:outputField value="{!STMTask__c.Escalation_for_Supervisor__c}"/>
+                            <apex:outputField value="{!STMTask__c.Days_for_Supervisor_Escalation__c}"/>
+                            <apex:outputField value="{!taskChild.Supervisor_Esc_1__c}" rendered="{!If(taskChild.Supervisor_Esc_1__r.name = 'test User',false,true)}"/>
+                            <apex:outputField value="{!taskChild.Supervisor_Esc_2__c}" rendered="{!If(taskChild.Supervisor_Esc_2__r.name = 'test User',false,true)}"/>
+                            <apex:outputField value="{!taskChild.Supervisor_Esc_3__c}" rendered="{!If(taskChild.Supervisor_Esc_3__r.name = 'test User',false,true)}"/>
+                            <apex:outputField value="{!taskChild.Supervisor_Esc_4__c}" rendered="{!If(taskChild.Supervisor_Esc_4__r.name = 'test User',false,true)}"/>
+                            <apex:outputField value="{!taskChild.Supervisor_Esc_5__c}" rendered="{!If(taskChild.Supervisor_Esc_5__r.name = 'test User',false,true)}"/>
+                        </apex:pageblockSection>
+                        <apex:pageBlockSection title="QA Escalation Details" columns="2">
+                            <apex:outputField value="{!STMTask__c.Escalation_for_QA__c}"/>
+                            <apex:outputField value="{!STMTask__c.Days_for_QA_Escalation__c}"/>
+                            <apex:outputField value="{!taskChild.QA_Esc_1__c}" rendered="{!If(taskChild.QA_Esc_1__r.name = 'test User',false,true)}"/>
+                            <apex:outputField value="{!taskChild.QA_Esc_2__c}" rendered="{!If(taskChild.QA_Esc_2__r.name = 'test User',false,true)}"/>
+                            <apex:outputField value="{!taskChild.QA_Esc_3__c}" rendered="{!If(taskChild.QA_Esc_3__r.name = 'test User',false,true)}"/>
+                            <apex:outputField value="{!taskChild.QA_Esc_4__c}" rendered="{!If(taskChild.QA_Esc_4__r.name = 'test User',false,true)}"/>
+                            <apex:outputField value="{!taskChild.QA_Esc_5__c}" rendered="{!If(taskChild.QA_Esc_5__r.name = 'test User',false,true)}"/>
+                        </apex:pageblockSection>
+                        <apex:pageBlockSection title="CE Escalation Details" columns="2">
+                            <apex:outputField value="{!STMTask__c.Escalation_for_CE__c}"/>
+                            <apex:outputField value="{!STMTask__c.Days_for_CE_Escalation__c}"/>
+                            <apex:outputField value="{!taskChild.CE_Esc_1__c}" rendered="{!If(taskChild.CE_Esc_1__r.name = 'test User',false,true)}"/>
+                            <apex:outputField value="{!taskChild.CE_Esc_2__c}" rendered="{!If(taskChild.CE_Esc_2__r.name = 'test User',false,true)}"/>
+                            <apex:outputField value="{!taskChild.CE_Esc_3__c}" rendered="{!If(taskChild.CE_Esc_3__r.name = 'test User',false,true)}"/>
+                            <apex:outputField value="{!taskChild.CE_Esc_4__c}" rendered="{!If(taskChild.CE_Esc_4__r.name = 'test User',false,true)}"/>
+                        </apex:pageblockSection>
+                    </apex:tab>
+                    
+                    <apex:tab label="Alert Details for Report" name="Alert Details for Report" id="AlertDetails">
+                        <apex:pageBlockSection title="Report Details" columns="2">
+                            <apex:outputField value="{!STMTask__c.Days_for_Report_Upload__c}"/>
+                            <apex:outputField value="{!taskChild.Alert_Reminder_User1__c}" rendered="{!If(taskChild.Alert_Reminder_User1__r.name = 'test User',false,true)}"/>
+                            <apex:outputField value="{!taskChild.Alert_Reminder_User2__c}" rendered="{!If(taskChild.Alert_Reminder_User2__r.name = 'test User',false,true)}"/>
+                            <apex:outputField value="{!taskChild.Alert_Reminder_User3__c}" rendered="{!If(taskChild.Alert_Reminder_User3__r.name = 'test User',false,true)}"/>
+                        </apex:pageblockSection>
+                    </apex:tab>
+                    
+                    <apex:tab label="History Details" name="History Details" id="HistoryDetails">
+                        <apex:pageBlockTable value="{!STMTask__c.Histories}" var="h">
+                            <apex:column headerValue="Date"  value="{!h.createddate}"/>
+                            <apex:column headerValue="What" value="{!h.field}"/>
+                            <apex:column headerValue="From" value="{!h.oldvalue}"/>
+                            <apex:column headerValue="To"   value="{!h.newvalue}"/>
+                        </apex:pageBlockTable>
+                    </apex:tab>
+                    -->
+               </apex:tabPanel> 
+               
+            </apex:pageBlockSection>
+            
+        </apex:pageBlock>
+        
+    </apex:form>
+    
+    <!-- <apex:relatedList subject="{!STMTask__c}" list="CombinedAttachments"/> -->
+    <!-- <apex:relatedList list="STM_Task_Childs__r" /> -->
+    <apex:relatedList list="ProcessSteps"/>
+    <c:GenericHistoryComponent Limit="50" Object="{!STMTask__c}"/>
+    
+    <script language="JavaScript" type="text/javascript">
+        document.getElementsByName('piSubmit')[0].style.display = "none";         
+        function reload(){
+            location.replace("/{!STMTask__c.Id}");
+        }
+    </script>
+    
+</apex:page>

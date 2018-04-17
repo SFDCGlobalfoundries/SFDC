@@ -1,0 +1,350 @@
+<apex:page controller="MDD_Part_InfoController" tabStyle="Part__c" showHeader="{!IsInternalUser}" sidebar="{!IsInternalUser}" readOnly="true" cache="true">
+    <apex:form >
+    <style>
+    p{
+    font-size:1em;
+    }
+    .tbl1,.tr1,{
+    border-bottom: 1px solid black;
+    border-collapse: collapse;
+    }
+    .tr1:hover {
+    background: #D7EDF8 !important;
+    }
+    .td1{
+    background: white !important;
+    }
+    .pb{
+    text-align:center;
+    }
+    .tbl,.tr,.td{
+    border-bottom: 1px solid black;
+    border-collapse: collapse;
+    }
+    .tr{
+    border-top: 1px solid black;
+    }
+    .tr:hover {
+    background: #D7EDF8 !important;
+    }
+    body .pbBody table.list tr.headerRow td, body .pbBody table.list tr.headerRow th {
+        text-align:center;
+    }
+    A.class1 {color:blue; font-siz:1.1em;}
+    A.class1:link  {text-decoration: none; color: blue;}
+    A.class1:visited {text-decoration: none; color: purple;}
+    A.class1:hover {text-decoration: underline; color: purple;}
+    </style>
+    <style>
+    </style>
+    <apex:sectionHeader subtitle="Part Number Declaration"/>
+        <div style="font-size:1.166em;"><b>Summary Part Number Report </b></div><br></br>
+        <div>
+            <div>
+                <div style="width:48%;float:left;">
+                <b>Search Strings:</b><apex:outputText value="{!prt.Part_Number__c}"/>
+                </div>
+                <div>
+                <b>Results Limited To:</b><apex:outputText value="{!prt.Part_Type__c}"/>
+                </div>
+            </div><br></br>
+            <div style="width:48%;float:left;">
+            <b>Package Type:</b>{!getPackageType}
+            </div><br></br><br></br>
+            <a href="{!gfView}/apex/MDD_Login_Page" class="class1"><apex:image id="d1" value="{!$Resource.MDD_DeclarationBack}" width="15" height="13" alt="back"/>Modify Search</a><br></br><br></br>
+            <a href="#" onclick="history.go(-1)" class="class1"><apex:image id="d11" value="{!$Resource.MDD_DeclarationBack}" width="15" height="13" alt="back" />Search Results</a><br></br><br></br><br></br>
+            <apex:image id="d3" value="{!$Resource.MDD_Declaration3}" width="15" height="13" alt="download"/><apex:commandLink styleClass="class1" value="Download IPC 1752-2 Material Declaration *" target="_blank" action="{!DownloadXML}"/><br></br>
+            <p>This downloadable spreadsheet contains the same information as in the General Information, Manufacturing Information, and Substance Information tables:</p>
+                <apex:image id="d2" value="{!$Resource.MDD_Declaration3}" width="15" height="13" alt="download"/><apex:commandLink styleClass="class1" action="{!ExportWord}" value="Download Spreadsheet" target="_blank"/><br></br>
+            <p>This link provides details about the MDD part Family Files:</p>
+                <apex:image id="d4" value="{!$Resource.MDD_Declaration3}" width="15" height="13" alt="download"/><apex:commandLink styleClass="class1" target="_blank" value="Analytical Files for the homogeneous materials contained in this part family" action="{!callPartFamily}" rendered="{!familyId != '' && familyId != null}"/>
+                <br></br>
+            
+            <ul class="ibm-bullet-list">
+            <li>the disclaimer in the RoHS Material Composition Declaration section of the IPC 1752-2
+            document applies to all of the information and assertions that GLOBALFOUNDRIES provides in that
+            document; and</li>
+            <li>the definitions of "Homogeneous Material" and "Leaded" set forth apply with
+            respect to their use in the RoHS Material Composition Declaration section of the
+            IPC 1752-2 document.</li>
+            </ul>
+            <div style="font-size:1.166em;padding-left:43%"><b>GLOBALFOUNDRIES MATERIAL DECLARATION</b></div>
+            <p>This declaration provides:</p>
+            <ul class="ibm-bullet-list">
+              <li>General and manufacturing information regarding the parts within a part-family;</li>
+              <li>Information on the substances (RoHS, Reportable, and Additional, as defined here)
+            that GLOBALFOUNDRIES believes are present within a part-family (specifically, this declaration
+            identifies estimated concentrations of these substances at the Homogeneous Material level,
+            as Homogeneous Material is defined here); and</li>
+              <li>Information a customer may find useful in addressing its compliance obligations
+            under China&#39;s SJ/T 11364-2014, "Marking for Control of Pollution Caused by Electronic
+            and Electrical Products".</li>
+            </ul>
+            
+            <p>The manufacturing information is based on data contained in GLOBALFOUNDRIES quality and
+            reliability manuals.  The substance information is based on data contained in Material
+            Safety Data Sheets, GLOBALFOUNDRIES design manuals, and material specifications.</p>
+            
+            <p>For purposes of this declaration:</p>
+            
+            <ul class="ibm-bullet-list">
+              <li><strong>Additional substances</strong> means substances other than Reportable or RoHS substances.</li>
+              <li><strong>Homogeneous Material</strong> means a material of uniform composition that cannot be
+            mechanically disjointed into different materials (where "mechanically disjointed"
+            means that materials can, in principle, be separated by mechanical actions such as
+            unscrewing, cutting, crushing, grinding, or abrasive processes).</li>
+              <li><strong>Leaded</strong> means GLOBALFOUNDRIES estimate that none of a part's Homogeneous Materials
+            contain more than .1% by weight of mercury, hexavalent chromium, polybrominated
+            biphenyls, or polybrominated diphenyl ethers, or more than .01% by weight of cadmium.</li>
+              <li><strong>Lead-Free</strong> means GLOBALFOUNDRIES estimate that none of a part's Homogeneous Materials
+            contain more than .1% by weight of lead, mercury, hexavalent chromium, polybrominated
+            biphenyls, or polybrominated diphenyl ethers, or more than .01% by weight of cadmium.</li>
+              <li><strong>Lead-Reduced</strong> means GLOBALFOUNDRIES estimate that none of a part's Homogeneous Materials
+            contain more than .01% by weight of cadmium, or more than .1% by weight of lead,
+            mercury, hexavalent chromium, polybrominated biphenyls, or polybrominated diphenyl
+            ethers, except for lead in applications that GLOBALFOUNDRIES believes are subject to one or more
+            exemptions set forth in the EU RoHS Directive, as such Directive exists
+            on January 1, 2008.</li>
+              <li><strong>Reportable substances</strong> means substances that GLOBALFOUNDRIES has asked its third party
+            suppliers to identify, if present in the materials they provide to GLOBALFOUNDRIES .</li>
+              <li><strong>RoHS substances</strong> means lead, mercury, cadmium, hexavalent chromium, polybrominated
+            biphenyls, and polybrominated diphenyl ethers.</li>
+            </ul>
+            
+            <p>GLOBALFOUNDRIES makes no promise, commitment, warranty, affirmation, description, or
+            certification with respect to the information it provides in this declaration. Rather,
+            GLOBALFOUNDRIES provides the information in this declaration on an "AS IS" basis, without any
+            express or implied warranty of any kind. GLOBALFOUNDRIES may have provided a customer with an GLOBALFOUNDRIES 
+            RoHS Certificate for the part covered by this declaration.  GLOBALFOUNDRIES sole and exclusive
+            obligations, and a customer's sole and exclusive remedies, with respect to the substance
+            content of such part are as expressly set forth in that document.</p>
+            
+        </div>
+        <apex:pageBlock title="General Information" rendered="{!showPrt}">
+            <apex:pageBlockTable value="{!prt}" columns="8" var="p" style="Width=64%;" rendered="{!prt !=null}">
+                <apex:column value="{!p.Part_Number__c}" style="Width=8%;" styleClass="pb">
+                    <apex:facet name="header">
+                        Part Number
+                    </apex:facet>
+                </apex:column>
+                <apex:column value="{!p.Part_Type__c} , {!p.Lead_Level__c}" style="Width=8%" styleClass="pb" >
+                    <apex:facet name="header">
+                        Part type (Wafer or <br/>
+                        module, and leaded, lead-<br/>
+                        Free or lead-reduced)
+                    </apex:facet>
+                </apex:column>
+                <apex:column value="{!p.Package_Type__c}" style="Width=8%" styleClass="pb">
+                    <apex:facet name="header">
+                        Part-family <br/>
+                        package type
+                    </apex:facet>
+                </apex:column>
+                <apex:column headerValue="Part-family" value="{!p.Part_Family__c}" style="Width=8%" styleClass="pb"/>
+                <apex:column headerValue="Maximum package size for part-family (mm x mm)" value="{!p.Package_x__c} X {!p.Package_y__c}" style="Width=8%" styleClass="pb">
+                    <apex:facet name="header">
+                        Maximum package size<br/>
+                        for part-family (mm x mm)
+                    </apex:facet>
+                </apex:column>
+                <apex:column headerValue="Maximum chip size for part-family (mm x mm)" value="{!p.Chip_size_x__c} X {!p.Chip_Size_y__c}" style="Width=8%" styleClass="pb">
+                    <apex:facet name="header">
+                        Maximum chip size <br/>
+                        for part-family (mm x mm)
+                    </apex:facet>
+                </apex:column>
+                <apex:column headerValue="Maximum weight for part-family (g)" value="{!p.Family_Weight__c}" style="Width=8%" styleClass="pb">
+                    <apex:facet name="header">
+                        Maximum weight for <br/>
+                        part-family (g)
+                    </apex:facet>
+                </apex:column>
+                <apex:column headerValue="Wafer size" value="{!p.Wafer_Size__c}" style="Width=8%" styleClass="pb"/>
+            </apex:pageBlockTable>
+        </apex:pageBlock>  
+        <apex:pageBlock title="Exemptions" rendered="{!showExemp}" >
+            <apex:repeat value="{!Exemp}" var="e" >
+                <apex:outputField value="{!e.Name}" /><br></br>
+            </apex:repeat>
+        </apex:pageBlock>
+        <apex:pageBlock title="Manufacturing Information" rendered="{!showPrt}">
+            <apex:pageBlockTable value="{!prt}" columns="6" var="m" style="Width=66%" rendered="{!prt!=null}">
+                <apex:column value="{!m.Plating_grid_material__c}" style="Width=11%" styleClass="pb">
+                    <apex:facet name="header">
+                        Terminal plating / grid <br/>
+                        array material
+                    </apex:facet>
+                </apex:column>
+                <apex:column value="{!m.Base_Alloy__c}" style="Width=11%" styleClass="pb">
+                    <apex:facet name="header">
+                        Terminal <br/>
+                        base alloy
+                    </apex:facet>
+                </apex:column>
+                <apex:column value="{!m.MSL_Rating__c}" style="Width=11%" styleClass="pb">
+                    <apex:facet name="header">
+                        J-STD-020- <br/>
+                        MSL rating
+                    </apex:facet>
+                </apex:column>
+                <apex:column value="{!m.Peak_process_Body_Temp__c}" style="Width=11%" styleClass="pb">
+                    <apex:facet name="header">
+                        Peak process body <br/>
+                        temperature
+                    </apex:facet>
+                </apex:column>
+                <apex:column value="{!m.Max_Reflow_Time__c}" style="Width=11%" styleClass="pb">
+                    <apex:facet name="header">
+                        Maximum time at peak <br/>
+                        temperature
+                    </apex:facet>
+                </apex:column>
+                <apex:column value="{!m.Number_of_reflow_Cycles__c}" style="Width=11%" styleClass="pb">
+                    <apex:facet name="header">
+                        Number of reflow <br/>
+                        cycles
+                    </apex:facet>
+                </apex:column>
+            </apex:pageBlockTable>
+        </apex:pageBlock>
+        <apex:pageBlock title="Substance Information" >
+            <table class="tbl1" width="100%">
+                <tr class="tr1">
+                    <th class="pb">Homogeneous material</th>
+                    <th class="pb">Substance type</th>
+                    <th class="pb">Substance group</th>
+                    <th class="pb">Substance name</th>
+                    <th class="pb">CAS number&nbsp;&nbsp;&nbsp;</th>
+                    <th class="pb">PPM<br/>of substance</th>
+                    <th class="pb">&nbsp;&nbsp;&nbsp;Percentage (by weight)<br/>&nbsp;&nbsp;&nbsp;of substance</th>
+                    <th align="right">&nbsp;&nbsp;&nbsp;Substance weight<br/>&nbsp;&nbsp;&nbsp;(mg)</th>
+                </tr>
+            <apex:repeat value="{!wrap}" var="w">
+                <apex:repeat value="{!w.homo}" var="h">
+                    <tr class="tr1">
+                        <td class="td1"><apex:outputField value="{!h.homoInfo.Homogenous_material__c}"/></td>
+                        <td class="td1"><apex:outputField value="{!h.homoInfo.Substance_type__c}"/></td>
+                        <td class="td1"><apex:outputField value="{!h.homoInfo.Substance_group__c}"/></td>
+                        <td class="td1"><apex:outputField value="{!h.homoInfo.Substance_name__c}"/></td>
+                        <td class="td1"><apex:outputField value="{!h.homoInfo.CAS_Number__c}"/> </td>
+                        <td class="td1" align="right"><apex:outputField value="{!h.homoInfo.PPM_of_substance__c}"/></td>
+                        <td class="td1" align="right"><apex:outputField value="{!h.homoInfo.Concentration_Percent__c}"/></td>
+                        <td class="td1" align="right"><apex:outputText value="{!h.weight}" /><!-- rendered="{!NOT(h.isINk)}"/><apex:outputText value="{!h.weightExpForm}"  rendered="{!h.isINk}"/> --></td>
+                    </tr>
+                </apex:repeat>
+                <tr>
+                    <td colspan="7" class="td1" align="right">
+                        <b>Weight of {!w.homo[0].homoInfo.Homogenous_material__c}</b>
+                    </td>
+                    <td class="td1" style="float:right;" >
+                        <b><apex:outputText value="{!w.totalWeight}" /><!-- rendered="{!NOT(w.isINk)}"/><apex:outputText value="{!w.weightExpForm}" rendered="{!w.isINk}" /> --></b>
+                    </td>
+                </tr>
+            </apex:repeat>
+            </table>
+        </apex:pageBlock>
+        
+        <br></br><br></br><hr></hr><br></br>
+        <div>
+            <div style="padding-left:40%;font-weight:bold;font-size:14px;">China RoHS</div>
+            <div style="font-size:14px;"><h1>People's Republic of China: SJ/T 11364-2014, Marking for the restriction of the use of hazardous substances in electrical and electronic products</h1></div><br></br>
+            <div>
+              <apex:outputText value="{!str4}" escape="false"></apex:outputText>
+              <apex:outputText value="{!str1}" escape="false"></apex:outputText>
+              <div style="padding-left:41%"><apex:image id="ch" value="{!$Resource.MDD_Declaration1}" width="132" height="115" alt="China RoHS lead-free"/></div>
+            <br></br><br></br>
+              <apex:outputText value="{!str2}" escape="false"></apex:outputText>
+              <div style="padding-left:41%"><apex:image id="ch1" value="{!$Resource.MDD_Declaration2}" width="132" height="115" alt="China RoHS lead-reduced"/></div>
+            <br></br><br></br>
+              <apex:outputText value="{!str3}" escape="false"></apex:outputText>
+            </div>
+            <!--<div style="padding-left:20%;font-weight:bold;font-size:14px;">People&#39;s Republic of China: SJ/T 11364-2013, Marking for Control of Pollution Caused by</div>
+            <div style="padding-left:35%;font-weight:bold;font-size:14px;">Electronic and Electrical Products</div>
+            <p>Initially, the European Union, through its RoHS Directive, restricted the presence
+            of the RoHS substances in certain products.  Subsequently, the People&#39;s Republic of China
+            implemented its own requirements regarding RoHS substances.</p>
+            <p>GLOBALFOUNDRIES customers may be obligated to comply with the marking obligations contained in China&#39;s
+            SJ/T 11364-2013, <em>Marking for Control of Pollution Caused by Electronic and Electrical Products</em>
+            (the &#34;China Marking Standard&#34;).  Long before March 1, 2007, GLOBALFOUNDRIES provided its customers with
+            the information necessary to address those marking obligations, through, among other things,
+            GLOBALFOUNDRIES responses to customer material declaration and survey requests, as well as through GLOBALFOUNDRIES 
+            RoHS Certificates, which clearly identify the RoHS substances that may be present in GLOBALFOUNDRIES 
+            Lead-Free, Lead-Reduced, and Leaded products.</p>
+            <p>In an effort to centrally locate pertinent information, GLOBALFOUNDRIES provides the following, which
+            applies to all of its Lead-Free, Lead-Reduced, and Leaded semiconductor products.</p>
+            
+            
+            <p style="text-align:center; font-size:1.0em;">
+            <span lang="zh">无铅产品</span> (Lead-Free Semiconductor Products)</p><hr></hr>
+            <table class="tbl" style="width:100%;">
+            <tr class="tr">有害物质表 (Hazardous Substances Table)</tr>
+            <tr>
+              <td class="td">产品 <br></br>(Product)</td>
+              <td class="td">铅 <br></br>Lead<br></br>(Pb)</td>
+              <td class="td">汞 <br></br>Mercury<br></br>(Hg)</td>
+              <td class="td">镉 <br></br>Cadmium<br></br>(Cd)</td>
+              <td class="td">六价铬 Hexavalent<br></br> Chromium<br></br>(Cr(VI))</td>
+              <td class="td">多溴联笨 <br></br>Polybrominated biphenyls<br></br>(PBB)</td>
+              <td class="td">多溴二笨醚 Polybrominated<br></br> diphenyl ethers<br></br>(PBDE)</td>
+            </tr>
+            <tbody>
+            <tr class="tr">
+              <td class="td" >无铅半导体产品 (Lead-Free Semiconductor Products)</td>
+              <td class="td">Ο</td><td class="td">Ο</td><td class="td">Ο</td><td class="td">Ο</td><td class="td">Ο</td><td class="td">Ο</td>
+            </tr>
+            <tr><td class="tr"  colspan="7">This table is drafted according to SJ/T 11364.</td></tr>
+            </tbody>
+            </table>
+            <p><span lang="zh">"Ο" 表示这种有害物质在低铅和含铅产品当中的所有均质材料中的含量低于GB/T26572的限量要求.</span><br></br>
+            (&#34;Ο&#34;indicates that this hazardous substance, for all homogeneous materials for
+            Lead-Free products, is less than the limit requirement in GB/T26572.)</p>
+            <p><span lang="zh">与GLOBALFOUNDRIES 的无铅产品相应的中国标识标准的标志为</span>
+            (the corresponding China Marking Standard logo for GLOBALFOUNDRIES Lead-Free products is):</p>
+            <div style="padding-left:41%"><apex:image id="ch" value="{!$Resource.MDD_Declaration1}" width="132" height="115" alt="China RoHS lead-free"/></div>
+            <br></br><br></br>
+            
+            <p style="text-align:center; font-size:1.0em;"><span lang="zh">低铅和含铅产品</span>
+            (Lead-Reduced and Leaded Semiconductor Products)</p><hr></hr>
+            <table class="tbl">
+            <tr class="tr" >有害物质表 (Hazardous Substances Table)</tr>
+            <tr class="tr">
+            <td class="td">产品 (Product)</td>
+            <td class="td">铅 Lead<br></br>(Pb)</td>
+            <td class="td">汞 Mercury<br></br>(Hg)</td>
+            <td class="td">镉 Cadmium<br></br>(Cd)</td>
+            <td class="td">六价铬 Hexavalent Chromium<br></br>(Cr(VI))</td>
+            <td class="td">多溴联笨 Polybrominated biphenyls<br></br>(PBB)</td>
+            <td class="td">多溴二笨醚 Polybrominated diphenyl ethers<br></br>(PBDE)</td>
+            </tr>
+            <tr class="tr">
+            <td class="td">无铅半导体产品 (Lead-Reduced and Leaded Semiconductor Products)</td>
+            <td class="td">Χ</td><td class="td">Ο</td><td class="td">Ο</td><td class="td">Ο</td><td class="td">Ο</td><td class="td">Ο</td>
+            </tr>
+            <tr class="tr"><td colspan="7">This table is drafted according to SJ/T 11364.</td></tr>
+            </table>
+            <p><span lang="zh">&#34;Ο&#34; 表示这种有害物质在低铅和含铅产品当中的所有均质材料中的含量低于GB/T26572的限量要求.</span><br></br>
+            ("Ο" indicates that this hazardous substance, for all homogeneous materials for
+            Lead-Reduced and Leaded products, is less than the limit requirement in GB/T26572.)</p>
+            <p><span lang="zh">"Χ" 表示这种有害物质在低铅和含铅产品当中至少一种均质材料中的含量高于GB/T26572的限量要求.</span><br></br>
+            ("Χ" indicates that this hazardous substance is contained in at least one of the
+            homogeneous materials for these products, greater than the limit requirement in GB/T26572.)</p>
+            <p><span lang="zh">与GLOBALFOUNDRIES 的低铅和含铅产品相应的中国标识标准的标志和环保使用期限(EPUP)为</span>
+            (the corresponding China Marking Standard logo and environmental protection use period ("EPUP")
+            for GLOBALFOUNDRIES Lead-Reduced and Leaded Semicondustor products is):</p>
+            <div style="padding-left:41%"><apex:image id="ch1" value="{!$Resource.MDD_Declaration2}" width="132" height="115" alt="China RoHS lead-reduced"/></div>
+            <br></br><br></br>
+            
+            <div style="padding-left:45%"><h5 style="text-align: center;">General</h5></div>
+            <p>The EPUP set forth here assumes that a semiconductor product will be used under
+            normal conditions in accordance with applicable operating instructions.</p>
+            <p>The 20 year EPUP for Lead-Reduced and Leaded products is an estimate only, which GLOBALFOUNDRIES selects
+            based on its knowledge of the technical aspects of its Lead-Reduced and Leaded products. GLOBALFOUNDRIES is
+            unaware of any experimental method that would assist in accurately identifying the EPUP for such
+            products.</p>
+            <p>The definition of &#34;homogeneous materials&#34;under GB/T26572 is different than the
+            European Union&#39;s definition of that term with respect to the RoHS Directive. However, for purposes
+            of the information in this China RoHS section of the GLOBALFOUNDRIES Material Declaration, GLOBALFOUNDRIES assumes that
+            the definitions have equivalent meanings.</p>-->
+        </div>
+    </apex:form>
+</apex:page>

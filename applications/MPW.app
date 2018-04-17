@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomApplication xmlns="http://soap.sforce.com/2006/04/metadata">
+    <defaultLandingTab>standard-home</defaultLandingTab>
+    <formFactors>Large</formFactors>
+    <label>MPW</label>
+    <tab>Maintain_MPW_Schedule</tab>
+    <tab>View_MPW_Schedule</tab>
+    <tab>Search_MPW_Form</tab>
+    <tab>Compare_Forms</tab>
+    <tab>Internal_Guideline_Factor</tab>
+    <tab>Customer_Guideline_Factor</tab>
+    <tab>MPW_Keyword_Config__c</tab>
+    <tab>MPW_Geometry_Mapping__c</tab>
+    <tab>MPW_Tech_Module__c</tab>
+    <tab>MPW_Metal_Stack_Configuration__c</tab>
+    <tab>MPW_Process</tab>
+    <tab>MPW_Process_Group</tab>
+    <tab>MPW_Process_DM</tab>
+    <tab>MPW_SRAM_Configuration__c</tab>
+    <tab>MPW_Approval_Matrix</tab>
+    <tab>MPW_Notes__c</tab>
+    <tab>MPW_Reservation__c</tab>
+    <tab>MPW_ERP_PA_Code__c</tab>
+    <tab>MPW_Train_Account__c</tab>
+    <tab>MPW_Extra_Die__c</tab>
+    <tab>MPW_Change_Request__c</tab>
+    <tab>Internal_Charge_Out_Report</tab>
+    <tab>Wavier_Collaborator__c</tab>
+    <tab>MPW_Lot_Assignments</tab>
+    <tab>Reticle_Type</tab>
+</CustomApplication>

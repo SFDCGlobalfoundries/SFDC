@@ -1,0 +1,251 @@
+<!--
+    Author: Zymark Ambat
+    Description: This page is used for SCMCDBController.
+    History: 
+        ZAmbat      09102014    - Page creation.
+        DBiswal     11272014    - Added columns to be displayed to customer user.
+        DBiswal     01192015    - Updated to show Account field to Portal Users as Read-Only.   
+        Prashant    01252016    - Updated logic for showHeader & sidebar for similar view for internal & external User.     
+-->
+        
+<apex:page id="SCMCDBVF" controller="SCMCDBController" showHeader="{!IF(isPortalUser, false, true)}" sidebar="{!IF(isPortalUser, false, true)}" tabstyle="PO_Lead_Time__c">    
+    <style>
+        .colDiv {
+            float: left;            
+        } 
+         
+        .hand {
+            cursor: pointer; 
+            cursor: hand;
+        } 
+    </style>
+    <apex:includeScript value="{!URLFOR($Resource.jquery, 'js/jquery-1.8.3.js')}" />
+    <script>
+        function disableDateField(targetFieldId) {
+            document.getElementById("SCMCDBVF:form1:blkFilters:secFilters:" + targetFieldId).value = '';
+            return true;
+        }
+        
+        function openReport(reportURL) {
+            setTimeout(function() {
+                    window.open(reportURL, "_blank");
+                    return false;
+                }, 5000
+            );
+        }
+    </script>
+    
+    <apex:sectionHeader title="" subtitle="Forecast Fab Cycle Time" help="https://help.salesforce.com/htviewhelpdoc?id=co_edit.htm&siteLang=en_US" rendered="{!IF(isPortalUser, false, true)}" />
+    <apex:pageMessages id="errorSection" />
+    
+    <apex:form id="form1">
+        <apex:actionfunction name="sort" action="{!retrieveSCMCDB}" rerender="blkResults" status="status">     
+            <apex:param name="sortfield" assignTo="{!sortField}" value="" />
+            <apex:param name="sorttype" assignTo="{!sortType}" value="" />            
+        </apex:actionfunction>
+        
+        <apex:pageBlock id="blkFilters" title="Information">
+            <apex:pageBlockButtons location="both">
+                <apex:commandButton value="Search" action="{!retrieveSCMCDB}" status="status1" />
+                <apex:commandButton value="Clear" action="{!clear}" />
+            </apex:pageBlockButtons>
+            <apex:outputText rendered="{!IF(isPortalUser, true, false)}">
+                Fab Cycletime guide does not apply to Turnkey and Bump-Test-Facility. Cycletime guide is subjected to minimum order quantity. Please contact your local Customer Service Representative for PO cutoff and order commitment.
+            </apex:outputText>
+            <apex:pageBlockSection id="secFilters" title="Filters" columns="2" collapsible="false">
+                <apex:pageBlockSectionItem id="siAccount" rendered="{!IF(NOT(isPortalUser), true, false)}">
+                    <apex:outputLabel value="{!$ObjectType.PO_Lead_Time__c.fields.Account__c.label}" for="fldAccount" />
+                    <apex:inputText id="fldAccount" value="{!account}" />
+                </apex:pageBlockSectionItem>
+                <!-- DBiswal 01192015 -->
+                <apex:pageBlockSectionItem rendered="{!isPortalUser}">
+                    <apex:outputLabel value="Account" for="accountPortalUser" />
+                    <apex:outputText id="accountPortalUser" value="{!account}" rendered="{!isPortalUser}" />
+                </apex:pageBlockSectionItem>
+                <apex:pageBlockSectionItem id="shortNameSectionItem" rendered="{!isPortalUser}">
+                    <apex:outputLabel value="Short Name" for="shortName" />
+                    <apex:outputText id="shortName" value="{!mapAccountShortName[account]}" rendered="{!isPortalUser}" />
+                </apex:pageBlockSectionItem>
+                <apex:pageBlockSectionItem rendered="{!NOT(isPortalUser)}" />
+                <apex:inputField value="{!scmcdb.Base_Device__c}"/>
+                <apex:pageBlockSectionItem >
+                    <apex:outputLabel value="DPML" for="dpmlPicklist" />
+                    <apex:selectList size="1" value="{!dpmlSelected}" id="dpmlPicklist">
+                        <apex:selectOptions value="{!DPMLOptions}" />
+                    </apex:selectList>
+                </apex:pageBlockSectionItem>
+                <apex:inputField value="{!scmcdb.Fab__c}"/>
+                <apex:inputField value="{!scmcdb.Geometry__c}" rendered="{!IF(NOT(isPortalUser), true, false)}" />
+                <apex:inputField id="fldPoRaiseDate" value="{!scmcdb.PO_Raise_Date__c}" onchange="return disableDateField('fldGoodsReceivedDate');" onkeypress="return disableDateField('fldGoodsReceivedDate');" rendered="{!IF(NOT(isPortalUser), true, false)}" />
+                <apex:inputField id="fldGoodsReceivedDate" value="{!scmcdb.Goods_Received_Date__c}" onchange="return disableDateField('fldPoRaiseDate');" onkeypress="return disableDateField('fldPoRaiseDate');" rendered="{!IF(NOT(isPortalUser), true, false)}" />
+            </apex:pageBlockSection>
+        </apex:pageBlock>
+        
+        <apex:pageBlock id="blkResults" title="Search Results" rendered="{!showResults}">
+            <apex:pageBlockButtons location="both">
+                <apex:commandButton value="Export" action="{!exportCsvFile}" disabled="{!IF(PoLeadTimeRecords.size <= 0, true, false)}" rendered="{!OR(isPortalUser, NOT(isExportBatch))}" />
+                <apex:commandButton value="Export" action="{!processBatch}" disabled="{!IF(PoLeadTimeRecords.size <= 0, true, false)}" rendered="{!AND(NOT(isPortalUser), isExportBatch)}" />
+                <apex:commandButton value="First" action="{!first}" disabled="{!NOT(HasPrevious)}"  status="status2" />
+                <apex:commandButton value="Prev" action="{!previous}" disabled="{!NOT(HasPrevious)}" status="status2" />
+                <apex:commandButton value="Next" action="{!next}" disabled="{!NOT(HasNext)}" status="status2" />
+                <apex:commandButton value="Last" action="{!last}" disabled="{!NOT(HasNext)}" status="status2" />
+                <apex:actionStatus id="status" startText="Please wait..."/>
+            </apex:pageBlockButtons>
+            
+            <apex:outputText value="{!$Label.PO_Lead_Time_Export_Message}" rendered="{!isExportBatch}" style="color: red; font-weight: bold;" />
+            <apex:outputText value="{!$Label.PO_Lead_Time_Export_Email_Message}" rendered="{!hasClickedExportBatch}" style="color: red; font-weight: bold;" />
+            
+            <apex:pageBlockTable value="{!PoLeadTimeRecords}" rendered="{!IF(PoLeadTimeRecords.size > 0, true, false)}" var="r">
+                <apex:column value="{!r.account}" rendered="{!NOT(isPortalUser)}">
+                    <apex:facet name="header">Account</apex:facet>
+                </apex:column>              
+                <apex:column value="{!r.account}" rendered="{!isPortalUser}">
+                    <apex:facet name="header">
+                        <apex:outputPanel layout="block">
+                            <apex:outputLabel value="Account" styleClass="hand colDiv" onclick="sort('Account__c','{!IF(sortField != 'Account__c', 'ASC', IF(sortType == 'ASC', 'DESC', 'ASC'))}');"/>
+                            <apex:image value="/img/sort_asc_arrow.gif" rendered="{!AND(sortField == 'Account__c', sortType == 'ASC')}" styleClass="colDiv" />
+                            <apex:image value="/img/sort_desc_arrow.gif" rendered="{!AND(sortField == 'Account__c', sortType == 'DESC')}" styleClass="colDiv" />
+                        </apex:outputPanel>
+                    </apex:facet>
+                </apex:column>
+                <apex:column value="{!r.accountShortName}" rendered="{!NOT(isPortalUser)}">
+                    <apex:facet name="header">
+                        <apex:outputPanel layout="block">
+                            <apex:outputLabel value="Short Name" styleClass="hand colDiv" onclick="sort('Device_Account_Short_Name__c','{!IF(sortField != 'Device_Account_Short_Name__c', 'ASC', IF(sortType == 'ASC', 'DESC', 'ASC'))}');"/>
+                            <apex:image value="/img/sort_asc_arrow.gif" rendered="{!AND(sortField == 'Device_Account_Short_Name__c', sortType == 'ASC')}" styleClass="colDiv"/>
+                            <apex:image value="/img/sort_desc_arrow.gif" rendered="{!AND(sortField == 'Device_Account_Short_Name__c', sortType == 'DESC')}" styleClass="colDiv"/>
+                        </apex:outputPanel>
+                    </apex:facet>
+                </apex:column>
+                <apex:column value="{!r.device}">
+                    <apex:facet name="header">
+                        <apex:outputPanel layout="block">
+                            <apex:outputLabel value="Device" styleClass="hand colDiv" onclick="sort('Base_Device__c','{!IF(sortField != 'Base_Device__c', 'ASC', IF(sortType == 'ASC', 'DESC', 'ASC'))}');"/>
+                            <apex:image value="/img/sort_asc_arrow.gif" rendered="{!AND(sortField == 'Base_Device__c', sortType == 'ASC')}" styleClass="colDiv" />
+                            <apex:image value="/img/sort_desc_arrow.gif" rendered="{!AND(sortField == 'Base_Device__c', sortType == 'DESC')}" styleClass="colDiv" />
+                        </apex:outputPanel>
+                    </apex:facet>
+                </apex:column>
+                <apex:column value="{!r.fab}">
+                    <apex:facet name="header">
+                        <apex:outputPanel layout="block">
+                            <apex:outputLabel value="Fab" styleClass="hand colDiv" onclick="sort('Fab_Value__c','{!IF(sortField != 'Fab_Value__c', 'ASC', IF(sortType == 'ASC', 'DESC', 'ASC'))}');"/>
+                            <apex:image value="/img/sort_asc_arrow.gif" rendered="{!AND(sortField == 'Fab_Value__c', sortType == 'ASC')}" styleClass="colDiv"/>
+                            <apex:image value="/img/sort_desc_arrow.gif" rendered="{!AND(sortField == 'Fab_Value__c', sortType == 'DESC')}" styleClass="colDiv"/>
+                        </apex:outputPanel>
+                    </apex:facet>
+                </apex:column>
+                <apex:column value="{!r.processId}">
+                    <apex:facet name="header">Process Id</apex:facet>
+                </apex:column>
+                <apex:column value="{!r.geometry}">
+                    <apex:facet name="header">
+                        <apex:outputPanel layout="block">
+                            <apex:outputLabel value="Geometry" styleClass="hand colDiv" onclick="sort('Geometry_Value__c','{!IF(sortField != 'Geometry_Value__c', 'ASC', IF(sortType == 'ASC', 'DESC', 'ASC'))}');"/>
+                            <apex:image value="/img/sort_asc_arrow.gif" rendered="{!AND(sortField == 'Geometry_Value__c', sortType == 'ASC')}" styleClass="colDiv"/>
+                            <apex:image value="/img/sort_desc_arrow.gif" rendered="{!AND(sortField == 'Geometry_Value__c', sortType == 'DESC')}" styleClass="colDiv"/>
+                        </apex:outputPanel>
+                    </apex:facet>
+                </apex:column>
+                <apex:column value="{!r.dpml}" style="text-align: center;" rendered="{!NOT(isPortalUser)}">
+                    <apex:facet name="header">DPML</apex:facet>
+                </apex:column>
+                <apex:column value="{!r.mlCount}" style="text-align: center;" rendered="{!NOT(isPortalUser)}">
+                    <apex:facet name="header">
+                        <apex:outputPanel layout="block">
+                            <apex:outputLabel value="ML Count" styleClass="hand colDiv" onclick="sort('ML_Count_FEOL_BEOL__c','{!IF(sortField != 'ML_Count_FEOL_BEOL__c', 'ASC', IF(sortType == 'ASC', 'DESC', 'ASC'))}');"/>
+                            <apex:image value="/img/sort_asc_arrow.gif" rendered="{!AND(sortField == 'ML_Count_FEOL_BEOL__c', sortType == 'ASC')}" styleClass="colDiv"/>
+                            <apex:image value="/img/sort_desc_arrow.gif" rendered="{!AND(sortField == 'ML_Count_FEOL_BEOL__c', sortType == 'DESC')}" styleClass="colDiv"/>
+                        </apex:outputPanel>
+                    </apex:facet>
+                </apex:column>
+                <apex:column value="{!r.poLeadTime}" style="text-align: center;" rendered="{!NOT(isPortalUser)}">
+                    <apex:facet name="header">Fab Queue Time</apex:facet>
+                </apex:column>
+                <apex:column value="{!r.pfAdder}" style="text-align: center;" rendered="{!NOT(isPortalUser)}">
+                    <apex:facet name="header">PF Adder</apex:facet>
+                </apex:column>
+                <apex:column value="{!r.totalLeadTime}" style="text-align: center;" rendered="{!NOT(isPortalUser)}">
+                    <apex:facet name="header">Total Lead Time</apex:facet>
+                </apex:column>
+                
+                  <!-- 11272014 DBiswal - Added new fields to be displayed for customer users -->
+                <apex:column value="{!r.standardCurrQtr}" style="text-align: center;" rendered="{!AND(isPortalUser, dpmlSelected == 'Standard')}">
+                    <apex:facet name="header">Standard DPML<br/>CurrQtr</apex:facet>
+                </apex:column>
+                <apex:column value="{!r.standardCurrQtr1}" style="text-align: center;" rendered="{!AND(isPortalUser, dpmlSelected == 'Standard')}">
+                    <apex:facet name="header">Standard DPML<br/>CurrQtr+1</apex:facet>
+                </apex:column>
+                <apex:column value="{!r.standardCurrQtr2}" style="text-align: center;" rendered="{!AND(isPortalUser, dpmlSelected == 'Standard')}">
+                    <apex:facet name="header">Standard DPML<br/>CurrQtr+2</apex:facet>
+                </apex:column>
+                <apex:column value="{!r.standardCurrQtr3}" style="text-align: center;" rendered="{!AND(isPortalUser, dpmlSelected == 'Standard')}">
+                    <apex:facet name="header">Standard DPML <br/> CurrQtr+3</apex:facet>
+                </apex:column>
+                
+                <apex:column value="{!r.bulletLE12CurrQtr}" style="text-align: center;" rendered="{!AND(isPortalUser, dpmlSelected == 'BulletLE12')}">
+                    <apex:facet name="header">Bullet DPML <br/> (&lt;=12w) CurrQtr</apex:facet>
+                </apex:column>
+                <apex:column value="{!r.bulletLE12CurrQtr1}" style="text-align: center;" rendered="{!AND(isPortalUser, dpmlSelected == 'BulletLE12')}">
+                    <apex:facet name="header">Bullet DPML <br/> (&lt;=12w) CurrQtr+1</apex:facet>
+                </apex:column>
+                <apex:column value="{!r.bulletLE12CurrQtr2}" style="text-align: center;" rendered="{!AND(isPortalUser, dpmlSelected == 'BulletLE12')}">
+                    <apex:facet name="header">Bullet DPML <br/> (&lt;=12w) CurrQtr+2</apex:facet>
+                </apex:column>
+                <apex:column value="{!r.bulletLE12CurrQtr3}" style="text-align: center;" rendered="{!AND(isPortalUser, dpmlSelected == 'BulletLE12')}">
+                    <apex:facet name="header">Bullet DPML <br/> (&lt;=12w) CurrQtr+3</apex:facet>
+                </apex:column>
+                <apex:column value="{!r.bulletG12CurrQtr}" style="text-align: center;" rendered="{!AND(isPortalUser, dpmlSelected == 'BulletG12')}">
+                    <apex:facet name="header">Bullet DPML <br/> (>12w) CurrQtr</apex:facet>
+                </apex:column>
+                <apex:column value="{!r.bulletG12CurrQtr1}" style="text-align: center;" rendered="{!AND(isPortalUser, dpmlSelected == 'BulletG12')}">
+                    <apex:facet name="header">Bullet DPML <br/> (>12w) CurrQtr+1</apex:facet>
+                </apex:column>
+                <apex:column value="{!r.bulletG12CurrQtr2}" style="text-align: center;" rendered="{!AND(isPortalUser, dpmlSelected == 'BulletG12')}">
+                    <apex:facet name="header">Bullet DPML <br/> (>12w) CurrQtr+2</apex:facet>
+                </apex:column>
+                <apex:column value="{!r.bulletG12CurrQtr3}" style="text-align: center;" rendered="{!AND(isPortalUser, dpmlSelected == 'BulletG12')}">
+                    <apex:facet name="header">Bullet DPML <br/> (>12w) CurrQtr+3</apex:facet>
+                </apex:column>
+                
+                <apex:column value="{!r.hotLE12CurrQtr}" style="text-align: center;" rendered="{!AND(isPortalUser, dpmlSelected == 'HotLE12')}">
+                    <apex:facet name="header">Hot DPML <br/> (&lt;=12w) CurrQtr</apex:facet>
+                </apex:column>
+                <apex:column value="{!r.hotLE12CurrQtr1}" style="text-align: center;" rendered="{!AND(isPortalUser, dpmlSelected == 'HotLE12')}">
+                    <apex:facet name="header">Hot DPML <br/> (&lt;=12w) CurrQtr+1</apex:facet>
+                </apex:column>
+                <apex:column value="{!r.hotLE12CurrQtr2}" style="text-align: center;" rendered="{!AND(isPortalUser, dpmlSelected == 'HotLE12')}">
+                    <apex:facet name="header">Hot DPML <br/> (&lt;=12w) CurrQtr+2</apex:facet>
+                </apex:column>
+                <apex:column value="{!r.hotLE12CurrQtr3}" style="text-align: center;" rendered="{!AND(isPortalUser, dpmlSelected == 'HotLE12')}">
+                    <apex:facet name="header">Hot DPML <br/> (&lt;=12w) CurrQtr+3</apex:facet>
+                </apex:column>
+                <apex:column value="{!r.hotG12CurrQtr}" style="text-align: center;" rendered="{!AND(isPortalUser, dpmlSelected == 'HotG12')}">
+                    <apex:facet name="header">Hot DPML <br/> (>12w) CurrQtr</apex:facet>
+                </apex:column>
+                <apex:column value="{!r.hotG12CurrQtr1}" style="text-align: center;" rendered="{!AND(isPortalUser, dpmlSelected == 'HotG12')}">
+                    <apex:facet name="header">Hot DPML <br/> (>12w) CurrQtr+1</apex:facet>
+                </apex:column>
+                <apex:column value="{!r.hotG12CurrQtr2}" style="text-align: center;" rendered="{!AND(isPortalUser, dpmlSelected == 'HotG12')}">
+                    <apex:facet name="header">Hot DPML <br/> (>12w) CurrQtr+2</apex:facet>
+                </apex:column>
+                <apex:column value="{!r.hotG12CurrQtr3}" style="text-align: center;" rendered="{!AND(isPortalUser, dpmlSelected == 'HotG12')}">
+                    <apex:facet name="header">Hot DPML <br/> (>12w) CurrQtr+3</apex:facet>
+                </apex:column>
+              
+                <apex:column value="{!MONTH(r.poRaiseDate)}/{!DAY(r.poRaiseDate)}/{!YEAR(r.poRaiseDate)}" rendered="{!NOT(isPortalUser)}">
+                    <apex:facet name="header">PO Raise Date</apex:facet>
+                </apex:column>
+                <apex:column value="{!MONTH(r.goodsReceivedDate)}/{!DAY(r.goodsReceivedDate)}/{!YEAR(r.goodsReceivedDate)}" rendered="{!NOT(isPortalUser)}">
+                    <apex:facet name="header">Wafer Ship Date</apex:facet>
+                </apex:column>
+                
+                <apex:facet name="footer">
+                    Showing Page # {!PageNo} of {!TotalPages} ({!TotalRecords} records)
+                </apex:facet>
+            </apex:pageBlockTable>
+            
+            <apex:outputText value="No record(s) retrieved." rendered="{!IF(PoLeadTimeRecords.size <= 0, true, false)}" />
+        </apex:pageBlock>
+    </apex:form>
+</apex:page>

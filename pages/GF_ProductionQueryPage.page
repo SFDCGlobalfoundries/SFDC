@@ -1,0 +1,774 @@
+<!--
+    @ Author        :- Navneet Rajput
+    @ Description   :- Page handles all operations of production query report
+    @ Date          :- 22 Nov 2013
+    @ Company       :- Congizant Technology
+    @ History       :- Updated on 19/20/21/ Feb 2014 by Navneet Rajput 
+  -->
+
+
+<apex:page controller="GF_DynamicQueryHandler" sidebar="false" showHeader="false" id="pageId">
+    <c:JqueryLibrary />  
+    <Style>
+        .ui-jqgrid-bdiv{
+                max-height: 260px;
+            }
+            .myBorder {
+                background-color:#f8f8f8;border-width:1px;
+                border-style:solid;
+                border-color:#CCCCCC;
+                border-radius:10px;
+            }
+            
+            .myButton {
+                background-color:#ff8930;
+                -moz-border-radius:7px;
+                -webkit-border-radius:7px;
+                border-radius:7px;
+                border:1px solid #c97e1c;
+                display:inline-block;
+                color:#ffffff;
+                font-family:Trebuchet MS;
+                font-size:11px;
+                font-weight:bold;
+            }        
+    </Style>
+      
+    <Script>
+    
+    /*
+    * @ Author      :- Navneet Rajput   
+    * @ Description :- Method calls Remote action to get dynamic query result from Data Warehouse
+    * @ Returns     :- Result (JSON String), even (staus of result)
+    * @ Company     :- Cognizant Technology Systems 
+    * @ Date        :- 23-09-2013
+    */
+        
+    var count = 1;    
+    var customerInitial='@@';
+        
+    function showDataInJqGrid(QTYPE,objOfQueryFlds){
+        blockPage();
+        Visualforce.remoting.timeout = 120000;
+        
+        if (QTYPE=='PRODUCTION_QUERY'){
+             setProductionQueryInputValues();
+             var toDate4Excel = document.getElementById("datepicker1").value;
+             var fromDate4Excel = document.getElementById("datepicker").value;
+             
+             if (isSelected=="WIPId"){
+                
+                 productionInputParams = production_FAB+','+production_InternalPartName+','+production_CustomerPartName+','
+                                       +production_LotId+','+production_LotType+','
+                                       +production_PO+','+production_PRF+','+counter+','+customerInitial;
+                 
+                map.put('GridDataDiv9',productionInputParams);
+                
+                Visualforce.remoting.Manager.invokeAction(
+                        '{!$RemoteAction.GF_DynamicQueryHandler.geProductionReport1}',
+                        production_FAB,
+                        production_InternalPartName,
+                        production_CustomerPartName,
+                        production_LotId,
+                        production_LotType,
+                        production_PO,
+                        production_PRF,
+                        counter,
+                        customerInitial,
+                        productionRequestHandler1
+                 ); 
+                 
+            }else if (isSelected=="w&fId"){
+               
+                productionInputParams = production_FAB+','+production_InternalPartName+','+production_CustomerPartName+','
+                                       +production_LotId+','+production_LotType+','+fromDate4Excel+','+toDate4Excel+','
+                                       +production_PO+','+production_PRF+','+counter+','+customerInitial;
+                                          
+                map.put('GridDataDiv10',productionInputParams);
+               
+                Visualforce.remoting.timeout = 120000;
+                
+                Visualforce.remoting.Manager.invokeAction(
+                        '{!$RemoteAction.GF_DynamicQueryHandler.geProductionReport2}',
+                        production_FAB,
+                        production_InternalPartName,
+                        production_CustomerPartName,
+                        production_LotId,
+                        production_LotType,
+                        fromDate,
+                        toDate,
+                        production_PO,
+                        production_PRF,
+                        counter,
+                        customerInitial,
+                        productionRequestHandler2
+                 );
+                 
+            }else if (isSelected=="lot&dtId"){
+            
+                productionInputParams = production_FAB+','+production_InternalPartName+','+production_CustomerPartName+','
+                                       +production_LotId+','+production_LotType+','+fromDate4Excel+','+toDate4Excel+','
+                                       +production_PO+','+production_PRF+','+counter+','+customerInitial;
+                                       
+                map.put('GridDataDiv11',productionInputParams);
+                
+                Visualforce.remoting.Manager.invokeAction(
+                        '{!$RemoteAction.GF_DynamicQueryHandler.geProductionReport3}',
+                        production_FAB,
+                        production_InternalPartName,
+                        production_CustomerPartName,
+                        production_LotId,
+                        production_LotType,
+                        fromDate,
+                        toDate,
+                        production_PO,
+                        production_PRF,
+                        counter,
+                        customerInitial,
+                        productionRequestHandler3
+                 );
+         }   
+
+     } else if (QTYPE=='PO_REPORT'){
+            productionInputParams = objOfQueryFlds.SO_NUMBER+','+objOfQueryFlds.CUST_ID;
+            
+            map.put('GridDataDiv1',productionInputParams);
+            Visualforce.remoting.Manager.invokeAction(
+                '{!$RemoteAction.GF_DynamicQueryHandler.getPoReport}',
+                objOfQueryFlds.SO_NUMBER,
+                objOfQueryFlds.CUST_ID,
+                objOfQueryFlds.PARAM1,
+                objOfQueryFlds.PARAM2, 
+                PORequestHandler
+            );
+        } else if (QTYPE=='IPN_REPORT'){
+            productionInputParams = objOfQueryFlds.ORG_ID+','+objOfQueryFlds.DEVICE_NAME;
+            map.put('GridDataDiv2',productionInputParams);
+            Visualforce.remoting.Manager.invokeAction(
+                '{!$RemoteAction.GF_DynamicQueryHandler.getIPNReport}',
+                objOfQueryFlds.ORG_ID,
+                objOfQueryFlds.DEVICE_NAME,
+                objOfQueryFlds.PARAM1,
+                objOfQueryFlds.PARAM2, 
+                IPNRequestHandler
+            );
+        } else if (QTYPE=='SHIP_DATE_REPORT'){
+            productionInputParams=objOfQueryFlds.SHIP_DATE+','+objOfQueryFlds.ORG_ID+','+objOfQueryFlds.CUSTOMER_ID;
+            map.put('GridDataDiv4',productionInputParams);
+            Visualforce.remoting.Manager.invokeAction(
+                '{!$RemoteAction.GF_DynamicQueryHandler.getShipDateReport}',
+                objOfQueryFlds.SHIP_DATE,
+                objOfQueryFlds.ORG_ID,
+                objOfQueryFlds.CUSTOMER_ID,
+                objOfQueryFlds.PARAM1,
+                objOfQueryFlds.PARAM2, 
+                shipDateRequestHandler
+            );
+        } else if (QTYPE=='WFR_ID_REPORT'){
+            productionInputParams=objOfQueryFlds.LOT_NUM+','+objOfQueryFlds.CUST_ID;
+            map.put('GridDataDiv5',productionInputParams);
+            Visualforce.remoting.Manager.invokeAction(
+                '{!$RemoteAction.GF_DynamicQueryHandler.getWfrReport}',
+                objOfQueryFlds.LOT_NUM,
+                objOfQueryFlds.CUST_ID,
+                objOfQueryFlds.PARAM1,
+                objOfQueryFlds.PARAM2, 
+                WfrRequestHandler
+            );
+            
+        } else if (QTYPE=='CURRENT_RUNSHEET_REPORT'){
+            productionInputParams=objOfQueryFlds.STG_HYPR0+','+objOfQueryFlds.STAGE_NAME+','+objOfQueryFlds.STG_HYPR1;
+            map.put('GridDataDiv6',productionInputParams);
+            Visualforce.remoting.Manager.invokeAction(
+                '{!$RemoteAction.GF_DynamicQueryHandler.getCurrentRunSheetReport}',
+                objOfQueryFlds.STG_HYPR0,
+                objOfQueryFlds.STAGE_NAME,
+                objOfQueryFlds.STG_HYPR1,
+                currentRunSheetHandler
+            );
+        } else if (QTYPE=='WAFER_START_REPORT'){
+        
+            productionInputParams=objOfQueryFlds.ACT_START_DATE+','+objOfQueryFlds.ORG_ID+','+objOfQueryFlds.PARAM1;
+            map.put('GridDataDiv7',productionInputParams);
+            
+            Visualforce.remoting.Manager.invokeAction(
+                '{!$RemoteAction.GF_DynamicQueryHandler.getWfrStartReport}',
+                objOfQueryFlds.ACT_START_DATE,
+                objOfQueryFlds.ORG_ID,
+                objOfQueryFlds.PARAM1,
+                waferStartHandler
+            );
+        } else if (QTYPE=='ACT_FAB_OUT_DATE_REPORT'){
+          
+            productionInputParams=objOfQueryFlds.ACT_FABOUT_DATE+','+objOfQueryFlds.ORG_ID+','+objOfQueryFlds.PARAM1;
+            map.put('GridDataDiv8',productionInputParams);
+            
+            Visualforce.remoting.Manager.invokeAction(
+                '{!$RemoteAction.GF_DynamicQueryHandler.getFabOutLocationReport}',
+                objOfQueryFlds.ACT_FABOUT_DATE,
+                objOfQueryFlds.ORG_ID,
+                objOfQueryFlds.PARAM1,
+                fabOutLocationHandler
+            );
+            
+        } else if (QTYPE=='EPRF_REPORT'){
+            productionInputParams=objOfQueryFlds.LOTID;
+            map.put('GridDataDiv3',productionInputParams);
+            Visualforce.remoting.Manager.invokeAction(
+                '{!$RemoteAction.GF_DynamicQueryHandler.getEPRFReport}',
+                objOfQueryFlds.LOTID,
+                eprfHandler
+            );
+        }
+  }     
+    
+  </script>
+    	<apex:outputPanel id="dummyPanel">
+          	
+        </apex:outputPanel>
+         
+        <apex:form id="formId">
+            <apex:actionFunction name="exportToExcel" 
+                                 action="{!exportToExcel}"
+                                 status="StatusId"/>
+                                 
+            <apex:actionFunction name="redirectToConverToExcel" 
+                                 action="{!redirectToConverToExcel}"/>
+            
+           <!-- Start: Commented by Hitesh for resolving access of data to Portal User. 
+           <apex:actionFunction name="exportToExcelOdata" action="{!exportToExcelReport}" oncomplete="reDirectToExport();">
+            	<apex:param name="para" assignTo="{!para}" value=""/>
+            </apex:actionFunction>
+            
+            <apex:actionFunction name="reDirectToExport" action="{!reDirectToExport}" rerender="dummyPanel"/>                    
+            End: Commented by Hitesh for resolving access of data to Portal User. -->
+           
+            <!-- Start: Code added by Hitesh in place of commented code -->
+           <apex:actionFunction name="exportToExcelOdata" action="{!exportToExcelReport}"  rerender="dummyPanel" oncomplete="unBlockPage();reDirectToExport();">
+                <apex:param name="para" assignTo="{!para}" value=""/>
+            </apex:actionFunction>
+            
+            <apex:actionFunction name="reDirectToExport" action="{!reDirectToExport}" />  
+            <!-- End: Code added by Hitesh in place of commented code  -->
+           
+            <!-- <apex:pageBlock title="" 
+                            id="innerPageBlkId">-->
+                            
+            <div id="innerPageBlkId" class="myBorder">                
+                            
+                <table width="100%" border="0" style="margin-top:3px;margin-left:1px;">
+                
+                    <tr>
+                        <td colspan="2">       
+                            <apex:outputLabel value="{!$Label.GF_DQ_FAB}" 
+                                              for="fId" 
+                                              id="label1" 
+                                              style="padding-right:10px;font-weight:normal;font-family: Arial,Helvetica,sans-serif;font-size: 12px;color:#222">
+                            </apex:outputLabel>
+                            
+                            <apex:selectList value="{!productQueryObj.prodQuery_Fab}" 
+                                             size="1" 
+                                             id="fId" 
+                                             style="width:155px">
+                                             
+                                <apex:selectOptions value="{!productQueryObj.fabList}"/>
+                                
+                            </apex:selectList>
+                        </td>
+                    
+                        <td colspan="2">
+                        
+                            <apex:outputLabel value="Lot ID" 
+                                              for="lotId" 
+                                              id="label2" 
+                                              style="padding-right:35px;font-weight:normal;font-family: Arial,Helvetica,sans-serif;font-size: 12px;color:#222">
+                            </apex:outputLabel>
+                            
+                            <apex:inputText value="{!productQueryObj.prodQuery_lotId}" 
+                                            id="lotId" style="width:150px">
+                            </apex:inputText>
+                                             
+                        </td>
+                        
+                        <td colspan="2">
+                            <apex:outputLabel value="{!$Label.GF_DQ_CUSTOMER_PART_NAME}" 
+                                              for="cpName" 
+                                              id="label3" 
+                                              style="padding-right:20px;font-weight:normal;font-family: Arial,Helvetica,sans-serif;font-size: 12px;color:#222"> 
+                            </apex:outputLabel>
+                            
+                            <apex:inputText value="{!productQueryObj.prodQuery_customerPartName}" 
+                                            id="cpName" 
+                                            style="width:150px">
+                            </apex:inputText>
+                        </td>
+                        
+                   </tr>
+                   
+                   <tr>
+                        <td colspan="2">        
+                            <apex:outputLabel value="{!$Label.GF_DQ_PO}" 
+                                              for="poId" 
+                                              id="label4" 
+                                              style="padding-right:52px;font-weight:normal;font-family: Arial,Helvetica,sans-serif;font-size: 12px;color:#222">
+                             </apex:outputLabel>
+                             
+                            <apex:inputText value="{!productQueryObj.prodQuery_po}" id="poId" 
+                                            style="width:150px">
+                            </apex:inputText>
+                        </td>
+                        
+                        <td colspan="2">
+                            <apex:outputLabel value="Lot Type" 
+                                              for="lotTypeId" 
+                                              id="label5" 
+                                              style="padding-right:20px;font-weight:normal;font-family: Arial,Helvetica,sans-serif;font-size: 12px;color:#222">
+                            </apex:outputLabel>
+                            
+                            <apex:selectList value="{!productQueryObj.prodQuery_LType}" 
+                                             size="1" 
+                                             id="lotTypeId" 
+                                             style="width:155px">
+                                             
+                                <apex:selectOptions value="{!productQueryObj.lotTypeList}"/>
+                                
+                            </apex:selectList> 
+                        </td>
+                        
+                        <td colspan="2">
+                            <apex:outputLabel value="{!$Label.GF_DQ_INTERNAL_PART_NAME}" 
+                                              for="IpId" 
+                                              id="label6" 
+                                              style="padding-right:35px;font-weight:normal;font-family: Arial,Helvetica,sans-serif;font-size: 12px;color:#222">
+                            </apex:outputLabel>
+                            
+                            <apex:inputText value="{!productQueryObj.prodQuery_InternalPartName}" 
+                                            id="IpId" 
+                                            style="width:150px">
+                            </apex:inputText>
+                        </td>
+                        
+                   </tr>
+                   
+                   <tr> 
+                        <td colspan="2">        
+                            <apex:outputLabel value="ePRF #" 
+                                              for="prfId" 
+                                              id="label7" 
+                                              style="padding-right:38px;font-weight:normal;font-family: Arial,Helvetica,sans-serif;font-size: 12px;color:#222">
+                            </apex:outputLabel>
+                            
+                            <apex:inputText value="{!productQueryObj.prodQuery_PRF}" 
+                                            id="prfId" 
+                                            style="width:150px">
+                            </apex:inputText>
+                            
+                        </td>
+                        
+                        <td colspan="2">
+                            
+                            <apex:outputLabel value="Customer" 
+                                              for="custId" 
+                                              id="custId" 
+                                              rendered="{!IF(($Profile.Name=='GF CSR'),true,false)}"
+                                                       
+                                              style="padding-right:10px;font-weight:normal;font-family: Arial,Helvetica,sans-serif;font-size: 12px;color:#222">
+                            </apex:outputLabel>
+                            
+                             <apex:selectList value="{!custName}" 
+                                                 size="1" 
+                                                 id="cstShortNameId"
+                                                 rendered="{!IF(($Profile.Name=='GF CSR'),true,false)}"
+
+                                                 onchange="setCustomerShortName(this.value);" 
+                                                 style="width:155px">
+                                                 
+                                    <apex:selectOptions value="{!customerList}"/>
+                                    
+                             </apex:selectList>
+                        </td>
+                        
+                        <td colspan="2">      
+                            <apex:outputLabel value="Date From" 
+                                              for="fromId" 
+                                              id="label9" 
+                                              style="padding-right:76px;font-weight:normal;font-family: Arial,Helvetica,sans-serif;font-size: 12px;color:#222">
+                            </apex:outputLabel>
+<!--                            <input type="date" value="{!productQueryObj.prodQuery_dateFrom}" id="fromId"/>-->
+                            <input type="text" 
+                                   placeholder="MM/DD/YYYY" 
+                                   id="datepicker"/>
+                        </td>
+                        
+                    </tr>
+                    
+                    <tr>    
+                        <td colspan="2">    
+                            <apex:outputPanel >   
+                                <input type="radio" 
+                                       name="radio1" 
+                                       value="{!productQueryObj.prodQuery_Wip}" 
+                                       onclick="disableDateFields(this.id);"  
+                                       id="WIPId" 
+                                       checked="checked"/>
+                            </apex:outputPanel>
+                            
+                            <apex:outputLabel value="Wip" 
+                                              for="WIPId" 
+                                              id="label10"
+                                              style="font-weight:normal;font-family: Arial,Helvetica,sans-serif;font-size: 12px;color:#222">
+                            </apex:outputLabel>
+                            
+                        </td>    
+                        
+                        <td colspan="2">
+                           
+                            <input type="radio" 
+                                   name="radio1" 
+                                   value="{!productQueryObj.prodQuery_lotStartDate}" 
+                                   onclick="disableDateFields(this.id);" 
+                                   id="lot&dtId"/>
+                                   
+                            <apex:outputLabel value="Lot Start Date" 
+                                              for="lotId" 
+                                              id="label11"
+                                              style="font-weight:normal;font-family: Arial,Helvetica,sans-serif;font-size: 12px;color:#222">
+                            </apex:outputLabel>
+                            
+                        </td>   
+                           
+                        <td colspan="2">   
+                            <apex:outputLabel value="Date To" 
+                                              for="toId" 
+                                              id="label12" 
+                                              style="padding-right:90px;font-weight:normal;font-family: Arial,Helvetica,sans-serif;font-size: 12px;color:#222">
+                            </apex:outputLabel>
+<!--                            <input type="date" value="{!productQueryObj.prodQuery_dateTo}" id="toId"/>-->
+                            <input type="text" 
+                                   placeholder="MM/DD/YYYY" 
+                                   id="datepicker1"/>
+                        </td>
+                        
+                     </tr>
+                     
+                     <tr>
+                         <td colspan="2">
+                             <apex:inputHidden />
+                         </td>
+                         
+                         <td colspan="2">
+                             
+                            <apex:outputPanel >
+                                <input type="radio" 
+                                       name="radio1" 
+                                       value="{!productQueryObj.prodQuery_WipAndShipDate}" 
+                                       onclick="disableDateFields(this.id);" 
+                                       id="w&fId"/>
+                                       
+                            </apex:outputPanel>  
+                             
+                            <apex:outputLabel value="Wip & Ship Date" 
+                                              for="w&fId" 
+                                              id="label8"
+                                              style="font-weight:normal;font-family: Arial,Helvetica,sans-serif;font-size: 12px;color:#222">
+                            </apex:outputLabel>
+                                
+                         </td>
+                         
+                         <td colspan="2">
+                         
+                            <apex:outputLabel value="Date Range" 
+                                              for="pdfId" 
+                                              id="pdfId" 
+                                              style="padding-right:72px;font-weight:normal;font-family: Arial,Helvetica,sans-serif;font-size: 12px;color:#222">
+                            </apex:outputLabel>
+                            
+                             <apex:selectList value="{!oldDate}" 
+                                                 size="1" 
+                                                 id="previousDateId"
+                                                 onchange="return setDate(this.value);" 
+                                                 style="width:155px">
+                                                 
+                                    <apex:selectOptions value="{!PreviousDate}"/>
+                                    
+                              </apex:selectList> 
+                            
+                          </td>  
+                     </tr>
+                       
+               </table>   
+
+                <apex:panelGrid columns="4">
+                        <input type="button" 
+                               value="Submit" 
+                               class="myButton" 
+                               style="margin-right:10px"
+                               id="submitId" 
+                               onclick="Finish();"/>
+                               
+                        <input type="button" 
+                               value="Clear" 
+                               class="myButton"
+                               style="margin-right:10px" 
+                               id="clearId" 
+                               onclick="resetAllFields('PRODUCTION');"/>
+                               
+                        <input type="button" 
+                               value="Advanced" 
+                               class="myButton"
+                               style="margin-right:10px" 
+                               id="showHideId" 
+                               onclick="Advance();"/>
+                               
+                        <input type="button" 
+                               value="Back" 
+                               class="myButton"
+                               style="margin-right:10px" 
+                               id="backBtnId" 
+                               onclick="productionBack();"/>
+                               
+                        <input type="button" 
+                               value="Export To Excel" 
+                               class="myButton" 
+                               id="expToexl" 
+                               onclick="validateExportToExcel('PRODUCTION');"/>
+                    
+                </apex:panelGrid>
+                    <div class="message errorM3" id="commonErrorId"></div>
+                    <!-- HIDDEN VARIABLES -->
+                    <apex:inputHidden value="{!gridParam}" id="gridInputParams"/>
+                    <apex:inputHidden value="{!gridName}" id="gridName"/>
+           <!-- </apex:pageBlock>-->
+           </div>           
+        </apex:form>
+    
+        <!--START OF PAGE BLOCK TABLE TO SHOW GRID DATA -->
+    <div id="outerPageBlkId" class="myBorder" style="margin-top:5px">   
+        <apex:form >
+               <table id="selectPageIndex">
+                  <tr>
+                        <td>
+                            Search: <input type="search" 
+                                           id="gridsearch" 
+                                           placeholder="Search" 
+                                           results="0" 
+                                           class="gridsearch" 
+                                           style="margin-right:285px"/>
+                                            
+                            <input type="button" 
+                                   value="|<<" 
+                                   class="myButton" 
+                                   id="fst" 
+                                   onclick="firstPage('PRODUCTION_QUERY');return false;"/> 
+                            
+                            <input type="button" 
+                                   value="<" 
+                                   class="myButton" 
+                                   id="previousId" 
+                                   onclick="Previous('PRODUCTION_QUERY');return false;"/>
+                            
+                            <input type="button" 
+                                   value=">" 
+                                   class="myButton" 
+                                   id="nextId" 
+                                   onclick="Next('PRODUCTION_QUERY');return false;"/>
+                                
+                            <input type="button" 
+                                   value=">>|" 
+                                   class="myButton" 
+                                   id="lst" 
+                                   onclick="lastPage('PRODUCTION_QUERY');return false;"/>
+                            
+                         </td>
+                          
+                         <td>  
+                              <div id ="pageIndexId" 
+                                   style="color:#ff8930;font-style:italic;font-weight:normal;padding-right:5px;font-size:90%">
+                              </div>
+                         </td>
+                         
+                         <td>
+                              <div id="selectPageIndexDivId">
+                                    <input type="text" 
+                                           id="selectedIndex" 
+                                           style="width:20px;height:15px;"/>
+                                           
+                                    <input type ="button" 
+                                           value ="GO"
+                                           class="myButton" 
+                                           onclick="selectedIdexPage();return false;" 
+                                           style="margin-left:5px"/>
+                              </div>             
+                        </td>
+                    </tr>
+               </table>
+        </apex:form>        
+        
+        <table style="margin: -5px 0px 0px 2px">
+           <tr>
+                <td>
+                    <table id="GridDataDiv9" border="1"></table>
+                    <table id="GridDataDiv10" border="1"></table>
+                    <table id="GridDataDiv11" border="1"></table> 
+                    <table id="GridDataDiv1" border="1"></table>
+                    <table id="GridDataDiv2" border="1"></table>
+                    <table id="GridDataDiv3" border="1"></table>
+                    <table id="GridDataDiv4" border="1"></table>
+                    <table id="GridDataDiv5" border="1"></table>
+                    <table id="GridDataDiv6" border="1"></table>
+                    <table id="GridDataDiv7" border="1"></table>
+                    <table id="GridDataDiv8" border="1"></table>
+                    
+                    <table id="newGridDataDiv" border="1"></table>
+                </td>
+           </tr>
+        </table>
+        <div id="GridComponentDiv"></div>
+    </div>
+     
+    <script>
+        var isSelected;  
+        var map = new HashMap();
+        var rCount;
+        
+        function unBlockPage(){
+            jQuery.unblockUI();
+        }   
+          
+          $(document).ready(function() {
+             rCount = '{!recordCount}';
+            //document.getElementById("datepicker").disabled=true;
+            //document.getElementById("datepicker1").disabled=true;
+            disableDateFields(document.getElementById("WIPId").id);  
+            $( "#datepicker").datepicker();
+            $( "#datepicker1").datepicker();
+            outerPblockId   = document.getElementById("outerPageBlkId");
+            advanceBtnId    = document.getElementById("showHideId");
+            backBtnId       = document.getElementById("backBtnId");   
+            errorDivId      = document.getElementById("commonErrorId");
+            exportToExcelId = document.getElementById("expToexl");
+            
+            // Follwoing variables are used for custom pagination
+            nextPageId      = document.getElementById("nextId");
+            previousPageId  = document.getElementById("previousId");
+            first           = document.getElementById("fst");
+            last            = document.getElementById("lst");
+            pageNumber      = document.getElementById("pageIndexId");
+            lastPageNumber  = document.getElementById("totalPageIndex");
+            pageIndex       = document.getElementById("selectPageIndex");
+ 
+            nextPageId.style.visibility='hidden';
+            previousPageId.style.visibility='hidden';
+            first.style.visibility='hidden';
+            last.style.visibility='hidden';
+            pageIndex.style.visibility='hidden';
+            
+            if (exportToExcelId!=null && exportToExcelId!='undefined'){
+                exportToExcelId.disabled=true;
+            }   
+            if (backBtnId!=null && backBtnId!='undefined'){
+                backBtnId.disabled=true;
+            }
+            if (advanceBtnId!=null && advanceBtnId!='undefined'){
+                advanceBtnId.disabled=true;
+            }
+            if(outerPblockId!=null && outerPblockId!='undefined'){
+                outerPblockId.style.visibility='hidden';
+            }
+            if(errorDivId!=null && errorDivId!='undefined'){
+                errorDivId.style.visibility='hidden';
+            }
+            
+            var today  = new Date();
+            var today1  = new Date();
+            var previousDate = new Date(today1.setMonth(today1.getMonth()-3));
+            fromDate = document.getElementById("datepicker").value = previousDate.getMonth()+1 +'/'+previousDate.getDate()+'/'+previousDate.getFullYear();
+            toDate  = document.getElementById("datepicker1").value = today.getMonth()+1 +'/'+today.getDate()+'/'+today.getFullYear();
+            
+            $('.ui-jqgrid .ui-jqgrid-bdiv').css({ 'overflow-y': 'scroll' });
+         });
+         
+         function selectedIdexPage(){
+            var indexValue = document.getElementById("selectedIndex").value;
+            if(indexValue!=null && indexValue!=''){ 
+                  counter=indexValue;
+                  showDataInJqGrid('PRODUCTION_QUERY','');
+            } else {
+                errorDivId.innerHTML = 'Please enter page number.';
+                errorDivId.style.visibility='visible';
+            }
+    }    
+    
+    function Finish(){
+        counter=1;
+        var fromDate = document.getElementById("datepicker1").value;
+        var toDate = document.getElementById("datepicker").value;
+        var isFromDateValid = validateDate(fromDate);
+        var isToDateValid = validateDate(toDate);
+        
+        if (isFromDateValid && isToDateValid){
+            showDataInJqGrid('PRODUCTION_QUERY','');
+        } else {
+            errorDivId.innerHTML = 'Please Select Valid Date'; 
+            errorDivId.style.visibility='visible';       
+        }
+    }   
+
+    function disableDateFields(radioId){
+        if (radioId=="WIPId"){
+            isSelected = radioId;
+            document.getElementById("datepicker").disabled=true;
+            document.getElementById("datepicker1").disabled=true;
+            document.getElementById("pageId:formId:previousDateId").disabled=true;
+        } else {
+            //document.getElementById("datepicker").disabled=false;
+            //document.getElementById("datepicker1").disabled=false;
+            //document.getElementById("pageId:formId:previousDateId").disabled=false;
+            
+            if (radioId == "w&fId"){
+                isSelected = radioId;
+                setDate('90');
+                document.getElementById("datepicker").disabled=false;
+                document.getElementById("datepicker1").disabled=false;
+                document.getElementById("pageId:formId:previousDateId").disabled=false;
+                document.getElementById("pageId:formId:previousDateId").value='---NONE---';
+                
+            } else if (radioId == "lot&dtId" ){
+                isSelected = radioId; 
+                setDate('90');
+                document.getElementById("datepicker").disabled=false;
+                document.getElementById("datepicker1").disabled=false;
+                document.getElementById("pageId:formId:previousDateId").disabled=false;
+                document.getElementById("pageId:formId:previousDateId").value='---NONE---';
+                
+            }
+        }
+     }
+         
+    function unblkUI(){
+        jQuery.unblockUI();
+    } 
+    
+    function redirectToExcel(){
+        jQuery.unblockUI();
+        redirectToConverToExcel();
+    }
+    
+    function validateDate(dt){
+    
+         var pattern =new RegExp("^((0?[1-9]|1[012])[- /.](0?[1-9]|[12][0-9]|3[01])[- /.](19|20)?[0-9]{2})*$");
+         return pattern.test(dt);   
+         
+    }
+      
+   function setCustomerShortName(customerShortName){
+       if (customerShortName.indexOf('ALL') > -1){   
+           customerInitial = '@@';
+       } else {
+           customerInitial = customerShortName;
+       }
+   } 
+     
+   </script>    
+    
+</apex:page>

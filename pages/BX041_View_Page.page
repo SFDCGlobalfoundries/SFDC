@@ -1,0 +1,977 @@
+<!-------------------------------------------------------------------------------------------------------------
+Name  : BX041_View_Page.page
+Author: Prosenjit Saha and Thomas Lai
+Description: The page is used to view and aprrove BX-041 record.
+History:
+    PS 14112013:    Approval queue has been added in the Approval seciton.
+    TL 09072014:    Hide cancel button to portal users  
+                    Hide column Requirement Gaps in Process Information to portal users    
+    ZA 09112014:    Updated code as per CASE 18115. 
+   Gopi04132014:    Adding Device Object Fields 
+   Psamal       26042016    - Modified code as for Case 00049037.
+        
+---------------------------------------------------------------------------------------------------------------->
+<apex:page standardController="BX_041__c" extensions="BX041_Edit" sidebar="FALSE">
+<apex:includeScript value="{!URLFOR($Resource.jquery,'js/jquery-1.8.3.min.js')}" />
+    <!-- Style block for the pop up window starts here -->
+    <style type="text/css">
+    .custPopup {
+        background-color: white;
+        border-width: 2px;
+        border-style: solid;
+        z-index: 9999;
+        left: 40%;
+        padding: 10px;
+        position: absolute;
+        width: 700px;
+        margin-left: -250px;
+        top: 200px;
+    }
+    
+    .popupBackground {
+        background-color: black;
+        opacity: 0.9;
+        filter: alpha(opacity =   90);
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        top: 0;
+        left: 0;
+        z-index: 9998;
+    }
+    </style>
+    <!-- Style block for the pop up window stops here -->
+    
+    <!-- Scripts block for the pop up window starts here -->
+    <script>
+        $j = jQuery.noConflict();
+        
+        //function to block the whole page
+        function blockPage(){ 
+            $j.blockUI({ message: '<img src="/img/loading32.gif" /><h1> Loading...</h1>', 
+                css: { 
+                 border: 'none', 
+                 padding: '15px',  
+                 '-webkit-border-radius': '10px', 
+                 '-moz-border-radius': '10px', 
+                 opacity: .9
+                } 
+            }); 
+            return false;
+        }
+        
+        //function to unblock the page
+        function unblockPage(){
+            $j.unblockUI();
+        }
+        
+         function confirmReject() {
+            if(confirm('Are you sure?')) {
+                rejectform();
+                return false;
+            }
+            return false;
+        }
+        
+    </script>
+    <!-- scripts block for the pop up window ends here -->
+    <div class="bPageTitle">
+        <div class="ptBody">
+            <div class="content">
+                <img src="/s.gif" alt="Device" class="pageTitleIcon" title="Device"/>
+                <h1 class="pageType">
+                    CDRS <span class="titleSeparatingColon">:</span>
+                </h1>
+                <h2 class="pageDescription">{!bx041.name}</h2>
+                <div class="blank">&nbsp;</div>
+            </div>
+        </div>
+        <div class="ptBreadcrumb"></div>
+    </div>
+    <br/>
+    <div style="{!IF( Not(hasPermission),'display:block;','display:none;')}"> 
+    <apex:pagemessage severity="error" summary="{!$Label.CDRS_Permission_Issue}" />
+    </div>
+    <div style="{!IF(hasPermission,'display:block;','display:none;')}"> 
+    <apex:form >
+    
+    <apex:actionStatus onstart="blockPage()" onstop="unblockPage()" id="blockUI"/>
+    <apex:actionFunction action="{!reject}" name="rejectform" status="LoadingStatus"/>
+        <apex:outputPanel id="Backtrack">
+            <apex:outputPanel styleClass="popupBackground" layout="block" rendered="{!backtrackwindow}" >
+                <apex:outputPanel styleClass="custPopup" layout="block" rendered="{!backtrackwindow}">
+                    <apex:outputtext value="Please Select the step where you want to BackTrack :"/> <br/>
+                    <apex:selectList size="1" value="{!BackTrackValue}" label="Options:">
+                        <apex:selectOptions value="{!BackTrackSelectOption}" id="opt"/>
+                    </apex:selectList><br/>
+                    <apex:outputText value="Reason :" /><br/>
+                    <apex:inputTextArea value="{!comment}"  cols="100" rows="5"/><BR/>
+                    <apex:commandButton value="Save" action="{!backTrackForApproval}" rerender="Backtrack,main" status="blockUI"/>
+                    <apex:commandButton value="Cancel" action="{!closepopup}" rerender="Backtrack" immediate="true" />
+                </apex:outputPanel>
+            </apex:outputPanel>  
+        </apex:outputPanel>
+        
+        <!----------------------- block to display the PIYE approver starts here ------------------------>
+        <apex:outputPanel id="PiyeApprover">
+            <apex:outputPanel styleClass="popupBackground" layout="block" rendered="{!piyeApprSelectionWindow}" >
+                <apex:outputPanel styleClass="custPopup" layout="block" rendered="{!piyeApprSelectionWindow}">
+                    <apex:outputtext value="Please Select PI/YE Approvers :"/> <br/>
+                    <apex:pagemessages />
+                    <apex:inputField value="{!bx041.Approver_1__c}" /><br/>
+                    <apex:inputField value="{!bx041.Approver_2__c}" /><br/>
+                    <apex:inputField value="{!bx041.Approver_3__c}" /><br/>
+                    <apex:commandButton value="Confirm" action="{!approve}" status="blockUI" />
+                    <apex:commandButton value="Cancel" action="{!closepopup}" rerender="PiyeApprover" immediate="true" status="blockUI"/>
+                </apex:outputPanel>
+            </apex:outputPanel>  
+        </apex:outputPanel>
+        <!----------------------- block to display the PIYE approver ends here ------------------------>
+        
+        <apex:pageBlock title="CDRS Details" id="main"> 
+        <apex:pagemessages id="msg" escape="false" />
+        
+        <!----------------------- Buttons of the page block starts here ------------------------>
+            <apex:pageblockButtons >
+                <apex:commandButton action="{!editbx}" value="Edit" rendered="{!editBtnVisible}"/>
+                <apex:commandButton action="{!cancelbx}" value="Cancel" rendered="{!Not(isCustomer)}"/>                 
+                <apex:commandButton action="{!submitForApproval}" value="Submit For Approval" rendered="{!submitBtnVisible}"  />
+                <apex:commandButton value="Reject" rendered="{!rejectBtnVisible}" onclick="return confirmReject();"/>
+                <apex:commandButton action="{!approve}" value="{!IF(bx041.Approval_Status__c = 'Approved by CE','Approve','Approve and Submit')}" rendered="{!approveBtnVisible}" />
+                <!-- <apex:commandButton action="{!showPiyeAppr}" value="Select PIYE Approver" rendered="{!piyeSltBtnVisible}" reRender="PiyeApprover" status="blockUI"/>-->
+                <apex:commandButton action="{!showPiyeAppr}" value="{!IF(bx041.Next_WorkItem_Id__c = '','Submit for Approval*','Approve and Submit*')}" rendered="{!piyeSltBtnVisible}" reRender="PiyeApprover" status="blockUI"/>
+                <apex:commandButton action="{!backtrack}" value="BackTrack" reRender="Backtrack,msg" status="blockUI" rendered="{!backtrackBtnVisible}"/>
+                <apex:commandButton action="{!reopen}" value="Reopen" rendered="{!reopenable}"/>
+            </apex:pageblockButtons>   
+        <!----------------------- Buttons of the page block ends here ------------------------>
+        
+            
+            <!-------------Fields to display in the BX041 header section starts here -------------->                   
+            <apex:pageBlockSection collapsible="true" title="Information" columns="2">
+                <apex:outputField value="{!bx041.name}"/>
+                <apex:outputField value="{!bx041.Device__c}"/>
+                <apex:outputField value="{!bx041.BX_041_Status__c}"/>
+                
+                 <!-- Pradosh 26042016 -->
+                <apex:pageBlockSectionItem >
+                    <apex:outputLabel value="Device Owner" />
+                    <apex:outputLink target="_blank" value="/{!bx041.Device__r.OwnerId}">{!bx041.Device__r.Owner.Name}</apex:outputLink>
+                </apex:pageBlockSectionItem>
+                
+                <apex:outputField value="{!bx041.Configuration_Status__c}" />
+                
+                <!-- Pradosh 26042016 -->
+                <apex:pageBlockSectionItem >
+                    <apex:outputLabel value="Account Owner" />
+                    <apex:outputLink target="_blank" value="/{!bx041.Device__r.Account__r.OwnerId}">{!bx041.Device__r.Account__r.Owner.Name}</apex:outputLink>
+                </apex:pageBlockSectionItem>
+                
+                <apex:outputField value="{!bx041.CRMDID_Fromula__c}"/>
+                
+                <apex:pageBlockSectionItem >
+                    <apex:outputLabel value="Account" />
+                    <apex:outputLink target="_blank" value="/{!bx041.Device__r.Account__c}">{!bx041.Device__r.Account__r.Name}</apex:outputLink>
+                </apex:pageBlockSectionItem>
+               
+                <apex:outputField value="{!bx041.Need_IP_information__c}" id="Need_IP" styleClass="ip_pbs"/>
+                 <apex:outputField value="{!bx041.GAP_Closed__c}" rendered="{!Not(isCustomer)}"/>
+                <apex:outputField value="{!bx041.Need_IP_Merge_information__c}" id="Need_IPM"/>
+                <apex:outputField value="{!bx041.Need_RF__c}" id="Need_RF" styleClass="RF_pbs"/>
+                <apex:outputField value="{!bx041.Need_NVM__c}" id="Need_NVM" styleClass="NVM_pbs"/>
+                <apex:outputField value="{!bx041.Need_High_Voltage__c}" id="Need_HV" styleClass="High Voltage_pbs"/>
+                <apex:outputField value="{!bx041.Need_PowerMOS__c}" id="Need_PowerMOS" styleClass="PowerMOs_pbs"/>
+                <apex:outputField value="{!bx041.Need_eDRAM__c}" id="Need_eDRAM" styleClass="eDRAM_pbs"/>
+                <apex:outputField value="{!bx041.Need_Turnkey__c}" id="Need_Turnkey" styleClass="Turnkey_pbs"/>           
+                <apex:outputField value="{!bx041.Need_MEMS_informaton__c}" id="Need_MEMS" styleClass="MEMS_pbs"/>
+                <apex:outputField value="{!bx041.Template_Name__c}"/>
+                <apex:outputField value="{!bx041.Process_ID_is_known__c}"/>
+                <apex:outputField value="{!bx041.Reference_Process_ID_txt__c}"/>
+                <apex:outputField value="{!bx041.Requested_Process_ID__c}" rendered="{!Not(isCustomer)}"/>
+                <apex:pageBlockSectionItem labelStyle="width:8%;" dataStyle="width:30%;" rendered="{!isCustomer}">                      
+                    <apex:outputLabel >Requested Proccess ID</apex:outputLabel>
+                    <apex:outputText value="{!bx041.Requested_Process_ID__r.Name}" />
+                </apex:pageBlockSectionItem>
+                <apex:outputField value="{!bx041.Assigned_Process_ID__c}" rendered="{!Not(isCustomer)}"/>
+                 <apex:pageBlockSectionItem labelStyle="width:8%;" dataStyle="width:30%;" rendered="{!isCustomer}">                      
+                    <apex:outputLabel >Assigned Proccess ID</apex:outputLabel>
+                    <apex:outputText value="{!bx041.Assigned_Process_ID__r.Name}" />
+                </apex:pageBlockSectionItem>
+                <apex:outputField value="{!bx041.Opportunity_Program__c}"/>
+                <apex:outputField value="{!bx041.Process_Technology__c}"/>
+                <apex:outputField value="{!bx041.Geometry_Filter__c}"/>
+                <apex:outputField value="{!bx041.Process_Family_Filter__c}"/>
+                
+                <!--  ZAmbat 09112014 -->
+                <apex:outputField value="{!bx041.Key_Notes__c}" />
+            </apex:pageBlockSection>    
+            
+            <!---------------------------Additional Informaion ------------------------>
+                <apex:pageBlockSection collapsible="false" columns="2" id="addtionalinfo" title="Design Information and Size">
+                    <apex:repeat value="{!$ObjectType.BX_041__c.FieldSets.CDRS_Addition_Information}" var="f"> 
+                        <apex:outputField value="{!BX_041__c[f]}" />
+                    </apex:repeat>
+                    <apex:outputField value="{!BX_041__c.Device__r.Automotive_Device__c}" />
+                    <apex:outputField value="{!BX_041__c.Device__r.Automotive_Grade__c}" />
+                    <apex:outputField value="{!BX_041__c.Device__r.Secure_Device__c}" />
+                    <apex:outputField value="{!BX_041__c.Device__r.Secure_Device_Level__c}"/>
+                    <apex:outputField value="{!BX_041__c.Device__r.Design_Rules_Applied__c}"/>
+                </apex:pageBlockSection>
+                <script> twistSection(document.getElementById('{!$Component.main.addtionalinfo}').getElementsByTagName('img')[0]) </script>
+            <!---------------------------Additional Informaion ------------------------>
+            <!-------------------- Approval Section fields-------------------->
+            <apex:pageBlocksection title="Approval Section" collapsible="true" columns="2">                
+                <apex:outputField value="{!bx041.Approval_Status__c}" />
+                <apex:outputField value="{!bx041.Next_WorkItem_Id__c}" />
+                <apex:outputField value="{!bx041.Approval_Step__c}"/>
+                <apex:outputField value="{!bx041.Approver_1__c}"/>
+                <apex:outputField value="{!bx041.Approver_2__c}"/>
+                <apex:outputField value="{!bx041.Approver_3__c}"/>
+                
+                <apex:pageBlockSectionItem >
+                <apex:outputLabel value="Approver Queue" for="linkid"></apex:outputLabel>
+                <apex:outputLink value="/p/own/Queue/d?id={!QueueId}" id="linkid">{!QueueName}</apex:outputLink> 
+                </apex:pageBlockSectionItem>
+                
+                <apex:outputField value="{!bx041.Initial_Submitter__c}" />
+                <apex:inputTextArea value="{!comment}" rendered="{!approveBtnVisible || rejectBtnVisible|| piyeSltBtnVisible}" cols="50" rows="3" label="Comment"/>
+            </apex:pageBlockSection>        
+        </apex:pageBlock>
+        <!-------------Fields to display in the BX041 header section ends here -------------->
+        
+        <!------- This section is responsible to generate all the sections in the page -start ------>  
+        <apex:pageBlock >
+            <apex:repeat value="{!WrapperTopSectionList }" var="wts">
+            <div id="{!wts.shortName}_pbs" style="{!IF(wts.visible,'display:block;','display:none;')}">                                         
+                <apex:pageBlockSection title="{!wts.recordType}" columns="1">    
+                <apex:pageblockSectionItem >                
+                    <apex:commandButton action="{!showPIPdf}" value="Show PDF" rendered="{!wts.recordType == $Label.QM_RT_PI}" style="font-size:100%"/>
+                    <apex:commandButton action="{!exportToExcel}" value="Export To Excel" rendered="{!wts.recordType == $Label.QM_RT_PI}" style="font-size:100%"/>             
+                </apex:pageblockSectionItem>    
+                    <apex:repeat value="{!wts.AllWrapperSection}" var="v" >
+                        <apex:pageBlockSection title="{!v.title}"> 
+                            <apex:pageBlockTable value="{!v.WrapperList}"  var="w" >
+                                <apex:column headerValue="Questions" style="width:155px">
+                                    <apex:outputText value="{!w.question}" />
+                                </apex:column>
+                                <apex:column style="width:155px" headerValue="{!IF(wts.recordType  == $Label.QM_RT_PI,'Customer Request',IF(wts.recordType  == $Label.QM_RT_GA,'Status','Value'))}">
+                                        <apex:OutputText value="{!w.value}" />
+                                </apex:column>
+                                <apex:column value="{!w.FEinfo}" headerValue="Requested PID(FE)" rendered="{!wts.recordType == $Label.QM_RT_PI}" />
+                                <apex:column value="{!w.PiyeInfo}" headerValue="Assigned PID(PI/YE)" rendered="{!wts.recordType == $Label.QM_RT_PI}"/>
+                                <apex:column headerValue="{!IF(wts.recordType == $Label.QM_RT_PI,'Customer Comment','Comment')}" value="{!w.custcomment}" rendered="{!wts.recordType == $Label.QM_RT_PI || wts.recordType == $Label.QM_RT_GA }"/>
+                                <apex:column headerValue="Requirement Gaps" value="{!w.reqGap}" style="width:20%" rendered="{!wts.recordType == $Label.QM_RT_PI && isCustomer = false}"/>                                
+                                <apex:column headerValue="Resolution" value="{!w.GAResolution}" rendered="{!wts.recordType == $Label.QM_RT_GA}"/>
+                                <apex:column value="{!w.intlCmt}" headerValue="Comments (Internal only)" rendered="{!wts.recordType == $Label.QM_RT_PI && isCustomer = false}" />                            
+                            </apex:pageBlockTable> 
+                        </apex:pageBlockSection>
+                    </apex:repeat>
+                </apex:pageBlockSection>
+            </div>
+            </apex:repeat>
+            <!------- This section is responsible to generate all the sections in the page- ends  ------>
+            
+            <!------------------------  Start: generate IP section in the page ----------------------->
+            <div id="ip_pbs" style="{!IF(bx041.Need_IP_information__c,'display:block;','display: none;')}">
+               <apex:pageBlockSection title="CDRS IP" id="ip_pbs2" columns="1" >
+                    <apex:pageBlockTable value="{!ipwList}" var="ipw" >
+                     <!--As Biz requested, no need to display
+                        <apex:column headerValue="BX041 IP">
+                            <apex:outputText value="{!ipw.bx041Ip.name}" />
+                        </apex:column>  -->
+                        <apex:column headerValue="IP Design Kit">
+                            <apex:outputField value="{!ipw.bx041Ip.IP_Master__c}" />
+                        </apex:column>
+                        <apex:column headerValue="IP Type">
+                            <apex:outputField value="{!ipw.bx041Ip.IP_Type__c}" />                        
+                        </apex:column>                        
+                        <apex:column headerValue="Latest Version">
+                            <apex:outputField value="{!ipw.bx041Ip.Version__c}" /> 
+                        </apex:column>
+                        <apex:column headerValue="IP Category">
+                            <apex:outputField value="{!ipw.bx041Ip.IP_Catg__c}" /> 
+                        </apex:column>
+                        <apex:column headerValue="Library Name">
+                            <apex:outputField value="{!ipw.bx041Ip.Lib_Nm__c}" /> 
+                        </apex:column>
+                        <apex:column headerValue="IP Device List" >
+                                <apex:outputField value="{!ipw.bx041Ip.IP_Device_List__c}"/> 
+                            </apex:column>
+                        <apex:column headerValue="IP Vendor">
+                            <apex:outputField value="{!ipw.bx041Ip.Vendor__c}" /> 
+                        </apex:column>
+                        <apex:column headerValue="Customer Requirements">
+                            <apex:outputField value="{!ipw.bx041Ip.Cust_Rqmt__c}" /> 
+                        </apex:column>
+                        <!--  
+                        <apex:column headerValue="Additional requirements">
+                            <apex:outputField value="{!ipw.bx041Ip.Addl_Rqmt__c}" /> 
+                        </apex:column>
+                        <apex:column headerValue="Remarks" >                                 
+                             <apex:outputText value="{!ipw.bx041Ip.Remarks__c}" /> 
+                        </apex:column>     -->                   
+                   </apex:pageBlockTable>
+               </apex:pageBlockSection>
+            </div>
+            <!------------------------  End: generate IP section in the page ----------------------->
+           
+           
+        </apex:pageBlock>
+        
+        
+        <!------------------------  Start: generate IP Merge section in the page ----------------------->
+        <div id="ipm_pbs" style="{!IF(bx041.Need_IP_Merge_information__c,'display:block;','display: none;')}">
+            <apex:pageBlock id="ipm_pb">
+                <apex:variable value="{!0}" var="rowNum" />
+                <apex:pageBlockSection title="CDRS IP Merge" >
+                        <apex:pageBlockTable value="{!ipmList}" var="ipm">
+                            <apex:column headerValue="IP Merge Kit" >
+                                <apex:outputField value="{!ipm.IP_Master__c}" />
+                            </apex:column>
+                            <apex:column headerValue="Remarks" >
+                                <apex:outputField value="{!ipm.Remarks__c}" />
+                            </apex:column>
+                        </apex:pageBlockTable>
+                </apex:pageBlockSection>
+            </apex:pageBlock>
+        </div>
+        <!------------------------  End: generate IP Merge section in the page ----------------------->
+    </apex:form>  
+    </div>
+    <apex:relatedList list="NotesAndAttachments" rendered="{!hasPermission}"/>
+    <!------ approval history section ----->
+    <apex:relatedList list="ProcessSteps" rendered="{!Not(isCustomer)}" ></apex:relatedList>
+    <!------ approval history section ----->
+    
+    <apex:outputPanel rendered="{!Not(isCustomer)}">
+    <c:GenericHistoryComponent Limit="50" Object="{!BX_041__c}"/>
+    </apex:outputPanel>
+    <!------------------------- Script section of the VF page ---------------------------->
+    <script type="text/javascript">
+    var j$ = jQuery.noConflict();
+    //Submit for Approval 
+    j$("input[name='piSubmit']").hide();
+    
+    j$("input[name='piRemove']").hide();
+    /*
+    var appSts = '{!bx041.Approval_Status__c}'; 
+    var wkitm = '{!bx041.Next_WorkItem_Id__c}'; 
+    var iniSmt = '{!bx041.Initial_Submitter__c}'; 
+    if( appSts == ''&&  wkitm != '' && iniSmt != 'Customer'){
+        j$('a[href*="ProcessInstanceWorkitemWizardStageManager"]').hide();
+    }*/
+    
+    j$(function () {
+        j$(':checkbox').click(function () {
+            var clicked = this;
+
+            //alert(j$(this).attr("class"));
+            var divSelector = 'div#' + j$(this).attr("class"); 
+                        
+            if (j$(this).prop("checked")) {
+                j$(divSelector).slideDown('slow');
+                //j$('div[id$="MEMS_pbs"]').slideDown('slow');
+            }
+            else {
+                j$(divSelector).slideUp('slow');
+                
+                //j$('div#'+j$(this).attr("class")).slideUp('slow');
+             
+                //j$("div#MEMS_pbs").slideUp('slow');
+    
+            }
+        });
+        });
+  </script>
+  <!------------------------- Script section of the VF page ---------------------------->
+        <script type="text/javascript">        
+        function confirmDel()
+                {
+                    var answer = confirm("Are you sure");
+                    if(answer)
+                    {
+                      remIps();
+                    }
+                }
+        var j$ = jQuery.noConflict();
+     
+        
+        j$(function () {
+            j$(':checkbox').click(function () {
+                var clicked = this;
+    
+                //alert(j$(this).attr("class"));
+                var divSelector = 'div#' + j$(this).attr("class"); 
+                //alert(j$(this).attr("id").indexOf('Need_MEMS'));       
+                if (j$(this).prop("checked")) {
+                    j$(divSelector).slideDown('slow');
+                    if(j$(this).attr("id").indexOf('Need_MEMS') != -1){
+                        j$("div#PI_pbs").slideUp('slow');
+                    }
+                    //j$('div[id$="MEMS_pbs"]').slideDown('slow');
+                }
+                else {
+                    j$(divSelector).slideUp('slow');
+                    if(j$(this).attr("id").indexOf('Need_MEMS') != -1){
+                        j$("div#PI_pbs").slideDown('slow');
+                    }
+                    //j$('div#'+j$(this).attr("class")).slideUp('slow');
+                 
+                    //j$("div#MEMS_pbs").slideUp('slow');
+        
+                }
+            });
+            });
+            function confirmDelete(index) {
+                alert('index'+index);
+            if(confirm("Do you want to delete this record?")) {
+                removeFromList(index);
+            } else {
+                return false ;
+            }
+            
+            
+        }
+        </script>
+        <script>
+            /*!
+         * jQuery blockUI plugin
+         * Version 2.37 (29-JAN-2011)
+         * @requires jQuery v1.2.3 or later
+         *
+         * Examples at: http://malsup.com/jquery/block/
+         * Copyright (c) 2007-2010 M. Alsup
+         * Dual licensed under the MIT and GPL licenses:
+         * http://www.opensource.org/licenses/mit-license.php
+         * http://www.gnu.org/licenses/gpl.html
+         *
+         * Thanks to Amir-Hossein Sobhi for some excellent contributions!
+         */
+        
+        ;(function($) {
+        
+        if (/1\.(0|1|2)\.(0|1|2)/.test($.fn.jquery) || /^1.1/.test($.fn.jquery)) {
+            alert('blockUI requires jQuery v1.2.3 or later!  You are using v' + $.fn.jquery);
+            return;
+        }
+        
+        $.fn._fadeIn = $.fn.fadeIn;
+        
+        var noOp = function() {};
+        
+        // this bit is to ensure we don't call setExpression when we shouldn't (with extra muscle to handle
+        // retarded userAgent strings on Vista)
+        var mode = document.documentMode || 0;
+        var setExpr = $.browser.msie && (($.browser.version < 8 && !mode) || mode < 8);
+        var ie6 = $.browser.msie && /MSIE 6.0/.test(navigator.userAgent) && !mode;
+        
+        // global $ methods for blocking/unblocking the entire page
+        $.blockUI   = function(opts) { install(window, opts); };
+        $.unblockUI = function(opts) { remove(window, opts); };
+        
+        // convenience method for quick growl-like notifications  (http://www.google.com/search?q=growl)
+        $.growlUI = function(title, message, timeout, onClose) {
+            var $m = $('<div class="growlUI"></div>');
+            if (title) $m.append('<h1>'+title+'</h1>');
+            if (message) $m.append('<h2>'+message+'</h2>');
+            if (timeout == undefined) timeout = 3000;
+            $.blockUI({
+                message: $m, fadeIn: 700, fadeOut: 1000, centerY: false,
+                timeout: timeout, showOverlay: false,
+                onUnblock: onClose, 
+                css: $.blockUI.defaults.growlCSS
+            });
+        };
+        
+        // plugin method for blocking element content
+        $.fn.block = function(opts) {
+            return this.unblock({ fadeOut: 0 }).each(function() {
+                if ($.css(this,'position') == 'static')
+                    this.style.position = 'relative';
+                if ($.browser.msie)
+                    this.style.zoom = 1; // force 'hasLayout'
+                install(this, opts);
+            });
+        };
+        
+        // plugin method for unblocking element content
+        $.fn.unblock = function(opts) {
+            return this.each(function() {
+                remove(this, opts);
+            });
+        };
+        
+        $.blockUI.version = 2.37; // 2nd generation blocking at no extra cost!
+        
+        // override these in your code to change the default behavior and style
+        $.blockUI.defaults = {
+            // message displayed when blocking (use null for no message)
+            message:  '<h1>Please wait...</h1>',
+        
+            title: null,      // title string; only used when theme == true
+            draggable: true,  // only used when theme == true (requires jquery-ui.js to be loaded)
+            
+            theme: false, // set to true to use with jQuery UI themes
+            
+            // styles for the message when blocking; if you wish to disable
+            // these and use an external stylesheet then do this in your code:
+            // $.blockUI.defaults.css = {};
+            css: {
+                padding:    0,
+                margin:     0,
+                width:      '30%',
+                top:        '40%',
+                left:       '35%',
+                textAlign:  'center',
+                color:      '#000',
+                border:     '3px solid #aaa',
+                backgroundColor:'#fff',
+                cursor:     'wait'
+            },
+            
+            // minimal style set used when themes are used
+            themedCSS: {
+                width:  '30%',
+                top:    '40%',
+                left:   '35%'
+            },
+        
+            // styles for the overlay
+            overlayCSS:  {
+                backgroundColor: '#000',
+                opacity:         0.6,
+                cursor:          'wait'
+            },
+        
+            // styles applied when using $.growlUI
+            growlCSS: {
+                width:      '350px',
+                top:        '10px',
+                left:       '',
+                right:      '10px',
+                border:     'none',
+                padding:    '5px',
+                opacity:    0.6,
+                cursor:     'default',
+                color:      '#fff',
+                backgroundColor: '#000',
+                '-webkit-border-radius': '10px',
+                '-moz-border-radius':    '10px',
+                'border-radius':         '10px'
+            },
+            
+            // IE issues: 'about:blank' fails on HTTPS and javascript:false is s-l-o-w
+            // (hat tip to Jorge H. N. de Vasconcelos)
+            iframeSrc: /^https/i.test(window.location.href || '') ? 'javascript:false' : 'about:blank',
+        
+            // force usage of iframe in non-IE browsers (handy for blocking applets)
+            forceIframe: false,
+        
+            // z-index for the blocking overlay
+            baseZ: 1000,
+        
+            // set these to true to have the message automatically centered
+            centerX: true, // <-- only effects element blocking (page block controlled via css above)
+            centerY: true,
+        
+            // allow body element to be stetched in ie6; this makes blocking look better
+            // on "short" pages.  disable if you wish to prevent changes to the body height
+            allowBodyStretch: true,
+        
+            // enable if you want key and mouse events to be disabled for content that is blocked
+            bindEvents: true,
+        
+            // be default blockUI will supress tab navigation from leaving blocking content
+            // (if bindEvents is true)
+            constrainTabKey: true,
+        
+            // fadeIn time in millis; set to 0 to disable fadeIn on block
+            fadeIn:  200,
+        
+            // fadeOut time in millis; set to 0 to disable fadeOut on unblock
+            fadeOut:  400,
+        
+            // time in millis to wait before auto-unblocking; set to 0 to disable auto-unblock
+            timeout: 0,
+        
+            // disable if you don't want to show the overlay
+            showOverlay: true,
+        
+            // if true, focus will be placed in the first available input field when
+            // page blocking
+            focusInput: true,
+        
+            // suppresses the use of overlay styles on FF/Linux (due to performance issues with opacity)
+            applyPlatformOpacityRules: true,
+            
+            // callback method invoked when fadeIn has completed and blocking message is visible
+            onBlock: null,
+        
+            // callback method invoked when unblocking has completed; the callback is
+            // passed the element that has been unblocked (which is the window object for page
+            // blocks) and the options that were passed to the unblock call:
+            //   onUnblock(element, options)
+            onUnblock: null,
+        
+            // don't ask; if you really must know: http://groups.google.com/group/jquery-en/browse_thread/thread/36640a8730503595/2f6a79a77a78e493#2f6a79a77a78e493
+            quirksmodeOffsetHack: 4,
+        
+            // class name of the message block
+            blockMsgClass: 'blockMsg'
+        };
+        
+        // private data and functions follow...
+        
+        var pageBlock = null;
+        var pageBlockEls = [];
+        
+        function install(el, opts) {
+            var full = (el == window);
+            var msg = opts && opts.message !== undefined ? opts.message : undefined;
+            opts = $.extend({}, $.blockUI.defaults, opts || {});
+            opts.overlayCSS = $.extend({}, $.blockUI.defaults.overlayCSS, opts.overlayCSS || {});
+            var css = $.extend({}, $.blockUI.defaults.css, opts.css || {});
+            var themedCSS = $.extend({}, $.blockUI.defaults.themedCSS, opts.themedCSS || {});
+            msg = msg === undefined ? opts.message : msg;
+        
+            // remove the current block (if there is one)
+            if (full && pageBlock)
+                remove(window, {fadeOut:0});
+        
+            // if an existing element is being used as the blocking content then we capture
+            // its current place in the DOM (and current display style) so we can restore
+            // it when we unblock
+            if (msg && typeof msg != 'string' && (msg.parentNode || msg.jquery)) {
+                var node = msg.jquery ? msg[0] : msg;
+                var data = {};
+                $(el).data('blockUI.history', data);
+                data.el = node;
+                data.parent = node.parentNode;
+                data.display = node.style.display;
+                data.position = node.style.position;
+                if (data.parent)
+                    data.parent.removeChild(node);
+            }
+        
+            var z = opts.baseZ;
+        
+            // blockUI uses 3 layers for blocking, for simplicity they are all used on every platform;
+            // layer1 is the iframe layer which is used to supress bleed through of underlying content
+            // layer2 is the overlay layer which has opacity and a wait cursor (by default)
+            // layer3 is the message content that is displayed while blocking
+        
+            var lyr1 = ($.browser.msie || opts.forceIframe) 
+                ? $('<iframe class="blockUI" style="z-index:'+ (z++) +';display:none;border:none;margin:0;padding:0;position:absolute;width:100%;height:100%;top:0;left:0" src="'+opts.iframeSrc+'"></iframe>')
+                : $('<div class="blockUI" style="display:none"></div>');
+            var lyr2 = $('<div class="blockUI blockOverlay" style="z-index:'+ (z++) +';display:none;border:none;margin:0;padding:0;width:100%;height:100%;top:0;left:0"></div>');
+            
+            var lyr3, s;
+            if (opts.theme && full) {
+                s = '<div class="blockUI ' + opts.blockMsgClass + ' blockPage ui-dialog ui-widget ui-corner-all" style="z-index:'+z+';display:none;position:fixed">' +
+                        '<div class="ui-widget-header ui-dialog-titlebar ui-corner-all blockTitle">'+(opts.title || '&nbsp;')+'</div>' +
+                        '<div class="ui-widget-content ui-dialog-content"></div>' +
+                    '</div>';
+            }
+            else if (opts.theme) {
+                s = '<div class="blockUI ' + opts.blockMsgClass + ' blockElement ui-dialog ui-widget ui-corner-all" style="z-index:'+z+';display:none;position:absolute">' +
+                        '<div class="ui-widget-header ui-dialog-titlebar ui-corner-all blockTitle">'+(opts.title || '&nbsp;')+'</div>' +
+                        '<div class="ui-widget-content ui-dialog-content"></div>' +
+                    '</div>';
+            }
+            else if (full) {
+                s = '<div class="blockUI ' + opts.blockMsgClass + ' blockPage" style="z-index:'+z+';display:none;position:fixed"></div>';
+            }           
+            else {
+                s = '<div class="blockUI ' + opts.blockMsgClass + ' blockElement" style="z-index:'+z+';display:none;position:absolute"></div>';
+            }
+            lyr3 = $(s);
+        
+            // if we have a message, style it
+            if (msg) {
+                if (opts.theme) {
+                    lyr3.css(themedCSS);
+                    lyr3.addClass('ui-widget-content');
+                }
+                else 
+                    lyr3.css(css);
+            }
+        
+            // style the overlay
+            if (!opts.applyPlatformOpacityRules || !($.browser.mozilla && /Linux/.test(navigator.platform)))
+                lyr2.css(opts.overlayCSS);
+            lyr2.css('position', full ? 'fixed' : 'absolute');
+        
+            // make iframe layer transparent in IE
+            if ($.browser.msie || opts.forceIframe)
+                lyr1.css('opacity',0.0);
+        
+            //$([lyr1[0],lyr2[0],lyr3[0]]).appendTo(full ? 'body' : el);
+            var layers = [lyr1,lyr2,lyr3], $par = full ? $('body') : $(el);
+            $.each(layers, function() {
+                this.appendTo($par);
+            });
+            
+            if (opts.theme && opts.draggable && $.fn.draggable) {
+                lyr3.draggable({
+                    handle: '.ui-dialog-titlebar',
+                    cancel: 'li'
+                });
+            }
+        
+            // ie7 must use absolute positioning in quirks mode and to account for activex issues (when scrolling)
+            var expr = setExpr && (!$.boxModel || $('object,embed', full ? null : el).length > 0);
+            if (ie6 || expr) {
+                // give body 100% height
+                if (full && opts.allowBodyStretch && $.boxModel)
+                    $('html,body').css('height','100%');
+        
+                // fix ie6 issue when blocked element has a border width
+                if ((ie6 || !$.boxModel) && !full) {
+                    var t = sz(el,'borderTopWidth'), l = sz(el,'borderLeftWidth');
+                    var fixT = t ? '(0 - '+t+')' : 0;
+                    var fixL = l ? '(0 - '+l+')' : 0;
+                }
+        
+                // simulate fixed position
+                $.each([lyr1,lyr2,lyr3], function(i,o) {
+                    var s = o[0].style;
+                    s.position = 'absolute';
+                    if (i < 2) {
+                        full ? s.setExpression('height','Math.max(document.body.scrollHeight, document.body.offsetHeight) - (jQuery.boxModel?0:'+opts.quirksmodeOffsetHack+') + "px"')
+                             : s.setExpression('height','this.parentNode.offsetHeight + "px"');
+                        full ? s.setExpression('width','jQuery.boxModel && document.documentElement.clientWidth || document.body.clientWidth + "px"')
+                             : s.setExpression('width','this.parentNode.offsetWidth + "px"');
+                        if (fixL) s.setExpression('left', fixL);
+                        if (fixT) s.setExpression('top', fixT);
+                    }
+                    else if (opts.centerY) {
+                        if (full) s.setExpression('top','(document.documentElement.clientHeight || document.body.clientHeight) / 2 - (this.offsetHeight / 2) + (blah = document.documentElement.scrollTop ? document.documentElement.scrollTop : document.body.scrollTop) + "px"');
+                        s.marginTop = 0;
+                    }
+                    else if (!opts.centerY && full) {
+                        var top = (opts.css && opts.css.top) ? parseInt(opts.css.top) : 0;
+                        var expression = '((document.documentElement.scrollTop ? document.documentElement.scrollTop : document.body.scrollTop) + '+top+') + "px"';
+                        s.setExpression('top',expression);
+                    }
+                });
+            }
+        
+            // show the message
+            if (msg) {
+                if (opts.theme)
+                    lyr3.find('.ui-widget-content').append(msg);
+                else
+                    lyr3.append(msg);
+                if (msg.jquery || msg.nodeType)
+                    $(msg).show();
+            }
+        
+            if (($.browser.msie || opts.forceIframe) && opts.showOverlay)
+                lyr1.show(); // opacity is zero
+            if (opts.fadeIn) {
+                var cb = opts.onBlock ? opts.onBlock : noOp;
+                var cb1 = (opts.showOverlay && !msg) ? cb : noOp;
+                var cb2 = msg ? cb : noOp;
+                if (opts.showOverlay)
+                    lyr2._fadeIn(opts.fadeIn, cb1);
+                if (msg)
+                    lyr3._fadeIn(opts.fadeIn, cb2);
+            }
+            else {
+                if (opts.showOverlay)
+                    lyr2.show();
+                if (msg)
+                    lyr3.show();
+                if (opts.onBlock)
+                    opts.onBlock();
+            }
+        
+            // bind key and mouse events
+            bind(1, el, opts);
+        
+            if (full) {
+                pageBlock = lyr3[0];
+                pageBlockEls = $(':input:enabled:visible',pageBlock);
+                if (opts.focusInput)
+                    setTimeout(focus, 20);
+            }
+            else
+                center(lyr3[0], opts.centerX, opts.centerY);
+        
+            if (opts.timeout) {
+                // auto-unblock
+                var to = setTimeout(function() {
+                    full ? $.unblockUI(opts) : $(el).unblock(opts);
+                }, opts.timeout);
+                $(el).data('blockUI.timeout', to);
+            }
+        };
+        
+        // remove the block
+        function remove(el, opts) {
+            var full = (el == window);
+            var $el = $(el);
+            var data = $el.data('blockUI.history');
+            var to = $el.data('blockUI.timeout');
+            if (to) {
+                clearTimeout(to);
+                $el.removeData('blockUI.timeout');
+            }
+            opts = $.extend({}, $.blockUI.defaults, opts || {});
+            bind(0, el, opts); // unbind events
+            
+            var els;
+            if (full) // crazy selector to handle odd field errors in ie6/7
+                els = $('body').children().filter('.blockUI').add('body > .blockUI');
+            else
+                els = $('.blockUI', el);
+        
+            if (full)
+                pageBlock = pageBlockEls = null;
+        
+            if (opts.fadeOut) {
+                els.fadeOut(opts.fadeOut);
+                setTimeout(function() { reset(els,data,opts,el); }, opts.fadeOut);
+            }
+            else
+                reset(els, data, opts, el);
+        };
+        
+        // move blocking element back into the DOM where it started
+        function reset(els,data,opts,el) {
+            els.each(function(i,o) {
+                // remove via DOM calls so we don't lose event handlers
+                if (this.parentNode)
+                    this.parentNode.removeChild(this);
+            });
+        
+            if (data && data.el) {
+                data.el.style.display = data.display;
+                data.el.style.position = data.position;
+                if (data.parent)
+                    data.parent.appendChild(data.el);
+                $(el).removeData('blockUI.history');
+            }
+        
+            if (typeof opts.onUnblock == 'function')
+                opts.onUnblock(el,opts);
+        };
+        
+        // bind/unbind the handler
+        function bind(b, el, opts) {
+            var full = el == window, $el = $(el);
+        
+            // don't bother unbinding if there is nothing to unbind
+            if (!b && (full && !pageBlock || !full && !$el.data('blockUI.isBlocked')))
+                return;
+            if (!full)
+                $el.data('blockUI.isBlocked', b);
+        
+            // don't bind events when overlay is not in use or if bindEvents is false
+            if (!opts.bindEvents || (b && !opts.showOverlay)) 
+                return;
+        
+            // bind anchors and inputs for mouse and key events
+            var events = 'mousedown mouseup keydown keypress';
+            b ? $(document).bind(events, opts, handler) : $(document).unbind(events, handler);
+        
+        // former impl...
+        //     var $e = $('a,:input');
+        //     b ? $e.bind(events, opts, handler) : $e.unbind(events, handler);
+        };
+        
+        // event handler to suppress keyboard/mouse events when blocking
+        function handler(e) {
+            // allow tab navigation (conditionally)
+            if (e.keyCode && e.keyCode == 9) {
+                if (pageBlock && e.data.constrainTabKey) {
+                    var els = pageBlockEls;
+                    var fwd = !e.shiftKey && e.target === els[els.length-1];
+                    var back = e.shiftKey && e.target === els[0];
+                    if (fwd || back) {
+                        setTimeout(function(){focus(back)},10);
+                        return false;
+                    }
+                }
+            }
+            var opts = e.data;
+            // allow events within the message content
+            if ($(e.target).parents('div.' + opts.blockMsgClass).length > 0)
+                return true;
+        
+            // allow events for content that is not being blocked
+            return $(e.target).parents().children().filter('div.blockUI').length == 0;
+        };
+        
+        function focus(back) {
+            if (!pageBlockEls)
+                return;
+            var e = pageBlockEls[back===true ? pageBlockEls.length-1 : 0];
+            if (e)
+                e.focus();
+        };
+        
+        function center(el, x, y) {
+            var p = el.parentNode, s = el.style;
+            var l = ((p.offsetWidth - el.offsetWidth)/2) - sz(p,'borderLeftWidth');
+            var t = ((p.offsetHeight - el.offsetHeight)/2) - sz(p,'borderTopWidth');
+            if (x) s.left = l > 0 ? (l+'px') : '0';
+            if (y) s.top  = t > 0 ? (t+'px') : '0';
+        };
+        
+        function sz(el, p) {
+            return parseInt($.css(el,p))||0;
+        };
+        
+        })(jQuery);
+
+    </script>
+    <script>
+        $j = jQuery.noConflict();
+        
+        //function to block the whole page
+        function blockPage(){ 
+            $j.blockUI({ message: '<img src="/img/loading32.gif" /><h1> Loading...</h1>', 
+                css: { 
+                 border: 'none', 
+                 padding: '15px',  
+                 '-webkit-border-radius': '10px', 
+                 '-moz-border-radius': '10px', 
+                 opacity: .9
+                } 
+            }); 
+            return false;
+        }
+        
+        //function to unblock the page
+        function unblockPage(){
+            $j.unblockUI();
+        }
+        function loading(val) {
+        if (val) {
+          document.getElementById('contentLoading').style.display = 'block';
+          document.getElementById('contentLoaded').style.display = 'none';
+        }
+        else {
+          document.getElementById('contentLoading').style.display = 'none';
+          document.getElementById('contentLoaded').style.display = 'block';
+        }
+      }
+    </script>
+    <script>
+        hideButton("Submit for Approval");
+
+        function hideButton(btnName) {
+          try{
+            var buttons = parent.document.getElementsByName(btnName);
+            for (var i=0; i < buttons.length; i++) {
+              buttons[i].className="btnDisabled ";
+              buttons[i].disabled=true;
+              buttons[i].type='hidden';
+            }
+          } catch(e) {
+            // var ee = e.message || 0; alert('Error: \n\n'+e+'\n'+ee);
+          }
+        }
+    </script>
+    <!------------------------- Script section of the VF page ---------------------------->
+</apex:page> <!-- end of the page -->

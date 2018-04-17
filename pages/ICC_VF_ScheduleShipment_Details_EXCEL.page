@@ -1,0 +1,223 @@
+<apex:page controller="ICC_VF_ScheduleShipment_Details" contentType="application/vnd.ms-excel#SalesForceVF_Export.xls">
+    <style>
+        table.ReportTable td { border-bottom: 1px solid #cdd0d6}
+    </style>
+     <table>
+        <tr>
+            <td colspan="2">
+                <b>{!obj_SO.Account__r.Name}</b>
+            </td>
+        </tr>
+        <tr>
+            <td>
+                Purchase Order #
+            </td>
+            <td>
+                {!obj_SO.Purch_No__c}
+            </td>
+        </tr>     
+        <tr>
+            <td>
+                Sales Order #
+            </td>
+            <td>
+                {!obj_SO.Doc_Number__c}
+            </td>
+        </tr>  
+        <tr>
+            <td>
+                Order Date
+            </td>
+            <td>
+                <apex:outputText value="{0, date, MMMM d','  yyyy}">
+                    <apex:param value="{!obj_SO.DOCDATE__c}" />
+                </apex:outputText>
+            </td>
+        </tr>  
+        <tr>
+            <td>
+                Currency
+            </td>
+            <td>
+                {!obj_SO.Currency__c}
+            </td>
+        </tr> 
+        <tr>
+            <td>
+                Ship From
+            </td>
+            <td>
+                {!IF(lst_ShipLines.size > 0, lst_ShipLines[0].ShipFrom__c, '')}
+            </td>
+        </tr> 
+        <tr>
+            <td>
+                Ship To 
+            </td>
+            <td>
+                {!IF(lst_ShipLines.size > 0, lst_ShipLines[0].Cust_Shipto__c, '')}
+            </td>
+        </tr> 
+        <tr>
+            <td>
+                Carrier
+            </td>
+            <td>
+                {!IF(lst_ShipLines.size > 0, lst_ShipLines[0].Shipment__r.Carrier__c, '')}
+            </td>
+        </tr> 
+        <tr>
+            <td>
+                Tracking Number
+            </td>
+            <td>
+                {!IF(lst_ShipLines.size > 0, lst_ShipLines[0].Shipment__r.Carrier_PRO__c, '')}
+            </td>
+        </tr> 
+    </table>
+    <table width="100%" class="ReportTable">
+        <tr>
+            <th>
+                Item
+            </th>
+            <th colspan="3">
+                Product
+            </th>
+            <th colspan="2">
+                Requested
+            </th>
+            <th colspan="3">
+                Confirmed
+            </th>
+            <th colspan="3">
+                Delivered
+            </th>
+            <th>
+                Invoice Number
+            </th>
+        </tr>
+        <tr>
+            <td>
+                
+            </td>
+            <td>
+                Part #   
+            </td>
+            <td>
+                Customer Part #   
+            </td>
+            <td>
+                Price
+            </td>
+            <td>
+                Date
+            </td>
+            <td>
+                Quantity
+            </td>
+            <td>
+                Date
+            </td>
+            <td>
+                Quantity
+            </td>
+            <td>
+                Total
+            </td>
+            <td>
+                Date
+            </td>
+            <td>
+                Quantity
+            </td>
+            <td>
+                Total
+            </td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+                {!obj_SO.Itm_Number__c}
+            </td>
+            <td>
+                {!obj_SO.Material__c}
+            </td>
+            <td>
+                {!obj_SO.Cust_Part__c}
+            </td>
+            <td>
+                {!obj_SO.NET_PRICE__c}
+            </td>
+            <td>
+                {!obj_SO.Req_Date__c}
+            </td>
+            <td>
+                {!obj_SO.Req_Qty__c}
+            </td>
+            <td colspan="7">
+            </td>
+        </tr>
+        <apex:variable var="total_Schedule" value="{!0}" />  
+        <apex:repeat value="{!lst_Schedules}" var="schedule">
+            <apex:variable var="total_Schedule" value="{!total_Schedule + IF(schedule.Cum_Cf_Qty__c != null, schedule.Cum_Cf_Qty__c, 0)}"/>
+            <tr>
+                <td colspan="6">
+                    
+                </td>
+                <td>
+                    <apex:outputText value="{0, date, MMM d','  yyyy}">
+                        <apex:param value="{!schedule.Confirmed_Date__c}"/>
+                    </apex:outputText>
+    
+                </td>
+                <td>
+                    {!schedule.Cum_Cf_Qty__c}
+                </td>
+                <td>
+                    {!total_Schedule}
+                </td>
+                <td colspan="4">
+                    
+                </td>
+            </tr>
+        </apex:repeat>
+        <apex:variable var="total_Shipment" value="{!0}" />  
+        <apex:repeat value="{!lst_ShipLines}" var="shipment">
+            <apex:variable var="total_Shipment" value="{!total_Shipment + IF(shipment.Ship_Qty__c != null, shipment.Ship_Qty__c, 0)}"/>
+            <tr>
+                <td colspan="9">
+                    
+                </td>
+                <td>
+                    <apex:outputText value="{0, date, MMM d','  yyyy}">
+                        <apex:param value="{!shipment.Delivery_Date__c}"/>
+                    </apex:outputText>
+    
+                </td>
+                <td>
+                    {!shipment.Ship_Qty__c}
+                </td>
+                <td>
+                    {!total_Shipment}
+                </td>
+                <td>
+                    
+                </td>
+            </tr>
+        </apex:repeat>
+        <tr>
+            <td colspan="9">
+                
+            </td>
+            <td colspan="3">
+                <b>Remaining Quantity: </b>
+                {!IF(obj_SO.Req_Qty__c != null, obj_SO.Req_Qty__c - total_Shipment, null)}
+            </td>
+            <td>
+                
+            </td>
+        </tr>
+    </table>
+</apex:page>

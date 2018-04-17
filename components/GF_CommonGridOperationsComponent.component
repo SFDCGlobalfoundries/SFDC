@@ -1,0 +1,62 @@
+<apex:component >
+    
+    <apex:attribute name="columnRecord" required="true" type="String" description="field contains column Names"></apex:attribute>
+    <apex:attribute name="colModelRecord" required="true" type="String" description="field contains column Model"></apex:attribute>
+    
+    <script>
+        /*
+        * @ Author      :- Navneet Rajput
+        * @ Description :- Create Grid dynamically for Shipping/Production/Order query type data.
+        * @ Date        :- 7-29-2013
+        * @ Company     :- Cognizant Technology Services
+        **/
+        
+        function createDynamicQueryGrid (gridObject,previousGridId) {
+                
+                if (parent.isExpanded){
+                    gridObject.width = 1140;
+                } else {
+                    gridObject.width = 880;
+                }
+
+                var gridData;
+                var DQ_Grid = jQuery(gridObject.gridDiv);
+                DQ_Grid.jqGrid('clearGridData');
+                DQ_Grid.jqGrid('setGridParam', {data: gridObject.result});
+                
+                if (previousGridId != 'undefined' && previousGridId!=''){
+                    jQuery(previousGridId).jqGrid("GridUnload");
+                }
+                
+                DQ_Grid.jqGrid({
+                                data        :   gridObject.result,
+                                datatype    :   'local',
+                                colNames    :   {!columnRecord},
+                                colModel    :   {!colModelRecord},  
+                                rowNum      :   200,
+                                //rowList       :   [5,10,20,30,50,100],
+                                //pager     :   gridObject.pagerDiv,
+                                sortname    :   'name',
+                                viewrecords :   true,
+                                sortorder   :   "desc",
+                                caption     :   gridObject.caption,
+                                multiselect :   false,
+                                jqModal     :   true,
+                                //width       :   935,
+                                width       :   gridObject.width,
+                                height      :   "auto",
+                                loadonce    :   false,
+                                shrinkToFit :   false,
+                                
+                                loadComplete:   function() {
+                                                prepareShippingSubQuery(DQ_Grid);  
+                                                gridData = DQ_Grid.jqGrid('getRowData');
+                                                searchRecords(gridData);
+                                                
+                                }
+            });  
+            DQ_Grid.trigger('reloadGrid'); 
+    } 
+    
+    </script>   
+</apex:component>

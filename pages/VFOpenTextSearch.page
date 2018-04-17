@@ -1,0 +1,644 @@
+<!-- 
+    History: 
+        ZAmbat      04242014    -  Updated code as per CASE 8653.
+    
+    Author: Sunita
+    Modified Date: Jun-23-2015
+    Reason: Case 35310 - Global Search    
+-->
+<apex:page controller="clsOpenTextSearch" >
+ 
+ <apex:form >
+ <apex:actionFunction name="insertsearchresulttable" action="{!insertsearchresulttable}" rerender="out" status="myStatus"/>
+
+ </apex:form>
+ <script>window.setTimeout(insertsearchresulttable,2000)</script>
+ 
+<style>
+    .next {
+        background-image: url(/img/paginationArrows.gif);
+        background-repeat: no-repeat;
+        background-position: -17px 1px;
+        width: 9px;
+        height: 10px;
+    }
+    
+    .nextoff {
+        background-image: url(/img/paginationArrows.gif);
+        background-repeat: no-repeat;
+        background-position: -17px -10px;
+        width: 9px;
+        height: 10px;
+    }
+    
+    .prev {
+        background-image: url(/img/paginationArrows.gif);
+        background-repeat: no-repeat;
+        background-position: -10px 1px;
+        margin: 0;
+        padding: 0;
+        width: 9px;
+        height: 10px;
+    }
+    
+    .prevoff {
+        background-image: url(/img/paginationArrows.gif);
+        background-repeat: no-repeat;
+        background-position: -10px -10px;
+        margin: 0;
+        padding: 0;
+        width: 9px;
+        height: 10px;
+    }
+    
+    .last1 {
+        background-image: url(/img/paginationArrows.gif);
+        background-repeat: no-repeat;
+        background-position: -27px 1px;
+        width: 9px;
+        height: 10px;
+    }
+    
+    .lastoff {
+        background-image: url(/img/paginationArrows.gif);
+        background-repeat: no-repeat;
+        background-position: -27px -10px;
+        width: 9px;
+        height: 10px;
+    }
+    
+    .first1 {
+        background-image: url(/img/paginationArrows.gif);
+        background-repeat: no-repeat;
+        background-position: 0px 1px;
+        width: 9px;
+        height: 10px;
+    }
+    
+    .firstoff {
+        background-image: url(/img/paginationArrows.gif);
+        background-repeat: no-repeat;
+        background-position: 0px -10px;
+        width: 9px;
+        height: 10px;
+    }
+</style>
+
+<apex:form >
+ <apex:outputPanel id="block">
+ <apex:iframe src="{!OpenTextLoginServerURL}" height="1px" width="1px" />
+ <apex:actionRegion >
+ 
+     <!-- Configurations Search Start   -->
+      <apex:outputPanel layout="block" rendered="{!$ObjectType.Apttus_Proposal__Proposal__c.accessible}">
+        <apex:pageBlock rendered="{!AND(configurations.size > 0)}">
+          <apex:pageBlockSection title="Configurations" columns="1">
+            <apex:outputLabel > Configuration result 1 to {!configurations.size}</apex:outputLabel>
+            <apex:pageBlockTable value="{!configurations}"  var="c" title="Configuration">
+                <apex:column style="width:130px" >
+                    <apex:facet name="header">Configuration ID</apex:facet>
+                    <apex:commandLink action="{!onClickRedirect}" target="_blank" > 
+                        {!c.name}
+                        <apex:param name="cId" assignTo="{!recordId}" value="{!c.id}"/>
+                    </apex:commandLink>
+                </apex:column>
+                <apex:column style="width:130px">
+                    <apex:facet name="header">Configuration Name</apex:facet>
+                    {!c.Apttus_Proposal__Proposal_Name__c}                    
+                </apex:column>
+                <apex:column style="width:130px">
+                    <apex:facet name="header">Process Technology Geometry</apex:facet>
+                    {!c.Process_Technology_Geometry__c}
+                </apex:column>
+                <apex:column style="width:130px">
+                    <apex:facet name="header">Process Technology</apex:facet>
+                    {!c.Process_Technology_Name__c}
+                </apex:column>                  
+                <apex:column style="width:130px">
+                     <apex:facet name="header">Account</apex:facet>
+                     {!c.Apttus_Proposal__Account__r.name}
+                </apex:column>
+                <apex:column style="width:130px">
+                     <apex:facet name="header">Opportunity</apex:facet>
+                     {!c.Apttus_Proposal__Opportunity__r.name}
+                </apex:column>
+                <apex:column style="width:130px" >
+                     <apex:facet name="header">Device</apex:facet>
+                      {!c.device__r.name}
+                </apex:column>
+              </apex:pageBlockTable>
+          </apex:pageBlockSection>
+        </apex:pageBlock>
+        <apex:pageBlock rendered="{!AND(configurations.size = 0)}">
+          <apex:pageBlockSection title="Configuration" columns="1">
+            <apex:outputLabel > Configuration search result 0 </apex:outputLabel>
+          </apex:pageBlockSection>
+        </apex:pageBlock>
+     </apex:outputPanel> 
+     <!-- Configuration Search End   -->
+  
+   
+     <!-- Case Search Start   -->
+      <apex:outputPanel layout="block" rendered="{!$ObjectType.Case.accessible}">
+        <apex:pageBlock rendered="{!caseReturned}">
+          <apex:pageBlockSection title="Cases" columns="1">
+            <apex:outputLabel > Case result 1 to {!results.size}</apex:outputLabel>
+            <apex:pageBlockTable value="{!results}" var="objCase" id="tblResults" rendered="{!results.size>0}" >
+              <apex:repeat value="{!SelectedFields}" var="FieldLable">
+                <apex:column style="width:100px" rendered="{!FieldLable='CaseNumber'}">
+                  <apex:facet name="header">Case Number</apex:facet>
+                  <apex:commandLink action="{!onClickRedirect}" target="_blank" >
+                    {!objCase.CaseNumber}
+                    <apex:param name="CaseNumber" assignTo="{!recordId}" value="{!objCase.Id}"/>
+                  </apex:commandLink>
+                </apex:column>
+                <apex:column style="width:200px" rendered="{!FieldLable='Subject'}" >
+                  <apex:facet name="header">Subject</apex:facet>
+                  <apex:commandLink action="{!onClickRedirect}" target="_blank" >
+                    {!objCase.Subject}
+                    <apex:param name="Subject" assignTo="{!recordId}" value="{!objCase.Id}"/>
+                  </apex:commandLink>
+                </apex:column>
+                <apex:column style="width:130px" value="{!objCase[FieldLable]}" rendered="{!NOT(FieldLable='CaseNumber' || FieldLable='Subject') }" />
+              </apex:repeat>
+            </apex:pageBlockTable>
+          </apex:pageBlockSection>
+        </apex:pageBlock>
+        <apex:pageBlock rendered="{!NOT(caseReturned)}">
+          <apex:pageBlockSection title="Case" columns="1">
+            <apex:outputLabel > Case search result 0 </apex:outputLabel>
+          </apex:pageBlockSection>
+        </apex:pageBlock>
+     </apex:outputPanel> 
+    <!-- Case Search End   -->
+  
+  <apex:pageBlock Rendered="{!accountReturned}">
+   
+    <apex:pageBlockSection title="Account" columns="1">
+    <apex:outputLabel > Account search result 1 to {!accountReturnedSize}</apex:outputLabel>
+     <apex:pageBlockTable value="{!accounts}"  var="acc" title="Account" columns="7">
+          <apex:column style="width:130px" >
+            <apex:facet name="header">Name</apex:facet>
+             <apex:commandLink action="{!onClickRedirect}" target="_blank" > 
+              {!acc.Name}
+              <apex:param name="accId" assignTo="{!recordId}" value="{!acc.Id}"/>
+              </apex:commandLink>
+          </apex:column>
+          <apex:column style="width:130px">
+            <apex:facet name="header">Parent Account</apex:facet>
+               {!acc.Parent.Name}
+          </apex:column>
+          <apex:column style="width:130px">
+            <apex:facet name="header">Portal Admin </apex:facet>
+               {!acc.Customer_Portal_Admin__r.Name}
+          </apex:column>
+          <apex:column style="width:130px">
+            <apex:facet name="header">Stage</apex:facet>
+               {!acc.Stage__c}
+          </apex:column>
+          <apex:column style="width:130px" >
+            <apex:facet name="header">Website</apex:facet>
+               {!acc.Website}
+          </apex:column>
+      </apex:pageBlockTable>
+     
+    </apex:pageBlockSection>
+   </apex:pageBlock>   
+   <apex:pageBlock Rendered="{!NOT(accountReturned)}">
+    <apex:pageBlockSection title="Account" columns="1">
+    <apex:outputLabel > Account search result 0 </apex:outputLabel>
+    </apex:pageBlockSection>
+    </apex:pageBlock>
+  <apex:pageBlock Rendered="{!contactReturned}">
+   <apex:pageBlockSection title="Contact" columns="1">
+    <apex:outputLabel > Contact search result 1 to {!contactReturnedSize}</apex:outputLabel>
+     <apex:pageBlockTable value="{!contacts}" title="Contact " var="Cont" columns="5">
+        <apex:column style="width:130px">
+          <apex:facet name="header">Name</apex:facet>
+              <apex:commandLink action="{!onClickRedirect}" target="_blank" > 
+              {!Cont.FirstName} {!Cont.LastName}
+              <apex:param name="ContId" assignTo="{!recordId}" value="{!Cont.Id}"/>
+              </apex:commandLink>
+        </apex:column>
+        <apex:column style="width:130px">
+          <apex:facet name="header">Account</apex:facet>
+               {!Cont.Account.Name}
+        </apex:column>
+        <apex:column style="width:130px">
+          <apex:facet name="header">Portal Admin</apex:facet>
+               {!Cont.Customer_Portal_Admin__r.Name}
+        </apex:column>
+        <apex:column style="width:130px">
+          <apex:facet name="header">Email</apex:facet>
+               {!Cont.Email}
+        </apex:column>
+        <apex:column style="width:130px">
+          <apex:facet name="header">Phone</apex:facet>
+               {!Cont.Phone}
+        </apex:column>
+       </apex:pageBlockTable>
+   </apex:pageBlockSection>
+  </apex:pageBlock>
+   <apex:pageBlock Rendered="{!NOT(contactReturned)}">
+   <apex:pageBlockSection title="Contact" columns="1">
+    <apex:outputLabel > Contact search result 0 </apex:outputLabel>
+    </apex:pageBlockSection>
+    </apex:pageBlock>
+  
+   <apex:pageBlock Rendered="{!teamRoomReturned}">
+   
+    <apex:pageBlockSection title="Team Room" columns="1">
+    <apex:outputLabel > Team Room search result 1 to {!teamRoomReturnedSize}</apex:outputLabel>
+     <apex:pageBlockTable value="{!teamRoom}"  var="tRoom" title="Team Room" columns="5">
+          <apex:column style="width:130px" >
+            <apex:facet name="header">Name</apex:facet>
+             <apex:commandLink action="{!onClickRedirect}" target="_blank" > 
+              {!tRoom.Name}
+              <apex:param name="tRoomId" assignTo="{!recordId}" value="{!tRoom.Id}"/>
+              </apex:commandLink>
+          </apex:column>
+          <apex:column style="width:130px">
+            <apex:facet name="header">Owner</apex:facet>
+               {!tRoom.Owner.Name}
+          </apex:column>
+          <apex:column style="width:130px">
+            <apex:facet name="header">Team Room Administrator</apex:facet>
+               {!tRoom.Team_Room_Administrator__r.Name}
+          </apex:column>
+          <apex:column style="width:130px">
+            <apex:facet name="header">Parent Team Room</apex:facet>
+               {!tRoom.Parent_TR__r.Name}
+          </apex:column>
+          <apex:column style="width:130px">
+            <apex:facet name="header">Primary Account</apex:facet>
+               {!tRoom.Primary_Account__r.Name}
+          </apex:column>
+        </apex:pageBlockTable>
+     
+    </apex:pageBlockSection>
+   
+  </apex:pageBlock>
+  <apex:pageBlock Rendered="{!NOT(teamRoomReturned)}">
+  <apex:pageBlockSection title="Team Room" columns="1">
+    <apex:outputLabel > Team Room search result 0 </apex:outputLabel>
+    </apex:pageBlockSection>
+    </apex:pageBlock>
+  
+  <apex:pageBlock Rendered="{!userReturned}">
+  <apex:pageBlockSection title="User" columns="1">
+    <apex:outputLabel > User search result 1 to {!userReturnedSize}</apex:outputLabel>
+     <apex:pageBlockTable value="{!userList}"  var="usr" title="User" columns="5">
+          <apex:column style="width:130px" >
+            <apex:facet name="header">Name</apex:facet>
+             <apex:commandLink action="{!onClickRedirect}" target="_blank" > 
+              {!usr.Name}
+              <apex:param name="usrId" assignTo="{!recordId}" value="{!usr.Id}"/>
+              </apex:commandLink>
+          </apex:column>
+          <apex:column style="width:130px">
+            <apex:facet name="header"> Email </apex:facet>
+               {!usr.Email}
+          </apex:column>
+           <apex:column style="width:130px">
+            <apex:facet name="header"> User Name </apex:facet>
+               {!usr.Username}
+          </apex:column>
+           <apex:column style="width:130px">
+            <apex:facet name="header"> Phone </apex:facet>
+               {!usr.Phone}
+          </apex:column>
+           <apex:column style="width:130px">
+            <apex:facet name="header"> Department </apex:facet>
+               {!usr.Department}
+          </apex:column>
+        </apex:pageBlockTable>
+     
+    </apex:pageBlockSection>
+    
+  </apex:pageBlock>
+  
+  
+   <apex:pageBlock Rendered="{!NOT(userReturned)}">
+   <apex:pageBlockSection title="User" columns="1">
+    <apex:outputLabel > User search result 0 </apex:outputLabel>
+    </apex:pageBlockSection>
+    </apex:pageBlock>
+    
+   <apex:pageBlock Rendered="{!IF(collabList.size>0,true,false)}">
+  <apex:pageBlockSection title="Collaborators" columns="1">
+    <apex:outputLabel > Collaborators search result 1 to {!collabList.size}</apex:outputLabel>
+     <apex:pageBlockTable value="{!collabList}"  var="usr" title="Collaborator">
+          <apex:column style="width:130px" >
+            <apex:facet name="header">Name</apex:facet>
+             <apex:commandLink action="{!onClickRedirect}" target="_blank" > 
+              {!usr.Name}
+              <apex:param name="usrId" assignTo="{!recordId}" value="{!usr.Id}"/>
+              </apex:commandLink>
+          </apex:column>
+          <apex:column style="width:130px" >
+            <apex:facet name="header">Account</apex:facet>
+             <apex:commandLink action="{!onClickRedirect}" target="_blank" > 
+              {!usr.Account__r.Name}
+              <apex:param name="usrId" assignTo="{!recordId}" value="{!usr.Account__c}"/>
+              </apex:commandLink>
+          </apex:column>
+          <apex:column style="width:130px">
+            <apex:facet name="header"> Device </apex:facet>
+               {!usr.Device_Name__c}
+          </apex:column>
+          <apex:column style="width:130px">
+            <apex:facet name="header"> MaskSet Title </apex:facet>
+               {!usr.Mask_Set_Title__c}
+          </apex:column>
+          <apex:column style="width:130px">
+            <apex:facet name="header"> PTSR No. </apex:facet>
+               {!usr.PTSR_Number__c}
+          </apex:column>
+           <apex:column style="width:130px">
+            <apex:facet name="header"> Prime Die Name </apex:facet>
+               {!usr.Prime_Die__c}
+          </apex:column>
+           
+        </apex:pageBlockTable>
+     
+    </apex:pageBlockSection>
+    
+  </apex:pageBlock>
+  
+  
+   <apex:pageBlock Rendered="{!IF(collabList.size==0,true,false)}">
+   <apex:pageBlockSection title="Collaborators" columns="1">
+    <apex:outputLabel > Collaborators search result 0 </apex:outputLabel>
+    </apex:pageBlockSection>
+    </apex:pageBlock>
+    
+  <!-- <apex:pageBlock Rendered="{!IF(ruleList.size>0,true,false)}">
+  <apex:pageBlockSection title="Waiver Rules" columns="1">
+    <apex:outputLabel > Waiver Rules search result 1 to {!ruleList.size}</apex:outputLabel>
+     <apex:pageBlockTable value="{!ruleList}"  var="usr" title="Waiver Rules">
+          <apex:column style="width:130px" >
+            <apex:facet name="header">Rule Name</apex:facet>
+             <apex:commandLink action="{!onClickRedirect}" target="_blank" > 
+              {!usr.Design_Rule_Name__c}
+              <apex:param name="usrId" assignTo="{!recordId}" value="{!usr.Id}"/>
+              </apex:commandLink>
+          </apex:column>
+          <apex:column style="width:130px" >
+            <apex:facet name="header">Collaborator Name</apex:facet>
+             <apex:commandLink action="{!onClickRedirect}" target="_blank" > 
+              {!usr.Waiver_Collaborator__r.Name}
+              <apex:param name="usrId" assignTo="{!recordId}" value="{!usr.Waiver_Collaborator__c}"/>
+              </apex:commandLink>
+          </apex:column>
+          <apex:column style="width:130px">
+            <apex:facet name="header">Rule Id</apex:facet>
+               {!usr.RuleId__c}
+          </apex:column>
+        </apex:pageBlockTable>
+    </apex:pageBlockSection>
+    
+  </apex:pageBlock>
+  
+  
+   <apex:pageBlock Rendered="{!IF(ruleList.size==0,true,false)}">
+   <apex:pageBlockSection title="Waiver Rules" columns="1">
+    <apex:outputLabel > Waiver Rules search result 0 </apex:outputLabel>
+    </apex:pageBlockSection>
+    </apex:pageBlock> -->
+    
+    <!-- ZAmbat 04242014 Start -->
+    <apex:actionRegion >
+        <apex:pageBlock id="deviceBlock" rendered="{!deviceReturned}">
+            <apex:pageBlockSection title="Device" columns="1">
+                <apex:outputLabel >Device search result {!deviceFrom} to {!deviceTo}</apex:outputLabel>
+                <apex:pageBlockTable value="{!SortedDeviceList}"  var="d" title="Device" columns="8">
+                    <apex:column >
+                        <apex:facet name="header">
+                            <apex:outputPanel >
+                                <apex:commandLink reRender="deviceBlock">
+                                    Name
+                                    <apex:param name="pSortBy" value="Name" assignTo="{!sortBy}" />
+                                    <apex:param name="pOrderBy" value="{!IF(orderBy == 'ASC', 'DESC', 'ASC')}" assignTo="{!orderBy}" /> 
+                                </apex:commandLink>
+                                <apex:image value="/s.gif" rendered="{!IF(sortBy == 'Name', true, false)}" alt="{!IF(orderBy == 'ASC', 'Sorted Ascending', 'Sorted Descending')}" styleClass="{!IF(orderBy == 'ASC', 'sortAsc', 'sortDesc')}" title="{!IF(orderBy == 'ASC', 'Sorted Ascending', 'Sorted Descending')}" />
+                            </apex:outputPanel>
+                        </apex:facet>
+                        <apex:commandLink action="{!onClickRedirect}" target="_blank">
+                            {!d.Name}
+                            <apex:param name="deviceId" assignTo="{!recordId}" value="{!d.Id}"/>
+                        </apex:commandLink>
+                    </apex:column>
+                    <apex:column >
+                        <apex:facet name="header">
+                            <apex:outputPanel >
+                                <apex:commandLink reRender="deviceBlock">
+                                    Stage
+                                    <apex:param name="pSortBy" value="Stage" assignTo="{!sortBy}" />
+                                    <apex:param name="pOrderBy" value="{!IF(orderBy == 'ASC', 'DESC', 'ASC')}" assignTo="{!orderBy}" /> 
+                                </apex:commandLink>
+                                <apex:image value="/s.gif" rendered="{!IF(sortBy == 'Stage', true, false)}" alt="{!IF(orderBy == 'ASC', 'Sorted Ascending', 'Sorted Descending')}" styleClass="{!IF(orderBy == 'ASC', 'sortAsc', 'sortDesc')}" title="{!IF(orderBy == 'ASC', 'Sorted Ascending', 'Sorted Descending')}" />  
+                            </apex:outputPanel>
+                        </apex:facet>
+                        {!d.Stage}
+                    </apex:column>
+                    <apex:column >
+                        <apex:facet name="header">
+                            <apex:outputPanel >
+                                <apex:commandLink reRender="deviceBlock">
+                                    Account Short Name
+                                    <apex:param name="pSortBy" value="ShortName" assignTo="{!sortBy}" />
+                                    <apex:param name="pOrderBy" value="{!IF(orderBy == 'ASC', 'DESC', 'ASC')}" assignTo="{!orderBy}" /> 
+                                </apex:commandLink>
+                                <apex:image value="/s.gif" rendered="{!IF(sortBy == 'ShortName', true, false)}" alt="{!IF(orderBy == 'ASC', 'Sorted Ascending', 'Sorted Descending')}" styleClass="{!IF(orderBy == 'ASC', 'sortAsc', 'sortDesc')}" title="{!IF(orderBy == 'ASC', 'Sorted Ascending', 'Sorted Descending')}" />  
+                            </apex:outputPanel>
+                        </apex:facet>
+                        {!d.ShortName}
+                    </apex:column>
+                    <apex:column >
+                        <apex:facet name="header">
+                            <apex:outputPanel >
+                                <apex:commandLink reRender="deviceBlock">
+                                    Fab
+                                    <apex:param name="pSortBy" value="Fab" assignTo="{!sortBy}" />
+                                    <apex:param name="pOrderBy" value="{!IF(orderBy == 'ASC', 'DESC', 'ASC')}" assignTo="{!orderBy}" /> 
+                                </apex:commandLink>
+                                <apex:image value="/s.gif" rendered="{!IF(sortBy == 'Fab', true, false)}" alt="{!IF(orderBy == 'ASC', 'Sorted Ascending', 'Sorted Descending')}" styleClass="{!IF(orderBy == 'ASC', 'sortAsc', 'sortDesc')}" title="{!IF(orderBy == 'ASC', 'Sorted Ascending', 'Sorted Descending')}" />  
+                            </apex:outputPanel>
+                        </apex:facet>
+                        {!d.Fab}
+                    </apex:column>
+                    <apex:column >
+                        <apex:facet name="header">
+                            <apex:outputPanel >
+                                <apex:commandLink reRender="deviceBlock">
+                                    Geometry
+                                    <apex:param name="pSortBy" value="Geometry" assignTo="{!sortBy}" />
+                                    <apex:param name="pOrderBy" value="{!IF(orderBy == 'ASC', 'DESC', 'ASC')}" assignTo="{!orderBy}" /> 
+                                </apex:commandLink>
+                                <apex:image value="/s.gif" rendered="{!IF(sortBy == 'Geometry', true, false)}" alt="{!IF(orderBy == 'ASC', 'Sorted Ascending', 'Sorted Descending')}" styleClass="{!IF(orderBy == 'ASC', 'sortAsc', 'sortDesc')}" title="{!IF(orderBy == 'ASC', 'Sorted Ascending', 'Sorted Descending')}" />  
+                            </apex:outputPanel>
+                        </apex:facet>
+                        {!d.Geometry}
+                    </apex:column>
+                    <apex:column >
+                        <apex:facet name="header">
+                            <apex:outputPanel >
+                                <apex:commandLink reRender="deviceBlock">
+                                    Current Forecast Tapeout Date
+                                    <apex:param name="pSortBy" value="CurrentForecastTapeoutDate" assignTo="{!sortBy}" />
+                                    <apex:param name="pOrderBy" value="{!IF(orderBy == 'ASC', 'DESC', 'ASC')}" assignTo="{!orderBy}" /> 
+                                </apex:commandLink>
+                                <apex:image value="/s.gif" rendered="{!IF(sortBy == 'CurrentForecastTapeoutDate', true, false)}" alt="{!IF(orderBy == 'ASC', 'Sorted Ascending', 'Sorted Descending')}" styleClass="{!IF(orderBy == 'ASC', 'sortAsc', 'sortDesc')}" title="{!IF(orderBy == 'ASC', 'Sorted Ascending', 'Sorted Descending')}" />  
+                            </apex:outputPanel>
+                        </apex:facet>
+                        <apex:outputText value="{!MONTH(d.CurrentForecastTapeoutDate)}/{!DAY(d.CurrentForecastTapeoutDate)}/{!YEAR(d.CurrentForecastTapeoutDate)}" rendered="{!IF(NOT(ISBLANK(d.CurrentForecastTapeoutDate)), true, false)}" />
+                    </apex:column>
+                    <apex:column rendered="{!isExportControlVisible}">
+                        <apex:facet name="header">
+                            <apex:outputPanel >
+                                <apex:commandLink reRender="deviceBlock">
+                                    Export Control Form
+                                    <apex:param name="pSortBy" value="ExportControlForm" assignTo="{!sortBy}" />
+                                    <apex:param name="pOrderBy" value="{!IF(orderBy == 'ASC', 'DESC', 'ASC')}" assignTo="{!orderBy}" /> 
+                                </apex:commandLink>
+                                <apex:image value="/s.gif" rendered="{!IF(sortBy == 'ExportControlForm', true, false)}" alt="{!IF(orderBy == 'ASC', 'Sorted Ascending', 'Sorted Descending')}" styleClass="{!IF(orderBy == 'ASC', 'sortAsc', 'sortDesc')}" title="{!IF(orderBy == 'ASC', 'Sorted Ascending', 'Sorted Descending')}" />  
+                            </apex:outputPanel>
+                        </apex:facet>
+                        <apex:outputLink value="/ExportControlEdit?deviceid={!d.Id}" target="_blank">
+                            {!d.ExportControlFormName}
+                        </apex:outputLink>
+                    </apex:column>
+                    <apex:column rendered="{!isIPDeclarationVisible}">
+                        <apex:facet name="header">
+                            <apex:outputPanel >
+                                <apex:commandLink reRender="deviceBlock">
+                                    IP Declaration Form
+                                    <apex:param name="pSortBy" value="IpDeclarationForm" assignTo="{!sortBy}" />
+                                    <apex:param name="pOrderBy" value="{!IF(orderBy == 'ASC', 'DESC', 'ASC')}" assignTo="{!orderBy}" /> 
+                                </apex:commandLink>
+                                <apex:image value="/s.gif" rendered="{!IF(sortBy == 'IpDeclarationForm', true, false)}" alt="{!IF(orderBy == 'ASC', 'Sorted Ascending', 'Sorted Descending')}" styleClass="{!IF(orderBy == 'ASC', 'sortAsc', 'sortDesc')}" title="{!IF(orderBy == 'ASC', 'Sorted Ascending', 'Sorted Descending')}" />  
+                            </apex:outputPanel>
+                        </apex:facet>
+                        <apex:outputLink value="/IPDeclarationEdit?id={!d.IpDeclarationFormId}&type=list" target="_blank">
+                            {!d.IpDeclarationFormName}
+                        </apex:outputLink>
+                    </apex:column>
+                </apex:pageBlockTable>
+                
+                <apex:outputPanel id="controlPanel" layout="inline" style="display: block; width: 200px; height: 100%; margin: 0 auto;">
+                    <apex:commandLink action="{!first}" rendered="{!HasPrevious}" style="text-decoration: none; color: #333;">
+                        <img src="/s.gif" title="First Page" alt="First Page" class="first1" />
+                    </apex:commandLink>
+                    <apex:outputPanel layout="inline" rendered="{!NOT(HasPrevious)}">
+                        <img src="/s.gif" class="firstoff" alt="First Page" />
+                    </apex:outputPanel>
+                    
+                    <apex:commandLink action="{!previous}" rendered="{!HasPrevious}" style="text-decoration: none; color: #333;">
+                        <img src="/s.gif" title="Previous" alt="Previous" class="prev" />Previous
+                    </apex:commandLink>
+                    <apex:outputPanel layout="inline" rendered="{!NOT(HasPrevious)}">
+                        <img src="/s.gif" alt="Previous" class="prevoff" />
+                        <apex:outputText style="color: #a8a8a8;" value="Previous" />
+                    </apex:outputPanel>
+                    
+                    &nbsp;
+                    
+                    <apex:commandLink action="{!next}" rendered="{!HasNext}" style="text-decoration: none; color: #333;">
+                        Next<img src="/s.gif" title="Next" alt="Next" class="next" />
+                    </apex:commandLink>
+                    <apex:outputPanel layout="inline" rendered="{!NOT(HasNext)}" style="color: #a8a8a8;">
+                        <apex:outputText style="color: #a8a8a8;" value="Next" />
+                        <img src="/s.gif" alt="Next" class="nextoff" />
+                    </apex:outputPanel>
+                    
+                    <apex:commandLink action="{!last}" rendered="{!HasNext}" style="text-decoration: none; color: #333;">
+                        <img src="/s.gif" title="Last Page" alt="Last Page" class="last1" />
+                    </apex:commandLink>
+                    <apex:outputPanel layout="inline" rendered="{!NOT(HasNext)}" style="color: #a8a8a8;">
+                        <img src="/s.gif" class="lastoff" alt="Last Page" />
+                    </apex:outputPanel>
+                </apex:outputPanel>
+            </apex:pageBlockSection>
+        </apex:pageBlock>
+    </apex:actionRegion>
+    
+    <apex:pageBlock Rendered="{!NOT(deviceReturned)}">
+        <apex:pageBlockSection title="Device" columns="1">
+            <apex:outputLabel >Device search result 0</apex:outputLabel>
+        </apex:pageBlockSection>
+    </apex:pageBlock>
+    <!-- ZAmbat 04242014 End -->
+    
+    <!-- PNP Release Search Start   -->
+      <apex:outputPanel layout="block" rendered="{!$ObjectType.PNP_Release__c.accessible}">
+        <apex:pageBlock rendered="{!AND(pnpReleaseList.size > 0)}">
+          <apex:pageBlockSection title="PNP Release" columns="1">
+            <apex:outputLabel > PNP Release result 1 to {!pnpReleaseList.size}</apex:outputLabel>
+            <apex:pageBlockTable value="{!pnpReleaseList}"  var="pnpRelease" title="PNP Release">
+                <apex:column >
+                    <apex:facet name="header">PNP Release Name</apex:facet>
+                    <apex:commandLink action="{!onClickRedirect}" target="_blank" > 
+                        {!pnpRelease.Name}
+                        <apex:param name="pnpReleaseId" assignTo="{!recordId}" value="{!pnpRelease.id}"/>
+                    </apex:commandLink>
+                </apex:column>
+                <apex:column >
+                    <apex:facet name="header">PNP Release Stage</apex:facet>
+                    {!pnpRelease.PNP_Release_Stage__c}                    
+                </apex:column>
+                <apex:column >
+                    <apex:facet name="header">Priority</apex:facet>
+                    {!pnpRelease.Priority__c}
+                </apex:column>
+                <apex:column >
+                    <apex:facet name="header">Lot Size</apex:facet>
+                    {!pnpRelease.Lot_Size__c}
+                </apex:column>
+              </apex:pageBlockTable>
+          </apex:pageBlockSection>
+        </apex:pageBlock>
+        <apex:pageBlock rendered="{!AND(pnpReleaseList.size = 0)}">
+          <apex:pageBlockSection title="PNP Release" columns="1">
+            <apex:outputLabel > PNP Release search result 0 </apex:outputLabel>
+          </apex:pageBlockSection>
+        </apex:pageBlock>
+     </apex:outputPanel> 
+     <!-- PNP Release Search End   -->
+
+  <apex:outputPanel style="margin-top:40px" id="docPanel">
+ <!-- Added By Cognizant for CR # 00013272 starts-->
+<apex:actionStatus id="myStatus" >
+ <apex:facet name="start">
+ <apex:outputpanel ><apex:outputLabel value="{!$Label.WaitingOpenTextLabel}" style="display:block;width:420px;color:black;font-size:15px;font-weight: bold"></apex:outputLabel>
+<apex:image value="{!$Resource.WaitingOpenTextLogo}"   Style="margin-left:400px"/></apex:outputpanel>
+   </apex:facet>
+
+   <apex:facet name="stop">
+   <apex:pageBlock rendered="{!searchResult}" id="pb1">
+   <apex:pageBlockSection title="Document" columns="1" id="pbs1" rendered="{!searchResultpbsection}">
+    <apex:iframe src="{!IframeUrl}" width="100%" height="460px" scrolling="true" > </apex:iframe>
+       </apex:pageBlockSection>
+   </apex:pageBlock>
+   </apex:facet>
+   
+   </apex:actionStatus>
+   <!-- Added By Cognizant for CR # 00013272 ends-->
+</apex:outputPanel>
+  </apex:actionRegion>
+  
+ <!-- Added By Cognizant for CR # 00013272 starts-->
+ <apex:actionFunction name="autoRefresh" action="{!autoRefresh}" rerender="pb1,pbs1,myStatus,docPanel" status="myStatus"/>  
+  <!-- Added By Cognizant for CR # 00013272 ends-->
+  
+</apex:outputPanel>
+</apex:form>
+
+ <!-- Added By Cognizant for CR # 00013272 starts-->
+<script type="text/javascript">
+window.onload = function() {
+  autoRefresh();
+};
+
+</script>
+ <!-- Added By Cognizant for CR # 00013272 ends-->
+</apex:page>

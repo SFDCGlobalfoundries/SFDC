@@ -1,0 +1,87 @@
+<!--
+    @ Author :- Cognizant
+    @ History:         
+        10-July-2017        Ram Rai             Added the Display message for Copy Forms in RIT and DDR #Issue 352 499 498
+        11-July-2017        Anirban Roy         Modified for UAT Issue(Issue 277) for Copy form from lines 22 - 33.
+-->
+<apex:page standardController="Form_Management_System__c" extensions="FMSCopyFormsExtCont">
+
+<style>  
+    .bPageBlock .requiredInput .requiredBlock{background-color: #F6FBF6;}  
+    .requiredInput .requiredBlock::before { display: block; content: "*"; font-size: 1.5em; font-weight: bold; color: #c00; margin-left: -12px; margin-top: -3px; }     
+</style>
+<apex:form id="fmsForm">
+    <apex:pagemessages id="errorMsg" />
+    <apex:pageBlock id="pg1"> 
+        
+        <apex:outputPanel id="hierarchyId">
+            <c:FMSHierarchy formId="{!formId}" newlySelected="{!modifiedFMSObj}"></c:FMSHierarchy>
+        </apex:outputPanel>
+        <apex:pageBlockSection columns="1" collapsible="false">
+        <h1><b><u>Create a new form, copying data from selected form</u></b></h1>
+        <!--<apex:outputPanel rendered="{!formObj.Form_Type__c == 'Main Product Definition Form'}">-->
+           <p>This feature allows you to copy the values from the existing form that you selected into a new form.
+        The new form may be created on an updated form type from the original form. It is therefore not guaranteed
+        that 100% of the values will copy. You must still review the new form entirely before submitting.</p>
+        
+        <p>The form being created will be associated with the customer {!formObj.Customer__c}</p>
+        <!--</apex:outputPanel>-->
+          <!-- Added the Message for Issue #393 499 498 -->
+        <apex:outputPanel rendered="{!formObj.Form_Type__c != 'Main Product Definition Form'}">
+            <p>The form you are copying is an addendum. Addendums must have a parent. Please select the desired parent for the new copy. 
+            Only eligible parent forms are listed.</p>
+        </apex:outputPanel>
+        
+        <apex:outputPanel rendered="{!(formObj.Form_Type__c== 'Incremental Mask Change (IMC)' )}">
+        
+      <p style='color:brown;'>Please review the form hierarchy above and ensure you are adding your addendum form to the correct parent. 
+        Placing an Incremental Mask Change (IMC) form in the wrong place could lead to the wrong masks being used for your product and/or delays in your release. 
+        To change where you are placing your addendum, click "Cancel", navigate to your desired parent form, and select to add an addendum. 
+        To proceed, enter a form name, an optional description, and click "Continue". 
+        If you are unsure, please consult your Foundry Technical Representative.</p>
+        
+        </apex:outputPanel>
+        <apex:outputPanel rendered="{!(formObj.Form_Type__c== 'Design Data Return (DDR)')}">
+            <p style='color:brown;'>Please review the form hierarchy above and ensure you are adding your addendum form to the correct RIT form. Placing a Design Data Return (DDR) form in the wrong place could lead to the wrong design data being returned to you. 
+            To change where you are placing your addendum, click "Cancel", navigate to your desired parent RIT form, and select to add an addendum. To proceed, enter a form name, an optional description, and click "Continue". If you are unsure, please consult your Foundry Technical Representative.</p>
+        </apex:outputPanel>
+        <apex:outputPanel rendered="{!(formObj.Form_Type__c== 'Design Data Submission (RIT)')}">
+                  <p style='color:brown;'>IMPORTANT: Please ensure that you are attaching this RIT addendum to the correct parent form to avoid delays in design data processing. The form hierarchy above must display a direct connection from this RIT to the parent form (Main or IMC) applicable to this tapeout.
+              If you are unsure of the correct placement, please consult your Foundry Technical Representative.</p>
+        <p style='color:brown;'>To change your addendum placement, click "Cancel", navigate to the desired parent form, and select "Create an addendum". To proceed with your current placement, enter a form name, an optional description, and click "Continue".</p>        
+        </apex:outputPanel>
+        <!--<p>This feature allows you to copy the values from the existing form that you selected into a new form.
+        The new form may be created on an updated form type from the original form. It is therefore not guaranteed
+        that 100% of the values will copy. You must still review the new form entirely before submitting.</p>
+        
+        <p>The form being created will be associated with the customer {!formObj.Customer__c}</p>
+
+        <p>The form you are copying is an addendum. Addendums must have a parent. Please select the desired parent for the new copy. 
+        Only eligible parent forms are listed.</p>-->
+        <br/>
+       </apex:pageBlockSection>
+        <apex:pageBlockSection columns="1">
+            <apex:pageBlockSectionItem >
+                <apex:outputLabel value="Select parent for new addendum form" />
+                <apex:outputPanel >
+                    <div class = "requiredInput">
+                        <div class = "requiredBlock"></div>
+                        <apex:selectList value="{!selParentFMSObject}" multiselect="false" size="1" id="selParentId">
+                            <apex:selectOptions value="{!ParentList}"/>
+                        </apex:selectList>   
+                        <apex:actionSupport event="onchange" action="{!populateObj}" reRender="hierarchyId,errorMsg"/>    
+                    </div>
+                </apex:outputPanel>
+            </apex:pageBlockSectionItem>
+        </apex:pageBlockSection>
+        
+        
+        <apex:pageblockButtons location="bottom" style="float:left; margin-left:-100px;">
+            <apex:commandButton title="Continue" value="Continue" action="{!continueMethod}" reRender="errorMsg"/>
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+            <apex:commandButton title="Cancel" value="Cancel" action="{!cancelRecord}" reRender="errorMsg"/>
+        </apex:pageblockButtons>
+        
+    </apex:pageBlock>
+</apex:form>
+</apex:page>

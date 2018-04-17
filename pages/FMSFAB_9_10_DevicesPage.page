@@ -1,0 +1,262 @@
+<!-- 
+    Author: Anil Kumar Reddy L
+    Company: GLOBALFOUNDRIES
+    Project: FMS 2.0
+    Description: Page used for displaying of available Fab 9/10 devices.
+    Change History: 
+    Date               Name                    Comments
+    05192017           ARoy                    Modified the code to use StandardSetController to fix view state issue.
+    07122017           ARoy                    Modified the lines 190-193 for Design Partner inclusion.(Issue 485)
+    -->
+<apex:page sidebar="false" showHeader="false" controller="FMSFAB_9_10_Devices_Cont">
+    <apex:includeScript value="{!$Resource.JqueryD}"/>
+    <apex:includeScript value="{!$Resource.JqueryDatatable}"/>
+    <apex:Stylesheet value="{!$Resource.JqueryDatatableCSS}"/>
+    <script>
+        j$ = jQuery.noConflict();
+        j$(document).ready( function () {
+         addSearchBox();
+        });
+        function addSearchBox(){
+        j$('[id$="devTable"]').DataTable({
+          "order": [[ 3, "desc" ]], "iDisplayLength":500
+        });
+        }
+    </script>
+    <style>
+        .header {
+        font-weight:bold;
+        } 
+        .hand {
+        cursor: pointer; 
+        cursor: hand;
+        }   
+        .colDiv {
+        float: left;            
+        }          
+        .dataTables_length,.dataTables_info,.dataTables_paginate{
+        display:none;
+        }
+        .dataTables_filter{
+        float:left!important;
+        margin-left:200px;
+        margin-top: -25px;
+        padding:5px 5px 5px 5px;
+        }       
+    </style>
+    <apex:form >
+        <apex:actionfunction name="sort" action="{!sort}" rerender="devPageBlock" status="status" oncomplete="addSearchBox();">
+            <apex:param name="sortcol" assignTo="{!sortCol}" value=""/>
+            <apex:param name="sorttype" assignTo="{!sortType}" value=""/>
+            <apex:param name="TapeoutProcess" assignTo="{!TapeoutProcess}" value="{!TapeoutProcess}"/>
+        </apex:actionfunction>
+        <apex:actionfunction name="tapeoutprocessAction" action="{!sort}" rerender="devPageBlock" status="status" oncomplete="addSearchBox();">
+            <apex:param name="TapeoutProcess" assignTo="{!TapeoutProcess}" value=""/>
+        </apex:actionfunction>
+        <apex:pageBlock id="devPageBlock">
+            <div style="float:left;">
+                
+            
+            <apex:outputLabel value="Tapeout Process: " for="selectListId"/>
+            <apex:selectList id="selectListId" value="{!TapeoutProcess}" label="Tapeout Process" multiselect="false" onchange="tapeoutprocessAction(this.value);" size="1">
+                <apex:selectOption itemLabel="FMS 2.0" itemvalue="FMS 2.0"/>
+                <apex:selectOption itemLabel="PTRF" itemvalue="PTRF"/>
+        </apex:selectList></div><p/>
+
+            <apex:pageBlockButtons style="width:100%">
+                <apex:commandButton action="{!setCon.first}" title="Beginning" value="First" status="status" disabled="{!!setCon.hasPrevious}" reRender="devPageBlock" oncomplete="addSearchBox();"/>
+                <apex:commandButton action="{!setCon.previous}" title="Previous" value="Prev" status="status" disabled="{!!setCon.hasPrevious}" reRender="devPageBlock" oncomplete="addSearchBox();"/>
+                <apex:commandButton action="{!setCon.next}" title="Next" value="Next" status="status" disabled="{!!setCon.hasNext}" reRender="devPageBlock" oncomplete="addSearchBox();"/>
+                <apex:commandButton action="{!setCon.last}" title="End" value="Last" status="status" disabled="{!!setCon.hasNext}" reRender="devPageBlock" oncomplete="addSearchBox();"/>
+                <apex:actionStatus id="status" startText="Please wait..."/>
+            </apex:pageBlockButtons>
+            <apex:pageBlockTable value="{!devicesList}" var="d" style="font-size:10px" headerClass="header" id="devTable" width="100%">
+                <apex:column >
+                    <apex:facet name="header">
+                        <apex:outputPanel layout="block">
+                            <apex:outputLabel value="Device Id" onclick="sort('name','{!IF(ISBLANK(sortType),'asc',IF(sortType == 'desc','asc','desc'))}');" styleclass="hand colDiv"/>
+                            <apex:image value="/img/sort_asc_arrow.gif" rendered="{!AND(sortCol == 'name',sortType =='asc')}" styleClass="colDiv"/>
+                            <apex:image value="/img/sort_desc_arrow.gif" rendered="{!AND(sortCol == 'name',sortType =='desc')}" styleClass="colDiv"/>
+                        </apex:outputPanel>
+                    </apex:facet>
+                    <apex:outputLink value="/GlobalfoundryView/apex/FMSDeviceCreationPage?id={!d.deviceInfo.id}" target="_blank">{!d.deviceId}</apex:outputLink>
+                </apex:column>
+                 <apex:column >
+                    <apex:facet name="header">
+                        <apex:outputPanel layout="block">
+                            <apex:outputLabel value="CRMDID" onclick="sort('CRMDID__C','{!IF(ISBLANK(sortType),'asc',IF(sortType == 'desc','asc','desc'))}');" styleclass="hand colDiv"/>
+                            <apex:image value="/img/sort_asc_arrow.gif" rendered="{!AND(sortCol == 'CRMDID__C',sortType =='asc')}" styleClass="colDiv"/>
+                            <apex:image value="/img/sort_desc_arrow.gif" rendered="{!AND(sortCol == 'CRMDID__C',sortType =='desc')}" styleClass="colDiv"/>
+                        </apex:outputPanel>
+                    </apex:facet>
+                    <apex:outputText value="{!d.crmdID}"/>
+                </apex:column>
+                <apex:column >
+                    <apex:facet name="header">FMS Form</apex:facet>                               
+                    <apex:commandLink value="{!d.fmsFormName}" rerender="" action="{!navigateFMSForm}" target="_blank">
+                        <apex:param assignTo="{!formID}" name="{!d.fmsFormID}" value="{!d.fmsFormID}"/>
+                     </apex:commandLink>      
+               </apex:column>
+               <apex:column >     
+                    <apex:facet name="header">Account</apex:facet>                               
+                     <apex:outputText value="{!d.accountName}"/>              
+               </apex:column>
+               <apex:column >     
+                    <apex:facet name="header">Design Partner</apex:facet>                               
+                     <apex:outputText value="{!d.designPartner}"/>              
+               </apex:column>
+                <apex:column >
+                    <apex:facet name="header">
+                        <apex:outputPanel layout="block">
+                            <apex:outputLabel value="Geometry" onclick="sort('geometry__c','{!IF(ISBLANK(sortType),'asc',IF(sortType == 'desc','asc','desc'))}');" styleclass="hand colDiv"/>
+                            <apex:image value="/img/sort_asc_arrow.gif" rendered="{!AND(sortCol == 'geometry__c',sortType =='asc')}" styleClass="colDiv"/>
+                            <apex:image value="/img/sort_desc_arrow.gif" rendered="{!AND(sortCol == 'geometry__c',sortType =='desc')}" styleClass="colDiv"/>
+                        </apex:outputPanel>
+                    </apex:facet>
+                    <apex:outputText value="{!d.geometry}"/>
+                </apex:column>
+              <!-- Commented by Ravindra 
+                <apex:column >
+                    <apex:facet name="header">
+                        <apex:outputPanel layout="block">
+                            <apex:outputLabel value="Status" onclick="sort('status__c','{!IF(ISBLANK(sortType),'asc',IF(sortType == 'desc','asc','desc'))}');" styleclass="hand colDiv"/>
+                            <apex:image value="/img/sort_asc_arrow.gif" rendered="{!AND(sortCol == 'status__c',sortType =='asc')}" styleClass="colDiv"/>
+                            <apex:image value="/img/sort_desc_arrow.gif" rendered="{!AND(sortCol == 'status__c',sortType =='desc')}" styleClass="colDiv"/>
+                        </apex:outputPanel>
+                    </apex:facet>
+                    <apex:outputText value="{!d.status}"/>
+                </apex:column>
+            -->
+                <apex:column >
+                    <apex:facet name="header">
+                        <apex:outputPanel layout="block">
+                            <apex:outputLabel value="Stage" onclick="sort('stage__c','{!IF(ISBLANK(sortType),'asc',IF(sortType == 'desc','asc','desc'))}');" styleclass="hand colDiv"/>
+                            <apex:image value="/img/sort_asc_arrow.gif" rendered="{!AND(sortCol == 'stage__c',sortType =='asc')}" styleClass="colDiv"/>
+                            <apex:image value="/img/sort_desc_arrow.gif" rendered="{!AND(sortCol == 'stage__c',sortType =='desc')}" styleClass="colDiv"/>
+                        </apex:outputPanel>
+                    </apex:facet>
+                    <apex:outputText value="{!d.stage}"/>
+                </apex:column>
+                <apex:column >
+                    <apex:facet name="header">
+                        <apex:outputPanel layout="block">
+                            <apex:outputLabel value="Fab" onclick="sort('fab__c','{!IF(ISBLANK(sortType),'asc',IF(sortType == 'desc','asc','desc'))}');" styleclass="hand colDiv"/>
+                            <apex:image value="/img/sort_asc_arrow.gif" rendered="{!AND(sortCol == 'fab__c',sortType =='asc')}" styleClass="colDiv"/>
+                            <apex:image value="/img/sort_desc_arrow.gif" rendered="{!AND(sortCol == 'fab__c',sortType =='desc')}" styleClass="colDiv"/>
+                        </apex:outputPanel>
+                    </apex:facet>
+                    <apex:outputText value="{!d.fab}"/>
+                </apex:column>
+                   <apex:column >
+                    <apex:facet name="header">
+                        <apex:outputPanel layout="block">
+                            <apex:outputLabel escape="false" value="Tapeout <br/> Process" onclick="sort('tapeout_process__c','{!IF(ISBLANK(sortType),'asc',IF(sortType == 'desc','asc','desc'))}');" styleclass="hand colDiv"/>
+                            <apex:image value="/img/sort_asc_arrow.gif" rendered="{!AND(sortCol == 'tapeout_process__c',sortType =='asc')}" styleClass="colDiv"/>
+                            <apex:image value="/img/sort_desc_arrow.gif" rendered="{!AND(sortCol == 'tapeout_process__c',sortType =='desc')}" styleClass="colDiv"/>
+                        </apex:outputPanel>
+                    </apex:facet>
+                    <apex:outputText value="{!d.tapeoutprocess}"/>
+                </apex:column>
+                   <apex:column >
+               <!--Ravindra - Changes Start-->
+                <apex:facet name="header">Export Control<br/>Form</apex:facet>               
+                <apex:outputLink value="/apex/ExportControlEdit?deviceid={!d.deviceInfo.id}" rendered="{!NOT(ISBLANK(d.ExptCntrlId))}" target="_ECForm">{!d.exportControllForm}</apex:outputLink>
+               </apex:column>
+                 <apex:column >
+                     <apex:facet name="header">Export Control<br/>Status</apex:facet>                               
+                     <apex:outputText value="{!d.ecStatus}"/>
+                </apex:column>
+             <!-- Ravindra - Comment Start
+                <apex:column >
+                     <apex:facet name="header">IP Declaration<br/>Form</apex:facet>                               
+                     <apex:outputText value="{!d.ipDeclarationForm}"/>
+                </apex:column>
+                <apex:column >
+                    <apex:facet name="header">IP Declaration<br/>Status</apex:facet>                               
+                     <apex:outputText value="{!d.ipDeclarationStatus}"/>              
+               </apex:column>
+                
+           Raivndra- Comment End-->
+             <!--Ravindra -- changes Start-->
+                <apex:column >
+                    <apex:facet name="header">
+                        <apex:outputPanel layout="block">
+                            <apex:outputLabel escape="false" value="Current Forecast<br/> Tapeout Date" onclick="sort('Current_Forecast_Tapeout_Date__c','{!IF(ISBLANK(sortType),'asc',IF(sortType == 'desc','asc','desc'))}');" styleclass="hand colDiv"/>
+                            <apex:image value="/img/sort_asc_arrow.gif" rendered="{!AND(sortCol == 'Current_Forecast_Tapeout_Date__c',sortType =='asc')}" styleClass="colDiv"/>
+                            <apex:image value="/img/sort_desc_arrow.gif" rendered="{!AND(sortCol == 'Current_Forecast_Tapeout_Date__c',sortType =='desc')}" styleClass="colDiv"/>
+                        </apex:outputPanel>
+                    </apex:facet>
+                   <apex:outputText value="{0,date,MM'/'dd'/'yyyy}">
+                           <apex:param value="{!d.currTapDate}" /> 
+                    </apex:outputText>
+              
+                </apex:column>
+
+<!--Ravindra -- changes Ends-->
+                <apex:column >
+                    <apex:facet name="header">
+                        <apex:outputPanel layout="block">
+                            <apex:outputLabel value="TapeoutType" onclick="sort('Tapeout_Type__c','{!IF(ISBLANK(sortType),'asc',IF(sortType == 'desc','asc','desc'))}');" styleclass="hand colDiv"/>
+                            <apex:image value="/img/sort_asc_arrow.gif" rendered="{!AND(sortCol == 'Tapeout_Type__c',sortType =='asc')}" styleClass="colDiv"/>
+                            <apex:image value="/img/sort_desc_arrow.gif" rendered="{!AND(sortCol == 'Tapeout_Type__c',sortType =='desc')}" styleClass="colDiv"/>
+                        </apex:outputPanel>
+                    </apex:facet>
+                    <apex:outputText value="{!d.tapeOutType}"/>
+                </apex:column>
+                
+                <apex:column >
+                    <apex:facet name="header">
+                        <apex:outputPanel layout="block">
+                            <apex:outputLabel value="Reticle Type" onclick="sort('Tapeout_Type__c','{!IF(ISBLANK(sortType),'asc',IF(sortType == 'desc','asc','desc'))}');" styleclass="hand colDiv"/>
+                            <apex:image value="/img/sort_asc_arrow.gif" rendered="{!AND(sortCol == 'reticle_Type__c',sortType =='asc')}" styleClass="colDiv"/>
+                            <apex:image value="/img/sort_desc_arrow.gif" rendered="{!AND(sortCol == 'reticle_Type__c',sortType =='desc')}" styleClass="colDiv"/>
+                        </apex:outputPanel>
+                    </apex:facet>
+                    <apex:outputText value="{!d.retType}"/>
+                </apex:column>
+                
+                              
+                
+              <!--Ravindra - Changes Start
+                <apex:column >
+                    <apex:facet name="header">
+                        <apex:outputPanel layout="block">
+                            <apex:outputLabel value="Created" onclick="sort('createdDate','{!IF(ISBLANK(sortType),'asc',IF(sortType == 'desc','asc','desc'))}');" styleclass="hand colDiv"/>
+                            <apex:image value="/img/sort_asc_arrow.gif" rendered="{!AND(sortCol == 'createdDate',sortType =='asc')}" styleClass="colDiv"/>
+                            <apex:image value="/img/sort_desc_arrow.gif" rendered="{!AND(sortCol == 'createdDate',sortType =='desc')}" styleClass="colDiv"/>
+                        </apex:outputPanel>
+                    </apex:facet>
+                    <apex:outputText value="{!d.createdDate}"/>
+                </apex:column>
+                <!--Ravindra - Changes End-->
+                
+          
+               <!--Ravindra - Changes Start
+                <apex:column >
+                    <apex:facet name="header">
+                        <apex:outputPanel layout="block">
+                            <apex:outputLabel value="opportunity" onclick="sort('Opportunity2__c','{!IF(ISBLANK(sortType),'asc',IF(sortType == 'desc','asc','desc'))}');" styleclass="hand colDiv"/>
+                            <apex:image value="/img/sort_asc_arrow.gif" rendered="{!AND(sortCol == 'Opportunity2__c',sortType =='asc')}" styleClass="colDiv"/>
+                            <apex:image value="/img/sort_desc_arrow.gif" rendered="{!AND(sortCol == 'Opportunity2__c',sortType =='desc')}" styleClass="colDiv"/>
+                        </apex:outputPanel>
+                    </apex:facet>
+                    <apex:outputText value="{!d.opportunityName}"/>
+                </apex:column>
+                <apex:column >
+                    <apex:facet name="header">
+                        <apex:outputPanel layout="block">
+                            <apex:outputLabel value="opportunityProgram" onclick="sort('Opportunity_Program__c','{!IF(ISBLANK(sortType),'asc',IF(sortType == 'desc','asc','desc'))}');" styleclass="hand colDiv"/>
+                            <apex:image value="/img/sort_asc_arrow.gif" rendered="{!AND(sortCol == 'Opportunity_Program__c',sortType =='asc')}" styleClass="colDiv"/>
+                            <apex:image value="/img/sort_desc_arrow.gif" rendered="{!AND(sortCol == 'Opportunity_Program__c',sortType =='desc')}" styleClass="colDiv"/>
+                        </apex:outputPanel>
+                    </apex:facet>
+                    <apex:outputText value="{!d.opportunityProgramName}"/>
+                </apex:column>
+            
+            Ravindra - Changes Start-->
+            
+                <apex:facet name="footer">Showing Page # {!setCon.pageNumber} of {!noOfPages}</apex:facet>
+            </apex:pageBlockTable>
+        </apex:pageBlock>
+    </apex:form>
+</apex:page>

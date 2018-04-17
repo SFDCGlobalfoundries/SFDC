@@ -1,0 +1,619 @@
+<!--
+    Label:  ROSVF_SearchReticlesGFForm
+    Author: Ankit Singhal
+    Description: This page has Functionality to change Reticle Obsolescence,Update GE Form in mass for Fab User,Updating GE Form on individual Reticle record.
+    History:
+    Ankit Singhal   01/09/2013  Created the Class
+    Sameer Matale   02/20/2014  Case# 7056 Fix
+    Nikhil Jain     02/19/2014  Added the functionality to Notify Customer by email
+    Sameer Matale   03/04/2014  Sharing with FTA and FAS
+    Sameer Matale   03/07/2014  Update code to include more reticles in email notification to customer
+    Nikhil Jain     27/03/2014  Optimized the code.
+    Nikhil Jain     15/04/2014  Added the logic for UserType and Category based Search Result Columns
+    Vijay Mahajan   20/05/2014  Added moveToActiveReticles and continueProcessing methods to process inactive reticles
+    Nikhil Jain     20/05/2014  Added the logic for storing Forwarder Information  
+    Nikhil Jain     24/07/2014  Restricting user to Notify or give Disposition(Scrap,Return,Keep) for Reticles belonging to previous cycles.
+                                Commented the Recalculate sharing logic and created a new fuction: redirectToRecalculate()
+    Nikhil Jain     22/09/2014  Nullifying the field Date_Inactive_to_Active_Insertion__c once the Reticle from Inactive to Active have been processed accordingly.
+    Sunil Arora     24/09/2014  Added field company name for shipping address
+    DBiswal         06182015    Added fuctionality for PI/YE and Trade Compliance users.
+    DBiswal         08192015    Added Witness Arrival Date functionality.
+    DBiswal         09042015    Changed as per code Review.
+    DBiswal         12042015    Added euc form functionality.
+    rnadella        24112016    Added ROS Enhancements
+    rnadella        24032017    Added ROS Enhancements phase 2
+-->
+<apex:page controller="ROS_ControllerSearchReticleGFForm" tabStyle="ROS__tab" title="Global Foundries - Reticle Obselescence System" sidebar="false" showheader="{!IF((UserType!= 'Customer'), True, False)}" id="thePage" docType="Html-5.0">
+
+<apex:includeScript value="{!URLFOR($Resource.ROS_JQuery_Deafult, '/jquery-ui-1.10.3.custom/js/jquery-1.9.1.js')}"/>
+<apex:includeScript value="{!URLFOR($Resource.ROS_JQuery_Deafult, '/jquery-ui-1.10.3.custom/js/jquery-ui-1.10.3.custom.js')}"/>
+<apex:stylesheet value="{!URLFOR($Resource.ROS_JQuery_Deafult, '/jquery-ui-1.10.3.custom/css/smoothness/jquery-ui-1.10.3.custom.css')}"/>
+<apex:includeScript value="{!$Resource.JSFile_ROSVF_SearchReticlesGFForm}"/>
+<apex:stylesheet value="{!$Resource.StyleSheetFile_ROSVF_SearchReticlesGFForm}"/>
+
+<apex:sectionHeader title="Reticle" subtitle="Search Reticle - {!UserType}" rendered="{!IF((UserType!= 'Customer'), true, false)}" />
+    <apex:form id="myformId">
+        <apex:outputpanel id="searchCrt" >
+            <div id="CategoryHelpText" class="helpTextStyle" style="display:none; opacity:-0.2; {!IF((UserType!= 'Customer'),'left:250px;top:180px;','left:170px;top:100px;')}">
+                <apex:dataTable value="{!lstHelpText}" var="helpText">
+                    <apex:column value="{!helpText}" style="font-weight: bold;" width="30%"/>
+                    <apex:column value="{!mapHelpText[helpText]}"/>
+                </apex:dataTable>
+            </div>
+            <apex:pageBlock title="{!IF((UserType== 'Customer'),'Reticle Information','ROS Information')}">
+                <apex:pageBlockButtons location="bottom">
+                    <apex:commandbutton value="Search" status="LoadingStatusSpinner" action="{!ReticleSearch}" rerender="myButtons,myPanel,messages,myButtonsbottom,eucmainpanel"/>
+                    <apex:commandbutton value="Clear" status="LoadingStatusSpinner" action="{!clearSearch}" rerender="searchCrt,myButtons,myPanel,messages,myButtonsbottom,eucmainpanel"/>
+                    <apex:commandButton value="ReCalculate Sharing" action="{!redirectToRecalculate}" rendered="{!IF(AND(OR(UserType = 'System Administrator',UserType = 'Solution Team')), true, false)}" status="LoadingStatusSpinner"/>
+                    <apex:commandButton value="Create Disposal Certificate" action="{!redirectToDisposalCert}" rendered="{!IF(AND(OR(UserType = 'System Administrator',UserType = 'Solution Team',UserType = 'CSR')), true, false)}" status="LoadingStatusSpinner"/>
+                    <apex:commandButton value="View Scrap Certificate" action="{!ViewScrapCertificate}"/>
+                </apex:pageBlockButtons>
+                <apex:pageblocksection title="Select Category" columns="2" collapsible="false">
+                    <apex:pageBlockSectionItem >
+                            <apex:outputLabel value="Select Category" escape="true">
+                                <img src="/s.gif" class="imgclass" onmouseover="showHelpText('CategoryHelpText');" onmouseout="hideHelpText('CategoryHelpText');"/>
+                            </apex:outputLabel>
+                        <apex:selectList size="1" value="{!category}" id="Category">
+                            <apex:selectOption itemLabel="---Select---" itemValue="None"></apex:selectOption>
+                            <apex:selectOption itemLabel="All Reticles" itemValue="All Reticles" rendered="{!IF((UserType!= 'FAB'), true, false)}"></apex:selectOption>
+                            <apex:selectOption itemLabel="All Active Reticles" itemValue="Active Reticles" rendered="{!IF((UserType != 'FAB'), true, false)}"></apex:selectOption>
+                            <apex:selectOption itemLabel="All Inactive Reticles" itemValue="Inactive Reticles" rendered="{!IF((UserType != 'FAB'), true, false)}"></apex:selectOption>
+                            <apex:selectOption itemLabel="All Archived Reticles" itemValue="Archived Reticles" ></apex:selectOption>
+                            <apex:selectOption itemLabel="1. Pending to Notify Customer" itemValue="pNotifyCust" rendered="{!IF(OR(UserType = 'CSR', UserType = 'System Administrator'), true, false)}"></apex:selectOption>
+                            <apex:selectOption itemLabel="2. Pending Customer Feedback" itemValue="pCstfdbk" rendered="{!IF(OR(UserType = 'CSR',UserType = 'Customer', UserType = 'System Administrator'), true, false)}"></apex:selectOption>
+                            <apex:selectOption itemLabel="3. Pending STF Obsolescence" itemValue="pStfObsel" rendered="{!IF(OR(UserType = 'PI/YE Team',UserType = 'System Administrator'), true, false)}"></apex:selectOption>
+                            <apex:selectOption itemLabel="4. Pending Debit Note (Keep)" itemValue="pDebitNote" rendered="{!IF(OR(UserType = 'CSR', UserType = 'System Administrator'), true, false)}"></apex:selectOption>
+                            <apex:selectOption itemLabel="5a. Pending Fab FollowUp (Return)" itemValue="pGeForm" rendered="{!IF(OR(UserType = 'FAB', UserType = 'System Administrator'), true, false)}"></apex:selectOption>
+                            <apex:selectOption itemLabel="5b. Pending Scrap Certificate (Scrap)" itemValue="pDisCert" rendered="{!IF(OR(UserType = 'FAB', UserType = 'System Administrator'), true, false)}"></apex:selectOption>
+                            <apex:selectOption itemLabel="5c. Pending for Shipment (Return)" itemValue="pDisShip" rendered="{!IF(OR(UserType = 'FAB', UserType = 'System Administrator'), true, false)}"></apex:selectOption>
+                            <apex:selectOption itemLabel="6. Pending for Active Reticle Verification" itemValue="pforVerification" rendered="{!IF(OR(UserType = 'Solution Team', UserType = 'System Administrator'), true, false)}"></apex:selectOption>
+                            <apex:selectOption itemLabel="7. Pending HS Code Assignment" itemValue="pHSCodAsign" rendered="{!IF(OR(UserType = 'Trade Comp', UserType = 'System Administrator'), true, false)}"></apex:selectOption>
+                            <apex:selectOption itemLabel="8. Pending Witness Arrival Date" itemValue="pWADate" rendered="{!IF(OR(UserType = 'CE', UserType = 'System Administrator'), true, false)}"></apex:selectOption>
+                            <apex:selectOption itemLabel="9. Pending EUC Form" itemValue="pEucForm" rendered="{!IF(OR(UserType = 'CSR', UserType = 'System Administrator'), true, false)}"></apex:selectOption>
+                            <apex:actionSupport event="onchange" status="LoadingStatusSpinner" action="{!changeDispositiontype}" reRender="Disposition,Disposition2,Disposition3,searchCrt,Cycles,myButtons,,eucmainpanel"/>
+                        </apex:selectList>  
+                    </apex:pageBlockSectionItem>
+                    <apex:pageBlockSectionItem >
+                        <apex:outputLabel value="Disposition Type"/>
+                        <apex:selectList size="1" value="{!dispositionType}" id="Disposition" disabled="{!if(OR(category='pNotifyCust',category='pCstfdbk',category='pDebitNote',category='pDisCert',category='pGeForm',category='pDisShip'),true,false)}">
+                            <apex:selectOptions value="{!lOptionDispositionType}"/>
+                        </apex:selectList>  
+                    </apex:pageBlockSectionItem>
+                    <apex:pageBlockSectionItem >
+                        <apex:outputLabel value="Reticle ID"/> 
+                        <apex:inputText value="{!ReticleId}"/>  
+                    </apex:pageBlockSectionItem>
+                    <apex:pageBlockSectionItem >
+                        <apex:outputLabel value="FAB"/> 
+                        <apex:selectList id="Fabs" value="{!Fab}" size="1">
+                            <apex:selectOptions value="{!Fabs}"/>
+                        </apex:selectList>
+                    </apex:pageBlockSectionItem>
+                    <apex:pageBlockSectionItem >
+                        <apex:outputLabel value="Device ID"/> 
+                        <apex:inputText value="{!DeviceId}"/>
+                    </apex:pageBlockSectionItem>
+                    <apex:pageBlockSectionItem rendered="{!IsStandardUser}">
+                        <apex:outputLabel value="Region" /> 
+                        <apex:selectList id="Location" value="{!Location}" size="1">
+                         <apex:selectOptions value="{!lOptionRegionType}"/>
+                        </apex:selectList>
+                    </apex:pageBlockSectionItem>
+                    <apex:pageBlockSectionItem >
+                        <apex:outputLabel value="Cycle"/>  
+                        <apex:selectList id="Cycles" value="{!Cycle}" size="1" disabled="{!if(category='Active Reticles',true,false)}">
+                            <apex:selectOptions value="{!Cycles}"/>
+                        </apex:selectList>
+                    </apex:pageBlockSectionItem>
+                    <apex:pageBlockSectionItem rendered="{!IsStandardUser}">
+                        <apex:outputLabel value="Account"/> 
+                        <apex:inputText value="{!AccountName}"/>  
+                    </apex:pageBlockSectionItem>
+                    <apex:pageBlockSectionItem rendered="{!IF(OR(UserType = 'FAB', UserType = 'System Administrator'), true, false)}">
+                        <apex:outputLabel value="GE Form Id"/> 
+                        <apex:inputText value="{!geFormId}"/>  
+                    </apex:pageBlockSectionItem>         
+                </apex:pageblocksection>
+            </apex:pageBlock>
+        </apex:outputpanel>   
+    
+        <apex:outputPanel id="myButtons">
+            <apex:pageMessages id="messages"/>
+            
+            <apex:outputPanel id="tstpopup">
+                <apex:pageBlock rendered="{!displayPopUp}">
+                    <apex:outputPanel styleClass="popupBackground" layout="block"/>
+                    <apex:outputPanel styleClass="custPopup" layout="block">
+                        <apex:pageBlockSection title="How do you want to Notify the Customer" columns="1">
+                            <apex:selectRadio value="{!selectedOptionNotify}">
+                                <apex:selectOptions value="{!ItemsforNotify}"/>
+                            </apex:selectRadio>
+                        </apex:pageBlockSection>
+                        <center>
+                            <apex:commandButton value="Continue" 
+                                                action="{!displayNotifyWindow}" 
+                                                rerender="tstpopup" 
+                                                status="LoadingStatusSpinner"/>
+                                                
+                            <apex:commandButton value="Cancel" 
+                                                action="{!closePopup}" 
+                                                rerender="tstpopup" 
+                                                status="LoadingStatusSpinner"/>
+                                                
+                        </center>
+                    </apex:outputPanel>
+                </apex:pageBlock>
+                
+                <apex:pageBlock rendered="{!displayNotifyByEmail}" id="displayEmailBlock">   
+                    <apex:outputPanel styleClass="popupBackground" layout="block"/>
+                    <apex:outputPanel styleClass="custPopup" layout="block" title="Send Email page" id="sendEmailPanel">
+                        <apex:pageMessages id="popupMessages"/>
+                        <apex:pageBlockSection columns="1" title="Send Notification to the User" collapsible="false" id="sendEmailSection">
+                            <apex:inputText id="toAddId" value="{!toAddress}" label="To" title="To" style="width:99%"/>
+                            <apex:inputText id="ccAddId" value="{!ccAddress}" label="Cc" title="CC" style="width:99%"/>
+                            <apex:inputText id="bccAddId" value="{!bccAddress}" label="Bcc" title="BCC" style="width:99%"/>
+                            <apex:inputText value="{!emailSubject}" label="Subject" title="Subject" style="width:99%"/>
+                            
+                            <apex:outputPanel rendered="{!(selectedOptionNotify == 'With_Reticle')}" style="text-align: right;font-size: 91%;font-weight: bold;color: #4a4a56;">
+                                <apex:outputText >File Attachment</apex:outputText>
+                                <apex:commandLink value="Download" action="{!exportCsvFileNotify}" rerender="" style="padding-left:2em;"/>
+                            </apex:outputPanel>
+                            
+                            <apex:inputTextarea value="{!emailBody}" label="Body" title="Body" style="width:99%;height:300px;"/>
+                        </apex:pageBlockSection>
+                        <br/>
+                        <center>
+                            <input  style="btn" class="buttonStyle" type="button" value="Send Email" onclick="return validateEmailAdd();"/>
+                            <input style="btn" class="buttonStyle" type="button" value="Cancel" onclick="return cancelOperation();"/>
+                        </center>                
+                    </apex:outputPanel>
+                </apex:pageBlock>
+            </apex:outputPanel>
+    
+            <apex:actionFunction action="{!updateReticleStatus}" name="updateReticleStatus" oncomplete="sendEmailToNotifyCustomer();" rerender="messages,hasNotifyUpdateError" status="LoadingStatusSpinner" />
+            <apex:actionFunction action="{!notifyCustomer}" name="notifyCustomer" rerender="tstpopup,popupMessages,myButtons" status="LoadingStatusSpinner" />
+            <apex:actionFunction action="{!closePopup}" name="cancelOperation" rerender="tstpopup" status="LoadingStatusSpinner" />
+    
+            <apex:pageBlock title="Search Results" rendered="{!AND(checkbox,IF(OR(category = 'pWADate', category = 'pEucForm'), False, True))}" ><br></br>
+                
+                <apex:pageBlockButtons location="top">
+                    <apex:commandButton id="btnExport" value="Export" rendered="true" action="{!exportCsvFile}" status="LoadingStatusSpinner" />
+                    <apex:commandbutton value="Assign GE Form " action="{!NavigatetoGEForm}" id="GEButton" rendered="{!IF(AND(OR(UserType = 'FAB', UserType = 'System Administrator'), category = 'pGeForm'), true, false)}" />
+                    <apex:commandbutton value="Notify Customer" action="{!showPopup}" id="btnNotifyCust2" rendered="{!IF(AND(OR(UserType = 'CSR', UserType = 'System Administrator'), category = 'pNotifyCust'), true, false)}" status="LoadingStatusSpinner" reRender="tstpopup,messages"/>
+                    <apex:commandButton value="Create Scrap Certificate" action="{!createDispositionCertificate}" rendered="{!IF(AND(OR(UserType = 'FAB', UserType = 'System Administrator'), category = 'pDisCert'), true, false)}" />
+                    <apex:commandButton value="STF Obsolescence" action="{!updatePIYEstep}" rendered="{!IF(AND(OR(UserType = 'PI/YE Team', UserType = 'System Administrator'), category = 'pStfObsel'), true, false)}"/>
+                    <apex:commandButton value="Notify CSR" action="{!notifyCSR}" status="LoadingStatusSpinner" rendered="{!IF(AND(OR(UserType = 'PI/YE Team', UserType = 'System Administrator'), category = 'pStfObsel'), true, false)}"/>
+                    <apex:commandButton id="btnDebWo" value="Request Waive Off" action="{!debitNoteWaiveOff}"  rendered="{!IF(AND(OR(UserType = 'CSR', UserType = 'System Administrator'), category = 'pDebitNote'), true, false)}" status="LoadingStatusSpinner"  />
+                    <apex:commandButton id="btnDebUpd" value="Assign Debit Note" action="{!updateDebitReference}" rendered="{!IF(AND(OR(UserType = 'CSR', UserType = 'System Administrator'), category = 'pDebitNote'), true, false)}" />
+                    <apex:commandButton value="Attach Customer Feedback" status="LoadingStatusSpinner" action="{!reDirectForm}"   rendered="{!(isDisplayButtons && accessReadWrite && IF(AND(OR(UserType = 'CSR',UserType='Customer',UserType = 'System Administrator'),OR(category = 'pCstfdbk',category='Active Reticles')), true, false))}" />   
+                    <apex:commandbutton value="Keep" status="LoadingStatusSpinner" action="{!returnKeep}" rendered="{!(isDisplayButtons && accessReadWrite && IF(AND(OR(UserType = 'CSR', UserType='Customer',UserType = 'System Administrator'),OR(category = 'pCstfdbk')), true, false))}" rerender="myButtons,myPanel,messages,myButtonsbottom"/>
+                    <apex:commandbutton value="Return" onclick="alert('Please make sure to attach customer feedback before proceeding');" status="LoadingStatusSpinner" action="{!returnRetilce}" rendered="{!(isDisplayButtons && accessReadWrite && IF(AND(OR(UserType = 'CSR',UserType='Customer', UserType = 'System Administrator'),OR(category = 'pCstfdbk',category='Active Reticles')), true, false))}"  />
+                    <apex:commandbutton value="Scrap" onclick="alert('Please make sure to attach customer feedback before proceeding');" status="LoadingStatusSpinner" action="{!redirectScrap}" rendered="{!(isDisplayButtons && accessReadWrite && IF(AND(OR(UserType = 'CSR',UserType='Customer',UserType = 'System Administrator'),OR(category = 'pCstfdbk',category='Active Reticles')), true, false))}"/>
+                    <apex:commandbutton value="Move to Active" status="LoadingStatusSpinner" action="{!moveToActiveReticles}" rendered="{!(isDisplayButtons && IF(AND(OR(UserType = 'Solution Team',UserType = 'System Administrator'),OR(category = 'pforVerification')), true, false))}" rerender="myButtons,myPanel,messages,myButtonsbottom" />
+                    <apex:commandbutton value="Continue Processing" status="LoadingStatusSpinner" action="{!continueProcessing}" rendered="{!(isDisplayButtons && IF(AND(OR(UserType = 'Solution Team',UserType = 'System Administrator'),OR(category = 'pforVerification')), true, false))}" rerender="myButtons,myPanel,messages,myButtonsbottom" />
+                    <apex:commandButton value="Assign HS Code" action="{!performSTFObsolescence}" rendered="{!IF(AND(OR(UserType = 'Trade Comp', UserType = 'System Administrator'), category = 'pHSCodAsign'), true, false)}"/>
+                    <apex:commandButton value=" Cancel " action="{!Cancel}" rendered="{!IF(AND(OR(UserType = 'Trade Comp', UserType = 'System Administrator'), category = 'pHSCodAsign'), true, false)}"/>
+                </apex:pageBlockButtons>
+                <apex:outputText value="Attach customer feedback first before execute on the disposition" style="font-weight:bold;font-size:12pt;" rendered="{!(isDisplayButtons && accessReadWrite && IF(AND(OR(UserType = 'CSR',UserType='Customer', UserType = 'System Administrator'),OR(category = 'pCstfdbk',category='Active Reticles')), true, false))}"/>
+                <apex:outputpanel id="myPanel">
+                
+                    <!-- 06222015 DBiswal -->
+                    <div align="right">
+                        <apex:outputPanel id="hscodepanel" rendered="{!IF(category = 'pHSCodAsign',True,False)}">
+                        <apex:outputLabel for="hscode" value="HS Code"/>
+                        <apex:inputText value="{!HSCode}" id="hscode"/>
+                        <apex:outputLabel for="Item" value="Item#"/>
+                        <apex:inputText value="{!Item}" id="Item"/>
+                        <apex:commandButton value="Assign" action="{!assign}" reRender="Reticles,myButtons" status="LoadingStatusSpinner"/>
+                        </apex:outputPanel>
+                    </div>
+                    <!-- DBiswal -->
+                    
+                    <apex:pageBlockTable value="{!SelectedRetwrapper}" var="a" columns="15" width="80%"  cellpadding="2" border="1"  rowClasses="odd,even" styleClass="tableClass" rendered="{!AND(Checkbox,if(OR(category = 'pStfObsel', category='pHSCodAsign'),false,true))}">
+                        <apex:column rendered="{!AND(OR(AND(isDisableChkBx,(UserType != 'Customer'),(UserType != 'FAE'),(UserType != 'CE')),AND(isDisableChkBx,UserType == 'Customer',OR(category == 'pCstfdbk',category == 'Active Reticles'))),accessReadWrite)}">
+                            <apex:facet name="header">
+                                <apex:inputCheckbox value="{!Allselected}" onclick="checkAll(this,'checkedone')">
+                                </apex:inputCheckbox>
+                            </apex:facet>
+                            <apex:inputCheckbox value="{!a.isSelected}" id="checkedone" rendered="{!isDisableChkBx && accessReadWrite}"  disabled="{!IF(a.eachReticleWrapper.ROS_Status__c = null,IF(AND(OR(category = 'Active Reticles', category = 'Inactive Reticles'), UserType='System Administrator'), true, IF(AND(category != 'pforVerification', UserType='Solution Team'), true, false)),IF(OR(category = 'pDisCert', category = 'pStfObsel', category = 'pGeForm', category = 'pDebitNote', category = 'pEviCert', category = 'pNotifyCust', category == 'pforVerification', category == 'pHSCodAsign'), false, true))}"/>
+                        </apex:column>
+                        
+                        <apex:repeat value="{!UserField }" var="str">
+                            <apex:column value="{!a.eachReticleWrapper[str]}" rendered="{!if(str = 'Shipping_Address__c' ||str = 'ROS_Cycle__r.Name'||str = 'ROS_Status__c'|| str = 'Day_Inactive_Formula__c' ||str = 'GlobalFoundries_Device_ID__c' || str = 'Device_ID__c',false,true)}"></apex:column>
+                            <apex:column rendered="{!if(str == 'GlobalFoundries_Device_ID__c',true,false)}">
+                                <apex:facet name="header">GF Device Id</apex:facet>
+                                <apex:commandLink value="{!IF(LEN(a.eachReticleWrapper.GlobalFoundries_Device_ID__c)>15,LEFT(a.eachReticleWrapper.GlobalFoundries_Device_ID__c,15)+'...',a.eachReticleWrapper.GlobalFoundries_Device_ID__c)}" onclick="alert('GF Device ID:\n{!a.eachReticleWrapper.GlobalFoundries_Device_ID__c}');" rerender="dummy"/>
+                            </apex:column>
+                            <apex:column rendered="{!if(str == 'ROS_Cycle__r.Name',true,false)}">
+                                <apex:facet name="header">ROS<br></br>Cycle</apex:facet>
+                                <apex:outputText value="{!a.eachReticleWrapper.ROS_Cycle__r.name}"/>
+                            </apex:column> 
+                            <apex:column rendered="{!if(str == 'Day_Inactive_Formula__c',true,false)}">
+                                <apex:facet name="header">Inactive<br></br>Days</apex:facet>
+                                <apex:outputText value="{!a.eachReticleWrapper.Day_Inactive_Formula__c}"/>
+                            </apex:column> 
+                            <apex:column rendered="{!if(str == 'ROS_Status__c',true,false)}">
+                            <apex:facet name="header">Disposition<br></br>Type</apex:facet>
+                                <apex:outputText value="{!a.eachReticleWrapper.ROS_Status__c}"/>
+                            </apex:column>                                                    
+                            <apex:column rendered="{!AND(UserType != 'FAB',UserType != 'FAB_Export',UserType != 'ALLCOLUMNS_TWO',if(str = 'Device_ID__c',true,false))}">
+                                <apex:facet name="header">Customer Device Id</apex:facet>
+                                <apex:commandLink value="{!IF(LEN(a.eachReticleWrapper.Device_ID__c)>15,LEFT(a.eachReticleWrapper.Device_ID__c,15)+'...',a.eachReticleWrapper.Device_ID__c)}" onclick="alert('Customer Device ID:\n{!a.eachReticleWrapper.Device_ID__c}');" rerender="dummy"/>
+                            </apex:column>
+                        </apex:repeat>
+                        
+                        <apex:column rendered="{!IF(AND(OR(UserType = 'FAB', UserType = 'System Administrator'), category = 'pDisCert' ), true, false)}" headerValue="Witness Arrival Date">
+                            <apex:outputLabel >                                
+                                <apex:outputText value="{0,date,MM'/'dd'/'yyyy}">
+                                    <apex:param value="{!a.eachReticleWrapper.Witness_Arrival_Date__c}" /> 
+                                </apex:outputText>
+                            </apex:outputLabel> 
+                        </apex:column>
+    
+                        <apex:column rendered="{!IF(AND(OR(UserType = 'FAB', UserType = 'System Administrator'), category = 'pGeForm'), true, false)}" headerValue="Forwarder Details">
+                            <apex:outputLabel >
+                                {!a.eachReticleWrapper.Forwarder_Name__c}<br></br>
+                                {!a.eachReticleWrapper.Account_Number__c}<br></br>
+                                {!a.eachReticleWrapper.Contact_Name__c}<br></br>
+                                {!a.eachReticleWrapper.Contact_Phone_Number__c}<br></br>
+                            </apex:outputLabel> 
+                        </apex:column>
+                        
+                        <apex:column rendered="{!IF(AND(OR(UserType = 'FAB', UserType = 'System Administrator'), category = 'pGeForm' ), true, false)}" headerValue="Special Instructions">
+                            <apex:outputLabel >
+                                {!a.eachReticleWrapper.Special_Instructions__c}
+                            </apex:outputLabel>
+                        </apex:column>
+    
+                        <apex:column rendered="{!IF(AND(OR(UserType = 'FAB', UserType = 'System Administrator'), category = 'pGeForm' ), true, false)}">
+                            <apex:facet name="header">
+                                <apex:outputPanel >
+                                    <apex:outputText >Acknowledge<br/> Instructions</apex:outputText>
+                                    <br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                                    <apex:inputCheckbox onclick="checkAll(this,'ackcheck')"/>
+                                </apex:outputPanel>                                 
+                            </apex:facet>
+                            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                            <apex:inputField id="ackcheck" value="{!a.eachReticleWrapper.Acknowledge_Special_Instructions__c}" rendered="{!IF(a.eachReticleWrapper.Special_Instructions__c != null,true,false)}" style="margin: auto;"/>
+                        </apex:column> 
+                        
+                    </apex:pageBlockTable>
+                    <apex:pageBlockTable id="stfObsol" Value="{!SelectedRetwrapper}" var="var" rendered="{!AND(Checkbox,if(category = 'pStfObsel',true,false))}">
+                        <apex:column >
+                            <apex:facet name="header">
+                                <apex:inputCheckbox onclick="checkAll(this,'checkedone2')" value="{!AllSelected}" id="selectAll"/>
+                            </apex:facet>        
+                                <apex:inputCheckbox value="{!var.IsSelected}" id="checkedone2"/>
+                        </apex:column>
+                        <apex:column headerValue="Account">
+                            <apex:outputText value="{!var.eachReticleWrapper.Account__r.name}"/>
+                        </apex:column>
+                        <apex:column headerValue="Reticle Id">
+                            <apex:outputText value="{!var.eachReticleWrapper.Name}"/>
+                        </apex:column>
+                        <apex:column headerValue="GF Device Id">
+                            <apex:outputText value="{!var.eachReticleWrapper.GlobalFoundries_Device_ID__c}"/>
+                        </apex:column>
+                        <apex:column headerValue="Date CSR Notified">
+                            <apex:outputText value="{0, date,dd'/'MM'/'yyyy}">
+                             <apex:param value="{!var.eachReticleWrapper.Csr_notified_date__c}"/>
+                            </apex:outputText>
+                        </apex:column>
+                            <apex:column headerValue="Customer Device Id">
+                            <apex:outputText value="{!var.eachReticleWrapper.Device_ID__c}"/>
+                        </apex:column>
+                        <apex:column headerValue="Fab">
+                            <apex:outputText value="{!var.eachReticleWrapper.FabStr__c}"/>
+                        </apex:column>
+                        <apex:column headerValue="Disposition Type">
+                            <apex:outputText value="{!var.eachReticleWrapper.ROS_Status__c}"/>
+                        </apex:column>
+                        <apex:column headerValue="Reticle Workflow Status">
+                            <apex:outputText value="{!var.eachReticleWrapper.Reticle_workflow_Status__c}"/>
+                        </apex:column>
+                    </apex:pageBlockTable>           
+              <!--- 276 to 310
+                    <apex:pageBlockTable width="640px;" value="{!RetcileListDevice}" var="reticle" columns="7" rendered="{!AND(Checkbox,if(category = 'pStfObsel',true,false))}">
+                        <apex:column rendered="{!UserType != 'Customer'}">
+                             <apex:facet name="header">
+                                <apex:inputCheckbox value="{!Allselected}" onclick="checkAll(this,'checkedone')">
+                                 </apex:inputCheckbox>
+                            </apex:facet>
+                            <apex:inputCheckbox value="{!RetcileListDevice[reticle].isSelected}" id="checkedone"/>
+                        </apex:column>
+                        
+                        <apex:column value="{!reticle.Account__c}" headerValue="Account"/>
+                        <apex:column >
+                            <apex:facet name="header">GF Device Id</apex:facet>
+                            <apex:commandLink value="{!IF(LEN(reticle.Name)>15,LEFT(reticle.Name,15)+'...',reticle.Name)}" onclick="alert('GF Device ID:\n{!reticle.Name}');" rerender="dummy" />
+                        </apex:column>
+                        
+                        <apex:column >
+                            <apex:facet name="header">Customer Device Id</apex:facet>
+                            <apex:commandLink value="{!IF(LEN(reticle.CRMDID__c)>15,LEFT(reticle.CRMDID__c,15)+'...',reticle.CRMDID__c)}" onclick="alert('Customer Device ID:\n{!reticle.CRMDID__c}');" rerender="dummy"/>
+                        </apex:column>
+                        <!-- apex:column value="{!reticle.Device_Type__c}" headerValue="Device Type"/ -->
+                        <!--
+                        <apex:column >
+                            <apex:facet name="header">FAB</apex:facet>
+                            <apex:commandLink value="{!IF(LEN(reticle.Fab__c)>15,LEFT(reticle.Fab__c,15)+'...',reticle.Fab__c)}" onclick="alert('FABs:\n{!reticle.Fab__c}');" rerender="dummy"/>
+                        </apex:column>
+                        <apex:column headerValue="Reticles" width="50%">
+                            <apex:repeat value="{!RetcileListDevice[reticle].deviveRetcileList}" var="Str">
+                                <apex:outputText >{!Str.Name}</apex:outputText>,
+                            </apex:repeat>
+                        </apex:column>
+                        
+                        <apex:column value="{!RetcileListDevice[reticle].deviveRetcileList[0].Witness_Arrival_Date__c}" headerValue="Witness Arrival Date"/>
+                    </apex:pageBlockTable>
+                    ----!>
+                    <!-- 06222015 DBiswal -->
+                    <apex:pageBlockTable id="hsItemAssign" Value="{!SelectedRetwrapper}" var="var" rendered="{!AND(Checkbox,IF(category='pHSCodAsign',True,False))}">
+                        <apex:column >
+                            <apex:facet name="header">
+                                <apex:inputCheckbox onclick="checkAll(this,'checkedone1')" value="{!AllSelected}" id="selectAll"/>
+                            </apex:facet>        
+                                <apex:inputCheckbox value="{!var.IsSelected}" id="checkedone1"/>
+                        </apex:column>
+                        <apex:column headerValue="Name">
+                            <apex:outputText value="{!var.eachReticleWrapper.Name}"/>
+                        </apex:column>
+                        <apex:column headerValue="GF Device Id">
+                            <apex:outputText value="{!var.eachReticleWrapper.GlobalFoundries_Device_ID__c}"/>
+                        </apex:column>
+                            <apex:column headerValue="Disposition Type">
+                            <apex:outputText value="{!var.eachReticleWrapper.ROS_Status__c}"/>
+                        </apex:column>
+                        <apex:column headerValue="Reticle Type">
+                            <apex:outputText value="{!var.eachReticleWrapper.Reticle_Type__c}"/>
+                        </apex:column>     
+                        <apex:column headerValue="ROS Cycle">
+                            <apex:outputText value="{!var.eachReticleWrapper.ROS_Cycle__r.name}"/>
+                        </apex:column>                 
+                        <apex:column headerValue="HS Code">
+                            <apex:inputField value="{!var.eachReticleWrapper.HS_Code__c}" rendered="{!if(var.eachReticleWrapper.ROS_Status__c=='Scrap',false,true)}"/>
+                        </apex:column>
+                        <apex:column headerValue="Item #">
+                            <apex:inputField value="{!var.eachReticleWrapper.Item__c}" rendered="{!if(var.eachReticleWrapper.ROS_Status__c=='Scrap',false,true)}"/>
+                        </apex:column>
+                    </apex:pageBlockTable>              
+                    <!-- 06222015 DBiswal -->
+                          
+                    <apex:outputPanel id="myButtonsbottom" >  
+                        <div class="bottomNav">
+                            <apex:panelGrid width="100%" columns="4" rendered="{!checkbox}" columnClasses="firstColumn, middleColumn, lastColumn">
+                                <apex:outputPanel rendered="{!NOT(AND(Checkbox,if(category = 'pStfObsel',true,false)))}"> {!displayRecordStart} - {!displayRecordEnd} of {!totalRecords}</apex:outputPanel>
+                                <apex:outputPanel rendered="{!AND(Checkbox,if(category = 'pStfObsel',true,false))}">Page {!pageNumber} of {!totalPages}</apex:outputPanel>
+                                
+                                <apex:panelGroup styleClass="prevNextLinks">
+                                    <!-- code for Previous OFF -->
+                                    <apex:outputPanel styleClass="prevNext" rendered="{!disablePrevious}">
+                                       <img class="firstoff" alt="First Page" src="/s.gif"></img>
+                                    </apex:outputPanel>
+                                    <apex:outputPanel styleClass="prevNext" rendered="{!disablePrevious}">
+                                      <img class="prevoff" alt="Previous" src="/s.gif"></img>
+                                      Previous
+                                    </apex:outputPanel>
+                                    <apex:outputPanel styleClass="prevNext" rendered="{!Not(disablePrevious)}">
+                                        <apex:commandLink action="{!beginning}" status="LoadingStatusSpinner" title="First" reRender="myPanel,myButtons,messages,myButtonsbottom">
+                                            <img src="/s.gif" title="First Page" alt="First Page" class="first1"/>
+                                        </apex:commandLink>
+                                    </apex:outputPanel>
+                                    <apex:outputPanel styleClass="prevNext" rendered="{!NOT(disablePrevious)}">
+                                        <apex:commandLink action="{!previous}" status="LoadingStatusSpinner" title="Previous" reRender="myPanel,myButtons,messages,myButtonsbottom">
+                                            <img src="/s.gif" title="Previous Page" alt="Previous" class="prev"/>
+                                            Previous
+                                        </apex:commandLink>
+                                    </apex:outputPanel>
+                                    <!--  code for Active Next ---->
+                                    <!-- code for Previous OFF -->
+                                    <apex:outputPanel styleClass="prevNext" rendered="{!disableNext}">
+                                        Next
+                                       <img class="nextoff" alt="Next" src="/s.gif"></img>
+                                    </apex:outputPanel>
+                                    <apex:outputPanel styleClass="prevNext" rendered="{!disableNext}">
+                                      <img class="lastoff" alt="Last Page" src="/s.gif"></img>
+                                    </apex:outputPanel>
+                                    <apex:outputPanel styleClass="prevNext" rendered="{!Not(disableNext)}">
+                                       <apex:commandLink action="{!next}" status="LoadingStatusSpinner" title="Next" reRender="myPanel,myButtons,messages,myButtonsbottom">
+                                           Next <img src="/s.gif" title="Next" alt="Next" class="next"/>
+                                         </apex:commandLink>
+                                    </apex:outputPanel>
+                                    <apex:outputPanel styleClass="prevNext" rendered="{!NOT(disableNext)}">
+                                       <apex:commandLink action="{!end}" status="LoadingStatusSpinner" title="Next" reRender="myPanel,myButtons,messages,myButtonsbottom">
+                                            <img src="/s.gif" title="Last Page" alt="Last Page" class="last1"/>
+                                        </apex:commandLink>
+                                    </apex:outputPanel>
+                                </apex:panelGroup>
+                                <apex:outputPanel >Page {!pageNumber} of {!totalPages}</apex:outputPanel>
+                            </apex:panelGrid>
+                        </div>
+                    </apex:outputPanel>
+                        
+                </apex:outputpanel>
+                
+            </apex:pageBlock>
+            
+            <!-- 07082015 DBiswal -->
+            <apex:pageBlock id="witArrivalpb1" mode="edit" rendered="{!AND(OR(Checkbox,showWitdate),IF(category = 'pWADate', True, False))}" >
+                <apex:pageBlockSection id="witArrivalpbs" title="Assign/Change Witness Arrival Date" rendered="{!IF(category='pWADate',True,False)}"  collapsible="false" columns="1">
+                    <apex:outputLabel id="witArrivalol" style="margin-left:440px; color:#f60; font-weight:bold; font-size:15px;">Please select Witness Arrival Date for Reticles(Broadcom).</apex:outputLabel>                 
+                       <table style="width:20%;margin-left:470px;" id="witArrivaltable">
+                            <tr>
+                            <td width="100%" valign="top">
+                            <apex:pageBlock id="witArrivalpb2">  
+                            <center>
+                            <table cellspacing="3">
+                                <tr>
+                                    <td align="center">
+                                        <apex:outputtext style="text-align: center;"><b>Witness Arrival Date</b></apex:outputtext>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td align="center">
+                                        <apex:input label="datePicker" value="{!WitArrivDate}" type="auto"/>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td align="center">
+                                        <apex:commandButton id="witArrivalcb2" value="submit" action="{!submitWitArrivDate}"/>
+                                    </td>
+                                </tr>
+                            </table>
+                            </center>
+                            </apex:pageBlock>
+                            </td>
+                            </tr>
+                        </table>                   
+                </apex:pageBlockSection>
+            </apex:pageBlock>
+            
+            <apex:pageBlock title="Search Results" rendered="{!AND(checkbox,IF(AND(OR(UserType = 'CE', UserType = 'System Administrator'), category = 'pWADate'), True, False))}" ><br></br>              
+                <apex:pageBlockButtons location="top">
+                    <apex:commandButton id="cbExpWADate" value="Export" rendered="true" action="{!exportCsvFile}" status="LoadingStatusSpinner" style="margin-left:200px;"/>
+                </apex:pageBlockButtons>                
+                <apex:outputpanel id="oPanelWADate">                    
+                    <apex:pageBlockTable value="{!SelectedRetwrapper}" var="a" columns="14" width="80%"  cellpadding="2" border="1"  rowClasses="odd,even" styleClass="tableClass" rendered="{!AND(Checkbox,if(category='pHSCodAsign',false,true))}">
+                                                
+                        <apex:repeat value="{!UserField }" var="str">
+                            <apex:column value="{!a.eachReticleWrapper[str]}" rendered="{!if(str = 'Shipping_Address__c' ||str = 'ROS_Cycle__r.Name'||str = 'ROS_Status__c'|| str = 'Day_Inactive_Formula__c' ||str = 'GlobalFoundries_Device_ID__c' || str = 'Device_ID__c',false,true)}"></apex:column>
+                            <apex:column rendered="{!if(str == 'GlobalFoundries_Device_ID__c',true,false)}">
+                                <apex:facet name="header">GF Device Id</apex:facet>
+                                <apex:commandLink value="{!IF(LEN(a.eachReticleWrapper.GlobalFoundries_Device_ID__c)>15,LEFT(a.eachReticleWrapper.GlobalFoundries_Device_ID__c,15)+'...',a.eachReticleWrapper.GlobalFoundries_Device_ID__c)}" onclick="alert('GF Device ID:\n{!a.eachReticleWrapper.GlobalFoundries_Device_ID__c}');" rerender="dummy"/>
+                            </apex:column>
+                            <apex:column rendered="{!if(str == 'ROS_Cycle__r.Name',true,false)}">
+                                <apex:facet name="header">ROS<br></br>Cycle</apex:facet>
+                                <apex:outputText value="{!a.eachReticleWrapper.ROS_Cycle__r.name}"/>
+                            </apex:column> 
+                            <apex:column rendered="{!if(str == 'Day_Inactive_Formula__c',true,false)}">
+                                <apex:facet name="header">Inactive<br></br>Days</apex:facet>
+                                <apex:outputText value="{!a.eachReticleWrapper.Day_Inactive_Formula__c}"/>
+                            </apex:column> 
+                            <apex:column rendered="{!if(str == 'ROS_Status__c',true,false)}">
+                            <apex:facet name="header">Disposition<br></br>Type</apex:facet>
+                                <apex:outputText value="{!a.eachReticleWrapper.ROS_Status__c}"/>
+                            </apex:column>                                                    
+                            <apex:column rendered="{!AND(UserType != 'FAB',UserType != 'FAB_Export',UserType != 'ALLCOLUMNS_TWO',if(str = 'Device_ID__c',true,false))}">
+                                <apex:facet name="header">Customer Device Id</apex:facet>
+                                <apex:commandLink value="{!IF(LEN(a.eachReticleWrapper.Device_ID__c)>15,LEFT(a.eachReticleWrapper.Device_ID__c,15)+'...',a.eachReticleWrapper.Device_ID__c)}" onclick="alert('Customer Device ID:\n{!a.eachReticleWrapper.Device_ID__c}');" rerender="dummy"/>
+                            </apex:column>
+                        </apex:repeat>
+                    </apex:pageBlockTable>                    
+                          
+                    <apex:outputPanel id="myButtonsbottomWADate" >  
+                        <div class="bottomNav1">
+                            <apex:panelGrid width="100%" columns="4" rendered="{!checkbox}" columnClasses="firstColumn, middleColumn, lastColumn">
+                                <apex:outputPanel rendered="{!NOT(AND(Checkbox,if(category = 'pStfObsel',true,false)))}"> {!displayRecordStart} - {!displayRecordEnd} of {!totalRecords}</apex:outputPanel>
+                                <apex:panelGroup styleClass="prevNextLinks">
+                                    <!-- code for Previous OFF -->
+                                    <apex:outputPanel styleClass="prevNext" rendered="{!disablePrevious}">
+                                       <img class="firstoff" alt="First Page" src="/s.gif"></img>
+                                    </apex:outputPanel>
+                                    <apex:outputPanel styleClass="prevNext" rendered="{!disablePrevious}">
+                                      <img class="prevoff" alt="Previous" src="/s.gif"></img>
+                                      Previous
+                                    </apex:outputPanel>
+                                    <apex:outputPanel styleClass="prevNext" rendered="{!Not(disablePrevious)}">
+                                        <apex:commandLink action="{!beginning}" status="LoadingStatusSpinner" title="First" reRender="myPanel,myButtons,messages,myButtonsbottomWADate">
+                                            <img src="/s.gif" title="First Page" alt="First Page" class="first1"/>
+                                        </apex:commandLink>
+                                    </apex:outputPanel>
+                                    <apex:outputPanel styleClass="prevNext" rendered="{!NOT(disablePrevious)}">
+                                        <apex:commandLink action="{!previous}" status="LoadingStatusSpinner" title="Previous" reRender="myPanel,myButtons,messages,myButtonsbottomWADate">
+                                            <img src="/s.gif" title="Previous Page" alt="Previous" class="prev"/>
+                                            Previous
+                                        </apex:commandLink>
+                                    </apex:outputPanel>
+                                    <!--  code for Active Next ---->
+                                    <!-- code for Previous OFF -->
+                                    <apex:outputPanel styleClass="prevNext" rendered="{!disableNext}">
+                                        Next
+                                       <img class="nextoff" alt="Next" src="/s.gif"></img>
+                                    </apex:outputPanel>
+                                    <apex:outputPanel styleClass="prevNext" rendered="{!disableNext}">
+                                      <img class="lastoff" alt="Last Page" src="/s.gif"></img>
+                                    </apex:outputPanel>
+                                    <apex:outputPanel styleClass="prevNext" rendered="{!Not(disableNext)}">
+                                       <apex:commandLink action="{!next}" status="LoadingStatusSpinner" title="Next" reRender="myPanel,myButtons,messages,myButtonsbottomWADate">
+                                           Next <img src="/s.gif" title="Next" alt="Next" class="next"/>
+                                         </apex:commandLink>
+                                    </apex:outputPanel>
+                                    <apex:outputPanel styleClass="prevNext" rendered="{!NOT(disableNext)}">
+                                       <apex:commandLink action="{!end}" status="LoadingStatusSpinner" title="Next" reRender="myPanel,myButtons,messages,myButtonsbottomWADate">
+                                            <img src="/s.gif" title="Last Page" alt="Last Page" class="last1"/>
+                                        </apex:commandLink>
+                                    </apex:outputPanel>
+                                </apex:panelGroup>
+                                <apex:outputPanel >Page {!pageNumber} of {!totalPages}</apex:outputPanel>
+                            </apex:panelGrid>
+                        </div>
+                    </apex:outputPanel>                        
+                </apex:outputpanel>                
+            </apex:pageBlock>
+            <!-- 07082015 DBiswal -->
+        </apex:outputPanel> 
+        
+        <apex:outputPanel id="eucmainpanel">
+        <!-- 12042015 DBiswal -->
+            <apex:pageBlock id="pbeucsection" title="Search Results" rendered="{!AND(checkbox,IF(AND(OR(UserType = 'CSR', UserType = 'System Administrator'), category = 'pEucForm'), True, False))}" ><br></br>
+                <apex:pageBlockButtons location="top">
+                    <!-- apex:commandButton id="cbeucExp" value="Export" rendered="true" action="{!exportCsvFile}" status="LoadingStatusSpinner" style="margin-left:200px;"/ -->
+                    <apex:commandButton id="cbeucAttach" onclick="window.open('/apex/ROSVF_eucAttachment?devid={!eucdevIdParent}','_blank', 'toolbar=yes, scrollbars=yes, resizable=yes, top=250, left=400, width=500, height=350');" value="Attach EUC Form"  disabled="{!NOT(dispRetsec)}" reRender="pbeucsection" style="margin-left:180px;"/>
+                </apex:pageBlockButtons> 
+                
+                <apex:outputPanel >
+                    <center>
+                        <apex:outputLabel id="oleuc1" for="sleuc1" value="Available Devices : " style="font-weight: bold;"/>
+                        <apex:selectList id="sleuc1" value="{!devselected}" size="1">
+                            <apex:selectOptions id="soeuc1" value="{!devOptions}"/>
+                            <apex:actionSupport id="aseuc1" event="onchange" action="{!disPSMRets}" status="LoadingStatusSpinner" reRender="pbeucsection,pbteuc1,messages"/>
+                        </apex:selectList>
+                    </center>
+                </apex:outputPanel>
+                
+                <br/><br/>
+                <apex:pageBlockTable id="pbteuc1" value="{!listPSMRets}" var="pret" columns="15" width="80%"  cellpadding="2" border="1"  rowClasses="odd,even" styleClass="tableClass" rendered="{!dispRetsec}">
+                    <apex:column value="{!pret.Account__r.Name}" headerValue="Account Name"/>
+                    <apex:column value="{!pret.Name}" headerValue="Reticle Id"/>
+                    <apex:column value="{!pret.Reticle_Type__c}" headerValue="Reticle Type"/>
+                    <apex:column value="{!pret.ROS_Cycle__r.Name}" headerValue="ROS Cycle"/>
+                    <apex:column value="{!pret.FabStr__c}" headerValue="Fab"/>
+                    <apex:column value="{!pret.ROS_Status__c}" headerValue="Disposition Type"/>
+                </apex:pageBlockTable>
+            </apex:pageBlock>
+            <!-- 12042015 DBiswal -->
+        </apex:outputPanel>
+        
+        <c:LoadingStatusSpinner />
+        <div id="ipDialog" style="display:none">
+            <apex:pageBlock id="shipAddress">
+                <apex:pageBlockSection columns="1">
+                    <apex:pageBlockSectionItem >
+                         <apex:outputLabel >Account</apex:outputLabel>
+                         <apex:outputField value="{!Shipaddress_1.Account__r.Name}"/>
+                    </apex:pageBlockSectionItem>
+                    <apex:pageBlockSectionItem >
+                         <apex:outputLabel >Address 1</apex:outputLabel>
+                         <apex:outputField value="{!Shipaddress_1.Address1__c}"/>
+                    </apex:pageBlockSectionItem>
+                    <apex:pageBlockSectionItem >
+                          <apex:outputLabel >Address 2</apex:outputLabel>
+                          <apex:outputField value="{!Shipaddress_1.Address2__c}"/>
+                    </apex:pageBlockSectionItem>
+                    <apex:pageBlockSectionItem >
+                          <apex:outputLabel >Shipping State</apex:outputLabel>
+                          <apex:outputField value="{!Shipaddress_1.Shipping_State__c}"/>
+                    </apex:pageBlockSectionItem>
+                     <apex:pageBlockSectionItem >
+                          <apex:outputLabel >Zip Code</apex:outputLabel>
+                          <apex:outputField value="{!Shipaddress_1.zip_code__c}"/>
+                    </apex:pageBlockSectionItem>
+                </apex:pageBlockSection>
+            </apex:pageBlock>
+        </div>
+        <apex:actionFunction action="{!ShowAddressAccount}" name="methodOneInJavascript" rerender="shipAddress">
+                <apex:param name="addressId" assignTo="{!addressId}" value="" />
+        </apex:actionFunction>
+        <apex:inputhidden id="hasNotifyUpdateError" value="{!hasNotifyUpdateError}"/>
+    </apex:form>
+</apex:page>

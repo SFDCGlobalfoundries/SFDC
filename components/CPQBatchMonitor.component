@@ -1,0 +1,73 @@
+<apex:component controller="batchJobs" selfClosing="true">
+    <apex:attribute name="numberOfBatchJobs" type="Integer" assignTo="{!numberOfJobs}" description="The number of batch jobs to display in the table."/>
+    <apex:attribute name="BatchclassName" type="String" assignTo="{!Classname}" description="Class Name to monitor"/>
+    <!-- Here is the css styles that will be used for the progress bars -->
+    <style>
+        .progressBar{
+            background-color: #eee;
+            border:1px solid #000; 
+            height: 19px;
+            width: 300px;
+            -moz-border-radius: 5px; 
+            -webkit-border-radius: 5px; 
+        }
+        .progress{
+            background-color: #A1C969;
+            border:1px solid #A1C969;
+            height: 100%;
+            margin: -1px;
+            text-align: center;
+            -moz-border-radius: 5px; 
+            -webkit-border-radius: 5px;
+            line-height: 18px; 
+            
+        } 
+        .progressError{
+            background-color: #f79b23;
+            border:1px solid #d95520;
+            height: 100%;
+            margin: -1px;
+            text-align: center;
+            -moz-border-radius: 5px; 
+            -webkit-border-radius: 5px;
+            line-height: 18px; 
+            
+        } 
+    </style>
+ 
+    <!-- This action poller will check the status of the batch jobs every 5 seconds -->
+    <apex:actionPoller rerender="jobs" interval="5"/>
+ 
+    <apex:pageBlock title="Batch Apex Jobs">
+        <apex:pageBlockTable value="{!batchJobs}" var="b" id="jobs">
+            <apex:column headerValue="Apex Class" value="{!b.job.ApexClass.Name}"/>
+            <apex:column value="{!b.job.CreatedDate}"/>
+            <apex:column value="{!b.job.CreatedById}"/>
+            <apex:column value="{!b.job.Status}"/>
+            <apex:column value="{!b.job.ExtendedStatus}"/>
+            <apex:column value="{!b.job.JobItemsProcessed}"/>
+            <apex:column value="{!b.job.NumberOfErrors}"/>
+            <apex:column width="320px" >
+ 
+                <!-- Here with have two divs that construct our progresses bar. An outter which is the entire bar,
+                and and inner that represents the percent complete. We simply pass the percentComplete value to
+                the inner div width and this will show how far along the job is. Brilliant! -->
+ 
+                <div class="progressBar">
+                    <apex:outputPanel rendered="{!b.job.NumberOfErrors=0}">
+                        <div class="progress" style="width: {!b.percentComplete}%;">
+                            {!b.percentComplete}% 
+                        </div>
+                    </apex:outputPanel>
+                    <apex:outputPanel rendered="{!b.job.NumberOfErrors!=0}">
+                        <div class="progressError" style="width: {!b.percentComplete}%;">
+                            {!b.percentComplete}% 
+                        </div>
+                    </apex:outputPanel>
+                </div>
+            </apex:column>
+            <apex:column value="{!b.job.CompletedDate}"/>
+        </apex:pageBlockTable>
+    </apex:pageBlock>
+ 
+</apex:component>

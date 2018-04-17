@@ -1,0 +1,96 @@
+<apex:page showHeader="true" controller="TrainingSubCategoryCntrlr" sidebar="false" docType="html-5.0" >  
+    <vs:importvisualstrap />  
+    <style>       
+        body{  
+            font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;  
+        }  
+        
+        .intro{  
+            margin-top:20px;  
+            font-size:140%;  
+            font-weight: 200;  
+        }  
+        .tile {
+            cursor:hand;
+            cursor:pointer;
+            font-size:20px;
+        }
+       
+    </style>         
+    <vs:visualstrapblock >  
+        <apex:form >  
+            <!--header -->  
+            <!-- highlighted content -->  
+
+            <!-- the feature section - Change this to a repeat tag - to add additional items -->                                   
+            <apex:outputPanel layout="block" styleClass="container-fluid">                            
+                <apex:outputPanel layout="block" styleClass="col-md-3"> 
+                    <ul class="nav nav-pills nav-stacked"> 
+                    <apex:repeat value="{!categoryTreeMenu.topCategories}" var="c">                        
+                        <li class="{!IF(c.name == mainCategory,'active','')}" style="margin-left:0px; {!IF(c.name == mainCategory,'font-weight:bold','')}">
+                            <apex:commandLink value="{!c.name}" action="{!selectCategory}" rendered="{!c.hasAccess}">
+                                <apex:param name="selectedCategory" assignTo="{!mainCategory}" value="{!c.name}"/>
+                            </apex:commandLink>
+                        </li>                       
+                    </apex:repeat>                
+                    </ul>
+                </apex:outputPanel>                                
+                <apex:outputPanel layout="block" styleClass="col-md-8">  
+                    <apex:outputPanel layout="block" styleClass="row" style="padding-bottom:5px">  
+                        <apex:commandLink action="{!redirectToTileMenu}" value="Back to Tile Menu" target="_self" styleClass="btn btn-default btn-xs"/>
+                    </apex:outputPanel>
+                    <apex:outputPanel layout="block" rendered="{!AND(articleList.currPageList.size == 0)}">
+                        <apex:outputPanel layout="block" styleClass="row">
+                            <apex:outputPanel layout="block" styleClass="well"> 
+                                <h3>
+                                    No articles found
+                                </h3>
+                            </apex:outputPanel>                        
+                        </apex:outputPanel>                            
+                    </apex:outputPanel>                                                                           
+                    <apex:outputPanel layout="block" rendered="{!AND(articleList.currPageList.size > 0)}"> 
+                        <apex:outputPanel layout="block" styleClass="row" style="text-align:right"  rendered="{!AND(articleList.pages.size > 1)}"> 
+                            <ul class="pagination pagination-sm" style="margin:0px">                           
+                                <apex:repeat value="{!articleList.pages}" var="p">                                        
+                                    <li class="{!IF(p == currPage,'active','')}" style="margin-left:0px">
+                                        <apex:outputLink value="#" rendered="{!AND(p == currPage)}" styleClass="pointer-events: none;">
+                                            {!p}
+                                        </apex:outputLink>
+                                        <apex:commandLink action="{!getPage}" value="{!p}"  rendered="{!NOT(AND(p == currPage))}">
+                                            <apex:param assignTo="{!currPage}" value="{!p}" name="currPage"/>
+                                        </apex:commandLink>
+                                    </li>                                                     
+                                </apex:repeat>
+                            </ul> 
+                        </apex:outputPanel>                                
+                        <apex:repeat value="{!articleList.currPageList}" var="c">    
+                            <apex:outputPanel layout="block" styleClass="row">
+                                <apex:outputPanel layout="block" styleClass="well well-sm"> 
+                                    <h3>
+                                        <apex:commandLink value="{!c.title}" target="_blank" action="{!openArticle}">   
+                                            <apex:param name="selectedArticle" value="{!c.urlName}" assignTo="{!selectedArticle}"/>
+                                            <apex:param name="selectedArticleVideo" value="{!c.videoID}" assignTo="{!selectedArticleVideo}"/>
+                                            <apex:param name="selectedArticleId" value="{!c.articleID}" assignTo="{!selectedArticleId}"/>
+                                        </apex:commandLink>
+                                    </h3>                                 
+                                    <apex:outputPanel layout="block">
+                                        {!c.summary}
+                                    </apex:outputPanel>                                 
+                                    <apex:outputPanel layout="block" style="font-size:13px">                                                                             
+                                        <span class="label label-info">View Count&nbsp;{!c.viewCount}</span>                                                                                                 
+                                        <span class="label label-info">
+                                            Last Published&nbsp;
+                                            <apex:outputText value="{0,date,MM'/'dd'/'yyyy}">
+                                                <apex:param value="{!c.lastPublishedDate}" /> 
+                                            </apex:outputText> 
+                                        </span>                                                                                                                                                                                                                  
+                                    </apex:outputPanel>                                                                                            
+                                </apex:outputPanel>    
+                            </apex:outputPanel>                
+                        </apex:repeat>                   
+                    </apex:outputPanel> 
+                </apex:outputPanel>                                                
+            </apex:outputPanel>       
+        </apex:form>  
+    </vs:visualstrapblock>    
+</apex:page>

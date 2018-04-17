@@ -1,0 +1,250 @@
+<!-- 
+    Author: Abhita Bansal
+    Company: GLOBALFOUNDRIES
+    Project: 
+    Description: 
+    History: 
+-->
+<apex:page standardController="Form_Management_System__c" extensions="FMSRITFormController">
+    <apex:includeScript value="{!URLFOR($Resource.jquery, 'js/jquery-1.8.3.min.js')}"/>
+    <apex:includeScript value="{!URLFOR($Resource.jquery, 'js/jquery-ui-1.9.2.custom.js')}"/>
+    <apex:includeScript value="{!URLFOR($Resource.jqPlugin, '/jquery.blockUI.js')}"/>
+    <style>
+        a{
+            text-decoration: none;
+        }
+    </style>
+    <script>
+        $j = jQuery.noConflict();        
+        //function to block the whole page
+        function blockPage(){ 
+            $j.blockUI({ message: '<img src="/img/loading32.gif" /><h1> Refreshing...</h1>', 
+                css: { 
+                 border: 'none', 
+                 padding: '15px',  
+                 '-webkit-border-radius': '10px', 
+                 '-moz-border-radius': '10px', 
+                 opacity: .9
+                } 
+            }); 
+            return false;
+        }
+        //function to unblock the page
+        function unblockPage(){
+            $j.unblockUI();
+        }
+    </script>
+    <apex:pagemessages id="errorMsg" /> 
+    
+    <apex:form id="spForm">
+        
+        <apex:actionFunction name="cancelFormFunct" action="{!cancelForm}" status="blockUI"/> 
+
+        <apex:actionStatus onstart="blockPage()" onstop="unblockPage()" id="blockUI"/>
+        
+        <c:FMSNameDesc ></c:FMSNameDesc>
+        
+        <apex:pageBlock >
+            <apex:outputLabel value="Form Page {!curPage}" style="font-weight:bold;font-size:10pt;"/>
+            <br/> <br/>
+            <apex:pageBlockSection title="TopCell Details" id="info" columns="1" collapsible="false">
+                <apex:outputField label="Our automated checking will find your design file's topcell if it only has one.  Do you wish to specify a subcell, or do you have multiple topcells in any of the design files?" value="{!formObj.IsMultipleTopCell__c}"/>
+                                  
+                <apex:outputLabel style="font-style:italic;font-size:10pt;"> 
+                    Specifying topcells is optional unless you have more than one or need to override our automated
+                    checking. If you do enter topcells, please be exact. Typos will cause an error in automation.
+                    <br/> <br/>                               
+                </apex:outputLabel>
+                
+                <apex:outputPanel layout="block" id="table1" >
+                    <apex:repeat value="{!navPackWrapper}" var="p">
+                        <apex:repeat value="{!p.dropBoxFilesW}" var="mf" id="mfId">
+                            <apex:repeat value="{!mf.designDropBoxFilesW}" var="dfl" id="dflId" rendered="{!mf.isSelected && mf.dropboxfile.File_Type__c != 'Design File'}">
+                                <apex:outputLabel style="font-weight:bold;font-size:10pt; text-decoration: underline;" rendered="{!dfl.dropBoxFile.Design_File_Name__c != null}"> For Design file: {!dfl.dropBoxFile.Design_File_Name__c}</apex:outputLabel>
+                                <apex:outputPanel id="designFileTable" rendered="{!dfl.dropBoxFile.Design_File_Name__c != null}">
+                                	<br/> <br/>
+                                    <table border="1" class="list" cellspacing="0" cellpadding="0" style="width:500px">
+                                        <tr class="headerRow" align="left">                                               
+                                            <td style="font-size: 8pt;width:320px;">Topcell</td>
+                                            <td>Action</td>
+                                        </tr>
+                                        <apex:variable var="rowNum" value="{!0}" />
+                                        <apex:repeat value="{!dfl.topCellDropBoxFilesW}" var="tcl" id="Rec">
+                                            <tr class="datarow">
+                                                <td class="datacell">
+                                                    <apex:inputField id="topCellFile" value="{!tcl.dropBoxFile.TopCellName__c}" style="width:120px" onchange="fileNameWithId('{!tcl.dropBoxFile.Id}', this.value)"/>
+                                                </td>
+                                                <td class="datacell">
+                                                    <apex:commandLink value="Remove" action="{!dfl.delRowToTopCellFile}" reRender="designFileTable">
+                                                        <apex:param value="{!rowNum}" name="index" />
+                                                        <apex:param value="{!tcl.dropBoxFile.Id}" name="fileRecordId" />
+                                                    </apex:commandLink> 
+                                                    <apex:variable var="rowNum" value="{!rowNum+1}" />
+                                                </td>
+                                            </tr>
+                                        </apex:repeat>
+                                    </table>  
+                                    <br/> 
+<!--                                    <apex:pageMessage summary="You can add upto 20 rows only." severity="warning" strength="1" id="rowError" rendered="{!IF(dfl.showError,true,false)}" />                            -->
+                                    <apex:commandButton value="Add the topcell being submitted" action="{!dfl.addRowToTopCellFile}" reRender="designFileTable">
+                                        <apex:param value="{!dfl.dropBoxFile.Id}" name="recordId" />
+                                    </apex:commandButton> 
+                                    <br/>  
+                                </apex:outputPanel>                                                    
+                                <br/>
+                            </apex:repeat>
+                            
+                            <apex:outputPanel rendered="{!mf.isSelected && mf.dropboxfile.File_Type__c == 'Design File'}">
+                                <apex:outputLabel style="font-weight:bold;font-size:10pt; text-decoration: underline;" rendered="{!mf.dropBoxFile.Drop_Box_File_Name__c != null && mf.dropBoxFile.Drop_Box_File_Name__c != ''}"> For Design file: {!mf.dropBoxFile.Drop_Box_File_Name__c}</apex:outputLabel>
+                                <apex:outputPanel id="designFileTable" rendered="{!mf.dropBoxFile.Drop_Box_File_Name__c != null && mf.dropBoxFile.Drop_Box_File_Name__c != ''}">
+                                    <br/> <br/>
+                                	<table border="1" class="list" cellspacing="0" cellpadding="0" style="width:500px">
+                                        <tr class="headerRow" align="left">                                               
+                                            <td style="font-size: 8pt;width:320px">Topcell</td>
+                                            <td>Action</td>
+                                        </tr>
+                                        <apex:variable var="rowNum" value="{!0}" />
+                                        <apex:repeat value="{!mf.topCellDropBoxFilesW}" var="tcl" id="Rec">
+                                            <tr class="datarow">
+                                                <td class="datacell">
+                                                    <apex:inputField id="topCellFile" value="{!tcl.dropBoxFile.TopCellName__c}" style="width:120px" onchange="fileNameWithId('{!tcl.dropBoxFile.Id}', this.value)"/>
+                                                </td>
+                                                <td class="datacell">
+                                                    <apex:commandLink value="Remove" action="{!mf.delRowToTopCellFile}" reRender="designFileTable">
+                                                        <apex:param value="{!rowNum}" name="index" />
+                                                        <apex:param value="{!tcl.dropBoxFile.Id}" name="fileRecordId" />
+                                                    </apex:commandLink> 
+                                                    <apex:variable var="rowNum" value="{!rowNum+1}" />
+                                                </td>
+                                            </tr>
+                                        </apex:repeat>
+                                    </table>  
+                                    <br/> 
+<!--                                    <apex:pageMessage summary="You can add upto 20 rows only." severity="warning" strength="1" id="rowError" rendered="{!IF(mf.showError,true,false)}" />                            -->
+                                    <apex:commandButton value="Add the topcell being submitted" action="{!mf.addRowToTopCellFile}" reRender="designFileTable">
+                                        <apex:param value="{!mf.dropBoxFile.Id}" name="recordId" />
+                                    </apex:commandButton> 
+                                    <br/>  
+                                </apex:outputPanel>                                                    
+                                <br/>
+                            </apex:outputPanel>
+                            <!--<apex:repeat value="{!mf.topCellDropBoxFilesW}" var="dfl" id="dflId1" rendered="{!mf.isSelected && mf.dropboxfile.File_Type__c == 'Design File'}">
+                                <apex:outputLabel style="font-weight:bold;font-size:10pt; text-decoration: underline;" rendered="{!dfl.dropBoxFile.Design_File_Name__c != null}"> For Design file: {!dfl.dropBoxFile.Design_File_Name__c}</apex:outputLabel>
+                                <apex:outputLabel style="font-weight:bold;font-size:10pt; text-decoration: underline;" rendered="{!dfl.dropBoxFile.Design_File_Name__c == null}"> For Design file: {!mf.dropBoxFile.Drop_Box_File_Name__c}</apex:outputLabel>
+                                <br/> <br/>
+                                <apex:outputPanel id="designFileTable">
+                                    <table border="1" class="list" cellspacing="0" cellpadding="0" style="width:500px">
+                                        <tr class="headerRow" align="left">                                               
+                                            <td style="font-size: 8pt;">Topcell</td>
+                                            <td>Action</td>
+                                        </tr>
+                                       <!-- <apex:variable var="rowNum" value="{!0}" />
+                                        <apex:repeat value="{!dfl.topCellDropBoxFilesW}" var="tcl" id="Rec">
+                                            <tr class="datarow">
+                                                <td class="datacell">
+                                                    <apex:inputField id="topCellFile" value="{!tcl.dropBoxFile.TopCellName__c}" style="width:120px" onchange="fileNameWithId('{!tcl.dropBoxFile.Id}', this.value)"/>
+                                                </td>
+                                                <td class="datacell">
+                                                    <apex:commandLink value="Remove" action="{!dfl.delRowToTopCellFile}" reRender="designFileTable">
+                                                        <apex:param value="{!rowNum}" name="index" />
+                                                        <apex:param value="{!tcl.dropBoxFile.Id}" name="fileRecordId" />
+                                                    </apex:commandLink> 
+                                                    <apex:variable var="rowNum" value="{!rowNum+1}" />
+                                                </td>
+                                            </tr>
+                                        </apex:repeat>
+                                    </table>  
+                                    <br/> 
+                                    <apex:pageMessage summary="You can add upto 20 rows only." severity="warning" strength="1" id="rowError" rendered="{!IF(dfl.showError,true,false)}" />                            
+                                    <apex:commandButton value="Add the topcell being submitted" action="{!dfl.addRowToTopCellFile}" reRender="designFileTable">
+                                        <apex:param value="{!dfl.dropBoxFile.Id}" name="recordId" />
+                                    </apex:commandButton> 
+                                    <br/>  
+                                </apex:outputPanel>                                                    
+                                <br/>
+                            </apex:repeat>
+                        --></apex:repeat>
+                    </apex:repeat>
+                </apex:outputPanel>
+            </apex:pageBlockSection>
+            
+            <p style="color:black;font-weight: bold;">Use 'Save' or 'Save and Exit' to permanently save your edits.</p>
+            <br/>
+            <apex:commandlink value="Previous" action="{!prevPage}" style="color:blue;">
+                <apex:param assignTo="{!pageN}" name="page" value="page3"/>
+            </apex:commandlink>&nbsp;
+            <apex:outputText >Page &nbsp;{!curPage}  of  {!totalPageNums} &nbsp; </apex:outputText>
+            <br/>
+            <apex:pageBlockButtons location="bottom">
+                <apex:commandButton action="{!validateSave}" value="Save and Exit" reRender="errorMsg" oncomplete="window.scrollTo(0,0);showSimpleDialog();" >
+                    <apex:param assignTo="{!pageN}" name="page" value="page3"/>
+                </apex:commandButton>
+                <apex:commandButton action="{!saveForm}" value="Save" id="saveForm" reRender="errorMsg" oncomplete="window.scrollTo(0,0);">
+                    <apex:param assignTo="{!pageN}" name="page" value="page3"/>
+                </apex:commandButton>
+                <apex:commandButton value="Cancel" immediate="true" onclick="showDialogforActions('Cancel'); window.scrollTo(0,0); return false;"/>
+            </apex:pageBlockButtons>
+        </apex:pageBlock>
+    </apex:form>
+    
+    <style>
+        .bPageBlock .requiredInput .requiredBlock{background-color: #F6FBF6;}  
+        .requiredInput .requiredBlock::before { display: block; content: "*"; font-size: 1.5em; font-weight: bold; color: #c00; margin-left: -8px; margin-top: -2px; }  
+        p {
+            color:black;
+        }
+        .headerrows {
+            background: #8bbec1; 
+            border-width: 0 0 1px 1px;
+            border-color: #8bbec1;
+            color: #000;
+            font-size: .9em;
+            font-weight: bold;
+            padding: 5px 2px 4px 5px;
+        }  
+    </style>
+    
+    <script type="text/javascript">
+        
+        var combimeFileToIdList = '';
+        
+        function nextPage() {
+            console.log(combimeFileToIdList);
+            nextPage1(combimeFileToIdList);
+        }
+        
+        function fileNameWithId(designFileId, designFileName) {
+            console.log(designFileId);
+            console.log(designFileName);
+            var combineFileToId = designFileId + ',' + designFileName;
+            if(combimeFileToIdList == '') {
+                combimeFileToIdList = combimeFileToIdList + combineFileToId;
+            } else {
+                combimeFileToIdList = combimeFileToIdList + ';' + combineFileToId;
+            }
+        }
+        
+        function showSimpleDialog(){    
+           var sd = new SimpleDialog("Test"+Dialogs.getNextId(), true);    
+           sd.setTitle("Warning");   
+           sd.createDialog();   
+           window.parent.sd = sd;   
+           var ex = sd.setContentInnerHTML("<p align='center' ><img src='/img/msg_icons/warning24.png'/> <b>Warning!</b> <br/></p><p align='center'>The data you are attempting to save is either incomplete or has errors. <br/> <br/> You can either go back and correct the errors, or proceed to save this form anyway (this will save only the fields with valid data).</p><p align='center'><br /><button class='btn' onclick='window.parent.sd.hide(); return false;'>Back to the form</button> &nbsp; &nbsp; &nbsp; &nbsp; <button class='btn' onclick='saveandExit(\"page3\"); return true;'>Save Anyway</button></p>"); 
+           sd.show();   
+           return ex;
+        }
+        
+        function showDialogforActions(actionName){            
+            var sd = new SimpleDialog("Test"+Dialogs.getNextId(), true);    
+            sd.setTitle("Warning");   
+            sd.createDialog(); 
+            sd.setWidth(325);               
+            window.parent.sd = sd;
+            if(actionName == 'Cancel'){
+                var ex = sd.setContentInnerHTML("<img src='/img/msg_icons/warning24.png'/>&nbsp;<b>Warning!</b> <br/><br/>Are you sure you want to complete this form action? <br/> <br/> Cancels the design submission related to this form. <br/><br/><p align='center'><button class='btn' onclick='cancelFormFunct(); window.parent.sd.hide(); return true;'>Continue</button>&nbsp; &nbsp; &nbsp; &nbsp; <button class='btn' onclick='window.parent.sd.hide(); return false;'>Cancel</button></p>"); 
+                sd.show();   
+                return ex;
+            }                        
+        }
+    </script>
+</apex:page>

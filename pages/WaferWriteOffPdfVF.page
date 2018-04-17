@@ -1,0 +1,201 @@
+<!--
+    Author: Zymark Ambat
+    Description: This page is used as the pdf export page for Wafer Write Off.
+    History: 
+        ZAmbat      03112015    - Page creation.
+-->
+
+<apex:page id="WaferWriteOffPdfVF" standardController="Wafer_Write_Off__c" extensions="WaferWriteOffPdfController" showHeader="false" applyHtmlTag="false" renderAs="PDF">
+    <head>
+        <style>
+            @page { 
+                size: landscape;
+            }
+            
+            body {
+                font: 13px Arial Unicode MS;
+            }
+            
+            .sectionHeader {
+                font: 15px Arial Unicode MS;
+                color: white;
+                background-color: #e08885;
+                padding-left: 8px;
+            }
+            
+            .tdHeader {
+                font: 13px Arial Unicode MS;
+                text-align: right;
+                padding-right: 10px;
+                vertical-align: text-top;
+            }
+            
+            .tdData {
+                font: 13px Arial Unicode MS;
+                text-align: left;
+                padding-left: 10px;
+                vertical-align: text-top;
+            }
+            
+            .tblMain {
+                border: 1px solid #ccc;
+                border-collapse: collapse;
+            }
+            
+            .tblHeader {
+                font: 13px Arial Unicode MS;
+                background-color: #e0e3e5;
+            }
+            
+            .tblData {
+                font: 13px Arial Unicode MS;
+            }
+            
+            .tblApproved {
+                background-color: #a1f78d;
+            }
+            
+            .tblRejected {
+                background-color: #fb8a8c;
+            }
+        </style>
+    </head>
+    <body>
+        <table width="100%" cols="5" style="border-collapse: collapse;">
+            <tr>   
+                <td colspan="5" class="sectionHeader">Request Details</td>
+            </tr>
+            <tr>
+                <td width="24%" class="tdHeader">Wafer Write Off #</td>
+                <td width="24%" class="tdData">{!waferWriteOff.Name}</td>
+                <td width="2%">&nbsp;</td>
+                <td width="22%" class="tdHeader">Status</td>
+                <td width="28%" class="tdData">{!waferWriteOff.Status__c}</td>
+            </tr>
+            <tr>
+                <td width="24%" class="tdHeader">Account</td>
+                <td width="24%" class="tdData"><apex:outputField value="{!waferWriteOff.Customer_Name__c}" /></td>
+                <td width="2%">&nbsp;</td>
+                <td width="22%" class="tdHeader">Fab</td>
+                <td width="28%" class="tdData">{!waferWriteOff.Fab__c}</td>
+            </tr>
+            <tr>
+                <td width="24%" class="tdHeader">Short Name</td>
+                <td width="24%" class="tdData">{!waferWriteOff.Customer_Name__r.Short_Name__c}</td>
+                <td width="2%">&nbsp;</td>
+                <td width="22%" class="tdHeader">Region</td>
+                <td width="28%" class="tdData">{!waferWriteOff.Customer_Name__r.Region__c}</td>
+            </tr>
+            <tr>
+                <td width="24%" class="tdHeader">Reason</td>
+                <td width="24%" class="tdData">{!waferWriteOff.Reason__c}</td>
+                <td width="2%">&nbsp;</td>
+                <td width="22%" class="tdHeader">{!IF(NOT(ISBLANK(waferWriteOff.Other_Reason__c)), 'Other Reason', '&nbsp;')}</td>
+                <td width="28%" class="tdData">{!IF(NOT(ISBLANK(waferWriteOff.Other_Reason__c)), waferWriteOff.Other_Reason__c, '&nbsp;')}</td>
+            </tr>
+            <tr>
+                <td width="24%" class="tdHeader">Created By</td>
+                <td width="24%" class="tdData"><apex:outputField value="{!waferWriteOff.CreatedById}" />,&nbsp;<apex:outputText value="{!createdDateTime}" /></td>
+                <td width="2%">&nbsp;</td>
+                <td width="22%" class="tdHeader">Last Modified By</td>
+                <td width="28%" class="tdData"><apex:outputField value="{!waferWriteOff.LastModifiedById}" />,&nbsp;<apex:outputText value="{!lastModifiedDateTime}" /></td>
+            </tr>
+            <tr><td colspan="5">&nbsp;</td></tr>
+            <tr>   
+                <td colspan="5" class="sectionHeader">WIP Valuation</td>
+            </tr>
+            <tr>
+                <td width="24%" class="tdHeader">Total Impact to P&amp;L (US$)</td>
+                <td width="24%" class="tdData"><apex:outputField value="{!waferWriteOff.Total_Impact_to_P_L__c}" /></td>
+                <td width="2%">&nbsp;</td>
+                <td width="22%" class="tdHeader">&nbsp;</td>
+                <td width="28%" class="tdData">&nbsp;</td>
+            </tr>
+            <tr><td colspan="5">&nbsp;</td></tr>
+            <tr>   
+                <td colspan="5" class="sectionHeader">Write Off Details</td>
+            </tr>
+            <tr>
+                <td colspan="5">
+                    <table width="100%" cols="11" class="tblMain">
+                        <tr>
+                            <td class="tblHeader">Customer</td>
+                            <td class="tblHeader">Lot ID</td>
+                            <td class="tblHeader">Part ID</td>
+                            <td class="tblHeader">Lot Type</td>
+                            <td class="tblHeader">Current Wafer/Chip Qty</td>
+                            <td class="tblHeader">Die Qty</td>
+                            <td class="tblHeader">Hold Stage</td>
+                            <td class="tblHeader">Lot Start Date</td>
+                            <td class="tblHeader">Aged (Days)</td>
+                            <td class="tblHeader">Status</td>
+                            <td class="tblHeader">Comments</td>
+                        </tr>
+                        <apex:repeat value="{!listWWOML}" var="l">
+                            <tr>
+                                <td class="tblData">{!l.Manufacturing_Lot__r.Account_Name__r.Name}</td>
+                                <td class="tblData">{!l.Manufacturing_Lot__r.Name}</td>
+                                <td class="tblData">{!l.Manufacturing_Lot__r.Device_ID_MES__c}</td>
+                                <td class="tblData">{!l.Lot_Type__c}</td>
+                                <td class="tblData">{!l.Wafer_Qty__c}</td>
+                                <td class="tblData">{!l.Die_Qty__c}</td>
+                                <td class="tblData">{!l.Manufacturing_Lot__r.Stage_Id__c}</td>
+                                <td class="tblData"><apex:outputText value="{!DAY(l.Lot_Start_Date__c)}/{!MONTH(l.Lot_Start_Date__c)}/{!YEAR(l.Lot_Start_Date__c)}" rendered="{!IF(NOT(ISBLANK(l.Lot_Start_Date__c)), true, false)}" /></td>
+                                <td class="tblData">{!l.Aged_Days__c}</td>
+                                <td class="tblData">{!l.Status__c}</td>
+                                <td class="tblData">{!l.Comments__c}</td>
+                            </tr>
+                        </apex:repeat>
+                    </table>
+                </td>
+            </tr>
+            <tr><td colspan="5">&nbsp;</td></tr>
+            <tr>   
+                <td colspan="5" class="sectionHeader">Approval History</td>
+            </tr>
+            <tr>
+                <td colspan="5">
+                    <table width="100%" cols="7" class="tblMain">
+                        <tr>
+                            <td class="tblHeader">Action</td>
+                            <td class="tblHeader">Date</td>
+                            <td class="tblHeader">Status</td>
+                            <td class="tblHeader">Assigned To</td>
+                            <td class="tblHeader">Actual Approver</td>
+                            <td class="tblHeader">Comments</td>
+                            <td class="tblHeader">Overall Status</td>
+                        </tr>
+                        <apex:repeat value="{!listApprovalWrapper}" var="a">
+                            <apex:repeat value="{!a.listApprovalProcessStepWrapper}" var="aps">
+                                <tr>
+                                    <td colspan="6" class="sectionHeader">{!aps.stepName}</td>
+                                    <td colspan="1" class="{!IF(aps.overallStatus == 'Approved', 'tblApproved', IF(aps.overallStatus == 'Rejected', 'tblRejected', 'sectionHeader'))}">
+                                        <apex:outputPanel rendered="{!IF(aps.overallStatus == 'Approved', true, false)}">
+                                            <apex:image value="/img/icon/approve12.gif"  />
+                                            Approved
+                                        </apex:outputPanel>
+                                        <apex:outputPanel rendered="{!IF(aps.overallStatus == 'Rejected', true, false)}">
+                                            <apex:image value="/img/icon/reject12.gif" />
+                                            Rejected
+                                        </apex:outputPanel>    
+                                    </td>
+                                </tr>
+                                <apex:repeat value="{!aps.listApprovalStepWrapper}" var="s">
+                                    <tr>
+                                        <td class="tblData">&nbsp;</td>
+                                        <td class="tblData">{!s.stepCreatedDate}</td>
+                                        <td class="tblData">{!s.status}</td>
+                                        <td class="tblData">{!s.assignedTo}</td>
+                                        <td class="tblData">{!s.actualApprover}</td>
+                                        <td class="tblData">{!s.comments}</td>
+                                        <td class="tblData">&nbsp;</td>
+                                    </tr>
+                                </apex:repeat>
+                            </apex:repeat>  
+                        </apex:repeat>
+                    </table>
+                </td>
+            </tr>
+        </table>
+    </body>
+</apex:page>

@@ -1,0 +1,89 @@
+<!--
+    Author: Abhita Bansal
+    Description: This serves as the Add, Edit, and View page for MPW Approval Matrix.
+    History: 
+        ABansal    06232015    - page creation.
+        Poulami    04072016    - Modified code to add PA Code on selecting IP, DE, ASIC R&D, RF_ASIC_A&D Protos categories (MPW-PP87).
+-->
+<apex:page id="MPWApprovalMatrixTranxVF" standardcontroller="MPW_Approval_Matrix__c" extensions="MPWApprovalMatrixTranxController" showHeader="true" sidebar="true" cache="false">
+    
+    <apex:includeScript value="{!URLFOR($Resource.jQuery_1_11_3_min,'/jquery-1.11.3.min/jquery-1.11.3.min.js')}" />
+ 
+    <script type="text/javascript">
+        
+         var $j = jQuery.noConflict();
+         $j(document).ready(function(){
+             $j("[id$='MPWApprovalMatrixTranxVF:form1:j_id28:j_id52:j_id53_mlktp']").hide();
+             $j("[id$='MPWApprovalMatrixTranxVF:form1:j_id28:j_id52:j_id55_mlktp']").hide();
+             $j("[id$='MPWApprovalMatrixTranxVF:form1:j_id28:j_id52:j_id57_mlktp']").hide();
+         });
+    </script>
+       
+    <apex:sectionHeader title="MPW Approval Matrix" subtitle="{!tranx}" help="https://help.salesforce.com/htviewhelpdoc?id=co_edit.htm&siteLang=en_US" />
+    <apex:pageMessages id="errorSection" />
+    
+    <apex:form id="form1">
+        <apex:pageBlock >                 
+            <apex:pageBlockButtons location="both">
+                <apex:commandButton value="Edit" action="{!edit}" rendered="{!ShowEdit}" />
+                <apex:commandButton value="Save" action="{!save}" rendered="{!ShowSave}" />
+                <apex:commandButton value="Cancel" action="{!cancel}" rendered="{!ShowCancel}" />
+                <apex:commandButton value="Back" action="{!back}" rendered="{!tranx == 'View'}"/>
+            </apex:pageBlockButtons>
+            
+            <apex:pageBlockSection title="MPW Approval Matrix" columns="2" collapsible="false">
+                <apex:inputField value="{!mpwApp.Category__c}" rendered="{!EditCategory}" required="true">
+                    <apex:actionSupport event="onchange" action="{!getCategory}" reRender="fab, subCategory" />
+                </apex:inputField>
+                <apex:outputField value="{!mpwApp.Category__c}" rendered="{!NOT(EditCategory)}" />
+            </apex:pageBlockSection>  
+                           
+            <apex:pageBlockSection id="subCategory" >
+                <apex:pageblockSectionItem rendered="{!AND(EditSubCategory, isNOTFAB)}">
+                    <apex:outputLabel value="{!$ObjectType.MPW_Approval_Matrix__c.fields.Sub_Category__c.label}" />                         
+                        <apex:selectList value="{!mpwApp.Sub_Category__c}" multiselect="false" size="1"> 
+                            <apex:selectOptions value="{!subCategory}" />
+                        </apex:selectList>
+                </apex:pageBlockSectionItem> 
+                <!--04072016 - Added by Poulami Starts.-->
+                <apex:inputField value="{!mpwApp.PA_Code__c}" rendered="{!AND(EditPACode, isNOTFAB)}"/>
+                <!--04072016 - Added by Poulami Ends.-->
+                <apex:outputField value="{!mpwApp.Sub_Category__c}"  rendered="{!AND(NOT(EditSubCategory), isNOTFAB,mpwApp.Category__c!='Lighting')}" /> 
+                <!--04072016 - Added by Poulami Starts.-->
+                <apex:outputField value="{!mpwApp.PA_Code__c}" rendered="{!AND(NOT(EditPACode), isNOTFAB)}" />
+                <!--04072016 - Added by Poulami Ends.-->
+            </apex:pageBlockSection>
+            
+            <apex:pageBlockSection id="fab" columns="2" collapsible="false">
+                <apex:pageBlockSectionItem rendered="{!AND(EditFab, NOT(isNOTFAB))}">
+                    <apex:outputLabel value="{!$ObjectType.MPW_Approval_Matrix__c.fields.Fab__c.label}" /> 
+                        <apex:selectList value="{!mpwApp.Fab__c}" multiselect="false" size="1"> 
+                            <apex:selectOptions value="{!fab}" />
+                        </apex:selectList> 
+                </apex:pageBlockSectionItem>
+                <apex:outputField value="{!mpwApp.Fab__c}" rendered="{!AND(NOT(EditFab), NOT(isNOTFAB))}" />
+                
+                <apex:pageBlockSectionItem rendered="{!AND(EditGeometry, NOT(isNOTFAB))}">
+                    <apex:outputLabel value="{!$ObjectType.MPW_Approval_Matrix__c.fields.Geometry__c.label}" /> 
+                        <apex:selectList id="geometry" value="{!mpwApp.Geometry__c}" multiselect="false" size="1"> 
+                            <apex:selectOptions value="{!geometry}" />
+                        </apex:selectList> 
+                </apex:pageBlockSectionItem>
+                <apex:outputField value="{!mpwApp.Geometry__c}" rendered="{!AND(NOT(EditGeometry), NOT(isNOTFAB))}" />
+           </apex:pageBlockSection>
+            
+           <apex:pageBlockSection columns="2" collapsible="false">    
+                <apex:inputField value="{!mpwApp.Step_1_Approver_1__c}" rendered="{!EditApprover1}" />
+                <apex:outputField value="{!mpwApp.Step_1_Approver_1__c}" rendered="{!NOT(EditApprover1)}" />
+
+                <apex:inputField value="{!mpwApp.Step_1_Approver_2__c}" rendered="{!EditApprover2}" />
+                <apex:outputField value="{!mpwApp.Step_1_Approver_2__c}" rendered="{!NOT(EditApprover2)}" />  
+                
+                <apex:inputField value="{!mpwApp.Step_1_Approver_3__c}" rendered="{!EditApprover3}" />
+                <apex:outputField value="{!mpwApp.Step_1_Approver_3__c}" rendered="{!NOT(EditApprover3)}" />               
+            </apex:pageBlockSection>
+            
+        </apex:pageBlock>
+    </apex:form>
+    
+</apex:page>

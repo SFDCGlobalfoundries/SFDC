@@ -1,0 +1,416 @@
+<apex:page showHeader="false" sidebar="false" standardStylesheets="false">
+<head>
+    <apex:stylesheet value="{!URLFOR($Resource.ChecklistResouces, 'ChecklistResouces/css/bootstrap.css')}" />
+    <apex:includeScript value="{!URLFOR($Resource.ChecklistResouces, 'ChecklistResouces/js/angular.js')}"/>
+
+    <apex:includeScript value="{!URLFOR($Resource.ChecklistResouces, 'ChecklistResouces/js/jquery-1.10.2.min.js')}" />
+    <!-- <apex:includeScript value="{!URLFOR($Resource.ChecklistResouces, 'ChecklistResouces/js/jquery-1.10.2.js')}"/> -->
+    <apex:includeScript value="{!URLFOR($Resource.ChecklistResouces, 'ChecklistResouces/js/bootstrap.min.js')}" />
+    <!-- <apex:includeScript value="{!URLFOR($Resource.Bootstrap320, 'js/bootstrap.min.js')}"/>
+    <apex:stylesheet value="{!URLFOR($Resource.Bootstrap320, 'css/bootstrap.css')}"/> -->
+    <script type="text/javascript">
+        var app = angular.module('codecoverage', []);
+        app.controller('getClasses', function($scope, toolingApi, $timeout){
+            $scope.sessiontoken = "{!$Api.Session_ID}";
+            $scope.testedClasses = [];
+            $scope.testClasses = [];
+            $scope.testedClassesName = '';
+            $scope.testClassesName = '';
+            $scope.codeItems = [];
+            $scope.currentTestRunAsyncJob='';
+            $scope.testJobIsStillRunning = null;
+            $scope.checkingCodeCoverage = null;
+            $scope.activateRunTestsButton = function(){
+                if($scope.testClasses.length > 0 && ($scope.testJobIsStillRunning == false || $scope.testJobIsStillRunning == null)) return true;
+                else return false;
+            }
+
+            $scope.activateCheckCoverageButton = function(){
+                return $scope.testedClasses.length != 0;
+            }
+            toolingApi.query('select+Id,Name+From+ApexClass+where+NamespacePrefix=null', function(classes){
+                for(var ctIndex = 0; ctIndex < classes.length; ctIndex++){
+                    $scope.codeItems.push(new ClassOrTrigger('Class', classes[ctIndex].Name, classes[ctIndex].Id));
+                }
+            });
+
+            toolingApi.query('select+Id,Name+From+ApexTrigger+where+NamespacePrefix=null', function(trigger){
+                for(var ctIndex = 0; ctIndex < trigger.length; ctIndex++){
+                    $scope.codeItems.push(new ClassOrTrigger('Trigger', trigger[ctIndex].Name, trigger[ctIndex].Id));
+                }
+            });
+
+            $scope.addToTestedClasses = function(classDetails){
+                if(classDetails.selectedClass === true){
+                    $scope.testedClasses.push(classDetails);
+                }else{
+                    $scope.testedClasses.splice($scope.testedClasses.indexOf(classDetails),1);
+                }
+                $scope.testedClassesName = '';
+                for (var i = 0; i < $scope.testedClasses.length; i++) {
+                    $scope.testedClassesName = $scope.testedClassesName+ $scope.testedClasses[i].Name+ '\r\n';
+                };
+            };
+
+            $scope.addToTestClasses = function(classDetails){
+                if(classDetails.testClass === true){
+                    $scope.testClasses.push(classDetails);
+                }else{
+                    $scope.testClasses.splice($scope.testClasses.indexOf(classDetails),1);
+                }
+                $scope.testClassesName = '';
+                for (var i = 0; i < $scope.testClasses.length; i++) {
+                    $scope.testClassesName = $scope.testClassesName+ $scope.testClasses[i].Name+ '\r\n';
+                };
+            };
+
+            $scope.showSelectClassesModal = function(){
+                $('#selectTriggersAndClasses').modal();
+            };
+
+            /*
+                Coverage Related code
+            */
+            //$scope.coverageDetails = {};
+            $scope.initiateCodeCovarageChecks = function(){
+                $scope.checkingCodeCoverage = true;
+                $scope.coverageDetails = {};
+                $scope.classIdsString = '(';
+                var firstRound = true;
+                for(var cindex = 0; cindex < $scope.testedClasses.length; cindex++){
+                    $scope.coverageDetails[$scope.testedClasses[cindex].Name] = new CodeCoverageDetailsOfAClass($scope.testedClasses[cindex].Name, $scope.testedClasses[cindex].Id, $scope.testedClasses[cindex].Type);
+                    if(firstRound) {
+                        $scope.classIdsString += '\'' + $scope.testedClasses[cindex].Id +'\'';
+                        firstRound = false;
+                    }
+                    else {
+                        $scope.classIdsString += ',\'' + $scope.testedClasses[cindex].Id +'\'';
+                    }
+                }
+                $scope.classIdsString += ')';
+                $scope.testClassIdsString = '(';
+                firstRound = true;
+                for(var cindex = 0; cindex < $scope.testClasses.length; cindex++){
+                    if(firstRound) {
+                        $scope.testClassIdsString += '\'' + $scope.testClasses[cindex].Id +'\'';
+                        firstRound = false;
+                    }
+                    else {
+                        $scope.testClassIdsString += ',\'' + $scope.testClasses[cindex].Id +'\'';
+                    }
+                }
+                $scope.testClassIdsString += ')';
+                $('#selectTriggersAndClasses').modal('hide');
+
+                toolingApi.query("SELECT+ApexTestClass.Name,ApexTestClassId,TestMethodName,ApexClassorTriggerId,ApexClassorTrigger.Name,NumLinesCovered,NumLinesUncovered,Coverage+FROM+ApexCodeCoverage+WHERE+ApexClassOrTriggerId+in+"+$scope.classIdsString+"+AND+ApexTestClassId+in+"+$scope.testClassIdsString, function(imTestCoverage){
+                    for(var imIndex = 0; imIndex< imTestCoverage.length; imIndex++){
+                        
+                        var testedClassName = imTestCoverage[imIndex].ApexClassOrTrigger.Name;
+                        var testClassName = imTestCoverage[imIndex].ApexTestClass.Name;
+                        var testMethodName = imTestCoverage[imIndex].TestMethodName;
+                        console.log(imTestCoverage[imIndex].Coverage.coveredLines);
+                        $scope.coverageDetails[testedClassName].testClassCoverage(testClassName, testMethodName, imTestCoverage[imIndex].NumLinesCovered, imTestCoverage[imIndex].NumLinesUncovered, imTestCoverage[imIndex].Coverage.coveredLines, imTestCoverage[imIndex].Coverage.uncoveredLines);
+                    }
+                    console.log($scope.coverageDetails);
+                    
+                });
+            };
+
+            $scope.runSelectedTestClasses = function(){
+                var testClassesIdsString = '';
+                var firstRound = true;
+                for(var rtIndex = 0; rtIndex < $scope.testClasses.length; rtIndex++){
+                    if(firstRound) {
+                        testClassesIdsString +=  $scope.testClasses[rtIndex].Id;
+                        firstRound = false;
+                    }else{
+                        testClassesIdsString += ',' + $scope.testClasses[rtIndex].Id;
+                    }
+                }
+
+                toolingApi.runTests(testClassesIdsString, function(asyncJobId){
+                    console.log(asyncJobId);
+                    $scope.currentTestRunAsyncJob = asyncJobId.substring(1, asyncJobId.length -1);
+                    //$scope.currentTestRunAsyncJob = asyncJobId;
+                    $scope.testJobIsStillRunning = true;
+                    var poll = function() {
+                        $timeout(function() {
+                            toolingApi.query('SELECT+ApexClassId,CompletedDate,CreatedById,CreatedDate,ExtendedStatus,Id,JobItemsProcessed,JobType,LastProcessed,LastProcessedOffset,MethodName,NumberOfErrors,ParentJobId,Status,TotalJobItems+FROM+AsyncApexJob+where+Id=\''+$scope.currentTestRunAsyncJob+'\'', function(data){
+                                    console.log(data[0].Status );
+                                    if(data[0].Status === 'Completed'){
+                                        $scope.testJobIsStillRunning = false;
+                                    }
+                                    toolingApi.query('select+id,ApexClassId,Status,ExtendedStatus,ParentJobId+from+ApexTestQueueItem+where+ParentJobId=\''+$scope.currentTestRunAsyncJob+'\'', 
+                                        function(tjdata){
+                                            console.log(tjdata);
+                                            for(var trindex = 0; trindex < tjdata.length; trindex++){
+                                                for(var tcindex = 0; tcindex < $scope.testClasses.length; tcindex++){
+                                                    if(tjdata[trindex].ApexClassId === $scope.testClasses[tcindex].Id){
+                                                        $scope.testClasses[tcindex].Status = tjdata[trindex].Status;
+                                                        $scope.testClasses[tcindex].ExtendedStatus = tjdata[trindex].ExtendedStatus;
+
+                                                    }
+                                                
+                                                }
+                                            }
+
+                                        });
+                            });
+                            
+                            if($scope.testJobIsStillRunning) poll();
+                            else $scope.initiateCodeCovarageChecks();
+                        }, 10000);
+                    };     
+                   poll();
+
+                });
+
+            };
+        });
+
+
+
+        app.filter('regex', function() {
+          return function(input, field, regex) {
+              
+              var patt = new RegExp(regex, "i");
+              var out = [];
+              for (var i = 0; i < input.length; i++){
+                  if(patt.test(input[i][field]))
+                      out.push(input[i]);
+              }      
+            return out;
+          };
+        });
+
+        app.service('toolingApi', function($http){
+            $http.defaults.headers.common.Authorization = 'OAuth {!$Api.Session_ID}';
+            this.query = function(queryString, outputdata){
+                //console.log('Query Service');
+                $http({method: 'GET', url: '/services/data/v31.0/tooling/query/?q='+queryString}).
+                  success(function(data, status, headers, config) {
+                    outputdata(data.records);
+                  }).
+                  error(function(data, status, headers, config) {
+                    console.log(data);
+                    alert(JSON.stringify(data));
+                 });
+            };
+
+            this.runTests = function(classIdsString, outputdata){
+                $http({method: 'GET', url: '/services/data/v28.0/tooling/runTestsAsynchronous/?classids='+classIdsString}).
+                  success(function(data, status, headers, config) {
+                    outputdata(data);
+                    //console.log(data);
+                  }).
+                  error(function(data, status, headers, config) {
+                    console.log(data);
+                    alert(JSON.stringify(data));
+                 });
+            };
+        });
+
+
+        /* DOMAIN CLASSES */
+        var CodeCoverageDetailsOfAClass = (function () {
+            function CodeCoverageDetailsOfAClass(name, Id, pType) {
+                this.type = pType;
+                this.coveredLines = [];
+                this.uncoveredLines = [];
+                this.totalLines = 0;
+                this.coveragePercent = 0;
+                this.individualMethodCoverages = [];
+                this.name = name;
+                this.Id = Id;
+            }
+            CodeCoverageDetailsOfAClass.prototype.getTotalCoverage = function () {
+                return Math.floor((this.coveredLines.length / this.totalLines) * 100);
+            };
+
+            CodeCoverageDetailsOfAClass.prototype.testClassCoverage = function (className, methodName, numberOfLinesCovered, numberOfLinesNotConvered, pcoveredLines, pnotCoveredLines) {
+                this.individualMethodCoverages.push(new indvidualMethodsCoverage(className, methodName, numberOfLinesCovered, numberOfLinesNotConvered));
+                this.totalLines = numberOfLinesCovered + numberOfLinesNotConvered;
+                if (this.coveredLines.length === 0) {
+                    this.coveredLines = pcoveredLines;
+                    this.uncoveredLines = pnotCoveredLines;
+                } else {
+                    for (var index = 0; index < pcoveredLines.length; index++) {
+                        var notinthelist = true;
+                        for (var index1 = 0; index1 < this.coveredLines.length; index1++) {
+                            if (pcoveredLines[index] === this.coveredLines[index1]) {
+                                notinthelist = false;
+                                break;
+                            }
+                        }
+                        if (notinthelist) {
+                            this.coveredLines.push(pcoveredLines[index]);
+                        } else {
+                            notinthelist = true;
+                        }
+                    }
+                }
+                this.coveragePercent = this.getTotalCoverage();
+            };
+            return CodeCoverageDetailsOfAClass;
+        })();
+
+        var indvidualMethodsCoverage = (function () {
+            function indvidualMethodsCoverage(pclassName, pmethodName, pnumberOfLinesCoved, pnumberOfLinesNotCovered) {
+                this.className = '';
+                this.methodName = '';
+                this.numberOfLinesCoved = 0;
+                this.numberOfLinesNotCovered = 0;
+                this.percetageCoverage = 0;
+                this.className = pclassName;
+                this.methodName = pmethodName;
+                this.numberOfLinesCoved = pnumberOfLinesCoved;
+                this.numberOfLinesNotCovered = pnumberOfLinesNotCovered;
+                this.percetageCoverage = (this.numberOfLinesCoved / (this.numberOfLinesCoved + this.numberOfLinesNotCovered)) * 100;
+            }
+            return indvidualMethodsCoverage;
+        })();
+
+        var ClassOrTrigger = (function () {
+            function ClassOrTrigger(pType, pName, pId) {
+                this.Type = pType;
+                this.Name = pName;
+                this.Id = pId;
+                this.Status = null;
+                this.ExtendedStatus = null;
+            }
+            return ClassOrTrigger;
+        })();
+
+
+
+    </script>
+    <style type="text/css">
+        .spacer{
+            margin-top: 10px !important;
+            margin-bottom: 10px !important;
+        }
+        .rowItem{
+            text-align: center !important;;
+            border-right: 1px solid lightgray;
+            padding-right: 3px !important;;
+            padding-left: 3px !important;;
+        }
+        #modalContentSizing{
+            display: inline-block;
+            width:inherit;
+            height:300px;
+            overflow-y: auto; 
+        }
+
+    </style>
+</head>
+
+<body ng-app="codecoverage">
+    <div ng-controller="getClasses" id="checklist" class='container'>
+        <div class="modal" id='selectTriggersAndClasses'>
+          <div class="modal-dialog">
+            <div class="modal-content">
+              <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+                <h4 class="modal-title">Select Test classes and Classes to Test</h4>
+              </div>
+              <div class="modal-body">
+                <div>
+                    <input class="form-control spacer" placeholder="Class Name" ng-model='search'/>
+                    <table class='table table-striped' id='modalContentSizing'>
+                        <thead>
+                            <tr>
+                                <th  class='rowItem'>Tested Class</th>
+                                <th  class='rowItem'>Test Class</th>
+                                <th  class='rowItem'>Type</th>
+                                <th>Class Name</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr ng-repeat="classOrTrigger in codeItems | orderBy:'Name' | regex:'Name':search">
+                                <td  class='rowItem'><input type="checkbox" ng-model="classOrTrigger.selectedClass" ng-change="addToTestedClasses(classOrTrigger)"/></td>
+                                <td  class='rowItem'><input type="checkbox" ng-model="classOrTrigger.testClass" ng-change="addToTestClasses(classOrTrigger)" ng-disabled="{{classOrTrigger.Type === 'Trigger'}}"/></td>
+                                <td  class='rowItem'>{{classOrTrigger.Type}}</td>
+                                <td>{{classOrTrigger.Name}}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+              </div>
+              <div class="modal-footer">
+                <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-danger" ng-click="runSelectedTestClasses()" ng-disabled = "!activateRunTestsButton()" data-dismiss="modal">Run Test Classes</button>
+                <button type="button" class="btn btn-success" ng-click="initiateCodeCovarageChecks()" ng-disabled = "!activateCheckCoverageButton()" data-dismiss="modal">Check Coverage</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="row">
+            <div>
+                <button class="btn btn-primary" ng-click="showSelectClassesModal()">Select Classes</button>
+                <button class="btn btn-danger" ng-click="runSelectedTestClasses()" ng-disabled = "!activateRunTestsButton()">Run Test Classes</button>
+                <button class="btn btn-success" ng-click="initiateCodeCovarageChecks()" ng-disabled = "!activateCheckCoverageButton()">Check Coverage</button>
+            </div>
+            <div class="col-xs-6">
+                <div>Classes to be tested</div>
+                <textarea ng-model='testedClassesName' class='form-control' style='height:20em;' ng-disabled="true"></textarea>
+            </div>
+            <div class="col-xs-6">
+                <div>Test Classes</div>
+                <textarea ng-model='testClassesName' class='form-control' style='height:20em;' ng-disabled="true"></textarea>
+            </div>
+        </div>
+            
+        <div class="panel panel-default spacer" ng-show="testJobIsStillRunning != null">
+            <div class="panel-heading">
+                <h3 class="panel-title">Test Running</h3>
+             </div>
+            <table class="table table-striped spacer" style='padding-top: 15px'>
+                <thead>
+                    <tr>
+                        <th style="text-align: center">Class Name</th>
+                        <th style="text-align: center">Status</th>
+                        <th style="text-align: center">Completed/Total Tests</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr ng-repeat='testClass in testClasses'>
+                        <td>{{testClass.Name}}</td>
+                        <td style="text-align: center">{{testClass.Status}}<img src="/img/loading.gif" alt="Loading graphic" ng-show="testClass.Status !=='Completed'"/></td>
+                        <td style="text-align: center"  >{{testClass.ExtendedStatus}}<img src="/img/loading.gif" alt="Loading graphic"  ng-show="testClass.ExtendedStatus ===null"/></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="panel panel-default spacer" ng-show='checkingCodeCoverage != null'>
+            <div class="panel-heading">
+                <h3 class="panel-title">Code Coverage</h3>
+             </div>
+            <table class="table table-striped spacer" style='padding-top: 15px'>
+                <thead>
+                    <tr>
+                        <th>Class/Trigger Name</th>
+                        <th>Type</th>
+                        <th>Percentage Coverage</th>
+                        <th>Number Of lines covered</th>
+                        <th>Total number of lines</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr ng-repeat='mIndv in coverageDetails' ng-class="{danger : mIndv.coveragePercent < 75, warning: mIndv.coveragePercent < 80, success: mIndv.coveragePercent >=80 }">
+                        <td>{{mIndv.name}}</td>
+                        <td>{{mIndv.type}}</td>
+                        <td>{{mIndv.coveragePercent}}%</td>
+                        <td>{{mIndv.coveredLines.length}}</td>
+                        <td>{{mIndv.totalLines}}</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        
+    </div>
+</body>
+</apex:page>

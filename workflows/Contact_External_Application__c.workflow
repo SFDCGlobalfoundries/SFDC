@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Workflow xmlns="http://soap.sforce.com/2006/04/metadata">
+    <outboundMessages>
+        <fullName>OBMContactExtAppinfoToAIA</fullName>
+        <apiVersion>28.0</apiVersion>
+        <endpointUrl>https://preprod.foundryview.com/aianoauth/soa-infra/services/SF/ApplicationAIAService/ApplicationAIAService_client</endpointUrl>
+        <fields>Account_Short_Name__c</fields>
+        <fields>Application_Name__c</fields>
+        <fields>Contact_Account_Id__c</fields>
+        <fields>Contact_Created_By__c</fields>
+        <fields>Contact_Created_Date__c</fields>
+        <fields>Contact_Email__c</fields>
+        <fields>Contact_Fax__c</fields>
+        <fields>Contact_First_Name__c</fields>
+        <fields>Contact_Last_Modified_By__c</fields>
+        <fields>Contact_Last_Modified_Date__c</fields>
+        <fields>Contact_Last_Name__c</fields>
+        <fields>Contact_Login_Id__c</fields>
+        <fields>Contact_Phone__c</fields>
+        <fields>Contact_Role__c</fields>
+        <fields>Contact_Short_Name__c</fields>
+        <fields>Contact_Title__c</fields>
+        <fields>Contact__c</fields>
+        <fields>HCM_Login_Id__c</fields>
+        <fields>Id</fields>
+        <includeSessionId>true</includeSessionId>
+        <integrationUser>dm@cognizant.com.gf</integrationUser>
+        <name>OBMContactExtAppinfoToAIA</name>
+        <protected>false</protected>
+        <useDeadLetterQueue>false</useDeadLetterQueue>
+    </outboundMessages>
+    <rules>
+        <fullName>WFSendContactExtAppInfoToAIA</fullName>
+        <actions>
+            <name>OBMContactExtAppinfoToAIA</name>
+            <type>OutboundMessage</type>
+        </actions>
+        <active>false</active>
+        <criteriaItems>
+            <field>Contact_External_Application__c.Name</field>
+            <operation>notEqual</operation>
+        </criteriaItems>
+        <description>When a Contact External Application record is created in GF, this workflow will be triggered which will in turn send an outbound message OBMContactExtAppinfoToAIA to AIA.</description>
+        <triggerType>onCreateOnly</triggerType>
+    </rules>
+</Workflow>

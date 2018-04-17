@@ -1,0 +1,63 @@
+<!--
+    Author: Anirban Roy
+    Description: This serves as the visualforce page for the Expose Control Attachment Save.
+    History: 
+        ARoy    06122013    - page creation.
+-->
+
+<apex:page controller="ExpConAttachSaveController" showheader="true" sidebar="true" tabstyle="Export_Control_Form__c">
+    <script type="text/javascript">
+        function validateAttachment() {
+            var att1= document.getElementsByName('{!$Component.form.expConForm.att1}'+':inputFile:file')[0];
+            var att2= document.getElementsByName('{!$Component.form.expConForm.att2}'+':inputFile:file')[0];
+            var others= document.getElementsByName('{!$Component.form.expConForm.others}'+':inputFile:file')[0];
+            var errMsg = '';
+            if (att1.files[0]) {
+                if (att1.files[0].size > (1024 * 1024 * 5)) {
+                    errMsg = errMsg + 'Q4 attachment should not exceed 5MB.\n';
+                }               
+            }
+            if (att2.files[0]) {
+                if (att2.files[0].size > (1024 * 1024 * 5)) {
+                    errMsg = errMsg + 'Q5 attachment should not exceed 5MB.\n';
+                }               
+            }
+            if (others.files[0]) {
+                if (others.files[0].size > (1024 * 1024 * 5)) {
+                    errMsg = errMsg + 'Others attachment should not exceed 5MB.\n';
+                }               
+            }
+            
+            if(errMsg != ''){
+                errMsg = errMsg.replace(/^\s+|\s+$/g, '');
+                alert(errMsg);
+                return;
+            }else{
+                return true;
+            }
+        }
+    </script>
+    
+    <apex:form >
+        <apex:sectionHeader title="Export Control Form" subtitle="File Attachments" help="https://help.salesforce.com/htviewhelpdoc?id=co_edit.htm&siteLang=en_US" />
+        <apex:pageMessages />
+        <apex:pageblock title="Export Control Form" rendered="{!NOT(ISNULL(expCntrForm))}">
+            <apex:pageblockbuttons >
+                <apex:commandbutton id="Save" value="   Save   "  action="{!saveAttachments}" onclick="validateAttachment();"/>
+                <apex:commandbutton action="{!cancel}" value=" Cancel " />
+            </apex:pageblockbuttons>
+            <apex:outputLabel value="{!$Label.EXP_CNTRL_FORM_ATT_TEXT}" style="color:red;font-weight:bold;font-size:12px" rendered="{!(NOT(ISNULL(attachment1.name)) || NOT(ISNULL(attachment2.name)))}" escape="false"></apex:outputLabel>
+            <apex:outputLabel value="{!$Label.EXP_CNTRL_FORM_ATT_LIMIT}" style="color:red;font-weight:bold;font-size:12px"></apex:outputLabel>
+            <apex:pageblocksection title="{!$Label.EXP_CNTRL_FORM_Q4_TITLE}" collapsible="false">
+                <apex:inputFile value="{!attachment1.body}" filename="{!attachment1.name}" />                
+            </apex:pageblocksection>
+            <apex:pageblocksection title="{!$Label.EXP_CNTRL_FORM_Q5_TITLE}" collapsible="false">
+                <apex:inputFile value="{!attachment2.body}" filename="{!attachment2.name}" />                                
+            </apex:pageblocksection>
+            <apex:pageblocksection title="{!$Label.EXP_CNTRL_FORM_OTH_TITLE}" collapsible="false">
+                <apex:inputFile value="{!attachOthers.body}" filename="{!attachOthers.name}" />                                
+            </apex:pageblocksection>
+        </apex:pageblock>
+        <apex:outputLabel value="{!$Label.EXP_CNTRL_FORM_NO_PERM}" styleClass="noRowsHeader" rendered="{!ISNULL(expCntrForm)}"></apex:outputLabel>
+    </apex:form>
+</apex:page>

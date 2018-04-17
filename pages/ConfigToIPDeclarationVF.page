@@ -1,0 +1,108 @@
+<!--
+    Author: Monalisa Mohapatra
+    Description: This page is used for checking the IP Declaration Form status.
+    History: 
+             05122014 - Page creation.
+             08122014 - Adding Notify Customer button
+-->
+
+<apex:page id="ConfigToIPDeclarationVF" controller="ConfigToIPDeclaration" showHeader="true" sidebar="true" tabStyle="Device__c">
+    <script>
+        var isClicked = false;
+            function disableButton(btn) {
+                if (isClicked) {
+                    return false;
+                } else {
+                    isClicked = true;
+                    btn.className = 'btnDisabled';
+                    return true;
+                }
+            }
+        function selectEmail(cb, acctId, comp) {
+            var inputs = document.getElementsByTagName("input");
+            var cbName = '';
+            if (comp == 'ExportControl') {
+                cbName = 'ec';
+            } else if (comp == 'IpDeclaration') {
+                cbName = 'ip';
+            }  else if (comp == 'Cdrs') {
+                cbName = 'cd';
+            }
+            
+            if (cb.className.indexOf(cbName + "All") > -1 ) {
+                for (var c=0; c<inputs.length; c++) {
+                    if (inputs[c].type == "checkbox" && inputs[c].className.indexOf(cbName + acctId) > -1 && !inputs[c].disabled) { 
+                        if (cb.checked) {
+                            inputs[c].checked = true;
+                        } else {
+                            inputs[c].checked = false;
+                        }
+                    }
+                }
+            } else {
+                var uncheckedCtr = 0;
+                for (var c=0; c<inputs.length; c++) {
+                    if (inputs[c].type == "checkbox" && inputs[c].className.indexOf(cbName + acctId) > -1 && !inputs[c].disabled) {
+                        if (!inputs[c].checked) {
+                            uncheckedCtr++;
+                        }
+                    }
+                }
+                
+                if (uncheckedCtr > 0) {
+                    document.getElementsByClassName(cbName + "All" + acctId)[0].checked = false;  
+                } else {
+                    document.getElementsByClassName(cbName + "All" + acctId)[0].checked = true;
+                }
+            }
+        }   
+    </script>
+    <apex:form id="form1">
+        <apex:pageBlock id="mainBlock" mode="detail">
+           
+            <apex:pageMessages id="errorSection" rendered="{!showErrorMessage}" />
+            <!--Configuration Detail Section-->
+            <apex:pageBlockSection title="Configuration Detail"  columns="2" rendered="{!showConfig}">
+                <apex:outputField value="{!config.Name}" />
+                <apex:outputField value="{!config.Apttus_Proposal__Account__c}" />
+                
+                <apex:outputField value="{!config.Apttus_Proposal__Proposal_Name__c}" />
+                <apex:outputField value="{!config.Apttus_Proposal__Opportunity__c}" />
+                
+                <apex:outputField value="{!config.APTPS_Primary__c}" />
+                <apex:outputField value="{!config.Device__c}" />
+            
+            
+            </apex:pageBlockSection>
+            <!--Device Detail Section-->
+            <apex:pageBlockSection title="Device Detail" collapsible="true" columns="2" rendered="{!showExposedDevice}">
+                <apex:outputField value="{!device.Name}" />
+                <apex:outputField value="{!device.CRMDID__c}" />
+                              
+                <apex:outputField value="{!device.Account__c}" />
+                <apex:outputField value="{!device.Requested_from_Configuration__c }" />
+             
+            </apex:pageBlockSection>
+            <!--IP Declaration Form Detail Section. This section will be visible only when device is exposed.-->
+            <apex:pageBlockSection title="IP Declaration Form Detail" collapsible="true" columns="2" rendered="{!showIPForm}">
+                <apex:outputField value="{!IpForm.Name}" />
+                <apex:outputField value="{!IpForm.Fab__c}" />
+                              
+                <apex:outputField value="{!IpForm.IP_Status__c}" />
+                <apex:outputField value="{!IpForm.Customer_Name__c}" />
+                
+                <apex:outputField value="{!IpForm.Device__c}" />
+                <apex:outputField value="{!IpForm.Configuration__c}" />
+            </apex:pageBlockSection>
+            <apex:pageBlockButtons location="both">
+                <!--  Changed PS 12092014 
+                <apex:commandButton id="exposeDeviceBtn" value="{!IF(device.Requested_from_Configuration__c, 'Notify Customer', 'Expose Device')}" action="{!exposeDevice}" rendered="{!showExposedDevice},{!showIPForm}" onclick="return disableButton(this);" />
+                -->
+                <apex:commandButton id="exposeDeviceBtn" value="{!IF(device.Expose_Device_to_Customer__c, 'Notify Customer', 'Expose Device')}" action="{!exposeDeviceToCustomer}" rendered="{!showExposedDevice}" onclick="return disableButton(this);" />
+                <apex:commandButton value="Cancel" action="{!cancel}" immediate="true" />
+            </apex:pageBlockButtons>
+        </apex:pageBlock>
+        
+    </apex:form>
+
+</apex:page>

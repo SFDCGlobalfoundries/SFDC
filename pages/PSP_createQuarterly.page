@@ -1,0 +1,494 @@
+<apex:page standardController="Device__c" extensions="PSP_createExtensionQuarterly" tabStyle="Device__c" sidebar="false" standardStylesheets="false">
+    <apex:stylesheet value="{!$Resource.Stylesheet_PSP_Pages}"/>
+    <apex:includeScript value="{!URLFOR($Resource.ROS_JQuery_Deafult, '/jquery-ui-1.10.3.custom/js/jquery-1.9.1.js')}"/>
+    <apex:includeScript value="{!URLFOR($Resource.ROS_JQuery_Deafult, '/jquery-ui-1.10.3.custom/js/jquery-ui-1.10.3.custom.js')}"/>
+    <script>
+        var j$ = jQuery.noConflict();
+        
+        j$(document).ready(function(){
+            foundrymod();
+        });
+        
+        function foundrymod(){
+            var div = document.getElementById("table2");
+            var div2 = document.getElementById("table3");
+            
+            j$(div).find('span').each(function() {
+                var orig = j$(this).text();
+                j$(this).html(orig.split('.')[0]);
+            });
+            
+            j$(div2).find('span').each(function() {
+                var check = j$(this).attr('class');
+                if(check == 'tg-style-edit'){
+                    var orig = j$(this).text();
+                    j$(this).html(orig.split('.')[0]);
+                }
+            });
+        }
+    </script>
+    <c:loadingPanel ></c:loadingPanel>
+
+    <apex:form id="theForm">
+        
+        <apex:pageMessages id="pageMessages"/>
+        <apex:pageBlock id="thePageBlock" title="Production Start Plan for Device:{!Device__c.name}">
+           
+        <apex:pageBlockButtons >
+            <apex:commandButton value="Return" action="{!Cancel}"/>
+            <apex:commandButton value="Save" action="{!SaveCustom}" oncomplete="foundrymod();return false;" status="LoadingStatusSpinner" rerender="LoadingStatusSpinner,pageMessages,theForm,outputPanel1" rendered="{!AND(showTable,editAccess)}"/>
+            <apex:commandLink value="Export" styleClass="btn" style="text-decoration:none;padding:4px;" action="{!ExportDevicePSP}" rendered="{!showTable}" target="_blank"/>
+            <apex:commandButton value="Add Year" action="{!addNewYear}" reRender="LoadingStatusSpinner,pageMessages,theForm,outputPanel1" status="LoadingStatusSpinner" rendered="{!AND(showTable,editAccess)}"/>
+            <apex:commandButton value="Remove Year" action="{!removeYear}" reRender="LoadingStatusSpinner,pageMessages,theForm,outputPanel1" status="LoadingStatusSpinner" rendered="{!AND(showTable,editAccess)}"/>
+            <apex:commandButton value="MonthlyView" action="{!MonthlyView}" status="LoadingStatusSpinner" rerender="LoadingStatusSpinner,pageMessages,theForm,outputPanel1" />
+        
+        </apex:pageBlockButtons> 
+        
+        <apex:pageBlockSection rendered="false">
+            <apex:inputHidden value="{!Device__c.Forecasted_Proto_Date__c}"/>
+            <apex:inputHidden value="{!Device__c.Duration_before_Proto_Start__c}"/>
+            <apex:inputHidden value="{!Device__c.Duration_of_Proto_Phase__c}"/>
+            <apex:inputHidden value="{!Device__c.Duration_of_PreProd_Phase__c}"/>
+            <apex:inputHidden value="{!Device__c.Product_TO_Date__c}"/>
+            <apex:inputHidden value="{!Device__c.Proto_Wafer_Fab_Shipped_Date__c}"/>
+            <apex:inputHidden value="{!Device__c.Forecasted_Production_Start_Date__c}"/>
+            <apex:inputHidden value="{!Device__c.Forecasted_RTP_Date__c}"/>
+            <apex:inputHidden value="{!Device__c.Opportunity_ID__c}"/>
+        </apex:pageBlockSection>
+        
+        <apex:outputPanel id="outputPanel1" rendered="{!showTable}">
+            
+            <apex:pageBlockSection rendered="{!IF(Device__c.Product_Indicator__c!='ASIC',TRUE,FALSE)}">
+                <apex:pageBlockSectionItem >
+                    1. Design Win<apex:outputField value="{!Device__c.Design_Win_Date_Formula__c}"/>
+                </apex:pageBlockSectionItem>             
+                <apex:pageBlockSectionItem >
+                    6. Respin Impact to Schedule
+                    <apex:outputPanel >
+                        <apex:outputField value="{!Device__c.Respin_Date__c}" rendered="{!Device__c.Respin_Date__c!=null}"/>
+                        <apex:outputField value="{!Device__c.Respin_Impact_to_Schedule_Current__c}" rendered="{!Device__c.Respin_Date__c==null}"/>
+                    </apex:outputPanel>
+                </apex:pageBlockSectionItem>
+                <apex:pageBlockSectionItem >
+                    2. Product Tapeout
+                    <apex:outputPanel >
+                        <apex:outputField value="{!Device__c.Product_TO_Date__c}" rendered="{!Device__c.Product_TO_Date__c!=null}"/>
+                        <apex:outputField value="{!Device__c.Product_TO_Current__c}" rendered="{!Device__c.Product_TO_Date__c==null}"/>
+                    </apex:outputPanel>
+                </apex:pageBlockSectionItem>
+                <apex:pageBlockSectionItem >                
+                    7. RTR - Functionality and Yield Learning Complete
+                    <apex:outputPanel >
+                        <apex:outputField value="{!Device__c.Forecasted_RTP_Date__c}" rendered="{!Device__c.Forecasted_RTP_Date__c!=null}"/>
+                        <apex:outputField value="{!Device__c.Risk_Wafer_Start_Current__c}" rendered="{!Device__c.Forecasted_RTP_Date__c==null}"/>
+                    </apex:outputPanel>
+                </apex:pageBlockSectionItem>
+                <apex:pageBlockSectionItem >   
+                    3. Wafer First Lot Start
+                    <apex:outputPanel >
+                        <apex:outputField value="{!Device__c.Proto_Wafer_First_Lot_Start_Date__c}" rendered="{!Device__c.Proto_Wafer_First_Lot_Start_Date__c!=null}"/>
+                        <apex:outputField value="{!Device__c.Proto_Wafer_First_Lot_Start_Current__c}" rendered="{!Device__c.Proto_Wafer_First_Lot_Start_Date__c==null}"/>
+                    </apex:outputPanel>
+                </apex:pageBlockSectionItem>                
+                <apex:pageBlockSectionItem >
+                    8. Direct Customer Qual Complete
+                    <apex:outputPanel >
+                        <apex:outputField value="{!Device__c.Risk_Wafer_Shipped_Date__c}" rendered="{!Device__c.Risk_Wafer_Shipped_Date__c!=null}"/>
+                        <apex:outputField value="{!Device__c.Risk_Wafer_Shipped_Current__c}" rendered="{!Device__c.Risk_Wafer_Shipped_Date__c==null}"/>
+                    </apex:outputPanel>
+                </apex:pageBlockSectionItem>
+                <apex:pageBlockSectionItem >
+                    4. Proto Wafer Fab Shipped
+                    <apex:outputPanel >
+                        <apex:outputField value="{!Device__c.Proto_Wafer_Fab_Shipped_Date__c}" rendered="{!Device__c.Proto_Wafer_Fab_Shipped_Date__c!=null}"/>
+                        <apex:outputField value="{!Device__c.Proto_Wafer_Fab_Shipped_Current__c}" rendered="{!Device__c.Proto_Wafer_Fab_Shipped_Date__c==null}"/>
+                    </apex:outputPanel>
+                </apex:pageBlockSectionItem>
+                <apex:pageBlockSectionItem >
+                    9. End Customer Qual Complete
+                    <apex:outputPanel >
+                        <apex:outputField value="{!Device__c.End_Customer_Qual_Complete_Date__c}" rendered="{!Device__c.End_Customer_Qual_Complete_Date__c!=null}"/>
+                        <apex:outputField value="{!Device__c.End_Customer_Qual_Complete_Current__c}" rendered="{!Device__c.End_Customer_Qual_Complete_Date__c==null}"/>
+                    </apex:outputPanel>
+                </apex:pageBlockSectionItem>
+                <apex:pageBlockSectionItem >
+                    5. Assembled/Tested Part Shipped
+                    <apex:outputPanel >
+                        <apex:outputField value="{!Device__c.Forecasted_Proto_Date__c}" rendered="{!Device__c.Forecasted_Proto_Date__c!=null}"/>
+                        <apex:outputField value="{!Device__c.Assembled_Tested_Part_Shipped_Current__c}" rendered="{!Device__c.Forecasted_Proto_Date__c==null}"/>
+                    </apex:outputPanel>
+                </apex:pageBlockSectionItem>
+                <apex:pageBlockSectionItem >
+                    10. Production Wafer Start
+                    <apex:outputPanel >
+                        <apex:outputField value="{!Device__c.Forecasted_Production_Start_Date__c}" rendered="{!Device__c.Forecasted_Production_Start_Date__c!=null}"/>
+                        <apex:outputField value="{!Device__c.Production_Wafer_Start_Current__c}" rendered="{!Device__c.Forecasted_Production_Start_Date__c==null}"/>
+                    </apex:outputPanel>
+                </apex:pageBlockSectionItem>
+                <apex:inputField value="{!Device__c.Proto_DPML__c}"/>
+                <apex:inputField value="{!Device__c.Production_DPML__c}"/>
+                <apex:inputField value="{!Device__c.No_of_Mask_Layers__c}"/>                
+                <apex:pageBlockSectionItem >
+                    TOR value
+                    <apex:outputField value="{!Device__c.TOR_Automatic__c}"/>
+                </apex:pageBlockSectionItem>
+            </apex:pageBlockSection>
+            
+            <apex:pageBlockSection rendered="{!IF(Device__c.Product_Indicator__c=='ASIC',TRUE,FALSE)}">
+                <apex:pageBlockSectionItem >
+                    1. Customer Engagement<apex:outputField value="{!Device__c.Customer_Engagement_Current__c}"/>
+                </apex:pageBlockSectionItem>             
+                <apex:pageBlockSectionItem >
+                    7. RTM e-Release A
+                    <apex:outputPanel >
+                        <apex:outputField value="{!Device__c.RTM_e_Release_A_Current__c}"/>
+                    </apex:outputPanel>
+                </apex:pageBlockSectionItem>
+                <apex:pageBlockSectionItem >
+                    2. Ready to Quote
+                    <apex:outputPanel >
+                        <apex:outputField value="{!Device__c.Ready_to_Quote_Current__c}"/>
+                    </apex:outputPanel>
+                </apex:pageBlockSectionItem>
+                <apex:pageBlockSectionItem >                
+                    8. Product Tapeout
+                    <apex:outputPanel >
+                        <apex:outputField value="{!Device__c.Product_TO_Current__c}"/>
+                    </apex:outputPanel>
+                </apex:pageBlockSectionItem>
+                <apex:pageBlockSectionItem >   
+                    3. Design Win
+                    <apex:outputPanel >
+                        <apex:outputField value="{!Device__c.Design_Win_Date_Formula__c}"/>
+                    </apex:outputPanel>
+                </apex:pageBlockSectionItem>                
+                <apex:pageBlockSectionItem >
+                    9. Proto Wafer Fab Shipped
+                    <apex:outputPanel >
+                        <apex:outputField value="{!Device__c.Proto_Wafer_Fab_Shipped_Current__c}"/>
+                    </apex:outputPanel>
+                </apex:pageBlockSectionItem>
+                <apex:pageBlockSectionItem >
+                    4. Ready For IDR 
+                    <apex:outputPanel >
+                        <apex:outputField value="{!Device__c.CDS_Complete_Current__c}"/>
+                    </apex:outputPanel>
+                </apex:pageBlockSectionItem>
+                <apex:pageBlockSectionItem >
+                    10. End Customer Qual Complete
+                    <apex:outputPanel >
+                        <apex:outputField value="{!Device__c.End_Customer_Qual_Complete_Current__c}"/>
+                    </apex:outputPanel>
+                </apex:pageBlockSectionItem>
+                <apex:pageBlockSectionItem >
+                    5. 1st customer design data
+                    <apex:outputPanel >
+                        <apex:outputField value="{!Device__c.First_customer_design_data_Current__c}"/>
+                    </apex:outputPanel>
+                </apex:pageBlockSectionItem>
+                <apex:pageBlockSectionItem >
+                    11. Production Wafer Start
+                    <apex:outputPanel >
+                        <apex:outputField value="{!Device__c.Production_Wafer_Start_Current__c}"/>
+                    </apex:outputPanel>
+                </apex:pageBlockSectionItem>
+                <apex:pageBlockSectionItem >
+                    6. RTM e-Release Dt
+                    <apex:outputPanel >
+                        <apex:outputField value="{!Device__c.RTM_e_Release_Dt_Current__c}"/>
+                    </apex:outputPanel>
+                </apex:pageBlockSectionItem>
+                <apex:pageBlockSectionItem >
+                    12. Production Wafer Start (Judged)
+                    <apex:outputPanel >
+                        <apex:outputField value="{!Device__c.Production_Wafer_Start_Judged_Current__c}"/>
+                    </apex:outputPanel>
+                </apex:pageBlockSectionItem>
+                <apex:inputField value="{!Device__c.Proto_DPML__c}"/>
+                <apex:inputField value="{!Device__c.Production_DPML__c}"/>
+                <apex:inputField value="{!Device__c.No_of_Mask_Layers__c}"/>                
+                <apex:pageBlockSectionItem >
+                    TOR value
+                    <apex:outputField value="{!Device__c.TOR_Automatic__c}"/>
+                </apex:pageBlockSectionItem>
+                <apex:inputField value="{!Device__c.Post_Wafer_Processing_Proto__c}"/>
+                <apex:inputField value="{!Device__c.Post_Wafer_Processing_Prod__c}"/>
+                <apex:inputField value="{!Device__c.Deliverable_Type__c}"/>
+            </apex:pageBlockSection>
+            
+            <br/> 
+            
+            <apex:outputPanel id="forecasttable1" layout="block" style="overflow: auto; width:1275px;" rendered="{!NOT(isASICFlag)}">      
+            <table border="1" style="border-collapse:collapse;border-color:#000000;width:100%;table-layout:initial;" id="table2">
+               <caption style="background-color:#B9B9B9;"><b>3. Production Start Plan Details (All the system calculations will occur after Saving the PSP)</b></caption>
+                <thead>
+                    <tr style="background-color:#DCDCDC;">
+                        <th colspan="2" rowspan="3"  class="tg-center" style="text-align: center;vertical-align:middle;width:25%;" scope="col"><b>Phase</b></th>
+                        <apex:repeat value="{!lstYears}" var="year">
+                            <th colspan="12" class="tg-center" scope="col">{!year}</th>
+                        </apex:repeat>
+                    </tr>
+                    <tr>
+                        <apex:repeat value="{!lstYears}" var="year">
+                            <th style="background-color:#DCDCDC;" colspan="3" scope="col" class="tg-center">Q1</th>
+                            <th style="background-color:#DCDCDC;" colspan="3" scope="col" class="tg-center">Q2</th>
+                            <th style="background-color:#DCDCDC;" colspan="3" scope="col" class="tg-center">Q3</th>
+                            <th style="background-color:#DCDCDC;" colspan="3" scope="col" class="tg-center">Q4</th>
+                        </apex:repeat>
+                    </tr>
+                   
+                </thead>
+                <tbody style="text-align: center;vertical-align:middle;">
+                    
+                    <tr style="background-color:#ffdd99;">
+                        <th style="text-align: center;vertical-align:middle;" colspan="1" rowspan="2"><b>1. Prototype Wafer Starts</b></th>
+                    </tr>
+                    <tr style="background-color:#ffdd99;">
+                        <th scope="row">Qtrly TTL</th>
+                        <apex:repeat value="{!lstPSPprototypeWaferStarts}" var="pspWaferstart">
+                            <td class="tg-center" colspan="3"><apex:outputField value="{!pspWaferstart.WaferStart_Quarter1__c}"/></td>
+                            <td class="tg-center" colspan="3"><apex:outputField value="{!pspWaferstart.WaferStart_Quarter2__c}"/></td>
+                            <td class="tg-center" colspan="3"><apex:outputField value="{!pspWaferstart.WaferStart_Quarter3__c}"/></td>
+                            <td class="tg-center" colspan="3"><apex:outputField value="{!pspWaferstart.WaferStart_Quarter4__c}"/></td>
+                        </apex:repeat>
+                    </tr>
+                    
+                    <tr style="background-color:#ffdd99;">
+                        <th style="text-align: center;vertical-align:middle;" colspan="1" rowspan="2"><b>2. Prototype Wafer Outs</b></th>
+                    </tr>
+                    <tr style="background-color:#ffdd99;">
+                        <th scope="row">Qtrly TTL</th>
+                        <apex:repeat value="{!lstprototypeWaferOuts}" var="pspWaferout">
+                            <td class="tg-center" colspan="3"><apex:outputField value="{!pspWaferout.WaferStart_Quarter1__c}"/></td>
+                            <td class="tg-center" colspan="3"><apex:outputField value="{!pspWaferout.WaferStart_Quarter2__c}"/></td>
+                            <td class="tg-center" colspan="3"><apex:outputField value="{!pspWaferout.WaferStart_Quarter3__c}"/></td>
+                            <td class="tg-center" colspan="3"><apex:outputField value="{!pspWaferout.WaferStart_Quarter4__c}"/></td>
+                        </apex:repeat>
+                    </tr>
+                                        
+                    <tr style="background-color:#dad971;">
+                        <th style="text-align: center;vertical-align:middle;" colspan="1" rowspan="2"><b>3. Production Wafer Starts</b></th>
+                    </tr>
+                    <tr style="background-color:#dad971;">
+                        <th scope="row">Qtrly TTL</th>
+                        <apex:repeat value="{!lstPSPproductionWaferStarts}" var="pspWaferstart">
+                            <td class="tg-center" colspan="3"><apex:outputField value="{!pspWaferstart.WaferStart_Quarter1__c}"/></td>
+                            <td class="tg-center" colspan="3"><apex:outputField value="{!pspWaferstart.WaferStart_Quarter2__c}"/></td>
+                            <td class="tg-center" colspan="3"><apex:outputField value="{!pspWaferstart.WaferStart_Quarter3__c}"/></td>
+                            <td class="tg-center" colspan="3"><apex:outputField value="{!pspWaferstart.WaferStart_Quarter4__c}"/></td>
+                        </apex:repeat>
+                    </tr>
+                    
+                    <tr style="background-color:#dad971;">
+                        <th style="text-align: center;vertical-align:middle;" colspan="1" rowspan="2"><b>4. Production Wafer Outs</b></th>
+                    </tr>
+                    <tr style="background-color:#dad971;">
+                        <th scope="row">Qtrly TTL</th>
+                        <apex:repeat value="{!lstproductionWaferOuts}" var="pspWaferout">
+                            <td class="tg-center" colspan="3"><apex:outputField value="{!pspWaferout.WaferStart_Quarter1__c}"/></td>
+                            <td class="tg-center" colspan="3"><apex:outputField value="{!pspWaferout.WaferStart_Quarter2__c}"/></td>
+                            <td class="tg-center" colspan="3"><apex:outputField value="{!pspWaferout.WaferStart_Quarter3__c}"/></td>
+                            <td class="tg-center" colspan="3"><apex:outputField value="{!pspWaferout.WaferStart_Quarter4__c}"/></td>
+                        </apex:repeat>
+                    </tr>
+                                        
+                    <tr style="background-color:#b3daff;">
+                        <th style="text-align: center;vertical-align:middle;" colspan="1" rowspan="2"><b>5. Total Opportunity Wafer Outs</b></th>
+                    </tr>
+                    <tr style="background-color:#b3daff;">
+                        <th scope="row">Qtrly TTL</th>
+                        <apex:repeat value="{!lstOppWaferOuts}" var="oppWaferOut">
+                            <td class="tg-center" colspan="3"><apex:outputText value="{!oppWaferOut.quarter1}"/></td>
+                            <td class="tg-center" colspan="3"><apex:outputText value="{!oppWaferOut.quarter2}"/></td>
+                            <td class="tg-center" colspan="3"><apex:outputText value="{!oppWaferOut.quarter3}"/></td>
+                            <td class="tg-center" colspan="3"><apex:outputText value="{!oppWaferOut.quarter4}"/></td>
+                        </apex:repeat>
+                    </tr>                  
+                    
+                    <tr style="background-color:#b3daff;">
+                        <th style="text-align: center;vertical-align:middle;" colspan="1" rowspan="2"><b>6. Total Opportunity ASP ($)</b></th>
+                    </tr>
+                    <tr style="background-color:#b3daff;">
+                        <th scope="row">Qtrly TTL</th>
+                        <apex:repeat value="{!lstOppWaferASPs}" var="oppWaferASP">
+                            <td class="tg-center" colspan="3"><apex:outputText value="{!oppWaferASP.quarter1}"/></td>
+                            <td class="tg-center" colspan="3"><apex:outputText value="{!oppWaferASP.quarter2}"/></td>
+                            <td class="tg-center" colspan="3"><apex:outputText value="{!oppWaferASP.quarter3}"/></td>
+                            <td class="tg-center" colspan="3"><apex:outputText value="{!oppWaferASP.quarter4}"/></td>
+                        </apex:repeat>
+                    </tr>
+                </tbody>
+           </table>
+           </apex:outputPanel>
+           
+           <apex:outputPanel id="forecasttable2" layout="block" style="overflow: auto; width:1275px;" rendered="{!isASICFlag}">      
+            <table border="1" style="border-collapse:collapse;border-color:#000000;width:100%;table-layout:initial;" id="table3">
+               <caption style="background-color:#B9B9B9;"><b>3. Production Start Plan Details (All the system calculations will occur after Saving the PSP)</b></caption>
+                <thead>
+                    <tr style="background-color:#DCDCDC;">
+                        <th colspan="2" rowspan="3"  class="tg-center" style="text-align: center;vertical-align:middle;width:25%;" scope="col"><b>Phase</b></th>
+                        <apex:repeat value="{!lstYears}" var="year">
+                            <th colspan="12" class="tg-center" scope="col">{!year}</th>
+                        </apex:repeat>
+                    </tr>
+                    <tr>
+                        <apex:repeat value="{!lstYears}" var="year">
+                            <th style="background-color:#DCDCDC;" colspan="3" scope="col" class="tg-center">Q1</th>
+                            <th style="background-color:#DCDCDC;" colspan="3" scope="col" class="tg-center">Q2</th>
+                            <th style="background-color:#DCDCDC;" colspan="3" scope="col" class="tg-center">Q3</th>
+                            <th style="background-color:#DCDCDC;" colspan="3" scope="col" class="tg-center">Q4</th>
+                        </apex:repeat>
+                    </tr>
+                   
+                </thead>
+                <tbody style="text-align: center;vertical-align:middle;">
+                    
+                    <tr style="background-color:#ffdd99;">
+                        <th style="text-align: center;vertical-align:middle;" colspan="1" rowspan="2"><b>1. Prototype {!delType} Starts</b></th>
+                    </tr>
+                    <tr style="background-color:#ffdd99;">
+                        <th scope="row">Qtrly TTL</th>
+                        <apex:repeat value="{!lstPSPprototypeWaferStarts}" var="pspWaferstart">
+                            <td class="tg-center" colspan="3"><apex:outputText styleClass="tg-style-edit" value="{!pspWaferstart.WaferStart_Quarter1__c}"/></td>
+                            <td class="tg-center" colspan="3"><apex:outputText styleClass="tg-style-edit" value="{!pspWaferstart.WaferStart_Quarter2__c}"/></td>
+                            <td class="tg-center" colspan="3"><apex:outputText styleClass="tg-style-edit" value="{!pspWaferstart.WaferStart_Quarter3__c}"/></td>
+                            <td class="tg-center" colspan="3"><apex:outputText styleClass="tg-style-edit" value="{!pspWaferstart.WaferStart_Quarter4__c}"/></td>
+                        </apex:repeat>
+                    </tr>
+                    
+                    <tr style="background-color:#ffdd99;">
+                        <th style="text-align: center;vertical-align:middle;" colspan="1" rowspan="2"><b>2. Prototype {!delType} Outs</b></th>
+                    </tr>
+                    <tr style="background-color:#ffdd99;">
+                        <th scope="row">Qtrly TTL</th>
+                        <apex:repeat value="{!lstprototypeWaferOuts}" var="pspWaferout">
+                            <td class="tg-center" colspan="3"><apex:outputText styleClass="tg-style-edit" value="{!pspWaferout.WaferStart_Quarter1__c}"/></td>
+                            <td class="tg-center" colspan="3"><apex:outputText styleClass="tg-style-edit" value="{!pspWaferout.WaferStart_Quarter2__c}"/></td>
+                            <td class="tg-center" colspan="3"><apex:outputText styleClass="tg-style-edit" value="{!pspWaferout.WaferStart_Quarter3__c}"/></td>
+                            <td class="tg-center" colspan="3"><apex:outputText styleClass="tg-style-edit" value="{!pspWaferout.WaferStart_Quarter4__c}"/></td>
+                        </apex:repeat>
+                    </tr>
+                    
+                    <tr style="background-color:#ffdd99;">
+                        <th style="text-align: center;vertical-align:middle;" colspan="1" rowspan="2"><b>3. Prototype {!delType} ASP</b></th>
+                    </tr>
+                    <tr style="background-color:#ffdd99;">
+                        <th scope="row">Qtrly TTL</th>
+                        <apex:repeat value="{!lstPSPProtoASPRecords}" var="pspProtoASP">
+                            <td class="tg-center" colspan="3"><apex:outputField value="{!pspProtoASP.WaferStart_Quarter1__c}"/></td>
+                            <td class="tg-center" colspan="3"><apex:outputField value="{!pspProtoASP.WaferStart_Quarter2__c}"/></td>
+                            <td class="tg-center" colspan="3"><apex:outputField value="{!pspProtoASP.WaferStart_Quarter3__c}"/></td>
+                            <td class="tg-center" colspan="3"><apex:outputField value="{!pspProtoASP.WaferStart_Quarter4__c}"/></td>
+                        </apex:repeat>
+                    </tr>
+                    
+                    <tr style="background-color:#ffdd99;">
+                        <th style="text-align: center;vertical-align:middle;" colspan="1" rowspan="2"><b>4. Prototype {!delType} Revenue</b></th>
+                    </tr>
+                    <tr style="background-color:#ffdd99;">
+                        <th scope="row">Qtrly TTL</th>
+                        <apex:repeat value="{!lstPSPProtoRevRecords}" var="pspProtoRev">
+                            <td class="tg-center" colspan="3"><apex:outputText value="{!pspProtoRev.quarter1}"/></td>
+                            <td class="tg-center" colspan="3"><apex:outputText value="{!pspProtoRev.quarter2}"/></td>
+                            <td class="tg-center" colspan="3"><apex:outputText value="{!pspProtoRev.quarter3}"/></td>
+                            <td class="tg-center" colspan="3"><apex:outputText value="{!pspProtoRev.quarter4}"/></td>
+                        </apex:repeat>
+                    </tr>
+                    
+                    <tr style="background-color:#dad971;">
+                        <th style="text-align: center;vertical-align:middle;" colspan="1" rowspan="2"><b>5. Production {!delType} Starts</b></th>
+                    </tr>
+                    <tr style="background-color:#dad971;">
+                        <th scope="row">Qtrly TTL</th>
+                        <apex:repeat value="{!lstPSPproductionWaferStarts}" var="pspWaferstart">
+                            <td class="tg-center" colspan="3"><apex:outputText styleClass="tg-style-edit" value="{!pspWaferstart.WaferStart_Quarter1__c}"/></td>
+                            <td class="tg-center" colspan="3"><apex:outputText styleClass="tg-style-edit" value="{!pspWaferstart.WaferStart_Quarter2__c}"/></td>
+                            <td class="tg-center" colspan="3"><apex:outputText styleClass="tg-style-edit" value="{!pspWaferstart.WaferStart_Quarter3__c}"/></td>
+                            <td class="tg-center" colspan="3"><apex:outputText styleClass="tg-style-edit" value="{!pspWaferstart.WaferStart_Quarter4__c}"/></td>
+                        </apex:repeat>
+                    </tr>
+                    
+                    <tr style="background-color:#dad971;">
+                        <th style="text-align: center;vertical-align:middle;" colspan="1" rowspan="2"><b>6. Production {!delType} Outs</b></th>
+                    </tr>
+                    <tr style="background-color:#dad971;">
+                        <th scope="row">Qtrly TTL</th>
+                        <apex:repeat value="{!lstproductionWaferOuts}" var="pspWaferout">
+                            <td class="tg-center" colspan="3"><apex:outputText styleClass="tg-style-edit" value="{!pspWaferout.WaferStart_Quarter1__c}"/></td>
+                            <td class="tg-center" colspan="3"><apex:outputText styleClass="tg-style-edit" value="{!pspWaferout.WaferStart_Quarter2__c}"/></td>
+                            <td class="tg-center" colspan="3"><apex:outputText styleClass="tg-style-edit" value="{!pspWaferout.WaferStart_Quarter3__c}"/></td>
+                            <td class="tg-center" colspan="3"><apex:outputText styleClass="tg-style-edit" value="{!pspWaferout.WaferStart_Quarter4__c}"/></td>
+                        </apex:repeat>
+                    </tr>
+                    
+                    <tr style="background-color:#dad971;">
+                        <th style="text-align: center;vertical-align:middle;" colspan="1" rowspan="2"><b>7. Production {!delType} ASP</b></th>
+                    </tr>
+                    <tr style="background-color:#dad971;">
+                        <th scope="row">Qtrly TTL</th>
+                        <apex:repeat value="{!lstPSPProdASPRecords}" var="pspProdASP">
+                            <td class="tg-center" colspan="3"><apex:outputField value="{!pspProdASP.WaferStart_Quarter1__c}"/></td>
+                            <td class="tg-center" colspan="3"><apex:outputField value="{!pspProdASP.WaferStart_Quarter2__c}"/></td>
+                            <td class="tg-center" colspan="3"><apex:outputField value="{!pspProdASP.WaferStart_Quarter3__c}"/></td>
+                            <td class="tg-center" colspan="3"><apex:outputField value="{!pspProdASP.WaferStart_Quarter4__c}"/></td>
+                        </apex:repeat>
+                    </tr>
+                    
+                    <tr style="background-color:#dad971;">
+                        <th style="text-align: center;vertical-align:middle;" colspan="1" rowspan="2"><b>8. Production {!delType} Revenue</b></th>
+                    </tr>
+                    <tr style="background-color:#dad971;">
+                        <th scope="row">Qtrly TTL</th>
+                        <apex:repeat value="{!lstPSPProdRevRecords}" var="pspProdRev">
+                            <td class="tg-center" colspan="3"><apex:outputText value="{!pspProdRev.quarter1}"/></td>
+                            <td class="tg-center" colspan="3"><apex:outputText value="{!pspProdRev.quarter2}"/></td>
+                            <td class="tg-center" colspan="3"><apex:outputText value="{!pspProdRev.quarter3}"/></td>
+                            <td class="tg-center" colspan="3"><apex:outputText value="{!pspProdRev.quarter4}"/></td>
+                        </apex:repeat>
+                    </tr>
+                    
+                    <tr style="background-color:#b3daff;">
+                        <th style="text-align: center;vertical-align:middle;" colspan="1" rowspan="2"><b>9. Total Opportunity {!delType} Outs</b></th>
+                    </tr>
+                    <tr style="background-color:#b3daff;">
+                        <th scope="row">Qtrly TTL</th>
+                        <apex:repeat value="{!lstOppWaferOuts}" var="oppWaferOut">
+                            <td class="tg-center" colspan="3"><apex:outputText styleClass="tg-style-edit" value="{!oppWaferOut.quarter1}"/></td>
+                            <td class="tg-center" colspan="3"><apex:outputText styleClass="tg-style-edit" value="{!oppWaferOut.quarter2}"/></td>
+                            <td class="tg-center" colspan="3"><apex:outputText styleClass="tg-style-edit" value="{!oppWaferOut.quarter3}"/></td>
+                            <td class="tg-center" colspan="3"><apex:outputText styleClass="tg-style-edit" value="{!oppWaferOut.quarter4}"/></td>
+                        </apex:repeat>
+                    </tr>                  
+                    
+                    <tr style="background-color:#b3daff;">
+                        <th style="text-align: center;vertical-align:middle;" colspan="1" rowspan="2"><b>10. Total Opportunity ASP ($)</b></th>
+                    </tr>
+                    <tr style="background-color:#b3daff;">
+                        <th scope="row">Qtrly TTL</th>
+                        <apex:repeat value="{!lstOppWaferASPs}" var="oppWaferASP">
+                            <td class="tg-center" colspan="3"><apex:outputText value="{!oppWaferASP.quarter1}"/></td>
+                            <td class="tg-center" colspan="3"><apex:outputText value="{!oppWaferASP.quarter2}"/></td>
+                            <td class="tg-center" colspan="3"><apex:outputText value="{!oppWaferASP.quarter3}"/></td>
+                            <td class="tg-center" colspan="3"><apex:outputText value="{!oppWaferASP.quarter4}"/></td>
+                        </apex:repeat>
+                    </tr>
+                </tbody>
+           </table>
+           </apex:outputPanel>
+            
+        </apex:outputPanel>
+        <br/>
+        <table border="1" style="border-collapse:collapse;border-color:#000000;background-color:#dad971;text-align:left;" width="100%" id="table4">
+            <tr style="font-weight:bold;border-color:#dad971;">
+                <td>**Please verify that Production Wafer Starts (Row 3) date is no sooner than:</td>
+            </tr>
+            <tr style="border-color:#dad971;">
+                <td><b>1)</b>  Milestone #7 if starting risk starts</td>
+            </tr>
+            <tr style="border-color:#dad971;">
+                <td><b>2)</b>  Milestone #10 if waiting till RTP date</td>
+            </tr>
+        </table>
+        </apex:pageBlock>
+    </apex:form>
+</apex:page>

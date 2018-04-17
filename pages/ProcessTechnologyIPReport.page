@@ -1,0 +1,578 @@
+<apex:page controller="ProcessTechnologyIPReportCntrlr" cache="false" showHeader="true" sidebar="false" tabstyle="Process_Technology__c">
+    <apex:includeScript value="{!$Resource.jQuery1_10_1}"/>
+    <style>                 
+        .filterColumn {
+            width: 200px;       
+            margin-left: 2px;
+            margin-right: 2px;
+        }
+        .emptyColumnContent {
+            display: none;
+        }
+        .optionalContainer {
+            display: none;        
+            position:absolute;
+            z-index:-1;
+            top: 300px; 
+            left: 380px;                       
+            text-align:center;                            
+        }
+        .optionalColumn {
+            position: relative;             
+            background-color: #ececec; 
+            width: 480px;
+            height: 200px;   
+        }
+        .loading2 {
+            display: none;        
+        }
+        .loading {
+            display: none;        
+            position:absolute;
+            z-index:-1;
+            top: 500px; 
+            left: 600px;                       
+            text-align:center; 
+            background-color: white;
+        }       
+        .modalOverlay {
+            display: none;
+            position: fixed;
+            width: 100%;
+            height: 100%;
+            top: 0px;
+            left: 0px;
+            z-index:-1;
+            background-color: rgba(0,0,0,0.3); /* black semi-transparent */
+        }
+        .hand {
+            cursor: pointer; 
+            cursor: hand;
+        }  
+        .colDiv {
+            float: left;            
+        } 
+    </style>
+    <script>
+        $( document ).ready(function() {
+            if($('.iptype').val() == ''){
+                $('.ipvendor').prop('disabled', true);            
+            }
+            
+            $('.picklistArrowRight').click(function() {
+              addSelectedColumns($('.allSelect').val());
+            });  
+            
+            $('.picklistArrowLeft').click(function() {
+              removeSelectedColumns($('.mySelect').val());
+            });
+            
+            $('.iptype').change(function() {  
+                if(!{!isIPVendor}){          
+                    //doRefreshVendor();                              
+                }
+            }); 
+            
+            rebind();                                      
+        });
+        
+        function rebind(){           
+            $('.view-detail-help-text').attr('title', 'Click to select/deselect all IP details checkbox. Please note that only the first 50 IP record details will shown.');                      
+        }                      
+        
+        function refreshVendor(){
+            if($('.iptype').val() == ''){                    
+                $('.ipvendor').prop('disabled', true);
+                $('.ipvendor').val('');   
+            } else {
+                $('.ipvendor').prop('disabled',false);                     
+            }
+        }
+           
+        function getSelectedOptions(){
+            var val ='';
+            $('.mySelect option').each(function(){
+                val += $(this).val() +';';                               
+            });
+            
+            if(val.lastIndexOf(';') != -1){
+                val = val.substring(0,val.lastIndexOf(';'));
+             }            
+            
+            //11132014 DBiswal - Not to allow users to select more than 10 columns.
+            var columnCount = val.split(';');
+            if(columnCount.length>10){
+                alert("You can not select more than 10 Columns");
+            }
+            else{
+                addColumns(val);
+            }
+        }
+          
+        function addSelectedColumns(val){           
+            if(val != null){
+                removePicklistOptions('.allSelect',val);    
+                addPicklistOptions('.mySelect',val);              
+            }
+        }
+        
+        function removeSelectedColumns(val){
+            if(val != null){                   
+                removePicklistOptions('.mySelect',val);    
+                addPicklistOptions('.allSelect',val);             
+            }    
+        }
+        
+        function addPicklistOptions(name,val){
+            for(var i=0; i < val.length; i++){                    
+                var str = '<option value="' + val[i] + '">' + val[i] +'</option>';
+                $(name).append(str);
+            }
+        }
+        
+        function removePicklistOptions(name,val){
+            for(var i=0; i < val.length; i++){                  
+                $(name +' option[value="' + val[i] + '"]').remove();                   
+            }    
+        }
+        
+        function showLoading(){ 
+            $('.modalOverlay').css('z-index', 2);
+            $('.modalOverlay').show();
+            $('.loading').show();                 
+            $('.loading').css('z-index', 3);
+            $('.optionalContainer').css('z-index', -1);
+            $('.optionalContainer').hide();    
+        }
+        
+        function stopLoading(){                  
+            $('.loading').css('z-index', -1);
+            hideDiv();  
+        }
+        
+        function showLoading2(){
+            $('.ipvendor').prop('disabled', true); 
+            $('.searchbtn').attr('disabled', true);
+            $('.loading2').show();                          
+        }
+        
+        function stopLoading2(){  
+            $('.searchbtn').attr('disabled',false);
+            $('.loading2').hide();       
+        }             
+      
+        function hideDiv(){            
+            $('.modalOverlay').hide();
+            $('.optionalContainer').hide();
+            $('.loading').hide();            
+        }
+             
+        function showDiv(){
+            $('.modalOverlay').show();
+            $('.optionalContainer').show();
+        }
+        
+         
+        function showAddColumns(){
+            $('.modalOverlay').css('z-index', 2);         
+            $('.optionalContainer').css('z-index', 3);
+            showDiv();         
+        }
+        
+        function hideAddColumns(){
+            $('.modalOverlay').css('z-index', -1);         
+            $('.optionalContainer').css('z-index', -1);
+            hideDiv();         
+        }               
+               
+    </script>
+    <apex:form >
+        <apex:pageMessages />
+        <apex:outputpanel layout="block" rendered="{!NOT(hasNoAccess)}">
+            <apex:actionfunction name="showDetails" action="{!showDetails}" oncomplete="rebind()" rerender="ipListSection" status="loading"/>                
+            <apex:actionfunction name="sort" action="{!sort}" oncomplete="rebind()" rerender="iplist" status="loading">     
+                <apex:param name="sortfield" assignTo="{!sortField}" value=""/>
+                <apex:param name="sorttype" assignTo="{!sortType}" value=""/>            
+            </apex:actionfunction>
+            <apex:actionFunction name="doRefreshVendor" action="{!refreshVendor}" reRender="ipvendorblock" status="loading2" oncomplete="refreshVendor(); rebind()"/>        
+            <apex:actionfunction name="addColumns" oncomplete="rebind()" action="{!addColumns}" rerender="ipListSection" status="loading">
+                <apex:param name="addedColumns" value="" assignTo="{!addedColumns}"/>            
+            </apex:actionfunction>
+            <apex:actionStatus onstart="showLoading()" onstop="stopLoading()" id="loading"/>
+            <apex:actionStatus onstart="showLoading2()" onstop="stopLoading2()" id="loading2"/>
+            <!-- div will store picked IPs for detail viewing -->
+            <apex:outputPanel layout="block" styleclass="selectedIPDetails"/>        
+            <apex:outputPanel layout="block" styleclass="modalOverlay"/>
+            <apex:pageBlock title="Search IPs"> 
+                <!-- Div for loading status-->          
+                <apex:outputPanel layout="block" styleclass="loading">
+                    <apex:outputText value="Loading" style="font-weight:bold;margin-right:20px;font-size:20px"/>
+                    <apex:image value="/img/loading32.gif"/>
+                </apex:outputPanel>          
+                <!-- Div for optional column selection -->
+                <apex:outputPanel layout="block" styleclass="optionalContainer">
+                    <apex:outputPanel layout="block" styleclass="optionalColumn">
+                        <br/>
+                        <apex:panelGrid columns="3"  style="margin: 15px 15px">                
+                            <apex:outputLabel value="Available" style="font-weight:bold"/>
+                            <apex:outputLabel value=""/>
+                            <apex:outputLabel value="Chosen" style="font-weight:bold"/>
+                            <apex:selectList value="{!dummyColumns}" multiselect="true" size="5" style="width:200px" styleClass="allSelect">
+                                <apex:selectOptions value="{!optionalColumns}"/>                    
+                            </apex:selectList>
+                            <apex:panelGrid columns="1">
+                                <apex:outputPanel layout="block"/>
+                                <apex:outputPanel layout="block"/>
+                                <apex:image value="/img/arrow2_picklist_right.gif" styleClass="picklistArrowRight" style="cursor:pointer;"/>
+                                <apex:image value="/img/arrow2_picklist_left.gif" styleClass="picklistArrowLeft" style="cursor:pointer;"/>
+                            </apex:panelGrid>
+                            <apex:selectList value="{!dummyColumns}" multiselect="true" size="5" style="width:200px" styleClass="mySelect">
+                                <apex:selectOptions value="{!AddedOptionalColumns}"/>
+                            </apex:selectList>
+                        </apex:panelGrid>                               
+                        <apex:outputLabel value="Save" styleclass="btn" onclick="getSelectedOptions()"/>
+                        <apex:outputLabel value="Cancel" styleclass="btn" onclick="hideAddColumns()"/>               
+                    </apex:outputPanel>
+                </apex:outputPanel>
+                
+                <apex:outputPanel layout="block"  style="text-align:center;margin-bottom:10px"  rendered="{!noPTFilterPicked}">                    
+                    <apex:outputText value="Please select a Process Technology or enter a PT Number or IP ID" style="font-weight:bold;color:red"/>                                 
+                </apex:outputPanel>             
+                <apex:pageBlockSection title="Mandatory filter" columns="1" collapsible="false">                            
+                    <apex:panelGrid columns="5">
+                        <apex:panelgrid columns="2" cellpadding="10px">                       
+                            <apex:outputLabel value="Process Technology:" style="font-weight:bold;margin-right:10px;float:left"/>                    
+                            <apex:outputPanel layout="block" styleclass="requiredInput" style="float:left">
+                                <apex:outputPanel layout="block" styleclass="requiredBlock"/>                       
+                                <apex:selectList value="{!ptName}" multiselect="false" size="1" >
+                                    <apex:selectOptions value="{!ptNameList}"/>
+                                </apex:selectList>                                              
+                            </apex:outputPanel>
+                        </apex:panelGrid>    
+                        <apex:outputPanel layout="block" style="width:50px"> 
+                            <apex:panelgrid columns="2" cellpadding="10px"> 
+                                <apex:outputText value="OR" style="font-weight:bold"/>
+                            </apex:panelgrid>
+                        </apex:outputPanel>             
+                        <apex:panelgrid columns="2" cellpadding="10px">  
+                            <apex:outputLabel value="PT Number:" style="font-weight:bold;margin-right:10px;float:left"/>                    
+                            <apex:outputPanel layout="block" styleclass="requiredInput" style="float:left">
+                                <apex:outputPanel layout="block" styleclass="requiredBlock"/>
+                                <apex:inputText value="{!ptNumber}"/>
+                            </apex:outputPanel>
+                        </apex:panelGrid>   
+                        <apex:outputPanel layout="block" style="width:50px"> 
+                            <apex:panelgrid columns="2" cellpadding="10px"> 
+                                <apex:outputText value="OR" style="font-weight:bold"/>
+                            </apex:panelgrid>
+                        </apex:outputPanel> 
+                        <apex:panelgrid columns="2" cellpadding="10px">  
+                            <apex:outputLabel value="IP ID:" style="font-weight:bold;margin-right:10px;float:left"/>                    
+                            <apex:outputPanel layout="block" styleclass="requiredInput" style="float:left">
+                                <apex:outputPanel layout="block" styleclass="requiredBlock"/>
+                                <apex:inputText value="{!IPID}"/>
+                            </apex:outputPanel>
+                        </apex:panelGrid>                                 
+                        <apex:outputPanel layout="block" style="margin-left:11px">                        
+                            <apex:outputText value="*Please enter a Process Technology OR PT Number OR IP ID" style="color:red;font-size:10px"/>
+                        </apex:outputPanel>                             
+                    </apex:panelGrid>                                
+                </apex:pageBlockSection> 
+                <apex:pageBlockSection title="Advanced Filter" collapsible="false" columns="1">                                       
+                    <apex:panelGrid columns="4" cellpadding="10px">                                     
+                        <apex:panelgrid columns="2" cellpadding="10px">                        
+                            <apex:outputLabel value="IP Type:" style="font-weight:bold;margin-right:5px"/>                                           
+                            <apex:selectList value="{!ipType}" multiselect="false" size="1" styleclass="iptype">
+                                <apex:selectOptions value="{!ipTypeList}"/>
+                            </apex:selectList>                        
+                            <apex:outputLabel value="Device List Contains:" style="font-weight:bold;margin-right:5px"/>
+                            <apex:outputPanel layout="block">                    
+                                <apex:inputText value="{!deviceName}"/>
+                                <br/>
+                                <apex:outputPanel layout="block" style="width:200px">
+                                    <apex:outputText value="*Multiple devices can be selected. Separate each value by comma." style="font-size:10px"/>
+                                </apex:outputPanel>
+                            </apex:outputPanel>
+                        </apex:panelGrid>
+                        <apex:panelgrid columns="2" cellpadding="10px"> 
+                            <apex:outputLabel value="IP Vendor:" style="font-weight:bold;margin-right:5px"/>
+                            <apex:outputPanel layout="block" id="ipvendorblock">
+                                <apex:selectList value="{!ipVendor}" multiselect="false" size="1"  style="float:left;margin-right:10px" > <!-- styleClass="ipvendor"disabled="{!isIPVendor}" -->
+                                    <apex:selectOptions value="{!ipVendorList}"/>
+                                </apex:selectList>
+                                <apex:image value="/img/loading32.gif" styleClass="loading2"/>
+                            </apex:outputPanel>                        
+                            <apex:outputLabel value="Description Keyword:" style="font-weight:bold;margin-right:5px"/>                    
+                            <apex:outputPanel layout="block">
+                                <apex:inputText value="{!ipName}"/>
+                                <br/>
+                                <apex:outputPanel layout="block" style="width:200px">
+                                    <apex:outputText value="*It’s a partial search for keyword in IP description content." style="font-size:10px"/>
+                                </apex:outputPanel>                                             
+                            </apex:outputPanel>                                                                         
+                        </apex:panelGrid>
+                        <apex:panelgrid columns="2" cellpadding="10px"> 
+                            <apex:outputLabel value="IP Lifecycle:" style="font-weight:bold;margin-right:5px"/>                    
+                            <apex:selectList value="{!ipLifeCycle}" multiselect="false" size="1">
+                                <apex:selectOptions value="{!ipLifeCycleList}"/>
+                            </apex:selectList>
+                            <apex:outputLabel value="Metal Layers:" style="font-weight:bold;margin-right:5px"/>                    
+                            <apex:outputPanel layout="block">                    
+                                <apex:inputText value="{!metalStacks}"/>
+                                <br/>
+                                <apex:outputPanel layout="block" style="width:200px">  
+                                    <apex:outputText value="*Multiple metal layers can be selected. Separate each value by comma." style="font-size:10px"/>
+                                </apex:outputPanel>
+                            </apex:outputPanel>                       
+                        </apex:panelGrid>                                                                                       
+						<apex:panelgrid columns="2" cellpadding="10px">                        
+                            <apex:outputLabel value="IP Offering:" style="font-weight:bold;margin-right:5px"/>                                           
+                            <apex:selectList value="{!ipOffering}" multiselect="false" size="1">
+                                <apex:selectOption itemvalue="" itemlabel="All"/>
+								<apex:selectOption itemvalue="ASIC" itemlabel="ASIC"/>
+                            </apex:selectList>                        
+                            
+                        </apex:panelGrid>
+                    </apex:panelGrid>
+                    <apex:outputPanel layout="block"  style="text-align:center">                                        
+                        <apex:commandButton value="Search" action="{!query}" style="margin-right:10px" styleClass="searchbtn"/>                    
+                        <!--<apex:outputLink value="IPRequestList" target="_blank" style="text-decoration:none;padding:4px;margin-right:10px" styleClass="btn">New IP Request Link</apex:outputLink>-->
+                        <apex:outputLink value="../{!$ObjectType.Apttus_Proposal__Proposal__c.keyPrefix}/e" target="_blank" style="text-decoration:none;padding:4px" styleClass="btn">New Proposal</apex:outputLink>
+                    </apex:outputPanel>                                             
+                </apex:pageBlockSection>                            
+                <apex:pageBlockSection title="IP List" collapsible="false" rendered="{!showList}" columns="1" id="ipListSection">                       
+                    <apex:outputPanel layout="block" rendered="{!showList}" style="margin-top:10px;margin-bottom:25px">
+                        <apex:panelGrid columns="1" >
+                            <apex:outputText value="Process Technology: {!ptname}" style="font-weight:bold;font-size:16px" rendered="{!NOT(ISBLANK(ptName))}"/>
+                            <apex:outputText value="PT Number: {!ptNumber}" style="font-weight:bold;font-size:16px" rendered="{!NOT(ISBLANK(ptNumber))}"/>
+                            <apex:outputText value="IP ID: {!IPID}" style="font-weight:bold;font-size:16px" rendered="{!NOT(ISBLANK(IPID))}"/>
+                            <apex:outputText value="IP Type: {!ipType}" style="font-weight:bold;font-size:16px" rendered="{!NOT(ISBLANK(ipType))}"/>
+                            <apex:outputText value="IP Vendor: {!ipVendor}" style="font-weight:bold;font-size:16px" rendered="{!NOT(ISBLANK(ipVendor))}"/>
+                            <apex:outputText value="IP Lifecycle Stage: {!ipLifeCycle}" style="font-weight:bold;font-size:16px" rendered="{!NOT(ISBLANK(ipLifeCycle))}"/>                      
+                            <apex:outputText value="Device List Contains: {!deviceName}" style="font-weight:bold;font-size:16px" rendered="{!NOT(ISBLANK(deviceName))}"/>
+                            <apex:outputText value="Keyword: {!ipName}" style="font-weight:bold;font-size:16px" rendered="{!NOT(ISBLANK(ipName))}"/>                                                      
+                            <apex:outputText value="Metal Layers: {!metalStacks}" style="font-weight:bold;font-size:16px" rendered="{!NOT(ISBLANK(metalStacks))}"/>                                                      
+                            <apex:outputText value="Number of IPs: {!ipList.ipCount}" style="font-weight:bold;font-size:16px"/>                    
+                            <apex:outputText value="Note: You can narrow down your search using the advanced filter." style="font-weight:bold;font-size:12px" rendered="{!AND(ipList.rows.size = maxRowCount)}"/>
+                        </apex:panelGrid>
+                    </apex:outputPanel>
+                    <apex:outputText value="No IPs for this Process Technology!" rendered="{!AND(ipList.rows.size == 0)}"/>                         
+                    <apex:outputPanel layout="block" style="text-align:center" rendered="{!AND(ipList.rows.size > 0)}">  
+                        <!--                
+                        <apex:outputLabel value="Generate PDF" onclick="generatePDF('pdf',
+                                                                                    '{!ptname}',
+                                                                                    '{!ptnumber}',
+                                                                                    '{!iptype}',
+                                                                                    '{!ipvendor}',
+                                                                                    '{!iplifecycle}',
+                                                                                    '{!devicename}',
+                                                                                    '{!ipname}',
+                                                                                    '{!metalStacks}',
+                                                                                    '{!SUBSTITUTE(addedColumns,"'",'%27')}' )" styleclass="btn"/>
+                        -->
+                        <apex:commandLink value="Generate PDF" action="{!exportToPDF}" target="_blank" styleClass="btn" style="text-decoration:none"/>                                                   
+                        <apex:commandLink value="Generate Excel" action="{!exportToExcel}" target="_blank" styleClass="btn" style="text-decoration:none"/>                                                   
+                        <!--
+                        <apex:outputLabel value="Generate Excel" onclick="generatePDF('excel',
+                                                                                      '{!ptname}',
+                                                                                      '{!ptnumber}',
+                                                                                      '{!iptype}',
+                                                                                      '{!ipvendor}',
+                                                                                      '{!iplifecycle}',
+                                                                                      '{!devicename}',
+                                                                                      '{!ipname}',
+                                                                                      '{!metalStacks}',
+                                                                                      '{!SUBSTITUTE(addedColumns,"'",'%27')}' )" styleclass="btn"/>                   
+                        -->                                                                                      
+                    </apex:outputPanel> 
+                    <apex:outputPanel layout="block" rendered="{!AND(ipList.rows.size > 0)}" id="iplist">
+                        <apex:outputPanel layout="block" style="margin:10px 5px">
+                            <apex:outputPanel layout="block" style="width:44%;float:left">
+                            <!--<apex:outputText value="Page {!currPageNumber} of {!totalPages}" style="font-weight:bold;font-size:10px;margin-right:10px;float:left;line-height:20px"/>-->
+                            <apex:outputLabel value="More columns" styleclass="btn" onclick="showAddColumns()" style="float:left"/>
+                            </apex:outputPanel>
+                            <apex:outputPanel layout="block">
+                                <apex:commandButton value="First" action="{!first}"  status="loading" reRender="iplist" disabled="{!offSetValue == 0 && currPageNumber = 1}"/>
+                                <apex:commandButton value="Prev" action="{!previous}" status="loading" reRender="iplist" disabled="{!offSetValue == 0 && currPageNumber = 1}"/>
+                                <apex:commandButton value="Next" action="{!next}" status="loading" reRender="iplist" disabled="{!offSetValue == lastPageOffset && currPageNumber = totalPages}"/>
+                                <apex:commandButton value="Last" action="{!last}" status="loading" reRender="iplist" disabled="{!offSetValue == lastPageOffset && currPageNumber = totalPages}"/>
+                            </apex:outputPanel> 
+                        </apex:outputPanel>                                          
+                        <apex:outputPanel layout="block" style="overflow:auto;width:100%}" id="ipTable">
+                            <apex:variable value="{!0}" var="rowNum"/>
+                            <apex:pageBlockSection columns="1">
+                            <apex:pageBlockSectionItem datastyle="width:96%;table-layout:auto;font-size:11px;">
+                            <apex:pageBlockTable value="{!currPage}" var="i" rendered="{!AND(ipList.rows.size > 0)}" cellpadding="2px" align="center" style="width:98%;table-layout:auto;font-size:11px;">
+                                <apex:column headerValue="S.No" style="vertical-align:top;text-align:center;">
+                                    <apex:variable var="rowNum" value="{!rowNum + 1}"/>
+                                    <apex:outputText value="{!rowNum + (currPageNumber-1)*paginationSize + offsetValue}"/>
+                                </apex:column>
+                                <apex:repeat value="{!i.fields}" var="col"> 
+                                    <!-- setting header for apex:column under apex:repeat will not work -->
+                                    <!-- workaround is to create another list of string for the headers -->
+                                    <!-- and define it in another apex:repeat                           -->
+                                    <apex:column headerValue="none" style="vertical-align:top" rendered="{!AND(col.name = 'IP ID')}">
+                                        <apex:outputLink target="_blank" value="/apex/View_PT_IP_Details?Id={!i.ipID}&Entity=IP" styleclass="ipID">
+                                            {!col.value}
+                                        </apex:outputLink>
+                                    </apex:column>
+                                    <apex:column headerValue="none" style="vertical-align:top" rendered="{!AND(col.name = 'IP Vendor',NOT(isIPVendor))}">
+                                        <apex:outputText value="{!col.value}" style=""/>
+                                    </apex:column>                                              
+                                    <apex:column headerValue="none" style="vertical-align:top" rendered="{!AND(col.name = 'Release to Customer',NOT(isExternalUser),OR(CONTAINS(addedColumns,col.name),NOT(col.isOptional)))}">
+                                        <apex:outputText value="{!col.value}" style=""/>
+                                    </apex:column>                                              
+                                    <apex:column headerValue="none" rendered="{!AND(NOT(CONTAINS('IP ID;Release to Customer;IP Vendor',col.name)),OR(CONTAINS(addedColumns,col.name),NOT(col.isOptional)))}"  style="vertical-align:top;word-wrap:break-word">
+                                        <apex:outputText value="{!col.value}" style=""/>                                                     
+                                    </apex:column>                      
+                                </apex:repeat>
+                                
+                                <!--Define the headers here and hide the empty cells that are created -->                  
+                                <apex:repeat value="{!ipList.tableColumns}" var="col">                        
+                                   <apex:column styleClass="emptyColumnContent" rendered="{!AND(NOT(CONTAINS('Release to Customer;IP Vendor',col)),OR(CONTAINS(addedColumns,col),NOT(CONTAINS(ipList.optionalColumnsText,col))))}">  
+                                        <apex:facet name="header">
+                                            <!--<apex:outputPanel layout="block" onclick="sort('{!col}','{!IF(AND(sortField = col,sortType = 'asc'),'desc','asc')}');" styleclass="hand colDiv sortCol">-->
+                                            <apex:outputPanel layout="block">
+                                                <apex:outputPanel layout="block" style="float:left"> 
+                                                    <!-- <apex:outputText value="{!col}" rendered="{!NOT(CONTAINS('Latest DK Status;IP Description;IP Type Category;Vendor IP Version;IP Lifecycle Stage;Spice Model Version;End User License Agreement;IP Tox Angstrom;Release to Customer',col))}"/> -->
+                                                    <apex:outputText value="{!col}" rendered="{!NOT(CONTAINS('Latest DK Status;IP Description;IP Type;IP Type Category;Vendor IP Version;IP Lifecycle Stage;Spice Model Version;End User License Agreement;IP Tox Angstrom;Geometry;PT Number;PT Name;Lifecycle Phase;PT Description;PT Long Description;Technology Geometry;Technology Type;Sub Technology Type;Legacy Process ID;Process Type; Associated Backend Process ID;Process Owner;Process Development Status',col))}"/>                                                    
+                                                    <apex:outputText rendered="{!AND(col = 'Latest DK Status')}">
+                                                        Latest DK <br/> Status
+                                                    </apex:outputText>                                                     
+                                                    <apex:outputText rendered="{!AND(col = 'IP Description')}">
+                                                        Description
+                                                    </apex:outputText> 
+                                                    <apex:outputText rendered="{!AND(col = 'IP Type')}">
+                                                        IP Type
+                                                    </apex:outputText>                                                                                    
+                                                    <apex:outputText rendered="{!AND(col = 'IP Type Category')}">
+                                                        IP Category
+                                                    </apex:outputText>                                        
+                                                    <apex:outputText rendered="{!AND(col = 'Vendor IP Version')}">
+                                                        Vendor IP <br/> Version
+                                                    </apex:outputText>
+                                                    <apex:outputText rendered="{!AND(col = 'IP Lifecycle Stage')}">
+                                                        IP Lifecycle <br/> Stage
+                                                    </apex:outputText>
+                                                    <apex:outputText rendered="{!AND(col = 'Spice Model Version')}">
+                                                        Spice Model <br/> Version
+                                                    </apex:outputText>
+                                                    <apex:outputText rendered="{!AND(col = 'End User License Agreement')}">
+                                                        End User <br/> License <br/> Agreement
+                                                    </apex:outputText>
+                                                    <apex:outputText rendered="{!AND(col = 'IP Tox Angstrom')}">
+                                                        IP Tox  <br/> Angstrom
+                                                    </apex:outputText>   
+                                                    <!-- 11132014 DBiswal - Displaying extra columns  -->
+                                                    <apex:outputText rendered="{!AND(col = 'Geometry')}">
+                                                        Geometry
+                                                    </apex:outputText>  
+                                                    <apex:outputText rendered="{!AND(col = 'PT Number')}">
+                                                        PT <br/> Number
+                                                    </apex:outputText> 
+                                                    <apex:outputText rendered="{!AND(col = 'PT Name')}">
+                                                        PT  <br/> Name
+                                                    </apex:outputText>
+                                                    <apex:outputText rendered="{!AND(col = 'Lifecycle Phase')}">
+                                                        Lifecycle  <br/> Phase
+                                                    </apex:outputText> 
+                                                    <apex:outputText rendered="{!AND(col = 'PT Description')}">
+                                                        PT  <br/> Description
+                                                    </apex:outputText>
+                                                    <apex:outputText rendered="{!AND(col = 'PT Long Description')}">
+                                                        PT Long <br/> Description
+                                                    </apex:outputText>
+                                                    <apex:outputText rendered="{!AND(col = 'Technology Geometry')}">
+                                                        Technology <br/> Geometry
+                                                    </apex:outputText>
+                                                    <apex:outputText rendered="{!AND(col = 'Technology Type')}">
+                                                        Technology <br/> Type
+                                                    </apex:outputText>
+                                                    <apex:outputText rendered="{!AND(col = 'Sub Technology Type')}">
+                                                        Sub Technology <br/> Type
+                                                    </apex:outputText>
+                                                    <apex:outputText rendered="{!AND(col = 'Legacy Process ID')}">
+                                                        Legacy <br/> Process ID
+                                                    </apex:outputText>
+                                                    <apex:outputText rendered="{!AND(col = 'Process Type')}">
+                                                        Process <br/> Type
+                                                    </apex:outputText>
+                                                    <apex:outputText rendered="{!AND(col = 'Associated Backend Process ID')}">
+                                                        Associated <br/> Backend <br/> Process ID
+                                                    </apex:outputText>
+                                                    <apex:outputText rendered="{!AND(col = 'Process Owner')}">
+                                                        Process <br/> Owner
+                                                    </apex:outputText>
+                                                    <apex:outputText rendered="{!AND(col = 'Process Development Status')}">
+                                                        Process <br/> Development <br/> Status
+                                                    </apex:outputText>
+                                                                                                                                                                          
+                                                </apex:outputPanel>                                    
+                                                <apex:outputPanel layout="block" style="float:left">                                   
+                                                    <apex:image value="/img/sort_asc_arrow.gif" rendered="{!AND(sortField = col,sortType = 'asc')}" styleClass="colDiv"/>
+                                                    <apex:image value="/img/sort_desc_arrow.gif" rendered="{!AND(sortField = col,sortType = 'desc')}" styleClass="colDiv"/>                                  
+                                                </apex:outputPanel>                                    
+                                            </apex:outputPanel>
+                                        </apex:facet>          
+                                    </apex:column> 
+                                    <apex:column styleClass="emptyColumnContent" rendered="{!AND(AND(col = 'IP Vendor',NOT(isIPVendor)),OR(CONTAINS(addedColumns,col),NOT(CONTAINS(ipList.optionalColumnsText,col))))}">  
+                                        <apex:facet name="header">
+                                            <apex:outputPanel layout="block" onclick="sort('{!col}','{!IF(AND(sortField = col,sortType = 'asc'),'desc','asc')}');" styleclass="hand colDiv sortCol">
+                                                <apex:outputPanel layout="block" style="float:left">                                                 
+                                                    <apex:outputText value="IP Vendor"/>                                                   
+                                                </apex:outputPanel>                                    
+                                                <apex:outputPanel layout="block" style="float:left">                                   
+                                                    <apex:image value="/img/sort_asc_arrow.gif" rendered="{!AND(sortField = col,sortType = 'asc')}" styleClass="colDiv"/>
+                                                    <apex:image value="/img/sort_desc_arrow.gif" rendered="{!AND(sortField = col,sortType = 'desc')}" styleClass="colDiv"/>                                  
+                                                </apex:outputPanel>                                    
+                                            </apex:outputPanel>
+                                        </apex:facet>          
+                                    </apex:column> 
+                                    <apex:column styleClass="emptyColumnContent" rendered="{!AND(AND(col = 'Release to Customer',NOT(isExternalUser)),OR(CONTAINS(addedColumns,col),NOT(CONTAINS(ipList.optionalColumnsText,col))))}">  
+                                        <apex:facet name="header">
+                                            <apex:outputPanel layout="block" onclick="sort('{!col}','{!IF(AND(sortField = col,sortType = 'asc'),'desc','asc')}');" styleclass="hand colDiv sortCol">
+                                                <apex:outputPanel layout="block" style="float:left">                                                 
+                                                    <apex:outputText > 
+                                                        Release to <br/> Customer
+                                                    </apex:outputText>                                                  
+                                                </apex:outputPanel>                                    
+                                                <apex:outputPanel layout="block" style="float:left">                                   
+                                                    <apex:image value="/img/sort_asc_arrow.gif" rendered="{!AND(sortField = col,sortType = 'asc')}" styleClass="colDiv"/>
+                                                    <apex:image value="/img/sort_desc_arrow.gif" rendered="{!AND(sortField = col,sortType = 'desc')}" styleClass="colDiv"/>                                  
+                                                </apex:outputPanel>                                    
+                                            </apex:outputPanel>
+                                        </apex:facet>          
+                                    </apex:column>                         
+                                </apex:repeat>  
+                                
+                                <apex:column style="vertical-align:top">
+                                    <apex:facet name="header">
+                                        <apex:outputPanel layout="block" onclick="showDetails()" styleclass="hand colDiv sortCol view-detail-help-text">
+                                            <apex:outputPanel layout="block" style="float:left">                                                 
+                                                <apex:outputText > 
+                                                    View Detail
+                                                </apex:outputText>                                                  
+                                            </apex:outputPanel>                                                                                                                  
+                                        </apex:outputPanel>
+                                    </apex:facet>                             
+                                    <apex:inputCheckbox value="{!i.isViewDetail}" id="selectedIPID"/>
+                                </apex:column>                                                                      
+                            </apex:pageBlockTable>
+                            </apex:pageBlockSectionItem>
+                            </apex:pageBlockSection>
+                        </apex:outputPanel>
+                        <apex:outputPanel layout="block"> 
+                            <!--<apex:outputText value="Page {!currPageNumber} of {!totalPages}" style="font-weight:bold;font-size:10px;margin-left: 10px"/>-->
+                            <apex:outputPanel layout="block" style="text-align:center">
+                                <apex:commandButton value="First" action="{!first}" status="loading" reRender="iplist" disabled="{!offSetValue == 0 && currPageNumber = 1}"/>
+                                <apex:commandButton value="Prev" action="{!previous}" status="loading" reRender="iplist" disabled="{!offSetValue == 0 && currPageNumber = 1}"/>
+                                <apex:commandButton value="Next" action="{!next}" status="loading" reRender="iplist" disabled="{!offSetValue == lastPageOffset && currPageNumber = totalPages}"/>
+                                <apex:commandButton value="Last" action="{!last}" status="loading" reRender="iplist" disabled="{!offSetValue == lastPageOffset && currPageNumber = totalPages}"/>
+                            </apex:outputPanel>
+                        </apex:outputPanel>
+                    </apex:outputPanel>
+                </apex:pageBlockSection>                                             
+            </apex:pageBlock>
+        </apex:outputPanel>
+    </apex:form>  
+</apex:page>

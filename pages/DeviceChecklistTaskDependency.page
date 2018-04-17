@@ -1,0 +1,164 @@
+<!-----------------------------------------------------------------------------------------------------------------------------------
+Page:          DeviceChecklistTaskDependency
+-------------------------------------------------------------------------------------------------------------------------------------
+Author:        Joydev Mondol (Cognizant - 153480)
+Created Date:  18/07/2014
+Reason:        This is an inline visualforce page to setup task dependency on Device or Opportunity
+               (*) Streamlines and drived valid data entry to the following task fields:
+                   (1) Dependent_Object__c
+                   (2) Dependent_Field__c
+                   (3) Dependent_Field_Type__c
+                   (4) Dependent_Field_Completed_Value__c
+
+Change Log:    Created     -     JOYDEV     -     18/07/2014    
+Change Log:    Updated     -     JOYDEV     -     21/07/2014
+               [Reason]:   Add textbox to Dependency setup for Tooltip Text (Automatically populated with following format, 
+                           if required user can change the text):
+                            
+                           TEMPLATE:
+                           This task "will be"/"is" completed if {{Object}}'s field {{filed lable}} is {{completed value}}
+                          
+                           Examples:
+                           1. This task will be/is completed if Device's filed "Forecasted GDSII Date" is "NOT NULL"
+                           2. This task will be/is completed if Device's filed "Market Segment" is "Automobile"
+                           3. This task will be/is completed if Device's filed "IP Gap" is "true"              
+------------------------------------------------------------------------------------------------------------------------------------->
+<!--sample: https://c.cs6.visual.force.com/apex/DeviceChecklistTaskDependency?id=a7KN00000008bpF -->
+
+<apex:page standardController="Checklist_Task__c"  extensions="DeviceChecklistProject_Task_Extn"
+           sidebar="false" showHeader="false" docType="html-5.0">
+    <apex:form id="mainform">
+        <apex:pageblock mode="maindetail">
+            <apex:pageBlockButtons location="top">
+                <apex:commandButton action="{!save_Extn}" value="{!IF(EditMode == TRUE, 'Save ', 'Edit ')}Dependency" 
+                                    reRender="mainform" status="updateStatus"/>
+                <apex:commandButton action="{!cancel_Extn}" value="Cancel" rendered="{!EditMode}" reRender="mainform"/>
+                <apex:actionStatus startText=" Processing..." stopText="" id="updateStatus" startStyle="font-weight:bold;color:red;"/>
+            </apex:pageBlockButtons><br/>
+            <apex:pageBlockSection columns="2" collapsible="true" showHeader="false">
+                <apex:pageblockSectionItem >
+                    <apex:outputlabel >Dependent Object</apex:outputlabel>
+                    <apex:outputPanel >
+                        <apex:selectList value="{!CurrentTask.Dependent_Object__c}" size="1" rendered="{!EditMode}">
+                            <apex:actionSupport event="onchange" reRender="mainform" status="updateStatus" action="{!ResetOnObjectChange}"/>
+                            <apex:selectOption itemValue="--None--" itemLabel="--None--"/>
+                            <apex:selectOptions value="{!DependentObjectValues}"/>
+                        </apex:selectList>
+                        <apex:outputText value="{!DependentObjectLabel}" rendered="{!!EditMode}"/>
+                    </apex:outputPanel>                    
+                </apex:pageblockSectionItem>
+                <apex:pageblockSectionItem >
+                    <apex:outputlabel >Dependent Field</apex:outputlabel>
+                    <apex:outputPanel >
+                        <apex:selectList value="{!CurrentTask.Dependent_Field__c}" size="1" rendered="{!EditMode}">
+                            <apex:actionSupport event="onchange" reRender="mainform" status="updateStatus" action="{!PopulateDependentFieldType}"/>
+                            <apex:selectOption itemValue="--None--" itemLabel="--None--"/>
+                            <apex:selectOptions value="{!DependentFieldValues}"/>
+                        </apex:selectList>
+                        <apex:outputText value="{!DependentFieldLabel}" rendered="{!!EditMode}"/>
+                    </apex:outputPanel>
+                </apex:pageblockSectionItem>
+                <apex:outputField value="{!CurrentTask.Dependent_Field_Type__c}" rendered="{!IF(AND(CurrentTask.Dependent_Object__c != Null,
+                                                                                                    CurrentTask.Dependent_Object__c != '--None--',
+                                                                                                    CurrentTask.Dependent_Field__c != Null,
+                                                                                                    CurrentTask.Dependent_Field__c != '--None--'),
+                                                                                                TRUE, FALSE)}">
+                    <apex:inlineEditSupport disabled="true"/>
+                </apex:outputField>
+                
+                <apex:pageblockSectionItem rendered="{!IF(AND(CurrentTask.Dependent_Object__c != Null,
+                                                              CurrentTask.Dependent_Object__c != '--None--',
+                                                              CurrentTask.Dependent_Field__c != Null,
+                                                              CurrentTask.Dependent_Field__c != '--None--'),
+                                                          TRUE, FALSE)}">
+                    <apex:outputLabel >Dependent Field Value</apex:outputLabel>
+                    <apex:outputPanel >
+                        <apex:outputLabel style="font-weight:bold; color:{!IF(NOTNULLValue == TRUE ,'red','black')};" rendered="{!OR(EditMode,NOTNULLValue)}">
+                            NOT NULL
+                        </apex:outputLabel>
+                        <apex:inputCheckbox value="{!NOTNULLValue}" rendered="{!EditMode}">
+                            <apex:actionSupport event="onchange" reRender="mainform" status="updateStatus" action="{!PopulateCompletedValueAndTooltip}"/>
+                            <apex:actionSupport event="onblur" reRender="mainform" status="updateStatus" action="{!PopulateCompletedValueAndTooltip}"/>
+                        </apex:inputCheckbox>
+                        
+                        <apex:outputPanel rendered="{!IF(NOTNULLValue == FALSE, TRUE, FALSE)}">
+                            <apex:inputfield value="{!CurrentTask.Text_Place_Holder__c}" 
+                                             rendered="{!IF(OR(CurrentTask.Dependent_Field_Type__c == 'anytype',
+                                                               CurrentTask.Dependent_Field_Type__c == 'base64',
+                                                               CurrentTask.Dependent_Field_Type__c == 'Combobox',
+                                                               CurrentTask.Dependent_Field_Type__c == 'DataCategoryGroupReference',
+                                                               CurrentTask.Dependent_Field_Type__c == 'Email',
+                                                               CurrentTask.Dependent_Field_Type__c == 'EncryptedString',
+                                                               CurrentTask.Dependent_Field_Type__c == 'ID',
+                                                               CurrentTask.Dependent_Field_Type__c == 'Reference',
+                                                               CurrentTask.Dependent_Field_Type__c == 'String',
+                                                               CurrentTask.Dependent_Field_Type__c == 'URL',
+                                                               CurrentTask.Dependent_Field_Type__c == 'Currency',
+                                                               CurrentTask.Dependent_Field_Type__c == 'Integer',
+                                                               CurrentTask.Dependent_Field_Type__c == 'Phone',
+                                                               CurrentTask.Dependent_Field_Type__c == 'Percent',
+                                                               CurrentTask.Dependent_Field_Type__c == 'Double') && EditMode, TRUE, FALSE)}">
+                                <apex:actionSupport event="onchange" reRender="mainform" status="updateStatus" action="{!PopulateCompletedValueAndTooltip}"/>
+                                <apex:actionSupport event="onblur" reRender="mainform" status="updateStatus" action="{!PopulateCompletedValueAndTooltip}"/>
+                            </apex:inputfield>
+                            <apex:inputfield value="{!CurrentTask.TextArea_Place_Holder__c}" 
+                                             rendered="{!IF(CurrentTask.Dependent_Field_Type__c == 'TextArea' && EditMode, TRUE, FALSE)}">
+                                <apex:actionSupport event="onchange" reRender="mainform" status="updateStatus" action="{!PopulateCompletedValueAndTooltip}"/>
+                                <apex:actionSupport event="onblur" reRender="mainform" status="updateStatus" action="{!PopulateCompletedValueAndTooltip}"/>
+                            </apex:inputfield>
+                            <!--<apex:inputfield value="{!CurrentTask.Number_Place_Holder__c}" 
+                                             rendered="{!IF(OR(CurrentTask.Dependent_Field_Type__c == 'Currency',
+                                                               CurrentTask.Dependent_Field_Type__c == 'Integer',
+                                                               CurrentTask.Dependent_Field_Type__c == 'Phone',
+                                                               CurrentTask.Dependent_Field_Type__c == 'Percent'), TRUE, FALSE)}">
+                                <apex:actionSupport event="onchange" reRender="mainform" status="updateStatus" action="{!PopulateCompletedValueAndTooltip}"/>
+                                <apex:actionSupport event="onblur" reRender="mainform" status="updateStatus" action="{!PopulateCompletedValueAndTooltip}"/>
+                            </apex:inputfield>
+                            <apex:inputfield value="{!CurrentTask.Decimal_Place_Holder__c}" 
+                                             rendered="{!IF(CurrentTask.Dependent_Field_Type__c == 'Double', TRUE, FALSE)}">
+                                <apex:actionSupport event="onchange" reRender="mainform" status="updateStatus" action="{!PopulateCompletedValueAndTooltip}"/>
+                                <apex:actionSupport event="onblur" reRender="mainform" status="updateStatus" action="{!PopulateCompletedValueAndTooltip}"/>
+                            </apex:inputfield>-->
+                            <apex:inputfield value="{!CurrentTask.Date_Place_Holder__c}" 
+                                             rendered="{!IF(CurrentTask.Dependent_Field_Type__c == 'Date' && EditMode, TRUE, FALSE)}">
+                                <apex:actionSupport event="onchange" reRender="mainform" status="updateStatus" action="{!PopulateCompletedValueAndTooltip}"/>
+                                <apex:actionSupport event="onblur" reRender="mainform" status="updateStatus" action="{!PopulateCompletedValueAndTooltip}"/>
+                            </apex:inputfield>
+                            <apex:inputfield value="{!CurrentTask.DateTime_Place_Holder__c}"
+                                             rendered="{!IF(CurrentTask.Dependent_Field_Type__c == 'DateTime' && EditMode, TRUE, FALSE)}">
+                                <apex:actionSupport event="onchange" reRender="mainform" status="updateStatus" action="{!PopulateCompletedValueAndTooltip}"/>
+                                <apex:actionSupport event="onblur" reRender="mainform" status="updateStatus" action="{!PopulateCompletedValueAndTooltip}"/>
+                            </apex:inputfield>
+                            <apex:inputCheckbox value="{!SValue}"
+                                                rendered="{!IF(CurrentTask.Dependent_Field_Type__c == 'Boolean' && EditMode, TRUE, FALSE)}">
+                                <apex:actionSupport event="onchange" reRender="mainform" status="updateStatus" action="{!PopulateCompletedValueAndTooltip}"/>
+                                <apex:actionSupport event="onblur" reRender="mainform" status="updateStatus" action="{!PopulateCompletedValueAndTooltip}"/>
+                            </apex:inputCheckbox>
+                            <apex:selectList value="{!SValue}" size="1" 
+                                             rendered="{!IF(CurrentTask.Dependent_Field_Type__c == 'Picklist' && EditMode, TRUE, FALSE)}">
+                                <apex:actionSupport event="onchange" reRender="mainform" status="updateStatus" action="{!PopulateCompletedValueAndTooltip}"/>
+                                <apex:actionSupport event="onblur" reRender="mainform" status="updateStatus" action="{!PopulateCompletedValueAndTooltip}"/>
+                                <apex:selectOption itemValue="--None--" itemLabel="--None--"/>
+                                <apex:selectOptions value="{!DependentPicklistFieldOptions}"/>
+                            </apex:selectList>
+                            <apex:selectList value="{!SValue}" size="1" multiselect="true" 
+                                             rendered="{!IF(CurrentTask.Dependent_Field_Type__c == 'MultiPicklist' && EditMode, TRUE, FALSE)}">
+                                <apex:actionSupport event="onblur" reRender="mainform" status="updateStatus" action="{!PopulateCompletedValueAndTooltip}"/>
+                                <apex:actionSupport event="onblur" reRender="mainform" status="updateStatus" action="{!PopulateCompletedValueAndTooltip}"/>
+                                <apex:selectOption itemValue="--None--" itemLabel="--None--"/>
+                                <apex:selectOptions value="{!DependentPicklistFieldOptions}"/>
+                            </apex:selectList>
+                            <apex:outputField value="{!CurrentTask.Dependent_Field_Completed_Value__c}" rendered="{!!EditMode}"/>
+                        </apex:outputPanel>
+                    </apex:outputPanel>
+                </apex:pageblockSectionItem>
+                <apex:inputfield value="{!CurrentTask.Dependency_Tootip__c}" style="width:100%;"
+                                 rendered="{!IF(AND(CurrentTask.Dependent_Object__c != '--None--',
+                                                    CurrentTask.Dependent_Field__c != '--None--',
+                                                    CurrentTask.Dependency_Tootip__c != '') && EditMode,
+                                                    TRUE, FALSE)}"/>
+                <apex:outputField value="{!CurrentTask.Dependency_Tootip__c}" rendered="{!!EditMode}"/>
+            </apex:pageBlockSection>
+        </apex:pageblock>
+    </apex:form>
+</apex:page>

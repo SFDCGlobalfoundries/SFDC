@@ -1,0 +1,423 @@
+<!--Modification History:
+* Inshu Misra  13-10-2016       modified the Save button action...#IM
+* Abhita Bansal  06-03-2017     Added By Abhita for replacing None with Select a value
+* Abhita Bansal  01-Mar-2017    Added new variables in TFA logic for #DEF 370
+* Abhita Bansal  14-Jul-2017    Modified by Abhita for UAT Issue #428
+-->
+<apex:page standardController="Form_Management_System__c" extensions="FMSmainFormEditController" action="{!init}" showHeader="true" sidebar="true">
+<!-- <apex:page showHeader="{!!isExternalUser}" sidebar="{!!isExternalUser}"/> -->
+
+<apex:includeScript value="{!URLFOR($Resource.jquery, 'js/jquery-1.8.3.js')}"/>
+<apex:includeScript value="{!URLFOR($Resource.jquery, 'js/jquery-ui-1.9.2.custom.js')}"/>
+<apex:includeScript value="{!URLFOR($Resource.ROS_JQuery_Deafult, '/jquery-ui-1.10.3.custom/js/jquery-1.9.1.js')}"/>
+<style>  
+    .bPageBlock .requiredInput .requiredBlock{background-color: #F6FBF6;}  
+    .requiredInput .requiredBlock::before { display: block; content: "*"; font-size: 1.5em; font-weight: bold; color: #c00; margin-left: -12px; margin-top: -3px; }  
+
+    p{
+       color:brown;
+    }
+    a{
+        text-decoration: none;
+    }
+</style>
+
+<script type="text/javascript">   
+    function setFocusOnLoad() {} 
+    $j = jQuery.noConflict(); 
+    
+    function blockPage(){ 
+        $j.blockUI({ message: '<img src="/img/loading32.gif" /><h1> Refreshing...</h1>', 
+            css: { 
+             border: 'none', 
+             padding: '15px',  
+             '-webkit-border-radius': '10px', 
+             '-moz-border-radius': '10px', 
+             opacity: .9
+            } 
+        }); 
+        return false;
+    }
+    //function to unblock the page
+    function unblockPage(){
+        $j.unblockUI();
+    }
+    
+    function showSimpleDialog(){    
+       var sd = new SimpleDialog("Test"+Dialogs.getNextId(), true);    
+       sd.setTitle("Warning");   
+       sd.createDialog();   
+       window.parent.sd = sd;   
+       var ex = sd.setContentInnerHTML("<p align='center' ><img src='/img/msg_icons/warning24.png'/> <b>Warning!</b> <br/></p><p align='center'>The data you are attempting to save is either incomplete or has errors. <br/> <br/> You can either go back and correct the errors, or proceed to save this form anyway (this will save only the fields with valid data).</p><p align='center'><br /><button class='btn' onclick='window.parent.sd.hide(); return false;'>Back to the form</button> &nbsp; &nbsp; &nbsp; &nbsp; <button class='btn' onclick='saveandExit(\"page2tfa\"); return true;'>Save Anyway</button></p>"); 
+       sd.show();   
+       return ex;
+     }   
+
+    function showDialogforCancel(){
+    
+        var sd = new SimpleDialog("Test"+Dialogs.getNextId(), true);    
+        sd.createDialog(); 
+        sd.setWidth(400);               
+        window.parent.sd = sd;
+        var ex = sd.setContentInnerHTML("<img src='/img/msg_icons/warning24.png'/> <b>Warning!</b> <br/><br/>Are you sure you want to Cancel your changes?<br/> Any changes that you made to this form since the last Save will be lost. <br/><br/><p align='center'><button class='btn' onclick='cancelFormFunction(); window.parent.sd.hide(); return true;'>Confirm</button>&nbsp; &nbsp; &nbsp; &nbsp; <button class='btn' onclick='window.parent.sd.hide(); return false;'>Cancel</button></p>"); 
+        sd.show();   
+        return ex;
+    }
+      
+</script>
+
+<apex:outputPanel id="nonePnl">
+    <script type="text/javascript">
+        $j = jQuery.noConflict(); 
+        
+        //Remove None from picklist **** Added By Abhita for replacing None with Select a value
+        $j(function() {        
+            $j("select.RemoveNone option[value='']").text("=== Select a Value ===");       
+        });
+    
+    </script>
+</apex:outputPanel>
+
+<apex:pagemessages id="errorMsg" /> 
+
+<apex:form id="tfsForm">
+
+    <c:FMSNameDesc ></c:FMSNameDesc>
+    
+    <apex:actionFunction name="saveandExit" action="{!saveandExit}">
+        <apex:param assignTo="{!pageN}" name="page" value=""/>
+    </apex:actionFunction>
+    
+    <apex:actionFunction name="cancelFormFunction" action="{!cancelForm}" status="blockUI"/>
+    <apex:actionStatus onstart="blockPage()" onstop="unblockPage()" id="blockUI"/>
+    
+    <apex:pageBlock title="Form Page {!pageNum}" id="pb1">
+        <apex:pageblockSection title="Details Required for Quote" columns="1" id="pbs1" collapsible="false">  
+            <apex:actionRegion >
+                <apex:outputPanel >
+                    <apex:pageBlockSection >
+                        <apex:pageblocksectionItem rendered="{!dispWireBondSplit}">
+                            <apex:outputlabel value="Will there be a wirebond split?"/>
+                            <apex:outputPanel >   
+                                <apex:outputPanel rendered="{!!readOnlyCheck}">
+                                    <div class = "requiredInput">
+                                        <div class = "requiredBlock"></div>
+                                        <apex:inputField styleClass="RemoveNone"  value="{!formObj.WireBondSplit__c}" /> <!-- Added By Abhita for replacing None with Select a value-->
+                                        <apex:actionSupport event="onchange" status="wireBondStat" action="{!renderWireBondSplitTAT}" reRender="wireBondTATPanel, wireBondWaferReqPanel, nonePnl"/>
+                                        <img src="/img/alohaSkin/help_orange.png" title="{!$ObjectType.Form_Management_System__c.Fields.WireBondSplit__c.inlineHelpText}" height="13" width="13"/>
+                                    </div>
+                                </apex:outputPanel>
+                                <apex:outputPanel rendered="{!readOnlyCheck}">
+                                    <div class = "requiredInput">
+                                        <div class = "requiredBlock"></div>
+                                        <apex:inputText value="{!wireBondsplit}" disabled="true"/> <!-- Added by Abhita for #def 370 -->
+                                        <img src="/img/alohaSkin/help_orange.png" title="{!$ObjectType.Form_Management_System__c.Fields.WireBondSplit__c.inlineHelpText}" height="13" width="13"/>
+                                    </div>
+                                </apex:outputPanel>
+                                <apex:actionStatus id="wireBondStat" startText="Refreshing..." stopText="" />
+                            </apex:outputPanel>
+                        </apex:pageblocksectionItem>        
+                    </apex:pageBlockSection>
+                </apex:outputPanel>
+                
+                <apex:outputPanel id="wireBondTATPanel">
+                    <apex:pageBlockSection >
+                        <apex:pageblocksectionItem rendered="{!dispWireBondSplitTAT}">
+                            <apex:outputlabel value="What Turnaround time do you need for the wirebond split?"/>
+                            <apex:outputPanel >   
+                                <apex:outputPanel rendered="{!!readOnlyCheck}">
+                                    <div class = "requiredInput">
+                                        <div class = "requiredBlock"></div>
+                                        <apex:inputField styleClass="RemoveNone" value="{!formObj.WireBondSplitTAT__c}" /> <!-- Added By Abhita for replacing None with Select a value-->
+                                        <img src="/img/alohaSkin/help_orange.png" title="{!$ObjectType.Form_Management_System__c.Fields.WireBondSplitTAT__c.inlineHelpText}" height="13" width="13"/>
+                                    </div>
+                                </apex:outputPanel>
+                                <apex:outputPanel rendered="{!readOnlyCheck}">
+                                    <div class = "requiredInput">
+                                        <div class = "requiredBlock"></div>
+                                        <apex:inputText value="{!wireBondsplitTAT}" disabled="true"/><!-- Added by Abhita for #def 370 -->
+                                        <img src="/img/alohaSkin/help_orange.png" title="{!$ObjectType.Form_Management_System__c.Fields.WireBondSplitTAT__c.inlineHelpText}" height="13" width="13"/>
+                                    </div>
+                                </apex:outputPanel>
+                            </apex:outputPanel>
+                        </apex:pageblocksectionItem>        
+                    </apex:pageBlockSection>
+                </apex:outputPanel>
+                
+                <apex:outputPanel id="wireBondWaferReqPanel">
+                    <apex:pageBlockSection >
+                        <apex:pageblocksectionItem rendered="{!dispWireBondSplitTAT}">
+                            <apex:outputlabel value="What are your wafer requirements for wirebond wafers?"/>
+                            <apex:outputPanel >   
+                                <apex:outputPanel rendered="{!!readOnlyCheck}">
+                                    <div class = "requiredInput">
+                                        <div class = "requiredBlock"></div>
+                                        <apex:inputField styleClass="RemoveNone" value="{!formObj.WireBondWaferReq__c}" /> <!-- Added By Abhita for replacing None with Select a value-->
+                                        <img src="/img/alohaSkin/help_orange.png" title="{!$ObjectType.Form_Management_System__c.Fields.WireBondWaferReq__c.inlineHelpText}" height="13" width="13"/>
+                                    </div>
+                                </apex:outputPanel>
+                                <apex:outputPanel rendered="{!readOnlyCheck}">
+                                    <div class = "requiredInput">
+                                        <div class = "requiredBlock"></div>
+                                        <apex:inputText value="{!wirebondwafer}" disabled="true"/><!-- Added by Abhita for #def 370 -->
+                                        <img src="/img/alohaSkin/help_orange.png" title="{!$ObjectType.Form_Management_System__c.Fields.WireBondWaferReq__c.inlineHelpText}" height="13" width="13"/>
+                                    </div>
+                                </apex:outputPanel>
+                            </apex:outputPanel>
+                        </apex:pageblocksectionItem>        
+                    </apex:pageBlockSection>
+                </apex:outputPanel>
+                
+                <apex:outputPanel >
+                    <apex:pageBlockSection >
+                        <apex:pageblocksectionItem rendered="{!dispWireBondSplit}">
+                            <apex:outputlabel value="Will there be a C4 split?"/>
+                            <apex:outputPanel >   
+                                <apex:outputPanel rendered="{!!readOnlyCheck}">
+                                    <div class = "requiredInput">
+                                        <div class = "requiredBlock"></div>
+                                        <apex:inputField styleClass="RemoveNone" value="{!formObj.C4Split__c}" /> <!-- Added By Abhita for replacing None with Select a value-->
+                                        <apex:actionSupport event="onchange" status="c4SplitStat" action="{!renderC4SplitTAT}" reRender="c4SplitTATPanel, c4WaferReqPanel, nonePnl"/>
+                                        <img src="/img/alohaSkin/help_orange.png" title="{!$ObjectType.Form_Management_System__c.Fields.C4Split__c.inlineHelpText}" height="13" width="13"/>
+                                    </div>
+                                </apex:outputPanel>
+                                <apex:outputPanel rendered="{!readOnlyCheck}">
+                                    <div class = "requiredInput">
+                                        <div class = "requiredBlock"></div>
+                                        <apex:inputText value="{!c4Split}" disabled="true"/><!-- Added by Abhita for #def 370 -->
+                                        <img src="/img/alohaSkin/help_orange.png" title="{!$ObjectType.Form_Management_System__c.Fields.C4Split__c.inlineHelpText}" height="13" width="13"/>
+                                    </div>
+                                </apex:outputPanel>
+                                <apex:actionStatus id="c4SplitStat" startText="Refreshing..." stopText="" />
+                            </apex:outputPanel>
+                        </apex:pageblocksectionItem>        
+                    </apex:pageBlockSection>
+                </apex:outputPanel>
+                
+                <apex:outputPanel id="c4SplitTATPanel">
+                    <apex:pageBlockSection >
+                        <apex:pageblocksectionItem rendered="{!dispC4SplitTAT}">
+                            <apex:outputlabel value="What Turnaround time do you need for the C4 split?"/>
+                            <apex:outputPanel >   
+                                <apex:outputPanel rendered="{!!readOnlyCheck}">
+                                    <div class = "requiredInput">
+                                        <div class = "requiredBlock"></div>
+                                        <apex:inputField styleClass="RemoveNone" value="{!formObj.C4SplitTAT__c}" /> <!-- Added By Abhita for replacing None with Select a value-->
+                                        <img src="/img/alohaSkin/help_orange.png" title="{!$ObjectType.Form_Management_System__c.Fields.C4SplitTAT__c.inlineHelpText}" height="13" width="13"/>
+                                    </div>
+                                </apex:outputPanel>
+                                <apex:outputPanel rendered="{!readOnlyCheck}">
+                                    <div class = "requiredInput">
+                                        <div class = "requiredBlock"></div>
+                                        <apex:inputText value="{!c4SplitTAT}" disabled="true"/><!-- Added by Abhita for #def 370 -->
+                                        <img src="/img/alohaSkin/help_orange.png" title="{!$ObjectType.Form_Management_System__c.Fields.C4SplitTAT__c.inlineHelpText}" height="13" width="13"/>
+                                    </div>
+                                </apex:outputPanel>
+                            </apex:outputPanel>
+                        </apex:pageblocksectionItem>        
+                    </apex:pageBlockSection>
+                </apex:outputPanel>
+                
+                <apex:outputPanel id="c4WaferReqPanel">
+                    <apex:pageBlockSection >
+                        <apex:pageblocksectionItem rendered="{!dispC4SplitTAT}">
+                            <apex:outputlabel value="What are your wafer requirements for C4 wafers?"/>
+                            <apex:outputPanel >   
+                                <apex:outputPanel rendered="{!!readOnlyCheck}">
+                                    <div class = "requiredInput">
+                                        <div class = "requiredBlock"></div>
+                                        <apex:inputField styleClass="RemoveNone" value="{!formObj.C4WaferReq__c}" /> <!-- Added By Abhita for replacing None with Select a value-->
+                                        <img src="/img/alohaSkin/help_orange.png" title="{!$ObjectType.Form_Management_System__c.Fields.C4WaferReq__c.inlineHelpText}" height="13" width="13"/>
+                                    </div>
+                                </apex:outputPanel>
+                                <apex:outputPanel rendered="{!readOnlyCheck}">
+                                    <div class = "requiredInput">
+                                        <div class = "requiredBlock"></div>
+                                        <apex:inputText value="{!c4wafer}" disabled="true"/><!-- Added by Abhita for #def 370 -->
+                                        <img src="/img/alohaSkin/help_orange.png" title="{!$ObjectType.Form_Management_System__c.Fields.C4WaferReq__c.inlineHelpText}" height="13" width="13"/>
+                                    </div>  
+                                </apex:outputPanel>
+                            </apex:outputPanel>
+                        </apex:pageblocksectionItem>        
+                    </apex:pageBlockSection>
+                </apex:outputPanel>
+                
+                <apex:outputPanel id="otherSplitPanel">
+                    <apex:pageBlockSection >
+                        <apex:pageblocksectionItem rendered="{!dispWireBondSplit}">
+                            <apex:outputlabel value="Will there be any other splits?"/>
+                            <apex:outputPanel >   
+                                <apex:outputPanel rendered="{!!readOnlyCheck}">
+                                    <div class = "requiredInput">
+                                        <div class = "requiredBlock"></div>
+                                        <apex:inputField styleClass="RemoveNone" value="{!formObj.OtherSplits__c}" /> <!-- Added By Abhita for replacing None with Select a value-->
+                                        <apex:actionSupport event="onchange" status="otherSplitStat" action="{!renderOtherSplitDets}" reRender="otherSplitDetsPanel"/>
+                                        <img src="/img/alohaSkin/help_orange.png" title="{!$ObjectType.Form_Management_System__c.Fields.OtherSplits__c.inlineHelpText}" height="13" width="13"/>
+                                    </div>
+                                </apex:outputPanel>
+                                <apex:outputPanel rendered="{!readOnlyCheck}">
+                                    <div class = "requiredInput">
+                                        <div class = "requiredBlock"></div>
+                                        <apex:inputText value="{!othersplits}" disabled="true"/><!-- Added by Abhita for #def 370 -->
+                                        <img src="/img/alohaSkin/help_orange.png" title="{!$ObjectType.Form_Management_System__c.Fields.OtherSplits__c.inlineHelpText}" height="13" width="13"/>
+                                    </div>
+                                </apex:outputPanel>
+                                <apex:actionStatus id="otherSplitStat" startText="Refreshing..." stopText="" />
+                            </apex:outputPanel>
+                        </apex:pageblocksectionItem>        
+                    </apex:pageBlockSection>
+                </apex:outputPanel>
+                
+                <apex:outputPanel id="otherSplitDetsPanel">
+                    <apex:pageBlockSection >
+                        <apex:pageblocksectionItem rendered="{!dispOtherSplitDepts}">
+                            <apex:outputlabel value="Please explain splits and their requirements:"/>
+                            <apex:outputPanel >   
+                                <apex:outputPanel rendered="{!!readOnlyCheck}">
+                                    <div class = "requiredInput">
+                                        <div class = "requiredBlock"></div>
+                                        <apex:inputField value="{!formObj.OtherSplitDets__c}" />
+                                        <img src="/img/alohaSkin/help_orange.png" title="{!$ObjectType.Form_Management_System__c.Fields.OtherSplitDets__c.inlineHelpText}" height="13" width="13"/>
+                                        <!--Added By Abhita for new UAT Issue #216-->    
+                                    </div>
+                                </apex:outputPanel>
+                                <apex:outputPanel rendered="{!readOnlyCheck}">
+                                    <div class = "requiredInput">
+                                        <div class = "requiredBlock"></div>
+                                        <apex:inputText value="{!othersplitsdet}" disabled="true"/><!-- Added by Abhita for #def 370 -->
+                                        <img src="/img/alohaSkin/help_orange.png" title="{!$ObjectType.Form_Management_System__c.Fields.OtherSplitDets__c.inlineHelpText}" height="13" width="13"/>
+                                        <!--Added By Abhita for new UAT Issue #216-->
+                                    </div>
+                                </apex:outputPanel>
+                            </apex:outputPanel>
+                        </apex:pageblocksectionItem>        
+                    </apex:pageBlockSection>
+                </apex:outputPanel>
+                
+                <apex:outputPanel id="ITARCatPanel">
+                    <apex:pageBlockSection >
+                        <apex:pageblocksectionItem rendered="{!dispITARCategory}">
+                            <apex:outputlabel value="ITAR Category:"/>
+                            <apex:outputPanel >   
+                                <apex:outputPanel rendered="{!!readOnlyCheck}">
+                                    <div class = "requiredInput">
+                                        <div class = "requiredBlock"></div>
+                                        <apex:inputField value="{!formObj.ItarCategory__c}" />
+                                        <img src="/img/alohaSkin/help_orange.png" title="{!$ObjectType.Form_Management_System__c.Fields.ItarCategory__c.inlineHelpText}" height="13" width="13"/>
+                                        <!--Added By Abhita for new UAT Issue #216-->    
+                                    </div>
+                                </apex:outputPanel>
+                                <apex:outputPanel rendered="{!readOnlyCheck}">
+                                    <div class = "requiredInput">
+                                        <div class = "requiredBlock"></div>
+                                        <apex:inputText value="{!itaCat}" disabled="true"/><!-- Added by Abhita for #def 370 -->
+                                        <img src="/img/alohaSkin/help_orange.png" title="{!$ObjectType.Form_Management_System__c.Fields.ItarCategory__c.inlineHelpText}" height="13" width="13"/>
+                                        <!--Added By Abhita for new UAT Issue #216-->
+                                    </div>
+                                </apex:outputPanel>
+                            </apex:outputPanel>
+                        </apex:pageblocksectionItem>        
+                    </apex:pageBlockSection>
+                </apex:outputPanel>
+                
+                <apex:outputPanel >
+                    <apex:pageBlockSection >
+                        <apex:pageblocksectionItem rendered="{!dispClientResponseDt}">
+                            <apex:outputlabel value="Client Requested Quote Response Date:"/>
+                            <apex:outputPanel >   
+                                <apex:outputPanel rendered="{!!readOnlyCheck}">
+                                    <div class = "requiredInput">
+                                        <div class = "requiredBlock"></div>
+                                        <apex:inputField value="{!formObj.ClientResponseDt__c}" />
+                                        <img src="/img/alohaSkin/help_orange.png" title="{!$ObjectType.Form_Management_System__c.Fields.ClientResponseDt__c.inlineHelpText}" height="13" width="13"/>
+                                    </div>
+                                </apex:outputPanel>
+                                <apex:outputPanel rendered="{!readOnlyCheck}">
+                                    <div class = "requiredInput">
+                                        <div class = "requiredBlock"></div>
+                                        <apex:inputText value="{!clrespdt}" disabled="true"/><!-- Added by Abhita for #def 370 -->
+                                        <img src="/img/alohaSkin/help_orange.png" title="{!$ObjectType.Form_Management_System__c.Fields.ClientResponseDt__c.inlineHelpText}" height="13" width="13"/>
+                                    </div>
+                                </apex:outputPanel>
+                            </apex:outputPanel>
+                        </apex:pageblocksectionItem>        
+                    </apex:pageBlockSection>
+                </apex:outputPanel>
+                
+                <apex:outputPanel >
+                    <apex:pageBlockSection >
+                        <apex:pageblocksectionItem rendered="{!dispNeedBizComment}">
+                            <apex:outputlabel value="Do you need to add any additional information that has not been captured elsewhere in this business/quote section of the form?"/>
+                            <apex:outputPanel >
+                                <apex:outputPanel rendered="{!!readOnlyCheck}">
+                                    <div>
+                                        <apex:selectList value="{!formObj.NeedBizComment__c}" multiselect="false" size="1" id="fReleList">
+                                            <apex:selectOptions value="{!NeedBizCommentList}"/>
+                                        </apex:selectList>    
+                                        <apex:actionSupport event="onchange" action="{!resetDependentFields}" status="bizCommentStat" reRender="businessCommPanel">
+                                            <apex:param assignTo="{!fieldAPI}" name="fieldAPI" value="NeedBizComment__c"/>
+                                        </apex:actionSupport> 
+                                        <img src="/img/alohaSkin/help_orange.png" title="{!$ObjectType.Form_Management_System__c.Fields.NeedBizComment__c.inlineHelpText}" height="13" width="13"/>
+                                    </div>
+                                </apex:outputPanel>
+                                <apex:outputPanel rendered="{!readOnlyCheck}">
+                                    <div>
+                                        <apex:inputText value="{!bizComment}" disabled="true"/><!-- Added by Abhita for #def 370 -->
+                                        <img src="/img/alohaSkin/help_orange.png" title="{!$ObjectType.Form_Management_System__c.Fields.NeedBizComment__c.inlineHelpText}" height="13" width="13"/>
+                                    </div>
+                                </apex:outputPanel>
+                                <apex:actionStatus id="bizCommentStat" startText="Refreshing..." stopText="" />     
+                            </apex:outputPanel>                             
+                        </apex:pageblocksectionItem>        
+                    </apex:pageBlockSection>
+                </apex:outputPanel>
+                
+                <apex:outputPanel id="businessCommPanel">
+                    <apex:pageBlockSection >
+                        <apex:pageblocksectionItem rendered="{!formObj.NeedBizComment__c == 'Yes' && dispNeedBizComment}">
+                            <apex:outputlabel value="List additional information here:"/>
+                            <apex:outputPanel > 
+                                <apex:outputPanel rendered="{!!readOnlyCheck}">
+                                    <div class = "requiredInput">
+                                        <div class = "requiredBlock"></div>
+                                        <apex:inputField value="{!formObj.BusinessComments__c}" />
+                                        <img src="/img/alohaSkin/help_orange.png" title="{!$ObjectType.Form_Management_System__c.Fields.BusinessComments__c.inlineHelpText}" height="13" width="13"/>
+                                    </div>
+                                </apex:outputPanel>
+                                <apex:outputPanel rendered="{!readOnlyCheck}">
+                                    <div class = "requiredInput">
+                                        <div class = "requiredBlock"></div>
+                                        <apex:inputText value="{!businessComment}" disabled="true"/><!-- Added by Abhita for #def 370 -->
+                                        <img src="/img/alohaSkin/help_orange.png" title="{!$ObjectType.Form_Management_System__c.Fields.BusinessComments__c.inlineHelpText}" height="13" width="13"/>
+                                    </div>
+                                </apex:outputPanel>
+                            </apex:outputPanel>
+                        </apex:pageblocksectionItem>        
+                    </apex:pageBlockSection>
+                </apex:outputPanel>         
+            </apex:actionRegion>
+        </apex:pageblockSection>
+        <br/> 
+               <p style="color:black;font-weight: bold;">Use Next / Previous to navigate through the form. Use 'Save' or 'Save and Exit' to permanently save your edits. </p>
+        <br/><!--Added 'Save' or to the above text - 23-Nov-2016    -- Ashwin Dash -->
+        <br/> 
+        <apex:commandlink value="Previous" action="{!prev}" style="color:blue;">
+            <apex:param assignTo="{!pageN}" name="page" value="page2tfa"/>
+        </apex:commandlink>&nbsp;
+        <apex:outputText >Page &nbsp;{!pageNum}  of  {!totalPageNums} &nbsp; </apex:outputText>
+        <apex:commandlink value="Next" action="{!next}" rendered="{!totalPageNums > 2}" style="color:blue;">
+            <apex:param assignTo="{!pageN}" name="page" value="page2tfa"/>
+        </apex:commandlink>
+        <apex:pageBlockButtons location="bottom">
+            <apex:commandButton action="{!validateSave}" value="Save and Exit" reRender="errorMsg" oncomplete="window.scrollTo(0,0);showSimpleDialog();">
+                <apex:param assignTo="{!pageN}" name="page" value="page2tfa"/>
+            </apex:commandButton>
+            <apex:commandButton action="{!saveForm}" value="Save" id="saveForm" reRender="errorMsg" oncomplete="window.scrollTo(0,0);">
+                <apex:param assignTo="{!pageN}" name="page" value="page2tfa"/>
+            </apex:commandButton>
+            <!--<apex:commandButton value="Cancel" immediate="true" action="{!cancelForm}" onclick="if(!confirm('Are you sure you want to Cancel your changes? Any changes that you made to this form since the last Save will be lost.')){return false;}"/>-->
+            <apex:commandButton value="Cancel" onclick="showDialogforCancel(); window.scrollTo(0,0); return false;" />
+        </apex:pageBlockButtons>
+    </apex:pageBlock>
+</apex:form>
+</apex:page>

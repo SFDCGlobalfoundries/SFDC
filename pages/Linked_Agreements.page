@@ -1,0 +1,185 @@
+<apex:page standardController="Apttus__APTS_Agreement__c"  extensions="LinkedAgreementRelatedListController" showHeader="false" showchat="false" cache="false">
+
+
+
+
+<style type="text/css">
+.pbTitle {
+    white-space: nowrap
+}
+        body {background: #F3F3EC; padding-top: 15px}
+        
+        a.linkAsBtn,
+        a.linkAsBtn:hover {
+        text-decoration: none;
+        padding: 3px 6px;
+        }
+        
+            
+            
+    </style>
+    
+
+
+
+
+     
+<apex:form >
+<apex:pagemessages ></apex:pagemessages>
+
+<div id="loading">
+
+ 
+</div>  
+ 
+<div id="content">    
+
+<apex:pageblock title="Linked and Associated Contract Record(s) :" id="CustomList">
+<apex:actionPoller action="{!loadData}" reRender="CustomList" interval="60" status="resultload"/>
+
+
+  <apex:actionStatus id="searchStatus">
+                        <apex:facet name="start">
+                        <apex:image url="/img/loading32.gif" height="20px" />
+                        </apex:facet>
+   </apex:actionStatus>
+  
+   <center>
+   <br></br>
+   <apex:commandLink action="{!getCallLinkerSearchPage}" styleClass="btn linkAsBtn" style="text-decoration: none;" value="Link Agreement" onClick="parent.location=('/apex/Related_Agreements?Id={!$CurrentPage.parameters.Id}');" />
+   <apex:commandLink action="{!getCallUnLinkerPage}" styleClass="btn linkAsBtn" style="text-decoration: none;" value="UnLink Agreement" onClick="parent.location=('/apex/UnRelate_Agreements?Id={!$CurrentPage.parameters.Id}');" />
+   <apex:commandButton value="Refresh"    action="{!loadData}" reRender="linkedrecordspanel,linkedrecordspanelnull" status="resultload"/> 
+   </center>
+   
+   
+   <br></br>
+   <br></br>
+   
+  
+         
+   <apex:outputPanel id="linkedrecordspanel" layout="block" style="max-height:400px;overflow:auto;">
+   
+   <apex:outputPanel layout="block" style="max-height:300px;overflow:auto;" rendered="{!agreements.size>0}">      
+   
+   <center>
+          <apex:actionStatus id="resultload">
+                    <apex:facet name="start">
+                      <apex:image url="/img/loading32.gif" width="32" height="32"/>                       
+                    </apex:facet>           
+            </apex:actionStatus>
+         
+   </center>            
+            
+   
+   <apex:pageBlock id="details">
+   
+   
+            
+            
+            
+   
+   <apex:pageBlockTable value="{!lstSetController}" var="agr" style="width:100%" columns="9" columnsWidth="2%" id="datatable">
+   
+
+            
+            
+   
+    <apex:column headervalue="Action" style="width:2%">
+    &nbsp;
+    <apex:outputLink title="" value="/{!agr.id}/e?retURL=/{!$CurrentPage.parameters.Id}" target="_blank" style="color:blue">Edit</apex:outputLink>
+    
+    
+    
+    </apex:column>
+    
+    
+    <apex:column headervalue="Agreement Name" style="width:50%">
+    
+    <a href="/{!agr.Id}" target="_blank" id="{!agr.Id}" onblur="LookupHoverDetail.getHover('{!agr.Id}').hide();" onfocus="LookupHoverDetail.getHover('{!agr.Id}', '/{!agr.Id}/m?retURL=%2F{!agr.Id}&isAjaxRequest=1').show();" onmouseout="LookupHoverDetail.getHover('{!agr.Id}').hide();" onmouseover="LookupHoverDetail.getHover('{!agr.Id}', '/{!agr.Id}/m?retURL=%2F{!agr.Id}&isAjaxRequest=1').show();">{!agr.Name}</a>
+    
+    </apex:column>
+    
+    
+        <apex:column style="width:10%" headervalue="Agreement Number" value="{!agr.Apttus__FF_Agreement_Number__c}"/>
+        <apex:column style="width:50%" headervalue="Contract Type" value="{!agr.CLM_Contract_Type__c}"/>
+        <apex:column style="width:50%" headerValue="Account">
+               
+                <apex:outputLink value="/{!agr.Apttus__Account__r.Id}" target="_blank">{!agr.Apttus__Account__r.Name}</apex:outputlink>
+        </apex:column>
+        
+         <apex:column style="width:10%" headerValue="Effective Date">
+         <apex:outputText value="{0,date,MM/dd/yyyy}"> <apex:param value="{!agr.GF_Contract_Start_Date__c}" /> </apex:outputText>
+         </apex:column>
+                        
+         <apex:column style="width:10%" headerValue="Expiration Date">
+         <apex:outputText value="{0,date,MM/dd/yyyy}"> <apex:param value="{!agr.GF_Contract_End_Date__c}" /> </apex:outputText>
+         </apex:column>
+         
+         <apex:column style="width:10%" headervalue="XREF ID" value="{!agr.CLM_XREF_ID__c}"/>
+         
+         <apex:column style="width:10%" headervalue="Status" value="{!agr.Apttus__Status__c}"/>
+         
+   </apex:pageBlockTable>
+   
+  
+<apex:pageblockButtons >
+<apex:commandButton value="<<Previous" action="{!previous}" rendered="{!hasPrevious}" reRender="details" status="resultload"/>
+<apex:commandButton value="Next >>"    action="{!next}"     rendered="{!hasNext}"     reRender="details" status="resultload"/> 
+</apex:pageblockButtons>
+</apex:pageBlock>    
+   
+   
+   
+   
+   
+   </apex:outputPanel>
+  </apex:outputPanel> 
+  
+   <apex:outputPanel id="linkedrecordspanelnull" layout="block" style="max-height:300px;overflow:auto;">
+   
+           <apex:outputPanel layout="block" style="max-height:300px;overflow:auto;" rendered="{!agreements.size=0}">
+               <apex:outputText style="font-weight:600" value="There are no linked records to display."></apex:outputText>
+           
+           </apex:outputPanel>
+         
+    </apex:outputPanel>
+    
+ </apex:pageblock>
+ 
+     <apex:actionFunction action="{!deleteAgr}" name="deleteAgr" reRender="form" >
+        <apex:param name="agrid" value="" assignTo="{!SelectedAgrId}"/>
+    </apex:actionFunction>
+    
+</div>
+    
+</apex:form>
+
+
+<script type="text/javascript">
+        function preloader()
+        {
+            document.getElementById("loading").style.display = "none";
+            document.getElementById("content").style.display = "block";
+        }
+        
+        window.onload = preloader;
+</script>
+
+
+
+
+<style type="text/css">
+div#content 
+{
+    display: none;
+}
+ 
+div#loading {
+    width: 32px;
+    height: 32px;
+    background-image: url(/img/loading32.gif);
+    cursor: wait;
+    }
+</style>
+
+</apex:page>

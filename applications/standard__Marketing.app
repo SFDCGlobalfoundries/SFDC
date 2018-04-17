@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomApplication xmlns="http://soap.sforce.com/2006/04/metadata">
+    <defaultLandingTab>standard-home</defaultLandingTab>
+    <formFactors>Large</formFactors>
+    <tab>standard-Chatter</tab>
+    <tab>standard-CollaborationGroup</tab>
+    <tab>standard-File</tab>
+    <tab>standard-Workspace</tab>
+    <tab>standard-Knowledge</tab>
+    <tab>standard-Account</tab>
+    <tab>standard-Opportunity</tab>
+    <tab>standard-report</tab>
+    <tab>standard-Dashboard</tab>
+    <tab>standard-Idea</tab>
+    <tab>GMPL_BX009__c</tab>
+    <tab>Meeting_ID__c</tab>
+    <tab>Informal_Quote__c</tab>
+    <tab>IP_Request__c</tab>
+    <tab>Competitors__c</tab>
+    <tab>standard-Contact</tab>
+    <tab>standard-Lead</tab>
+    <tab>standard-Campaign</tab>
+    <tab>standard-Case</tab>
+    <tab>Team_Room__c</tab>
+    <tab>Bug__c</tab>
+    <tab>standard-JigsawSearch</tab>
+    <tab>Awards_and_Compliments__c</tab>
+    <tab>Global_Briefing_Center__c</tab>
+    <tab>Visitation_Record__c</tab>
+    <tab>Device_Gap__c</tab>
+</CustomApplication>

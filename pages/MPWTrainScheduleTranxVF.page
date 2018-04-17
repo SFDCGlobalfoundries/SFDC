@@ -1,0 +1,374 @@
+<!--
+    Author: Zymark Ambat
+    Description: This page is used as the View, Add, and Edit page for Maintain MPW Schedule Train.
+    History: 
+        ZAmbat      05122015    - Page creation.
+        SNair       05262015    - added action attribute to Raise MPW Request button.
+        SNair       05272015    - updated action attribute to Raise MPW Request button.
+        SNair       06102015    - added Cancellatio Deadline field to page.
+        Devendra    11112015    - Notes and attachment section will be exposed in the VF MPW Train Maintenance details
+-->
+
+<apex:page id="MPWTrainScheduleTranxVF" standardController="MPW_Train_Maintenance__c" extensions="MPWTrainScheduleTranxController" sidebar="false" showHeader="true" tabStyle="MPW_Train_Maintenance__c">
+    
+    <apex:includeScript value="{!URLFOR($Resource.MPWRelatedJS, '/MPWRelatedJS/MPWTrainScheduleTranxVF.js')}" />
+    
+    <apex:stylesheet value="{!URLFOR($Resource.MPWRelatedCSS, '/MPWRelatedCSS/MPWTrainScheduleTranxVF.css')}" />
+    
+    <apex:sectionHeader title="MPW Train Schedule" subtitle="{!IF(OR(tranx == 'Add', tranx == 'Clone'), 'Add New MPW Schedule', IF(tranx == 'Edit', 'Edit MPW Schedule', mpwtm.Name))}" help="https://help.salesforce.com/htviewhelpdoc?id=co_edit.htm&siteLang=en_US" />
+    <apex:pageMessages id="errorSection" />
+    
+    <apex:outputLink value="apex/MPWTrainScheduleTabVF?sfdc.tabName={!selectedTabId}" styleClass="backLink" rendered="{!IF(AND(tranx == 'View', NOT(isPortalUser)), true, false)}">&nbsp;«&nbsp;Back to Maintain MPW Schedule</apex:outputLink>
+    
+    <apex:form id="form1" >
+        <apex:pageBlock id="block1" mode="{!IF(OR(tranx == 'Add', tranx == 'Edit', tranx == 'Clone'), 'edit', 'maindetail')}">
+            <apex:pageblockButtons >
+                <apex:commandButton value="Edit" action="{!edit}" rendered="{!IF(AND(tranx == 'View', NOT(isPortalUser)), true, false)}" />
+                <!--<apex:commandButton value="Clone" action="{!cloneMPW}" rendered="{!IF(AND(tranx == 'View', NOT(isPortalUser)), true, false)}" />-->
+                <apex:commandButton value="Raise MPW Request" rendered="{!IF(AND(tranx == 'View', checkRaise == true), true, false)}" action="/apex/MPWReservationFormVF?mpwId={!mpwtm.Id}&intpoint=mpwtrain&mode=Edit"/>
+                <apex:commandButton value="Save" action="{!save}" rendered="{!IF(OR(tranx == 'Add', tranx == 'Edit', tranx == 'Clone'), true, false)}" />
+                <apex:commandButton value="Cancel" action="{!cancel}" rendered="{!IF(OR(tranx == 'Add', tranx == 'Edit', tranx == 'Clone'), true, false)}" immediate="true" />
+            </apex:pageblockButtons>
+            
+            <!-- For Add and Edit -->
+            <apex:pageblockSection id="section1" title="MPW Train Schedule Detail" collapsible="false" rendered="{!IF(OR(tranx == 'Add', tranx == 'Edit', tranx == 'Clone'), true, false)}">
+                <apex:inputField value="{!mpwtm.Active__c}" />
+                <apex:pageBlockSectionItem />
+                <apex:inputField value="{!mpwtm.Publish__c}" />
+                <apex:pageBlockSectionItem />
+                <apex:inputField value="{!mpwtm.Train_Type__c}" required="true" rendered="{!IF(tranx == 'Add', true, false)}">
+                    <apex:actionSupport event="onchange" action="{!refreshAvailableProcesses}" rerender="nameSectionItem, availableProcessesSection, selectedProcessesTbl, errorSection" />
+                </apex:inputField>
+                <apex:outputField value="{!mpwtm.Train_Type__c}" rendered="{!IF(tranx == 'Edit', true, false)}" />
+                <apex:pageBlockSectionItem />
+                <apex:pageBlockSectionItem rendered="{!IF(tranx == 'Add', true, false)}">
+                    <apex:outputLabel value="{!$ObjectType.MPW_Train_Maintenance__c.fields.Name.label}" />
+                    <apex:outputPanel >
+                        <div class="requiredInput">
+                            <div class="requiredBlock"></div>
+                            <apex:inputField value="{!mpwtm.Name}" id="nameSectionItem" />
+                        </div>
+                    </apex:outputPanel>
+                </apex:pageBlockSectionItem>
+                <apex:outputField value="{!mpwtm.Name}" rendered="{!IF(tranx == 'Edit', true, false)}" />
+                
+                <apex:pageBlockSectionItem rendered="{!IF(tranx == 'Add', true, false)}">
+                    <apex:outputLabel value="Geometry" />
+                    <apex:outputPanel >
+                        <div class="requiredInput">
+                            <div class="requiredBlock"></div>
+                            <apex:selectList value="{!mpwtm.Geometry__c}" multiselect="false" size="1">
+                                <apex:selectOptions value="{!geometryList}" />
+                                <apex:actionSupport event="onchange" action="{!refreshAvailableProcesses}" rerender="nameSectionItem, availableProcessesSection, processOffId, fabId, errorSection"/>
+                            </apex:selectList>
+                        </div>
+                    </apex:outputPanel>
+                </apex:pageBlockSectionItem>
+                <apex:outputField value="{!mpwtm.Geometry__c}" rendered="{!IF(tranx == 'Edit', true, false)}" />
+                                
+                <apex:pageBlockSectionItem id="reservationCloseDateSectionItem">
+                    <apex:outputLabel value="{!$ObjectType.MPW_Train_Maintenance__c.fields.Reservation_Close_Date__c.label}" />
+                    <apex:inputField id="reservationCloseDate" value="{!mpwtm.Reservation_Close_Date__c}" />
+                </apex:pageBlockSectionItem>
+                <apex:inputField id="cdrsSubmitDate" value="{!mpwtm.CDRS_Submit_Date__c}" />
+                <apex:inputField id="cancellationDate" value="{!mpwtm.Cancellation_Deadline__c}" />
+                <apex:inputField id="gdsCutoffDate" value="{!mpwtm.GDSII_Cutoff_for_Dry_Run_DRC__c}" />
+                <apex:inputField value="{!mpwtm.Tapeout_Date_Other_Participant__c}" />
+                <apex:inputField id="customerTapeoutDate" value="{!mpwtm.Tapeout_Date_Customer__c}" > <!--rendered="{!IF(tranx == 'Add', true, false)}">-->
+                    <apex:actionSupport action="{!calculateOtherDates}" event="onchange" reRender="section1"/>    
+                </apex:inputField>
+                
+                <apex:pageBlockSectionItem >
+                    <apex:outputLabel value="Projected 1st Batch Bare Die Ship" />
+                    <apex:outputPanel >
+                        <apex:selectList id="projectedDate1" value="{!selectedMonth}" multiselect="false" size="1" > 
+                                <apex:selectOptions value="{!monthList}" />
+                                    <apex:actionSupport event="onchange" action="{!monthValueStartOne}" rerender="errorSection"/>
+                        </apex:selectList> 
+                        <apex:selectList id="projectedDate2" value="{!selectedYear}" multiselect="false" size="1" > 
+                                <apex:selectOptions value="{!yearList}" />
+                                    <apex:actionSupport event="onchange" action="{!yearValueStartOne}" rerender="errorSection"/>
+                        </apex:selectList>
+                        &nbsp;
+                        <apex:outputLabel value="-" style="font-size: 140%;font-weight:bold; " />
+                        &nbsp;
+                        <apex:selectList id="projectedDate4" value="{!selectedMonth1}" multiselect="false" size="1" > 
+                                <apex:selectOptions value="{!monthList}" />
+                                    <apex:actionSupport event="onchange" action="{!monthValueEndOne}" rerender="errorSection"/>    
+                        </apex:selectList> 
+                        <apex:selectList id="projectedDate5" value="{!selectedYear1}" multiselect="false" size="1" > 
+                                <apex:selectOptions value="{!yearList}" />
+                                    <apex:actionSupport event="onchange" action="{!yearValueEndOne}" rerender="errorSection"/>
+                        </apex:selectList>
+                    </apex:outputPanel>
+                </apex:pageBlockSectionItem>
+                
+                <apex:pageBlockSectionItem >
+                    <apex:outputLabel value="Projected 2nd Batch Bare Die Ship" />
+                    <apex:outputPanel >
+                        <apex:selectList id="projectedDate1" value="{!selectedMonth2}" multiselect="false" size="1" > 
+                                <apex:selectOptions value="{!monthList}" />
+                                    <apex:actionSupport event="onchange" action="{!monthValueStartTwo}" rerender="errorSection"/>
+                        </apex:selectList> 
+                        <apex:selectList id="projectedDate2" value="{!selectedYear2}" multiselect="false" size="1" > 
+                                <apex:selectOptions value="{!yearList}" />
+                                    <apex:actionSupport event="onchange" action="{!yearValueStartTwo}" rerender="errorSection"/>
+                        </apex:selectList>
+                        &nbsp;
+                        <apex:outputLabel value="-" style="font-size: 140%;font-weight:bold; " />
+                        &nbsp;
+                        <apex:selectList id="projectedDate4" value="{!selectedMonth3}" multiselect="false" size="1" > 
+                                <apex:selectOptions value="{!monthList}" />
+                                    <apex:actionSupport event="onchange" action="{!monthValueEndTwo}" rerender="errorSection"/>
+                        </apex:selectList> 
+                        <apex:selectList id="projectedDate5" value="{!selectedYear3}" multiselect="false" size="1" > 
+                                <apex:selectOptions value="{!yearList}" />
+                                    <apex:actionSupport event="onchange" action="{!yearValueEndTwo}" rerender="errorSection"/>
+                        </apex:selectList>
+                    </apex:outputPanel>
+                </apex:pageBlockSectionItem>
+                
+                <apex:pageBlockSectionItem >
+                    <apex:outputLabel value="{!$ObjectType.MPW_Train_Maintenance__c.fields.Status__c.label}" />
+                    <apex:outputPanel >
+                    <apex:actionRegion >
+                        <div class="requiredInput">
+                            <div class="requiredBlock"></div>
+                            <apex:selectList id="processOffId" value="{!mpwtm.Status__c}" multiselect="false" size="1" > 
+                                <apex:selectOptions value="{!ProcessGroup}" />
+                                    <apex:actionSupport event="onchange" reRender="availableProcessesSection, fabId" />
+                            </apex:selectList> 
+                        </div>
+                    </apex:actionRegion>
+                    </apex:outputPanel>
+                </apex:pageBlockSectionItem>
+                
+                <apex:pageBlockSectionItem >
+                    <apex:outputLabel value="{!$ObjectType.MPW_Train_Maintenance__c.fields.Fab__c.label}" />
+                    <apex:outputPanel >
+                            <apex:selectList id="fabId" value="{!mpwtm.Fab__c}" multiselect="false" size="1"> 
+                                <apex:selectOptions value="{!Fab}" />
+                            </apex:selectList> 
+                    </apex:outputPanel>
+                </apex:pageBlockSectionItem>
+                <apex:inputField id="MPWReticleType" value="{!mpwtm.Reticle_Type__c}" />
+                <apex:inputField id="MPWProdECCN" value="{!mpwtm.MPW_Most_Restrictive_Product_ECCN__c}" />
+                <apex:inputField id="MPWTechECCN" value="{!mpwtm.MPW_Most_Restrictive_Technology_ECCN__c}" />
+                
+            </apex:pageblockSection>
+            
+            <!-- For View -->
+            <apex:pageblockSection title="MPW Train Schedule Detail" collapsible="false" rendered="{!IF(tranx == 'View', true, false)}">
+                <apex:outputField value="{!mpwtm.Active__c}" />
+                <apex:pageBlockSectionItem />
+                <apex:outputField value="{!mpwtm.Publish__c}" />
+                <apex:pageBlockSectionItem />
+                <apex:outputField value="{!mpwtm.Train_Type__c}" />
+                <apex:pageBlockSectionItem />
+                <apex:outputField value="{!mpwtm.Name}" />
+                <apex:outputField value="{!mpwtm.Geometry__c}" /> 
+                <apex:outputField value="{!mpwtm.Reservation_Close_Date__c}" />
+                <apex:outputField value="{!mpwtm.CDRS_Submit_Date__c}" />
+                <apex:outputField value="{!mpwtm.Cancellation_Deadline__c}" />
+                <apex:outputField value="{!mpwtm.GDSII_Cutoff_for_Dry_Run_DRC__c}" />
+                <apex:outputField value="{!mpwtm.Tapeout_Date_Other_Participant__c}" />
+                <apex:outputField value="{!mpwtm.Tapeout_Date_Customer__c}" />
+                <apex:outputField value="{!mpwtm.Projected_1st_Batch_Bare_Die_Ship__c}" />
+                <apex:outputField value="{!mpwtm.Projected_2nd_Batch_Bare_Die_Ship__c}" /> 
+                <apex:outputField value="{!mpwtm.Status__c}" />
+                <apex:outputField value="{!mpwtm.Fab__c}" rendered="{!IF(NOT(isPortalUser), true, false)}" />
+                <apex:outputField value="{!MPW_Train_Maintenance__c.Reticle_Type__c}" />  
+                <apex:outputField value="{!mpwtm.MPW_Most_Restrictive_Product_ECCN__c}" />
+                <apex:outputField value="{!mpwtm.MPW_Most_Restrictive_Technology_ECCN__c}" />
+            </apex:pageblockSection>
+            
+            <apex:pageblockSection id="availableProcessesSection" title="Available Processes" columns="1" collapsible="false" rendered="{!IF(OR(tranx == 'Add', tranx == 'Edit', tranx == 'Clone'), true, false)}">
+               <apex:actionRegion rendered="{!IF(NOT(ISBLANK(mpwtm.Geometry__c)), true, false)}">
+                    <!-- Input -->
+                    <apex:outputPanel layout="inline">
+                        <apex:outputText value="Process" styleClass="labelCol" />
+                        <apex:actionRegion >
+                            <apex:selectList value="{!selectedProcess}" size="1" multiselect="false">
+                                <apex:selectOptions value="{!Processes}" />
+                                <apex:actionSupport event="onchange" action="{!retrieveTechModules}" oncomplete="refreshTechModuleChecboxes();" rerender="availableProcessesSection, errorSection" />
+                            </apex:selectList>
+                        </apex:actionRegion>
+                    </apex:outputPanel>
+                    
+                    <!-- Tech Module -->
+                    <br /><br />
+                    <apex:pageBlockTable id="techModulesTbl" value="{!listTechModules}" var="t" rendered="{!IF(selectedProcess != 'None', true, false)}">
+                        <apex:column style="width: 3%">
+                            <apex:facet name="header">
+                                <apex:inputCheckbox id="selectAllTechModuleCb" onclick="checkTechModuleCheckboxes(this);" />
+                            </apex:facet>
+                            <apex:inputCheckbox id="techModuleCb" value="{!t.isSelected}" onclick="checkTechModuleCheckboxes(this);" />
+                        </apex:column>
+                        <apex:column value="{!t.moduleName} | {!t.moduleDescription}" style="width: 33%">
+                            <apex:facet name="header">Module</apex:facet>
+                        </apex:column>
+                        <apex:column value="{!t.question}" style="width: 33%">
+                            <apex:facet name="header">Question</apex:facet>
+                        </apex:column>
+                        <apex:column style="width: 31%">
+                            <apex:facet name="header">Answers</apex:facet>
+                            <apex:outputPanel layout="inline">
+                                <apex:repeat value="{!t.listAnswers}" var="a">
+                                    <apex:inputCheckbox value="{!a.isSelected}" />
+                                    <apex:outputText value="{!a.answer}" />
+                                    &nbsp;&nbsp;
+                                </apex:repeat>
+                            </apex:outputPanel>
+                        </apex:column>
+                    </apex:pageBlockTable>
+
+                    <apex:commandButton value="Add/Update Process" action="{!addProcess}" rendered="{!IF(selectedProcess != 'None', true, false)}" rerender="selectedProcessesTbl, errorSection" />
+                </apex:actionRegion>
+                <apex:outputText value="{!IF(ISBLANK(mpwtm.Geometry__c), 'Please select a Geometry.', IF(selectedProcess == 'None', 'Please select a Process.', ''))}" rendered="{!IF(OR(ISBLANK(mpwtm.Geometry__c), selectedProcess == 'None'), true, false)}" style="font-style: italic;" />
+            </apex:pageblockSection>
+            
+            <apex:pageblockSection id="selectedProcessesTbl" title="Selected Processes" collapsible="false" columns="1" rendered="{!IF(NOT(isPortalUser), true, false)}">
+                <apex:pageblockTable value="{!SelectedProcessTechModules}" var="s" rendered="{!IF(SelectedProcessTechModules.size > 0, true, false)}">
+                    <apex:column rendered="{!IF(OR(tranx == 'Add', tranx == 'Edit', tranx == 'Clone'), true, false)}" style="width: 8%; vertical-align: text-top;">
+                        <apex:facet name="header">Action</apex:facet>
+                        <apex:actionRegion >
+                            <apex:outputPanel layout="inline">
+                                <apex:commandLink styleClass="link1" action="{!editSelectedProcessModule}" value="Edit" rerender="availableProcessesSection" oncomplete="refreshTechModuleChecboxes();">
+                                    <apex:param name="processId" value="{!s.processId}"/>
+                                    <apex:param name="processName" value="{!s.processName}"/>
+                                </apex:commandLink>
+                                 &nbsp;|&nbsp;
+                                <apex:commandLink styleClass="link1" action="{!removeSelectedProcessModule}" value="Remove" rerender="availableProcessesSection, selectedProcessesTbl, errorSection" oncomplete="refreshTechModuleChecboxes();">
+                                    <apex:param name="processId" value="{!s.processId}"/>
+                                    <apex:param name="processName" value="{!s.processName}"/>
+                                </apex:commandLink>  
+                            </apex:outputPanel>
+                        </apex:actionRegion>
+                    </apex:column>
+                    <apex:column value="{!s.processName}" style="width: 22%; vertical-align: text-top;">
+                        <apex:facet name="header">Process</apex:facet>
+                    </apex:column>
+                    <apex:column style="width: 70%;">
+                        <apex:facet name="header">Module</apex:facet>
+                        <apex:pageBlockTable value="{!s.mapTMW}" var="tmw" rendered="{!IF(s.mapSize > 0, true, false)}">
+                            <apex:column value="{!s.mapTMW[tmw].moduleName} | {!s.mapTMW[tmw].moduleDescription}" style="width: 40%;">
+                                <apex:facet name="header">Module</apex:facet>
+                            </apex:column>
+                            <apex:column value="{!s.mapTMW[tmw].question}" style="width: 30%;">
+                                <apex:facet name="header">Question</apex:facet>
+                            </apex:column>
+                            <apex:column value="{!s.mapTMW[tmw].selectedAnswers}" style="width: 30%;">
+                                <apex:facet name="header">Answers</apex:facet>
+                            </apex:column>
+                        </apex:pageBlockTable>
+                        <apex:outputText value="No Modules selected." rendered="{!IF(s.mapSize == 0, true, false)}" style="font-style: italic;" />
+                    </apex:column>
+                </apex:pageblockTable>
+                <apex:outputText value="Please add a Process." rendered="{!IF(SelectedProcessTechModules.size == 0, true, false)}" style="font-style: italic;" />
+            </apex:pageblockSection>
+            
+            <br />
+            <apex:outputPanel id="associateAccountsPanel">
+                <apex:pageblockSection id="searchAccountsSection" title="Search Accounts" collapsible="false" columns="1" rendered="{!IF(OR(tranx == 'Add', tranx == 'Edit', tranx == 'Clone'), true, false)}">
+                    <apex:actionRegion >
+                        <apex:outputPanel layout="inline">
+                            <apex:outputLabel value="Account" styleClass="labelCol" />                  
+                                <apex:inputText value="{!searchAccountsKey}" onkeypress="return checkEnter(event);" />
+                            <apex:commandButton id="searchAccountsBtn" value="Search" action="{!searchAccounts}" rerender="searchAccountsSection, errorSection" oncomplete="uncheckSelectAllAccountsCheckbox();" />
+                        </apex:outputPanel>
+                        
+                        <br /><br />               
+                        <apex:pageBlockTable id="accountsTbl" value="{!listSearchAccounts}" var="a" rendered="{!IF(listSearchAccounts.size > 0, true, false)}">
+                            <apex:column >
+                                <apex:facet name="header">
+                                    <apex:inputCheckbox id="selectAllAccountsCb" onclick="checkAccountsCheckboxes(this);" />
+                                </apex:facet>
+                                <apex:inputCheckbox id="accountsCb" value="{!a.isSelected}" onclick="checkAccountsCheckboxes(this);" />
+                            </apex:column>
+                            <apex:column value="{!a.accountName}">
+                                <apex:facet name="header">{!$ObjectType.Account.fields.Name.label}</apex:facet>
+                            </apex:column>
+                            <apex:column value="{!a.accountShortName}">
+                                <apex:facet name="header">{!$ObjectType.Account.fields.Short_Name__c.label}</apex:facet>
+                            </apex:column>
+                            <apex:column value="{!a.accountType}">
+                                <apex:facet name="header">{!$ObjectType.Account.fields.Record_Type_Name__c.label}</apex:facet>
+                            </apex:column>
+                            <apex:column value="{!a.accountSubType}">
+                                <apex:facet name="header">{!$ObjectType.Account.fields.Sub_Type__c.label}</apex:facet>
+                            </apex:column>
+                            <apex:column value="{!a.accountRegion}">
+                                <apex:facet name="header">{!$ObjectType.Account.fields.Region__c.label}</apex:facet>
+                            </apex:column>
+                            <apex:column value="{!a.accountTerritory}">
+                                <apex:facet name="header">{!$ObjectType.Account.fields.Financial_Territory__c.label}</apex:facet>
+                            </apex:column>
+                            <apex:column value="{!a.accountOwner}">
+                                <apex:facet name="header">Owner</apex:facet>
+                            </apex:column>
+                        </apex:pageBlockTable>
+                        <apex:outputText value="No Accounts found." rendered="{!IF(listSearchAccounts.size == 0, true, false)}" style="font-style: italic;" />
+                        
+                        <apex:commandButton value="Add Account" action="{!associateSelectedAccounts}" rendered="{!IF(listSearchAccounts.size > 0, true, false)}" rerender="searchAccountsSection, associatedAccountsSection, errorSection" />
+                    </apex:actionRegion>
+                </apex:pageblockSection>
+                
+                <apex:pageblockSection id="associatedAccountsSection" title="Associated Accounts" collapsible="false" columns="1" rendered="{!RenderAssociatedAccounts}">
+                    <apex:pageBlockTable value="{!mapAssociatedAccounts}" var="a" rendered="{!IF(associatedAccountsMapSize > 0, true, false)}">
+                        <apex:column rendered="{!IF(OR(tranx == 'Add', tranx == 'Edit', tranx == 'Clone'), true, false)}">
+                            <apex:facet name="header">Action</apex:facet>
+                            <apex:actionRegion >
+                                <apex:commandLink styleClass="link1" action="{!removeSelectedAccount}" value="Remove" rerender="associatedAccountsSection, errorSection">
+                                    <apex:param name="accountId" value="{!mapAssociatedAccounts[a].accountId}"/>
+                                </apex:commandLink>  
+                            </apex:actionRegion>
+                        </apex:column>
+                        <apex:column value="{!mapAssociatedAccounts[a].accountName}">
+                            <apex:facet name="header">{!$ObjectType.Account.fields.Name.label}</apex:facet>
+                        </apex:column>
+                        <apex:column value="{!mapAssociatedAccounts[a].accountShortName}">
+                            <apex:facet name="header">{!$ObjectType.Account.fields.Short_Name__c.label}</apex:facet>
+                        </apex:column>
+                        <apex:column value="{!mapAssociatedAccounts[a].accountType}">
+                             <apex:facet name="header">{!$ObjectType.Account.fields.Record_Type_Name__c.label}</apex:facet>
+                        </apex:column>
+                        <apex:column value="{!mapAssociatedAccounts[a].accountSubType}">
+                            <apex:facet name="header">{!$ObjectType.Account.fields.Sub_Type__c.label}</apex:facet>
+                        </apex:column>
+                        <apex:column value="{!mapAssociatedAccounts[a].accountRegion}">
+                            <apex:facet name="header">{!$ObjectType.Account.fields.Region__c.label}</apex:facet>
+                        </apex:column>
+                        <apex:column value="{!mapAssociatedAccounts[a].accountTerritory}">
+                            <apex:facet name="header">{!$ObjectType.Account.fields.Financial_Territory__c.label}</apex:facet>
+                        </apex:column>
+                        <apex:column value="{!mapAssociatedAccounts[a].accountOwner}">
+                            <apex:facet name="header">Owner</apex:facet>
+                        </apex:column>
+                    </apex:pageBlockTable>
+                    <apex:outputText value="No Associated Accounts found." rendered="{!IF(associatedAccountsMapSize == 0, true, false)}" style="font-style: italic;" />
+                </apex:pageblockSection>
+                
+                <apex:pageBlockSection id="associatedReservationFormSection" title="Associated Reservation Forms" collapsible="false" columns="1" rendered="{!IF(AND(NOT(isPortalUser), tranx == 'View'), true, false)}">
+                    <apex:pageBlockTable value="{!listMPWR}" var="mpwr" rendered="{!IF(associatedReservationFormSize > 0,true,false)}">
+                        <apex:column >
+                            <apex:facet name="header">MPW Reservation Form</apex:facet>
+                            <apex:commandLink value="{!mpwr.Name}" action="/apex/MPWReservationFormVF?Id={!mpwr.Id}&intpoint=mpwtrain&mode=View"/>
+                        </apex:column>
+                        <apex:column value="{!mpwr.Category__c}" />
+                        <apex:column value="{!mpwr.Form_Status__c}" />
+                        <apex:column value="{!mpwr.Device__c}" />
+                        <apex:column value="{!mpwr.No_of_Prime_Dies__c}">
+                            <apex:facet name="header">No. of Prime Dies</apex:facet>
+                        </apex:column>
+                        <apex:column value="{!mpwr.OwnerId}" />
+                    </apex:pageBlockTable>
+                    <apex:outputText value="No Reservation Forms found." rendered="{!IF(associatedReservationFormSize == 0,true,false)}" style="font-style: italic;" />
+                </apex:pageBlockSection>
+                
+            </apex:outputPanel>
+        </apex:pageBlock>
+        <apex:actionFunction name="searchAccounts1" action="{!searchAccounts}" rerender="searchAccountsSection, errorSection" oncomplete="uncheckSelectAllAccountsCheckbox();" />
+    </apex:form>
+    
+    <apex:relatedList id="noteslist" list="CombinedAttachments" subject="{!$CurrentPage.parameters.id}" />
+</apex:page>

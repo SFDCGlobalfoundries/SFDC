@@ -1,0 +1,81 @@
+<!-----------------------------------------------------------------------------------------------------------------------------------
+Page:          CPQMetadataStatus
+-------------------------------------------------------------------------------------------------------------------------------------
+Author:        Prosenjit Saha
+Created Date:  05/08/2015
+Reason:        Displays Metadata Status for the MLG plus. 
+------------------------------------------------------------------------------------------------------------------------------------->
+<apex:page standardController="CPQ_MLGPLUS__c"
+           extensions="CPQMetadataStatusController"
+           sidebar="false"
+           showHeader="false"
+           docType="html-5.0"
+           applyHtmlTag="false"
+           id="pg">
+    <apex:stylesheet value="{!URLFOR($Resource.Configurator, 'Configurator/cssfiles/Configurator.css')}" />
+    <apex:pagemessage severity="info" 
+                      title="No MLG Plus has been processed to show Metadata Status"
+                      detail="Please process CPQ MLG PLUS." 
+                      rendered="{!ShowMessage}"/>
+    <apex:pagemessage severity="info" 
+                      title="Please refresh the page for updated status"
+                      detail="Please refresh the page" 
+                      rendered="{!ButtonClicked }"/>
+    <apex:form id="frm" rendered="{!ShowMessage==false && ButtonClicked ==false}">
+        <apex:outputPanel rendered="{!StatusRow != NULL}">
+            <apex:actionFunction id="MetadataLoad" action="{!metadataLoad}" name="MetadataLoad" reRender="pg" status="saveTrip" />
+            <apex:outputPanel rendered="{!ButtonDisplay}">
+                <div style='display: block; text-align:center !important;' >
+                    <input type="button" name="ProcessMetadata" value="Process Metadata" id="submit" onclick="MetadataLoad()" /> 
+                </div>
+            </apex:outputPanel>
+            <apex:actionStatus id="saveTrip" stopText="">
+                <apex:facet name="start">
+                    <div>
+                        <div class="popupBackground" />
+                        <div class="PopupPanel">
+                            <table border="0" width="100%" height="100%">
+                                <tr>
+                                    <td align="center"><b>Loading... Please Wait...</b></td>
+                                </tr>
+                                <tr>
+                                    <td align="center"><img src="{!URLFOR($Resource.ChecklistResouces, 'ChecklistResouces/Processing.gif')}"/></td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                </apex:facet>
+            </apex:actionStatus>
+            <apex:pageBlock mode="maindetail" 
+                            id="DisplayStatus"
+                            rendered="{!StatusRow != null}">
+                             
+                <apex:actionRegion >
+                    <div style='display: block; overflow-y:auto;height: 190px;width: 99%;' id="tableSection">
+                        <div class='datagrid'>
+                            <table>
+                                <thead>
+                                   <tr>
+                                       <apex:repeat value="{!ColumnList}" 
+                                                    var="f">
+                                           <th rowspan="2" >{!f}</th> 
+                                       </apex:repeat>
+                                   </tr>                             
+                                </thead>
+                                <tr class="dataRow">
+                                    <apex:repeat value="{!ColumnList}" 
+                                                 var="f">
+                                        <th class="dataCell">
+                                            
+                                            <apex:outputText value="{!StatusRow [f]}"/>
+                                        </th>
+                                    </apex:repeat>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                </apex:actionRegion>
+            </apex:pageblock>
+        </apex:outputPanel>
+    </apex:form>
+</apex:page>

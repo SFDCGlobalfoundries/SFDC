@@ -1,0 +1,212 @@
+<!--
+@ Author :- Kunal Patil
+@ Company :- CTS
+@ Description :- Page help to provision Specification selected Accounts(support account level provisioning)
+@ Change History :- 
+@ Author   :- Sandesh Kumar Singh
+@ Company  :- IBM
+@ Description :-Added "Back-end" section
+@ Author   :- Dinesh Suggala
+@ Company:    Global Foundries
+@ Description :-Introduced new outputpanel style in "Search Accounts" page.
+  -->
+<apex:page standardController="Design_Spec__c" extensions="FV_SpecProvisioningHandler">
+
+<!---------------------------------------------------     JS File   ------------------------------------------------------------------>
+        <apex:stylesheet value="{!URLFOR($Resource.GF_DQ_JQueryLatest, '/jquery-ui-1.10.3/themes/base/jquery-ui.css')}"/>
+        <apex:includeScript value="{!URLFOR($Resource.GF_DQ_jQueryLib, '/js/jquery-1.9.0.min.js')}"/>
+        <apex:includeScript value="{!URLFOR($Resource.GF_DQ_JQueryLatest, '/jquery-ui-1.10.3/ui/jquery-ui.js')}"/>
+        <apex:includeScript value="{!URLFOR($Resource.GF_DQ_jQueryLib, '/jquery.blockUI.js')}"/>
+    <!------------------------------------------------------------------------------------------------------------------------------------>
+    
+    <style>
+          .headerRow .TableTitle {
+            background-color: #F0F8FF !important;
+            background-image: none !important; 
+            color: #CC0000 !important; 
+            font-size:100% !important; 
+          }
+     </style>
+     
+<script type="text/javascript"> 
+       function checkAll(cb){
+            var inputElem = document.getElementsByTagName('input');                     
+            for(var i=0; i<inputElem.length; i++){   
+                if(inputElem[i].id.indexOf("checkboxSelectAccount")!=-1){                    
+                        inputElem[i].checked = cb.checked;                            
+                }
+            }
+        }
+                  
+     function checkContacts(cb,accid){
+        var inputElem = document.getElementsByTagName('input');                            
+        for(var i=0; i<inputElem.length; i++){ 
+            if(inputElem[i].parentNode.getAttribute('rowid')==accid)                                                 
+                inputElem[i].checked = cb.checked;               
+            }
+    }
+    function provisionSpec(){
+            $('<div></div>').appendTo('body')
+                 .html('<div><h6>Do you want to proceed with Spec provisioning?</h6></div>')
+                 .dialog({
+                         modal: true, 
+                         title: 'message', 
+                         zIndex: 10000, 
+                         autoOpen: true,
+                         width: 'auto', 
+                         resizable: false,
+                         buttons: {
+                             Yes: function () {
+                                $.blockUI({ css: { backgroundColor: '##0174DF', color: '#FAFAFA'} });
+                            
+                                doProvisioning();
+                               
+                                $(this).dialog("close");
+                             },
+                             No: function () {
+                                 $(this).dialog("close");
+                             }
+                         },
+                         close: function (event, ui) {
+                             $(this).remove();
+                         }
+              });
+        }
+      
+      //function to unblock the page  
+      function unblockPage(){  
+         $.unblockUI();  
+      }
+</script>
+  
+<apex:form id="theForm">
+        <apex:actionFunction action="{!doProvision}" name="doProvisioning" reRender="messageblock" oncomplete="unblockPage()"/>
+        <apex:outputPanel id="messageblock">
+            <apex:pageMessages escape="false"/>
+        </apex:outputPanel>
+        <apex:pageBlock mode="detail" title="Specification Provisioning">
+            
+            <!--<apex:pagemessages id="msg" />--> 
+            <apex:pageBlockButtons location="both" rendered="{!editpanel}">
+                <input type="button" value="Provision to Account"  class="btn" onclick="return provisionSpec();"/><!-- onclick="return provisionPDK();" -->
+                <apex:commandButton action="{!cancel}" value="Back"/>
+           </apex:pageBlockButtons>
+            
+            <!--apex:pageblockSection title="Specification Information" columns="2" rendered="{!((isValidProfile)&&(isValidReleaseStatusForProvisioning)&& (editpanel)&& (isValidTechGeometry)&&(isValidSpecificationType))}"--><!--commneted for case 34664--> 
+
+            <apex:pageblockSection title="Specification Information" columns="2" rendered="{!((isValidProfile)&&(isValidReleaseStatusForProvisioning)&& (editpanel)&& (isValidTechGeometry)&&(isValidSpecificationType))}"><!--added for case 34664--> 
+
+                <apex:repeat value="{!$ObjectType.Design_Spec__c.FieldSets.Provisioning_Fields}" var="f">
+                    <apex:outputField value="{!objDesignSpec[f]}"/>                     
+                </apex:repeat>
+            </apex:pageblockSection>
+			
+			 <!------------Back-end logic to select region for selected account and dp record ------------------->
+           <apex:pageBlockSection title="Back-end" columns="2" collapsible="true"  id="pageBlkId" rendered="{!(objDesignSpec.Specification_Type__c <> null && objDesignSpec.Specification_Type__c=='IP Design Kit' 
+                                                                                                             && (isValidProfile)&&(isValidReleaseStatusForProvisioning)
+                                                                                                             && (isValidTechGeometry)&&(isValidSpecificationType))}">
+                <apex:pageBlockSectionItem >
+                <apex:outputPanel layout="block">  
+                    <apex:outputText value="Request for back end kit" />
+                    <a href=""><img src="/img/func_icons/util/help16.png"  title="{!backEndKitHelpText}" onmouseover="this.src='/img/msg_icons/info16.png'" onmouseout="this.src='/img/func_icons/util/help16.png'" /></a>                             
+                    </apex:outputPanel>
+                    <apex:actionRegion >
+                   <!--<apex:inputfield label="Request for back end kit" value="{!documetProv.Is_BE_Required__c}" id="backit" required="true" style="width: 25!important;">-->
+                  
+                    <div class="requiredInput">
+                      <div class="requiredBlock"></div>
+                       <apex:selectList label="Request for back end kit" value="{!isbackendkit}" multiselect="false"  size="1"  required="true">
+                                        
+                         <apex:selectOptions value="{!isbackendlist}"/>
+                         <apex:actionSupport event="onchange" action="{!hideRegionJustification}" reRender="pageBlkId" status="status"/>                     
+                       </apex:selectList>
+                      </div>
+
+                    
+                        <apex:actionstatus id="status">
+                            <apex:facet name="start">
+                                <div class="waitingSearchDiv" id="el_loading" style="background-color: #fbfbfb;
+                                       height: 100%;opacity:0.65;width:100%;"> 
+                                    <div class="waitingHolder" style="top: 74.2px; width: 91px;">
+                                        <img class="waitingImage" src="/img/loading.gif" title="Please Wait..." />
+                                        <span class="waitingDescription">Please Wait...</span>
+                                    </div>
+                                </div>
+                            </apex:facet>
+                        </apex:actionstatus>
+                    <!--</apex:inputField>-->
+                    </apex:actionRegion>
+                </apex:pageBlockSectionItem>
+                
+                 <apex:pageBlockSectionItem >
+                    <apex:outputPanel style="padding-right:2%;" rendered="{!isDisplay}">
+                        <apex:outputText value="Justification" />&nbsp;&nbsp;
+                    </apex:outputPanel>
+                    <apex:inputTextarea value="{!justification}" id="just" rendered="{!isDisplay}" rows="3" cols="60" style="width: 50!important;"/> 
+                </apex:pageBlockSectionItem>
+                
+                <apex:pageBlockSectionItem >
+                    <apex:outputPanel rendered="{!isDisplay}">
+                        <apex:outputlabel value="Region" />
+                        <a href=""><img src="/img/func_icons/util/help16.png"  title="{!regionHelpText}" onmouseover="this.src='/img/msg_icons/info16.png'" onmouseout="this.src='/img/func_icons/util/help16.png'" /></a>                             
+                     </apex:outputPanel>
+                    <apex:selectList label="Region" value="{!region}" multiselect="false"  size="1" rendered="{!isDisplay}"  >
+                        <apex:selectOptions value="{!allRegion}"/>
+                    </apex:selectList>
+                </apex:pageBlockSectionItem>
+            </apex:pageBlockSection>
+             
+             <apex:pageBlockSection title="Search Accounts" columns="1" collapsible="true" rendered="{!((isValidProfile)&&(isValidReleaseStatusForProvisioning)&&(editpanel)&& (isValidTechGeometry)&&(isValidSpecificationType)&&(showAddAccounts))}">
+                        
+                       <!-- <apex:outputPanel style="padding-left:30%;padding-top:10%;padding-bottom:10%;">-->
+					    <apex:outputPanel layout="block" style="text-align: center;">
+                            <a href=""><img src="/img/func_icons/util/help16.png"  title="{!$Label.FV2_Help_Text_Accoun_Search}" onmouseover="this.src='/img/msg_icons/info16.png'" onmouseout="this.src='/img/func_icons/util/help16.png'" /></a>                               
+                            <apex:inputText value="{!searchString}" styleClass="ui-corner-all"/> &nbsp;&nbsp;&nbsp;                                       
+                            <apex:commandButton value="Search" action="{!searchAccount}"  status="searchStatus"/>&nbsp;&nbsp;<!-- reRender="searchresultpanel,msg" -->
+                            
+                            <apex:actionStatus id="searchStatus">
+                                <apex:facet name="start" >
+                                    <apex:image url="/img/loading32.gif" height="20px"/>                       
+                                </apex:facet>
+                            </apex:actionStatus>
+                            </apex:outputPanel>
+                       <!-- </apex:outputPanel>   --> 
+                    </apex:pageBlockSection>
+                     <!-- Below Block will help to show list of Accounts -->
+               <apex:pageBlockSection title="Provision To Accounts" columns="1" collapsible="no" > 
+                   <apex:pageBlockTable id="tableid" var="Acc" value="{!searchResult}"
+                                        rendered="{!renderSearchResults}" title="Account Details">
+                        <apex:column id="columnid">
+                            <apex:facet Name="header">
+                                <apex:inputcheckbox id="headerid" onchange="checkAll(this);" />
+                            </apex:facet>
+                            <!--apex:inputcheckbox value="{!Acc.selected}" rendered="{!IF(Acc.selected=false,True,False)}">-->
+                            <apex:outputPanel rendered="{!IF(((Acc.acct.ASIC_Business_Flag__c=true && objDesignSpec.Specification_ASIC_Flag__c = true)|| (objDesignSpec.Specification_ASIC_Flag__c = false)),true,false)}">                            
+                            <apex:inputcheckbox id="checkboxSelectAccount" value="{!Acc.selected}" rendered="{!IF(Acc.isAlreadyProvisioned=false,True,False)}">
+                            </apex:inputcheckbox>
+                            </apex:outputPanel>  
+                        </apex:column>
+                         <apex:column headerValue="Short Name" value="{!Acc.acct.Short_Name__c}" />
+                        <apex:column headerValue="Account Name" value="{!Acc.acct.Name}" />
+                        <apex:column headerValue="Site/Department"
+                            value="{!Acc.acct.Site_Department__c}" />
+                        <apex:column headerValue="Stage" value="{!Acc.acct.Stage__c}" />
+                        <apex:column headerValue="Parent Account Name" value="{!Acc.acct.Parent_Account_Name__c}" />
+                        <apex:column headerValue="Parent Account Short Name" value="{!Acc.acct.Parent_Account_Short_Name__c}" />
+                        
+                         <apex:column headerValue="Provisioned" width="10%">
+                             <apex:outputText value="{!If(Acc.selected=false,'NO','YES')}" style="{!If(Acc.selected=false,'Color:Red','Color:Green')}"/> 
+                         </apex:column>
+                         <apex:column headerValue="ASIC Business" value="{!Acc.acct.ASIC_Business_Flag__c}" />                          
+                         <!-- <apex:column headerValue="ASIC Business" width="10%">                             
+                              <apex:inputcheckbox value="{!Acc.acct.ASIC_Business_Flag__c}" disabled="true"/>
+                         </apex:column>
+                         -->
+                         
+                    </apex:pageBlockTable>
+                </apex:pageBlockSection>
+      </apex:pageBlock>
+      
+ </apex:form>
+    
+</apex:page>

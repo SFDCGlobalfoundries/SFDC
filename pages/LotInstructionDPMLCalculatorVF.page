@@ -1,0 +1,86 @@
+<!--
+    Author: Zymark Ambat
+    Description: This page is used for calculating DPML.
+    History: 
+        ZAmbat      10312014    - Page creation.
+-->
+
+<apex:page id="LotInstructionDPMLCalculatorVF" controller="LotInstructionDPMLCalculatorController" showHeader="false" sidebar="false">
+    <script>
+        function checkValues(field) {
+            var submissionDate = document.getElementById("{!$Component.form1.block1.section1.item1.submissionDate}").value;
+            var leadTimeAdder = document.getElementById("{!$Component.form1.block1.section1.item2.leadTimeAdder}").value;
+            var remainingMaskCount = document.getElementById("{!$Component.form1.block1.section1.item3.remainingMaskCount}").value;
+            var shipDate = document.getElementById("{!$Component.form1.block1.section1.item4.shipDate}").value;
+            var dpml = document.getElementById("{!$Component.form1.block1.section1.item5.dpml}").value;
+            
+            if (submissionDate.trim() == "") {
+                alert("Please enter the Submission Date.");
+                return false;
+            } else if (leadTimeAdder.trim() == "") {
+                alert("Please enter the Lead Time Adder.");
+                return false;
+            } else if (remainingMaskCount.trim() == "") {
+                alert("Please enter the Remaining Mask Count.");
+                return false;
+            } 
+            
+            if (field == "dpml") {
+                if (shipDate.trim() == "") {
+                    alert("Please enter the Ship Date.");
+                    return false;
+                } else {
+                    calculateDPML();
+                    return true;
+                }
+            } else if (field == "shipDate") {
+                if (dpml.trim() == "") {
+                    alert("Please enter the DPML.");
+                    return false;
+                } else {
+                    calculateShipDate();
+                    return true;
+                }
+            }
+        }
+    </script>
+    
+    <apex:form id="form1">
+        <apex:pageBlock id="block1" title="DPML Calculator" mode="detail">
+            <apex:pageBlockButtons >
+                <apex:commandButton value="Calculate DPML" onclick="return checkValues('dpml');" rerender="dpml" />
+                <apex:commandButton value="Calculate Ship Date" onclick="return checkValues('shipDate');" rerender="shipDate" />
+                <apex:commandButton value="Clear" immediate="true" action="{!clear}" rerender="submissionDate, leadTimeAdder, remainingMaskCount, shipDate, dpml" />
+            </apex:pageBlockButtons>
+            
+            <apex:pageBlockSection id="section1" columns="1" title="Calculate DPML" collapsible="false">
+                <apex:pageBlockSectionItem id="item1">
+                    <apex:outputLabel value="Begin Date" for="submissionDate" />
+                    <apex:inputField id="submissionDate" value="{!lotInstruction.Submitted_Customer_Request_Date_CRD__c}" />
+                </apex:pageBlockSectionItem>
+                
+                <apex:pageBlockSectionItem id="item2">
+                    <apex:outputLabel value="Lead Time Adder (Days)" for="leadTimeAdder" />
+                    <apex:inputField id="leadTimeAdder" value="{!lotInstruction.Lead_Time_Adder_Days__c}" />
+                </apex:pageBlockSectionItem>
+                
+                <apex:pageBlockSectionItem id="item3">
+                    <apex:outputLabel value="Remaining Mask Count" for="remainingMaskCount" />
+                    <apex:inputField id="remainingMaskCount" value="{!lotInstruction.Remaining_Mask_Count_at_New_CRD_Submiss__c}" />
+                </apex:pageBlockSectionItem>
+                
+                <apex:pageBlockSectionItem id="item4">
+                    <apex:outputLabel value="Ship Date" for="shipDate" />
+                    <apex:inputField id="shipDate" value="{!lotInstruction.New_CRD_Submitted_Date__c}" />
+                </apex:pageBlockSectionItem>
+                
+                <apex:pageBlockSectionItem id="item5">
+                    <apex:outputLabel value="DPML" for="dpml" />
+                    <apex:inputText id="dpml" value="{!dpmlValue}" />
+                </apex:pageBlockSectionItem>
+            </apex:pageBlockSection>
+        </apex:pageBlock>
+        <apex:actionFunction name="calculateDPML" action="{!calculateDPML}" />
+        <apex:actionFunction name="calculateShipDate" action="{!calculateShipDate}" />
+    </apex:form>
+</apex:page>

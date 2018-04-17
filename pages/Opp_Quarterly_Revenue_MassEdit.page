@@ -1,0 +1,547 @@
+<apex:page standardController="Quarterly_Revenue_Object__c" recordSetVar="unused" sidebar="false" extensions="OppQuarterlyRevenueMassEditController">
+<script src="https://code.jquery.com/jquery-1.12.4.js"></script>
+<style type="text/css">
+#innerTable {border-spacing:0px;border-collapse:collapse;text-align:center;}
+#innerTable tr td{border:1px solid #e0e3e5;text-align:center;}
+#headerTable {border-spacing:0px;border-collapse:collapse;}
+#headerTable tr td{border:1px solid #e0e3e5;text-align:center;}
+#qtrDiv {overflow:auto;position:relative;width:1200px;height:300px;text-align:left;display:block;}
+.outerTable {text-align:center;border-spacing: 0px;background-color:#FFFFFF;border:1px solid #e0e3e5;vertical-align:middle;align:left;border-collapse:collapse;}
+.outerTr{color: #000;font-size: .9em;font-weight: bold;}
+.outerTd{vertical-align:middle;text-align:center;}
+.firstTable{background-color:#ececec;background-repeat: repeat-x;border-spacing: -10px;border-color: #ececec;border:1px solid #e0e3e5;border-collapse:collapse;}
+
+.imgclass:hover {  
+background-image: url(/img/help/helpOrbs.gif);  
+background-repeat: no-repeat;  
+width: 16px;  
+height: 15px;     
+background-position: right; 
+}
+.imgclass {  
+background-image: url(/img/help/helpOrbs.gif);  
+background-repeat: no-repeat; 
+width: 16px;  
+height: 15px;  
+}
+.helpTextStyle {
+text-decoration: none;
+position: absolute;
+width: 15em;
+z-index: 12;
+background-color: #fefdb9;
+padding: 2px 5px;
+border: 1px solid orange;
+text-align: left;
+white-space: normal;
+font-weight: normal;
+color: #000;
+}
+</style>
+<apex:includeScript value="{!$Resource.UtilJS}" />
+<apex:form >
+<!--  Edit MODE start     -->
+<apex:pageBlock rendered="{!EditMode}"  >
+<apex:pageMessages />
+<apex:pageBlock >
+<apex:outputText style="font-weight:bold;color:red;" value="No Quarterly Revenue records were selected for Mass Edit, please go back and select 1 or more records." rendered="{!noRecordsSelected}" /> 
+<apex:outputText style="font-weight:bold;" value="Note: All modifications made on the page will be lost if Return button is clicked without clicking the Save button first." rendered="{!IF(((canEdit == true)&&(noRecordsSelected == false)), true, false)}" /> 
+<apex:outputText style="font-weight:bold;color:red;" value="Please contact the AM or CSR to grant you read/write permission for this Opportunity ({0}) or the entire Account ({1}). " rendered="{!IF(((canEdit == false)&&(noRecordsSelected == false)), true, false)}" > 
+<apex:param value="{!opportunityName}"/>
+<apex:param value="{!accountName}"/> 
+</apex:outputText>
+</apex:pageBlock>
+<apex:pageBlockButtons >
+<apex:commandButton value="Save" action="{!save}" rendered="{!IF(((canEdit == true)&&(noRecordsSelected == false)), true, false)}" />
+<apex:commandButton value="Return" action="{!cancel}"/>
+</apex:pageBlockButtons>
+
+
+<div id="qtrDiv">
+<table class="outerTable" id="table" cellspacing="0" cellpadding="0">
+<tr class="outerTr">
+
+<td class="outerTd" style="width:200px">
+<table id="innerTable" cellspacing="0" cellpadding="0" style="width:200px">
+<tr>                                                         
+<td style="height:20px;border-top-style:none;width:200px;border-right-style:none;border-left-style:none;">
+<apex:outputText value="" />
+</td>
+</tr>
+<tr>
+<td style="height:23px;width:200px;border-right-style:none;border-left-style:none;">
+<apex:outputText value="ASP (Wafer)" />
+<apex:image value="/s.gif" id="imgASP" styleClass="imgclass" onmouseover="showHelpText(this, 'divASPHelptext');" onmouseout="hideHelpText('divASPHelptext');" />
+</td>
+</tr>
+<tr>                                                         
+<td style="height:23px;width:200px;border-right-style:none;border-left-style:none;">
+<apex:outputText value="Volume (Wafer)" />
+<apex:image value="/s.gif" id="imgVLM" styleClass="imgclass" onmouseover="showHelpText(this, 'divVolumeHelptext');" onmouseout="hideHelpText('divVolumeHelptext');" />
+</td>
+</tr>
+<apex:outputPanel rendered="{!IF(selected[0].Opportunity__r.Deliverable_Type__c== 'Module'|| selected[0].Opportunity__r.Deliverable_Type__c=='Chip', true, false)}"> 
+<tr>                                                         
+<td style="height:22px;width:200px;border-right-style:none;border-left-style:none;">
+<apex:outputText value="ASP (Module/Chip)" />
+<apex:image value="/s.gif" id="imgVLM1" styleClass="imgclass" onmouseover="showHelpText(this, 'divVolumeHelptext');" onmouseout="hideHelpText('divVolumeHelptext');" />
+</td>
+</tr>
+</apex:outputPanel>
+<apex:outputPanel rendered="{!IF(selected[0].Opportunity__r.Deliverable_Type__c== 'Module'|| selected[0].Opportunity__r.Deliverable_Type__c=='Chip', true, false)}"> 
+<tr>                                                         
+<td style="height:22px;width:200px;border-right-style:none;border-left-style:none;">
+<apex:outputText value="Volume (Module/Chip)" />
+<apex:image value="/s.gif" id="imgVLM21" styleClass="imgclass" onmouseover="showHelpText(this, 'divVolumeHelptext');" onmouseout="hideHelpText('divVolumeHelptext');" />
+</td>
+</tr>
+</apex:outputPanel>
+<tr>
+<td style="height:22px;width:200px;border-right-style:none;border-left-style:none;">
+<apex:outputText value="Deliverable Type" />
+
+</td>
+</tr> 
+<tr>
+<td style="height:23px;width:200px;border-right-style:none;border-left-style:none;">
+<apex:outputText value="Net Parts Per Wafer" />
+
+</td>
+</tr> 
+<!--
+<tr>                                                         
+<td style="height:22px;width:200px;border-right-style:none;border-left-style:none;">
+<apex:outputText value="Revenue__c" />
+</td>
+</tr>
+-->
+<tr>
+<td style="height:23px;border-bottom-style:none;width:200px;border-right-style:none;border-left-style:none;">
+<apex:outputText value="Count as Design Win Revenue" />
+<apex:image value="/s.gif" id="imgCDWR1" styleClass="imgclass" onmouseover="showHelpText(this, 'divCDWRHelptext');" onmouseout="hideHelpText('divCDWRHelptext');" />
+</td>
+</tr>
+<apex:outputPanel rendered="{!IF(selected[0].Opportunity__r.Deliverable_Type__c== 'Module'||selected[0].Opportunity__r.Deliverable_Type__c=='Chip', true, false)}"> 
+<tr>
+<td style="height:23px;border-bottom-style:none;width:200px;border-right-style:none;border-left-style:none;">
+<apex:outputText value="Post Wafer ASP(Module/Chip)" />
+<apex:image value="/s.gif" id="imgCDWR" styleClass="imgclass" onmouseover="showHelpText(this, 'divCDWRHelptext');" onmouseout="hideHelpText('divCDWRHelptext');" />
+</td>
+</tr>
+</apex:outputPanel>
+<tr>
+<td style="height:23px;width:200px;border-right-style:none;border-left-style:none;">
+<apex:outputText value="RMT ASP" />
+<apex:image value="/s.gif" id="imgRMTASP" styleClass="imgclass" onmouseover="showHelpText(this, 'divRMTASPHelptext');" onmouseout="hideHelpText('divRMTASPHelptext');" />
+</td>
+</tr>                            
+<tr>
+<td style="height:23px;width:200px;border-right-style:none;border-left-style:none;">
+<apex:outputText value="RMT Volume" />
+<apex:image value="/s.gif" id="imgRMTVLM" styleClass="imgclass" onmouseover="showHelpText(this, 'divRMTVLMHelptext');" onmouseout="hideHelpText('divRMTVLMHelptext');" />
+</td>
+</tr>
+
+<tr>
+<td style="height:23px;width:200px;border-right-style:none;border-left-style:none;">
+<apex:outputText value="Turnkey ASP" />
+<apex:image value="/s.gif" id="imgTKASP" styleClass="imgclass" onmouseover="showHelpText(this, 'divTKASPHelptext');" onmouseout="hideHelpText('divTKASPHelptext');" />
+</td>
+</tr>                                                                    
+</table>
+</td>
+
+<apex:repeat id="table1" value="{!selected}" var="a">
+<td class="outerTd" style="text-align:center;">
+<table id="innerTable" cellspacing="0" cellpadding="0">
+<tr>
+<td style="text-align:center;height:18px;border-right-style:none;border-top-style:none;background-color:#ececec;background-repeat: repeat-x">
+<apex:outputText value="{!a.Fiscal_Quarter__c}"/>                                    
+</td>
+</tr>
+
+<tr>
+<td style="text-align:center;height:20px;">
+<apex:inputField value="{!a.ASP__c}" style="text-align:right;width:100px;" rendered="{!IF((a.Opportunity__r.Deliverable_Type__c == 'Wafer')||(a.Opportunity__r.Deliverable_Type__c == null), true, false)}" />
+<apex:outputField value="{!a.ASP__c}" style="text-align:right;width:100px;" rendered="{!IF(a.Opportunity__r.Deliverable_Type__c== 'Module'|| a.Opportunity__r.Deliverable_Type__c=='Chip', true, false)}" />
+
+</td>
+</tr>
+<tr>                                                         
+<td style="text-align:center;height:20px;">
+<apex:inputField value="{!a.Volume__c}" style="text-align:right;width:100px;"  rendered="{!IF((a.Opportunity__r.Deliverable_Type__c == 'Wafer')||(a.Opportunity__r.Deliverable_Type__c == null), true, false)}" />
+<apex:outputField value="{!a.Volume__c}" style="text-align:right;width:100px;" rendered="{!IF(a.Opportunity__r.Deliverable_Type__c== 'Module'|| a.Opportunity__r.Deliverable_Type__c=='Chip', true, false)}" />
+</td>
+</tr>
+
+
+<apex:outputPanel rendered="{!IF(a.Opportunity__r.Deliverable_Type__c== 'Module'|| a.Opportunity__r.Deliverable_Type__c=='Chip', true, false)}"> 
+<tr>                                                         
+<td style="text-align:center;height:20px;">
+<apex:inputField value="{!a.ASP_Module_Chip__c}" style="text-align:right;width:100px;"/>
+</td>
+</tr>
+</apex:outputPanel>
+<apex:outputPanel rendered="{!IF(a.Opportunity__r.Deliverable_Type__c== 'Module'|| a.Opportunity__r.Deliverable_Type__c=='Chip', true, false)}"> 
+<tr>                                                         
+<td style="text-align:center;height:20px;">
+<apex:inputField value="{!a.Volume_Module_Chip__c}" style="text-align:right;width:100px;"/>
+</td>
+</tr>
+</apex:outputPanel>
+<tr>
+<td style="text-align:center;height:20px;border-bottom-style:none;border-right-style:none;">
+<apex:outputField value="{!a.Opportunity__r.Deliverable_Type__c}" style="text-align:right;width:100px;" />
+</td>
+</tr> 
+<tr>                                                         
+<td style="text-align:center;height:20px;">
+<apex:inputField value="{!a.Opportunity__r.Net_Parts_Per_Wafer__c}" style="text-align:right;width:100px;"   rendered="{!IF(a.Net_Parts_Per_Wafer__c == null, true, false)}" />
+<apex:inputField value="{!a.Net_Parts_Per_Wafer__c}" style="text-align:right;width:100px;"   rendered="{!IF(a.Net_Parts_Per_Wafer__c != null, true, false)}" />
+
+</td>
+</tr>
+<!--
+<tr>
+<td style="text-align:center;height:18px;border-bottom-style:none;border-right-style:none;">
+<apex:inputField value="{!a.Revenue__c}" />
+</td>
+</tr>
+-->
+<tr>
+<td style="text-align:center;height:18px;border-bottom-style:none;border-right-style:none;">
+<apex:outputField value="{!a.Count__c}" />
+</td>
+</tr>
+<apex:outputPanel rendered="{!IF(a.Opportunity__r.Deliverable_Type__c== 'Module'|| a.Opportunity__r.Deliverable_Type__c=='Chip', true, false)}"> 
+<tr>                                                         
+<td style="text-align:center;height:20px;">
+<apex:inputField value="{!a.Post_Wafer_ASP_Module_ASP__c}" id="ps1" style="text-align:right;width:100px;"/>
+</td>
+</tr> 
+</apex:outputPanel>
+<tr>
+<td style="text-align:center;height:20px;border-bottom-style:none;border-right-style:none;">
+<apex:inputField value="{!a.RMT_ASP__c}" style="text-align:right;width:100px;" />
+
+
+</td>
+</tr>     
+
+<tr>
+<td style="text-align:center;height:20px;border-bottom-style:none;border-right-style:none;">
+<apex:inputField value="{!a.RMT_Volume__c}" style="text-align:right;width:100px;" />
+</td>
+</tr>
+
+<tr>
+<td style="text-align:center;height:20px;border-bottom-style:none;border-right-style:none;">
+<apex:inputField value="{!a.RMT_Volume__c}" style="text-align:right;width:100px;" />
+</td>
+</tr>     
+
+<tr>
+<td style="text-align:center;height:20px;border-bottom-style:none;border-right-style:none;">
+<apex:inputField value="{!a.Turnkey_ASP__c}" style="text-align:right;width:100px;" />
+</td>
+</tr>   
+
+</table>                                            
+</td>
+</apex:repeat>  
+</tr>
+</table>
+</div>
+</apex:pageBlock>
+<!-- Edit Mode End  -->
+
+<!-- Read mode Start -->
+
+<apex:pageBlock rendered="{!ReadMode}" >
+<apex:pageMessages />
+<apex:pageBlock >
+<apex:outputText style="font-weight:bold;color:red;" value="No Quarterly Revenue records were selected for Mass Edit, please go back and select 1 or more records." rendered="{!noRecordsSelected}" /> 
+<apex:outputText style="font-weight:bold;" value="Note: All modifications made on the page will be lost if Return button is clicked without clicking the Save button first." rendered="{!IF(((canEdit == true)&&(noRecordsSelected == false)), true, false)}" /> 
+<apex:outputText style="font-weight:bold;color:red;" value="Please contact the AM or CSR to grant you read/write permission for this Opportunity ({0}) or the entire Account ({1}). " rendered="{!IF(((canEdit == false)&&(noRecordsSelected == false)), true, false)}" > 
+<apex:param value="{!opportunityName}"/>
+<apex:param value="{!accountName}"/> 
+</apex:outputText>
+</apex:pageBlock>
+<apex:pageBlockButtons >
+<apex:commandButton value="Save" action="{!save}" rendered="{!IF(((canEdit == true)&&(noRecordsSelected == false)), true, false)}" />
+<apex:commandButton value="Return" action="{!cancel}"/>
+</apex:pageBlockButtons>
+
+
+<div id="qtrDiv">
+<table class="outerTable" id="table" cellspacing="0" cellpadding="0">
+<tr class="outerTr">
+
+<td class="outerTd" style="width:200px">
+<table id="innerTable" cellspacing="0" cellpadding="0" style="width:200px">
+<tr>                                                         
+<td style="height:25px;border-top-style:none;width:200px;border-right-style:none;border-left-style:none;">
+<apex:outputText value="" />
+</td>
+</tr>
+<tr>
+<td style="height:22px;width:200px;border-right-style:none;border-left-style:none;">
+<apex:outputText value="ASP (Wafer)" />
+<apex:image value="/s.gif" id="imgASP" styleClass="imgclass" onmouseover="showHelpText(this, 'divASPHelptext');" onmouseout="hideHelpText('divASPHelptext');" />
+</td>
+</tr>
+<tr>                                                         
+<td style="height:23px;width:200px;border-right-style:none;border-left-style:none;">
+<apex:outputText value="Volume (Wafer)" />
+<apex:image value="/s.gif" id="imgVLM" styleClass="imgclass" onmouseover="showHelpText(this, 'divVolumeHelptext');" onmouseout="hideHelpText('divVolumeHelptext');" />
+</td>
+</tr>
+<apex:outputPanel rendered="{!IF(selected[0].Opportunity__r.Deliverable_Type__c== 'Module'|| selected[0].Opportunity__r.Deliverable_Type__c=='Chip', true, false)}">                                    
+<tr>                                                         
+<td style="height:22px;width:200px;border-right-style:none;border-left-style:none;">
+<apex:outputText value="ASP (Module/Chip)"  />
+<apex:image value="/s.gif" id="imgVLM12" styleClass="imgclass" onmouseover="showHelpText(this, 'divVolumeHelptext');" onmouseout="hideHelpText('divVolumeHelptext');" />
+</td>
+</tr>
+</apex:outputPanel>
+<apex:outputPanel rendered="{!IF(selected[0].Opportunity__r.Deliverable_Type__c== 'Module'|| selected[0].Opportunity__r.Deliverable_Type__c=='Chip', true, false)}">                                       
+<tr>                                                         
+<td style="height:22px;width:200px;border-right-style:none;border-left-style:none;">
+<apex:outputText value="Volume (Module/Chip)" />
+<apex:image value="/s.gif" id="imgVLM312" styleClass="imgclass" onmouseover="showHelpText(this, 'divVolumeHelptext');" onmouseout="hideHelpText('divVolumeHelptext');" />
+</td>
+</tr>
+</apex:outputPanel>
+<tr>
+<td style="height:23px;width:200px;border-right-style:none;border-left-style:none;">
+<apex:outputText value="Deliverable Type" />
+
+</td>
+</tr>
+<tr>
+<td style="height:23px;width:200px;border-right-style:none;border-left-style:none;">
+<apex:outputText value="Net Parts Per Wafer" />
+
+</td>
+</tr> 
+<!--
+<tr>
+<td style="height:23px;width:200px;border-right-style:none;border-left-style:none;">
+<apex:outputText value="Revenue__c" />
+
+</td>
+</tr>
+-->
+<tr>
+<td style="height:22px;border-bottom-style:none;width:200px;border-right-style:none;border-left-style:none;">
+<apex:outputText value="Count as Design Win Revenue" />
+<apex:image value="/s.gif" id="imgCDWR" styleClass="imgclass" onmouseover="showHelpText(this, 'divCDWRHelptext');" onmouseout="hideHelpText('divCDWRHelptext');" />
+</td>
+</tr>
+<apex:outputPanel rendered="{!IF(selected[0].Opportunity__r.Deliverable_Type__c== 'Module'|| selected[0].Opportunity__r.Deliverable_Type__c=='Chip', true, false)}">
+<tr>
+<td style="height:23px;border-bottom-style:none;width:200px;border-right-style:none;border-left-style:none;">
+<apex:outputText value="Post Wafer ASP(Module/Chip)" />
+<apex:image value="/s.gif" id="imgCDWR1" styleClass="imgclass" onmouseover="showHelpText(this, 'divCDWRHelptext');" onmouseout="hideHelpText('divCDWRHelptext');" />
+</td>
+</tr>  
+</apex:outputPanel>
+<tr>
+<td style="height:23px;width:200px;border-right-style:none;border-left-style:none;">
+<apex:outputText value="RMT ASP" />
+<apex:image value="/s.gif" id="imgRMTASP" styleClass="imgclass" onmouseover="showHelpText(this, 'divRMTASPHelptext');" onmouseout="hideHelpText('divRMTASPHelptext');" />
+</td>
+</tr>                  
+
+<tr>
+<td style="height:23px;width:200px;border-right-style:none;border-left-style:none;">
+<apex:outputText value="RMT Volume" />
+<apex:image value="/s.gif" id="imgRMTVLM" styleClass="imgclass" onmouseover="showHelpText(this, 'divRMTVLMHelptext');" onmouseout="hideHelpText('divRMTVLMHelptext');" />
+</td>
+</tr>
+
+<tr>
+<td style="height:23px;width:200px;border-right-style:none;border-left-style:none;">
+<apex:outputText value="Turnkey ASP" />
+<apex:image value="/s.gif" id="imgTKASP" styleClass="imgclass" onmouseover="showHelpText(this, 'divTKASPHelptext');" onmouseout="hideHelpText('divTKASPHelptext');" />
+</td>
+</tr>
+
+
+
+</table>
+</td>
+
+<apex:repeat id="table1" value="{!selected}" var="a">
+<td class="outerTd" style="text-align:center;">
+<table id="innerTable" cellspacing="0" cellpadding="0">
+<tr>
+<td style="text-align:center;height:15px;border-right-style:none;border-top-style:none;background-color:#ececec;background-repeat: repeat-x">
+<apex:outputText value="{!a.Fiscal_Quarter__c}"/>                                    
+</td>
+</tr>
+
+<tr>
+<td style="text-align:center;height:20px;">
+<apex:inputField value="{!a.ASP__c}" id="inasp1" style="text-align:right;width:100px;"  rendered="{!IF((a.Opportunity__r.Deliverable_Type__c == 'Wafer')||(a.Opportunity__r.Deliverable_Type__c == null), true, false)}" />
+<apex:outputField value="{!a.ASP__c}" id="outasp1" style="text-align:right;width:100px;" rendered="{!IF(a.Opportunity__r.Deliverable_Type__c== 'Module'|| a.Opportunity__r.Deliverable_Type__c=='Chip', true, false)}" />
+
+</td>
+</tr>
+<tr>                                                         
+<td style="text-align:center;height:20px;">
+<apex:inputField value="{!a.Volume__c}" style="text-align:right;width:100px;"  rendered="{!IF((a.Opportunity__r.Deliverable_Type__c == 'Wafer')||(a.Opportunity__r.Deliverable_Type__c ==null), true, false)}" />
+<apex:outputField value="{!a.Volume__c}" style="text-align:right;width:100px;" rendered="{!IF(a.Opportunity__r.Deliverable_Type__c== 'Module'|| a.Opportunity__r.Deliverable_Type__c=='Chip', true, false)}" />
+</td>
+</tr>
+<apex:outputPanel rendered="{!IF(a.Opportunity__r.Deliverable_Type__c== 'Module'|| a.Opportunity__r.Deliverable_Type__c=='Chip', true, false)}">
+<tr>                                                         
+<td style="text-align:center;height:20px;">
+<apex:inputField value="{!a.ASP_Module_Chip__c}" style="text-align:right;width:100px;" rendered="{!IF(a.Opportunity__r.Deliverable_Type__c== 'Module'|| a.Opportunity__r.Deliverable_Type__c=='Chip', true, false)}" />
+</td>
+</tr>
+</apex:outputPanel>
+<apex:outputPanel rendered="{!IF(a.Opportunity__r.Deliverable_Type__c== 'Module'|| a.Opportunity__r.Deliverable_Type__c=='Chip', true, false)}">
+<tr>                                                         
+<td style="text-align:center;height:20px;">
+<apex:inputField value="{!a.Volume_Module_Chip__c}" style="text-align:right;width:100px;" rendered="{!IF(a.Opportunity__r.Deliverable_Type__c== 'Module'|| Deliverabletype=='Chip', true, false)}" />
+</td>
+</tr>
+</apex:outputPanel>
+<tr>
+<td style="text-align:center;height:23px;border-bottom-style:none;border-right-style:none;">
+<apex:outputField value="{!a.Opportunity__r.Deliverable_Type__c}" style="text-align:right;width:100px;" />
+</td>
+</tr> 
+<tr>
+<td style="text-align:center;height:23px;border-bottom-style:none;border-right-style:none;">
+<apex:inputField value="{!a.Opportunity__r.Net_Parts_Per_Wafer__c}" style="text-align:right;width:100px;"   rendered="{!IF(a.Net_Parts_Per_Wafer__c == null, true, false)}" />
+<apex:inputField value="{!a.Net_Parts_Per_Wafer__c}" style="text-align:right;width:100px;"   rendered="{!IF(a.Net_Parts_Per_Wafer__c != null, true, false)}" />
+
+</td>
+</tr>  
+<!--
+<tr>                                                         
+<td style="text-align:center;height:20px;">
+<apex:outputField value="{!a.Revenue__c}" style="text-align:right;width:100px;"/>
+</td>
+</tr>
+-->
+
+<tr>
+<td style="text-align:center;height:23px;border-bottom-style:none;border-right-style:none;">
+<apex:inputField value="{!a.Count__c}" />
+</td>
+</tr>
+<apex:outputPanel rendered="{!IF(a.Opportunity__r.Deliverable_Type__c== 'Module'|| a.Opportunity__r.Deliverable_Type__c=='Chip', true, false)}"> 
+<tr>                                                         
+<td style="text-align:center;height:20px;">
+<apex:inputField value="{!a.Post_Wafer_ASP_Module_ASP__c}"  style="text-align:right;width:100px;" rendered="{!IF(a.Opportunity__r.Deliverable_Type__c== 'Module'|| a.Opportunity__r.Deliverable_Type__c=='Chip', true, false)}" />
+</td>
+</tr>
+</apex:outputPanel>
+<tr>
+<td style="text-align:center;height:22px;border-bottom-style:none;border-right-style:none;">
+<apex:inputField value="{!a.RMT_ASP__c}" style="text-align:right;width:100px;" />
+</td>
+</tr>       
+
+
+<tr>
+<td style="text-align:center;height:23px;border-bottom-style:none;border-right-style:none;">
+<apex:inputField value="{!a.RMT_Volume__c}" style="text-align:right;width:100px;" />
+</td>
+</tr>
+
+<tr>
+<td style="text-align:center;height:23px;border-bottom-style:none;border-right-style:none;">
+<apex:inputField value="{!a.Turnkey_ASP__c}" style="text-align:right;width:100px;" />
+</td>
+</tr>
+
+
+
+</table>                                            
+</td>
+</apex:repeat>  
+</tr>
+</table>
+</div>
+</apex:pageBlock>
+
+<!-- Read Mode End -->
+<div id="divASPHelptext" class="helpTextStyle" style="display: none; opacity: -0.2;">
+ {!$Label.QuarterlyRevenueASPHelpText}
+</div>
+<div id="divVolumeHelptext" class="helpTextStyle" style="display: none; opacity: -0.2;">
+ {!$Label.QuarterlyRevenueVolumeHelpText}
+</div>
+<div id="divHEVHelptext" class="helpTextStyle" style="display: none; opacity: -0.2;">
+ {!$Label.QuarterlyRevenueHEVHelpText}
+</div>
+<div id="divLEVHelptext" class="helpTextStyle" style="display: none; opacity: -0.2;">
+ {!$Label.QuarterlyRevenueLEVHelpText}
+</div>
+<div id="divHEPHelptext" class="helpTextStyle" style="display: none; opacity: -0.2;">
+ {!$Label.QuarterlyRevenueHEPHelpText}
+</div>
+<div id="divLEPHelptext" class="helpTextStyle" style="display: none; opacity: -0.2;">
+ {!$Label.QuarterlyRevenueLEPHelpText}
+</div>
+<div id="divCDWRHelptext" class="helpTextStyle" style="display: none; opacity: -0.2;">
+ {!$Label.QuarterlyRevenueCDWRHelpText}
+</div>
+<div id="divSVPASPHelptext" class="helpTextStyle" style="display: none; opacity: -0.2;">
+ {!$Label.QuarterlyRevenueSVPASPHelpText}
+</div>
+<div id="divSVPVLMHelptext" class="helpTextStyle" style="display: none; opacity: -0.2;">
+ {!$Label.QuarterlyRevenueSVPVLMHelpText}
+</div>
+<div id="divRMTASPHelptext" class="helpTextStyle" style="display: none; opacity: -0.2;">
+ {!$Label.QuarterlyRevenueRMTASPHelpText}
+</div>
+<div id="divRMTVLMHelptext" class="helpTextStyle" style="display: none; opacity: -0.2;">
+ {!$Label.QuarterlyRevenueRMTVLMHelpText}
+</div>
+<div id="divTKASPHelptext" class="helpTextStyle" style="display: none; opacity: -0.2;">
+ {!$Label.QuarterlyRevenueTKASPHelpText}
+</div>
+</apex:form>
+<script language="javascript">  
+ 
+ window.onload= function()
+{
+ var a = document.getElementById("innerTable");
+ if(!(a && a!=null)){
+     document.getElementById("qtrDiv").style.display="none";
+ }
+}
+
+function showHelpText(e, id) {
+ var ele = document.getElementById(e.id);
+ var top = 0;
+ var left = 0;
+ 
+ while(ele.tagName != "BODY") {
+     top += ele.offsetTop;
+     left += ele.offsetLeft;
+     ele = ele.offsetParent;
+ }
+ 
+ document.getElementById(id).style.top = (top - 125) + "px" ;
+ document.getElementById(id).style.left = left + "px";
+ document.getElementById(id).style.display = "block";
+ document.getElementById(id).style.opacity = 0.99;
+}
+
+function hideHelpText(id) {
+document.getElementById(id).style.display = "none";
+document.getElementById(id).style.opacity = -0.2;
+}
+
+
+
+</script>
+
+
+</apex:page>

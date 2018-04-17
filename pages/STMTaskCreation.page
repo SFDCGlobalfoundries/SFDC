@@ -1,0 +1,273 @@
+<apex:page standardController="STMTask__c" extensions="STM_ReportTask" id="GenericReport" sidebar="true" title="STM Task Creation">
+    <apex:stylesheet value="/sCSS/21.0/sprites/1297816277000/Theme3/default/gc/versioning.css" />   
+    <!-- <apex:stylesheet value="/sCSS/21.0/sprites/1297816277000/Theme3/default/gc/extended.css" />﻿ -->
+    <c:loadingPanel />
+    <style>
+       .style1{
+           font-family: Arial;
+           font-size: 91%;
+           font-weight: bold;
+           text-align: right;
+           color: #4A4A56;
+       }
+       .bPageBlock .pbTitle{
+            white-space: nowrap;
+            width: 1%;
+        }
+        .hideDropdown select{
+            visibility: hidden !important;
+            display: none;
+        }
+    </style>
+    <apex:sectionHeader title="{!STMTask__c.name}" subtitle="Task Edit"/>
+    
+    <apex:form id="theForm">
+
+        <apex:pageBlock id="pageBlockId">
+        
+            <apex:pageMessage escape="false" summary="Please select the <b>Report  Category</b> and <b>Report Name</b> to pre-populate the task fields."
+                                       severity="INFO" strength="3" />
+            <apex:pageMessages />
+            
+            <apex:pageBlockButtons location="top" style="text-align:center;">
+                    <apex:commandButton action="{!SaveTask}" value="Save" style="align:center" status="LoadingStatusSpinner" rerender="LoadingStatusSpinner,theForm"/>
+                    <apex:commandButton action="{!Cancel}" value="Cancel" style="align:center" status="LoadingStatusSpinner" rerender="LoadingStatusSpinner,theForm"/>
+            </apex:pageBlockButtons>       
+            
+            <apex:actionFunction action="{!callPopulateFormNew}" name="callPopulateFormNew" reRender="theForm" status="LoadingStatusSpinner">
+                <apex:param assignTo="{!ReportNameFromPage}" value="" name="ReportNameFromPage"/>
+            </apex:actionFunction>
+                
+            <!-- for selecting the report type for which the task has been created. -->
+            <apex:pageBlockSection id="SearchSection">
+                <apex:inputField value="{!STMTask__c.ReportCategory__c}" rendered="{!ISNULL(taskId)}"/>
+                <apex:outputField value="{!STMTask__c.ReportCategory__c}" rendered="{!NOT(ISNULL(taskId))}"/>
+                <apex:outputField value="{!STMTask__c.Report_Project_Profile__c}" rendered="{!NOT(ISNULL(taskId))}"/>
+                <apex:inputField value="{!STMTask__c.Report_Project_Profile__c}" id="reportProjectId" required="true" onchange="testFunction();" onfocus="this.blur()" rendered="{!ISNULL(taskId)}"/>
+                <script>
+                    function testFunction(){
+                        var ReportNameSelected = document.getElementById('{!$Component.reportProjectId}').value;
+                        callPopulateFormNew(ReportNameSelected);
+                    }
+                </script>
+                
+            </apex:pageBlockSection>
+
+            <!-- Details from the task -->
+            <apex:pageBlockSection id="ReportSection" columns="1">
+            
+                <apex:tabPanel switchType="client" selectedTab="opportunties" id="theTabPanel" styleClass="theTabPanel">
+                
+                    <apex:tab label="Report Details" name="Report Details" id="ReportDetails">
+                        <apex:pageBlockSection title="Report Details" columns="2">
+                            <apex:pageBlockSectionItem >
+                              <apex:outputLabel value="Task Name"/>
+                              <apex:outputPanel styleClass="requiredInput" layout="block">
+                                <apex:outputPanel styleClass="requiredBlock" layout="block" />
+                                <apex:inputField value="{!STMTask__c.Name}"/>
+                              </apex:outputPanel>
+                            </apex:pageBlockSectionItem>
+                            <apex:inputField value="{!STMTask__c.Report_Due_Date__c}"/>
+                            <apex:outputField value="{!STMTask__c.Frequency__c}"/>
+                            <apex:inputhidden value="{!STMTask__c.Days_for_Report_Upload__c}"/>
+                            <apex:inputhidden value="{!STMTask__c.CreatedById}"/>
+                        </apex:pageblockSection>
+                        <apex:pageBlockSection title="Source System Owners" columns="2">
+                            <apex:inputField styleClass="hideDropdown" value="{!STMTask__c.Source_System_Owner_1__c}" rendered="{!OR(ISNULL(STMTask__c.Id),STMTask__c.Approval_Stage__c == 'Initial')}"/>
+                            <apex:outputField value="{!STMTask__c.Source_System_Owner_1__c}" rendered="{!AND(!ISNULL(STMTask__c.Id),!ISNULL(STMTask__c.Source_System_Owner_1__c),STMTask__c.Approval_Stage__c != 'Initial')}"/>
+                            <apex:inputField styleClass="hideDropdown" value="{!STMTask__c.Source_System_Owner_2__c}" rendered="{!OR(ISNULL(STMTask__c.Id),STMTask__c.Approval_Stage__c == 'Initial')}"/>
+                            <apex:outputField value="{!STMTask__c.Source_System_Owner_2__c}" rendered="{!AND(!ISNULL(STMTask__c.Id),!ISNULL(STMTask__c.Source_System_Owner_2__c),STMTask__c.Approval_Stage__c != 'Initial')}"/>                             
+                            <apex:inputField styleClass="hideDropdown" value="{!STMTask__c.Source_System_Owner_3__c}" rendered="{!OR(ISNULL(STMTask__c.Id),STMTask__c.Approval_Stage__c == 'Initial')}"/>
+                            <apex:outputField value="{!STMTask__c.Source_System_Owner_3__c}" rendered="{!AND(!ISNULL(STMTask__c.Id),!ISNULL(STMTask__c.Source_System_Owner_3__c),STMTask__c.Approval_Stage__c != 'Initial')}"/>                            
+                            <apex:inputField styleClass="hideDropdown" value="{!STMTask__c.Source_System_Owner_4__c}" rendered="{!OR(ISNULL(STMTask__c.Id),STMTask__c.Approval_Stage__c == 'Initial')}"/>
+                            <apex:outputField value="{!STMTask__c.Source_System_Owner_4__c}" rendered="{!AND(!ISNULL(STMTask__c.Id),!ISNULL(STMTask__c.Source_System_Owner_4__c),STMTask__c.Approval_Stage__c != 'Initial')}"/>                            
+                            <apex:inputField styleClass="hideDropdown" value="{!STMTask__c.Source_System_Owner_5__c}" rendered="{!OR(ISNULL(STMTask__c.Id),STMTask__c.Approval_Stage__c == 'Initial')}"/>
+                            <apex:outputField value="{!STMTask__c.Source_System_Owner_5__c}" rendered="{!AND(!ISNULL(STMTask__c.Id),!ISNULL(STMTask__c.Source_System_Owner_5__c),STMTask__c.Approval_Stage__c != 'Initial')}"/>
+                        </apex:pageblockSection>
+                    </apex:tab>
+                    
+                    <apex:tab label="Workflow Details" name="Workflow Details" id="WorkflowDetails">
+                        
+                        <apex:pageBlockSection title="Assignee Workflow Details" columns="2">
+                            <apex:outputField value="{!STMTask__c.SendToAssignee__c}"/>                            
+                            <apex:pageBlockSectionItem >
+                              <apex:outputLabel value="Assignee 1" />
+                              <apex:outputPanel styleClass="requiredInput" layout="block">
+                                  <apex:outputPanel styleClass="requiredBlock" layout="block" />
+                                  <apex:inputField styleClass="hideDropdown" value="{!STMTask__c.Assignee_1__c}" rendered="{!OR(ISNULL(STMTask__c.Id),STMTask__c.Approval_Stage__c == 'Initial')}"/>
+                                  <apex:outputField value="{!STMTask__c.Assignee_1__c}" rendered="{!AND(!ISNULL(STMTask__c.Id),!ISNULL(STMTask__c.Assignee_1__c),STMTask__c.Approval_Stage__c != 'Initial')}"/> 
+                              </apex:outputPanel>
+                            </apex:pageBlockSectionItem>
+                            <apex:inputField styleClass="hideDropdown" value="{!STMTask__c.Assignee_2__c}" rendered="{!OR(ISNULL(STMTask__c.Id),STMTask__c.Approval_Stage__c == 'Initial')}"/>
+                            <apex:outputField value="{!STMTask__c.Assignee_2__c}" rendered="{!AND(!ISNULL(STMTask__c.Id),!ISNULL(STMTask__c.Assignee_2__c),STMTask__c.Approval_Stage__c != 'Initial')}"/>                             
+                            <apex:inputField styleClass="hideDropdown" value="{!STMTask__c.Assignee_3__c}" rendered="{!OR(ISNULL(STMTask__c.Id),STMTask__c.Approval_Stage__c == 'Initial')}"/>
+                            <apex:outputField value="{!STMTask__c.Assignee_3__c}" rendered="{!AND(!ISNULL(STMTask__c.Id),!ISNULL(STMTask__c.Assignee_3__c),STMTask__c.Approval_Stage__c != 'Initial')}"/>                            
+                            <apex:inputField styleClass="hideDropdown" value="{!STMTask__c.Assignee_4__c}" rendered="{!OR(ISNULL(STMTask__c.Id),STMTask__c.Approval_Stage__c == 'Initial')}"/>
+                            <apex:outputField value="{!STMTask__c.Assignee_4__c}" rendered="{!AND(!ISNULL(STMTask__c.Id),!ISNULL(STMTask__c.Assignee_4__c),STMTask__c.Approval_Stage__c != 'Initial')}"/>                            
+                            <apex:inputField styleClass="hideDropdown" value="{!STMTask__c.Assignee_5__c}" rendered="{!OR(ISNULL(STMTask__c.Id),STMTask__c.Approval_Stage__c == 'Initial')}"/>
+                            <apex:outputField value="{!STMTask__c.Assignee_5__c}" rendered="{!AND(!ISNULL(STMTask__c.Id),!ISNULL(STMTask__c.Assignee_5__c),STMTask__c.Approval_Stage__c != 'Initial')}"/>
+                            <apex:inputField styleClass="hideDropdown" value="{!STMTask__c.Assignee_6__c}" rendered="{!OR(ISNULL(STMTask__c.Id),STMTask__c.Approval_Stage__c == 'Initial')}"/>
+                            <apex:outputField value="{!STMTask__c.Assignee_6__c}" rendered="{!AND(!ISNULL(STMTask__c.Id),!ISNULL(STMTask__c.Assignee_6__c),STMTask__c.Approval_Stage__c != 'Initial')}"/>                             
+                            <apex:inputField styleClass="hideDropdown" value="{!STMTask__c.Assignee_7__c}" rendered="{!OR(ISNULL(STMTask__c.Id),STMTask__c.Approval_Stage__c == 'Initial')}"/>
+                            <apex:outputField value="{!STMTask__c.Assignee_7__c}" rendered="{!AND(!ISNULL(STMTask__c.Id),!ISNULL(STMTask__c.Assignee_7__c),STMTask__c.Approval_Stage__c != 'Initial')}"/>                            
+                            <apex:inputField styleClass="hideDropdown" value="{!STMTask__c.Assignee_8__c}" rendered="{!OR(ISNULL(STMTask__c.Id),STMTask__c.Approval_Stage__c == 'Initial')}"/>
+                            <apex:outputField value="{!STMTask__c.Assignee_8__c}" rendered="{!AND(!ISNULL(STMTask__c.Id),!ISNULL(STMTask__c.Assignee_8__c),STMTask__c.Approval_Stage__c != 'Initial')}"/>                            
+                            <apex:inputField styleClass="hideDropdown" value="{!STMTask__c.Assignee_9__c}" rendered="{!OR(ISNULL(STMTask__c.Id),STMTask__c.Approval_Stage__c == 'Initial')}"/>
+                            <apex:outputField value="{!STMTask__c.Assignee_9__c}" rendered="{!AND(!ISNULL(STMTask__c.Id),!ISNULL(STMTask__c.Assignee_9__c),STMTask__c.Approval_Stage__c != 'Initial')}"/>
+                            <apex:inputField styleClass="hideDropdown" value="{!STMTask__c.Assignee_10__c}" rendered="{!OR(ISNULL(STMTask__c.Id),STMTask__c.Approval_Stage__c == 'Initial')}"/>
+                            <apex:outputField value="{!STMTask__c.Assignee_10__c}" rendered="{!AND(!ISNULL(STMTask__c.Id),!ISNULL(STMTask__c.Assignee_10__c),STMTask__c.Approval_Stage__c != 'Initial')}"/>
+                        </apex:pageblockSection>
+                        
+                        <apex:pageBlockSection title="Supervisor Workflow Details" columns="2">
+                            <apex:outputField value="{!STMTask__c.SendToSupervisor__c}"/>                            
+                            <apex:pageBlockSectionItem >
+                              <apex:outputLabel value="Supervisor 1" />
+                              <apex:outputPanel styleClass="requiredInput" layout="block">
+                                    <apex:outputPanel styleClass="requiredBlock" layout="block" />
+                                    <apex:inputField styleClass="hideDropdown" value="{!STMTask__c.Supervisor_1__c}" rendered="{!OR(ISNULL(STMTask__c.Id),STMTask__c.Approval_Stage__c='Initial',STMTask__c.Approval_Stage__c='Assignee')}"/>
+                                    <apex:outputField value="{!STMTask__c.Supervisor_1__c}" rendered="{!AND(!ISNULL(STMTask__c.Id),!ISNULL(STMTask__c.Supervisor_1__c),STMTask__c.Approval_Stage__c!='Initial',STMTask__c.Approval_Stage__c!='Assignee')}"/> 
+                              </apex:outputPanel>
+                            </apex:pageBlockSectionItem>
+                            <apex:inputField styleClass="hideDropdown" value="{!STMTask__c.Supervisor_2__c}" rendered="{!OR(ISNULL(STMTask__c.Id),STMTask__c.Approval_Stage__c='Initial',STMTask__c.Approval_Stage__c='Assignee')}"/>
+                            <apex:outputField value="{!STMTask__c.Supervisor_2__c}" rendered="{!AND(!ISNULL(STMTask__c.Id),!ISNULL(STMTask__c.Supervisor_2__c),STMTask__c.Approval_Stage__c!='Initial',STMTask__c.Approval_Stage__c!='Assignee')}"/> 
+                            <apex:inputField styleClass="hideDropdown" value="{!STMTask__c.Supervisor_3__c}" rendered="{!OR(ISNULL(STMTask__c.Id),STMTask__c.Approval_Stage__c='Initial',STMTask__c.Approval_Stage__c='Assignee')}"/>
+                            <apex:outputField value="{!STMTask__c.Supervisor_3__c}" rendered="{!AND(!ISNULL(STMTask__c.Id),!ISNULL(STMTask__c.Supervisor_3__c),STMTask__c.Approval_Stage__c!='Initial',STMTask__c.Approval_Stage__c!='Assignee')}"/> 
+                            <apex:inputField styleClass="hideDropdown" value="{!STMTask__c.Supervisor_4__c}" rendered="{!OR(ISNULL(STMTask__c.Id),STMTask__c.Approval_Stage__c='Initial',STMTask__c.Approval_Stage__c='Assignee')}"/>
+                            <apex:outputField value="{!STMTask__c.Supervisor_4__c}" rendered="{!AND(!ISNULL(STMTask__c.Id),!ISNULL(STMTask__c.Supervisor_4__c),STMTask__c.Approval_Stage__c!='Initial',STMTask__c.Approval_Stage__c!='Assignee')}"/> 
+                            <apex:inputField styleClass="hideDropdown" value="{!STMTask__c.Supervisor_5__c}" rendered="{!OR(ISNULL(STMTask__c.Id),STMTask__c.Approval_Stage__c='Initial',STMTask__c.Approval_Stage__c='Assignee')}"/>
+                            <apex:outputField value="{!STMTask__c.Supervisor_5__c}" rendered="{!AND(!ISNULL(STMTask__c.Id),!ISNULL(STMTask__c.Supervisor_5__c),STMTask__c.Approval_Stage__c!='Initial',STMTask__c.Approval_Stage__c!='Assignee')}"/>
+                        </apex:pageblockSection>
+                        
+                        <apex:pageBlockSection title="QA Workflow Details" columns="2">
+                            <apex:outputField value="{!STMTask__c.SendToQA__c}"/>                            
+                            <apex:pageBlockSectionItem >
+                              <apex:outputLabel value="QA 1" />
+                              <apex:outputPanel styleClass="requiredInput" layout="block">
+                                <apex:outputPanel styleClass="requiredBlock" layout="block" />
+                                <apex:inputField styleClass="hideDropdown" value="{!STMTask__c.QA_1__c}" rendered="{!OR(ISNULL(STMTask__c.Id),STMTask__c.Approval_Stage__c='Initial',STMTask__c.Approval_Stage__c='Assignee',STMTask__c.Approval_Stage__c='Supervisor')}"/>
+                                <apex:outputField value="{!STMTask__c.QA_1__c}" rendered="{!AND(!ISNULL(STMTask__c.Id),!ISNULL(STMTask__c.QA_1__c),STMTask__c.Approval_Stage__c!='Initial',STMTask__c.Approval_Stage__c!='Assignee',STMTask__c.Approval_Stage__c!='Supervisor')}"/>
+                              </apex:outputPanel>
+                            </apex:pageBlockSectionItem>
+                            <apex:inputField styleClass="hideDropdown" value="{!STMTask__c.QA_2__c}" rendered="{!OR(ISNULL(STMTask__c.Id),STMTask__c.Approval_Stage__c='Initial',STMTask__c.Approval_Stage__c='Assignee',STMTask__c.Approval_Stage__c='Supervisor')}"/>
+                            <apex:outputField value="{!STMTask__c.QA_2__c}" rendered="{!AND(!ISNULL(STMTask__c.Id),!ISNULL(STMTask__c.QA_2__c),STMTask__c.Approval_Stage__c!='Initial',STMTask__c.Approval_Stage__c!='Assignee',STMTask__c.Approval_Stage__c!='Supervisor')}"/>
+                            <apex:inputField styleClass="hideDropdown" value="{!STMTask__c.QA_3__c}" rendered="{!OR(ISNULL(STMTask__c.Id),STMTask__c.Approval_Stage__c='Initial',STMTask__c.Approval_Stage__c='Assignee',STMTask__c.Approval_Stage__c='Supervisor')}"/>
+                            <apex:outputField value="{!STMTask__c.QA_3__c}" rendered="{!AND(!ISNULL(STMTask__c.Id),!ISNULL(STMTask__c.QA_3__c),STMTask__c.Approval_Stage__c!='Initial',STMTask__c.Approval_Stage__c!='Assignee',STMTask__c.Approval_Stage__c!='Supervisor')}"/> 
+                            <apex:inputField styleClass="hideDropdown" value="{!STMTask__c.QA_4__c}" rendered="{!OR(ISNULL(STMTask__c.Id),STMTask__c.Approval_Stage__c='Initial',STMTask__c.Approval_Stage__c='Assignee',STMTask__c.Approval_Stage__c='Supervisor')}"/>
+                            <apex:outputField value="{!STMTask__c.QA_4__c}" rendered="{!AND(!ISNULL(STMTask__c.Id),!ISNULL(STMTask__c.QA_4__c),STMTask__c.Approval_Stage__c!='Initial',STMTask__c.Approval_Stage__c!='Assignee',STMTask__c.Approval_Stage__c!='Supervisor')}"/> 
+                            <apex:inputField styleClass="hideDropdown" value="{!STMTask__c.QA_5__c}" rendered="{!OR(ISNULL(STMTask__c.Id),STMTask__c.Approval_Stage__c='Initial',STMTask__c.Approval_Stage__c='Assignee',STMTask__c.Approval_Stage__c='Supervisor')}"/>
+                            <apex:outputField value="{!STMTask__c.QA_5__c}" rendered="{!AND(!ISNULL(STMTask__c.Id),!ISNULL(STMTask__c.QA_5__c),STMTask__c.Approval_Stage__c!='Initial',STMTask__c.Approval_Stage__c!='Assignee',STMTask__c.Approval_Stage__c!='Supervisor')}"/>
+                        </apex:pageblockSection>
+                        
+                        <apex:pageBlockSection title="CE Workflow Details" columns="2">                            
+                            <apex:pageBlockSectionItem >
+                              <apex:outputLabel value="CE 1" />
+                              <apex:outputPanel styleClass="requiredInput" layout="block">
+                                <apex:outputPanel styleClass="requiredBlock" layout="block" />
+                                <apex:inputField styleClass="hideDropdown" value="{!STMTask__c.CE_1__c}" rendered="{!OR(ISNULL(STMTask__c.Id),STMTask__c.Approval_Stage__c='Initial',STMTask__c.Approval_Stage__c='Assignee',STMTask__c.Approval_Stage__c='Supervisor',STMTask__c.Approval_Stage__c='QA')}"/>
+                                <apex:outputField value="{!STMTask__c.CE_1__c}" rendered="{!AND(!ISNULL(STMTask__c.Id),!ISNULL(STMTask__c.CE_1__c),STMTask__c.Approval_Stage__c!='Initial',STMTask__c.Approval_Stage__c!='Assignee',STMTask__c.Approval_Stage__c!='Supervisor',STMTask__c.Approval_Stage__c!='QA')}"/>
+                              </apex:outputPanel>
+                            </apex:pageBlockSectionItem>
+                            <apex:inputField styleClass="hideDropdown" value="{!STMTask__c.CE_2__c}" rendered="{!OR(ISNULL(STMTask__c.Id),STMTask__c.Approval_Stage__c='Initial',STMTask__c.Approval_Stage__c='Assignee',STMTask__c.Approval_Stage__c='Supervisor',STMTask__c.Approval_Stage__c='QA')}"/>
+                            <apex:outputField value="{!STMTask__c.CE_2__c}" rendered="{!AND(!ISNULL(STMTask__c.Id),!ISNULL(STMTask__c.CE_2__c),STMTask__c.Approval_Stage__c!='Initial',STMTask__c.Approval_Stage__c!='Assignee',STMTask__c.Approval_Stage__c!='Supervisor',STMTask__c.Approval_Stage__c!='QA')}"/>
+                            <apex:inputField styleClass="hideDropdown" value="{!STMTask__c.CE_3__c}" rendered="{!OR(ISNULL(STMTask__c.Id),STMTask__c.Approval_Stage__c='Initial',STMTask__c.Approval_Stage__c='Assignee',STMTask__c.Approval_Stage__c='Supervisor',STMTask__c.Approval_Stage__c='QA')}"/>
+                            <apex:outputField value="{!STMTask__c.CE_3__c}" rendered="{!AND(!ISNULL(STMTask__c.Id),!ISNULL(STMTask__c.CE_3__c),STMTask__c.Approval_Stage__c!='Initial',STMTask__c.Approval_Stage__c!='Assignee',STMTask__c.Approval_Stage__c!='Supervisor',STMTask__c.Approval_Stage__c!='QA')}"/>
+                            <apex:inputField styleClass="hideDropdown" value="{!STMTask__c.CE_4__c}" rendered="{!OR(ISNULL(STMTask__c.Id),STMTask__c.Approval_Stage__c='Initial',STMTask__c.Approval_Stage__c='Assignee',STMTask__c.Approval_Stage__c='Supervisor',STMTask__c.Approval_Stage__c='QA')}"/>
+                            <apex:outputField value="{!STMTask__c.CE_4__c}" rendered="{!AND(!ISNULL(STMTask__c.Id),!ISNULL(STMTask__c.CE_4__c),STMTask__c.Approval_Stage__c!='Initial',STMTask__c.Approval_Stage__c!='Assignee',STMTask__c.Approval_Stage__c!='Supervisor',STMTask__c.Approval_Stage__c!='QA')}"/>
+                            <apex:inputField styleClass="hideDropdown" value="{!STMTask__c.CE_5__c}" rendered="{!OR(ISNULL(STMTask__c.Id),STMTask__c.Approval_Stage__c='Initial',STMTask__c.Approval_Stage__c='Assignee',STMTask__c.Approval_Stage__c='Supervisor',STMTask__c.Approval_Stage__c='QA')}"/>
+                            <apex:outputField value="{!STMTask__c.CE_5__c}" rendered="{!AND(!ISNULL(STMTask__c.Id),!ISNULL(STMTask__c.CE_5__c),STMTask__c.Approval_Stage__c!='Initial',STMTask__c.Approval_Stage__c!='Assignee',STMTask__c.Approval_Stage__c!='Supervisor',STMTask__c.Approval_Stage__c!='QA')}"/>
+                        </apex:pageblockSection>
+                        
+                    </apex:tab>
+                    
+                    <apex:tab label="Escalation Details" name="Escalation Details" id="EscalationDetails" rendered="false" >
+                    
+                        <apex:pageBlockSection title="Assignee Escalation Details" columns="2">
+                            <apex:outputField value="{!STMTask__c.Escalation_for_Assignee__c}"/>
+                            <apex:inputField value="{!STMTask__c.Days_for_Assignee_Escalation__c}"/>
+                            <apex:pageBlockSectionItem >
+                              <apex:outputLabel value="Assignee 1" />
+                              <apex:outputPanel styleClass="requiredInput" layout="block">
+                                <apex:outputPanel styleClass="requiredBlock" layout="block" />
+                                <apex:inputField styleClass="hideDropdown" value="{!taskChild.Assignee_Esc_1__c}" />
+                              </apex:outputPanel>
+                            </apex:pageBlockSectionItem>
+                            <apex:inputField styleClass="hideDropdown" value="{!taskChild.Assignee_Esc_2__c}"/>
+                            <apex:inputField styleClass="hideDropdown" value="{!taskChild.Assignee_Esc_3__c}"/>
+                            <apex:inputField styleClass="hideDropdown" value="{!taskChild.Assignee_Esc_4__c}"/>
+                            <apex:inputField styleClass="hideDropdown" value="{!taskChild.Assignee_Esc_5__c}"/>
+                        </apex:pageblockSection>
+                        
+                        <apex:pageBlockSection title="Supervisor Escalation Details" columns="2">
+                            <apex:outputField value="{!STMTask__c.Escalation_for_Supervisor__c}"/>
+                            <apex:inputField value="{!STMTask__c.Days_for_Supervisor_Escalation__c}"/>
+                            <apex:pageBlockSectionItem >
+                              <apex:outputLabel value="Supervisor 1" />
+                              <apex:outputPanel styleClass="requiredInput" layout="block">
+                                <apex:outputPanel styleClass="requiredBlock" layout="block" />
+                                <apex:inputField styleClass="hideDropdown" value="{!taskChild.Supervisor_Esc_1__c}" />
+                              </apex:outputPanel>
+                            </apex:pageBlockSectionItem>
+                            <apex:inputField styleClass="hideDropdown" value="{!taskChild.Supervisor_Esc_2__c}"/>
+                            <apex:inputField styleClass="hideDropdown" value="{!taskChild.Supervisor_Esc_3__c}"/>
+                            <apex:inputField styleClass="hideDropdown" value="{!taskChild.Supervisor_Esc_4__c}"/>
+                            <apex:inputField styleClass="hideDropdown" value="{!taskChild.Supervisor_Esc_5__c}"/>
+                        </apex:pageblockSection>
+                        
+                        <apex:pageBlockSection title="QA Escalation Details" columns="2">
+                            <apex:outputField value="{!STMTask__c.Escalation_for_QA__c}"/>
+                            <apex:inputField value="{!STMTask__c.Days_for_QA_Escalation__c}"/>
+                            <apex:pageBlockSectionItem >
+                              <apex:outputLabel value="QA 1" />
+                              <apex:outputPanel styleClass="requiredInput" layout="block">
+                                <apex:outputPanel styleClass="requiredBlock" layout="block" />
+                                <apex:inputField styleClass="hideDropdown" value="{!taskChild.QA_Esc_1__c}" />
+                              </apex:outputPanel>
+                            </apex:pageBlockSectionItem>
+                            <apex:inputField styleClass="hideDropdown" value="{!taskChild.QA_Esc_2__c}"/>
+                            <apex:inputField styleClass="hideDropdown" value="{!taskChild.QA_Esc_3__c}"/>
+                            <apex:inputField styleClass="hideDropdown" value="{!taskChild.QA_Esc_4__c}"/>
+                            <apex:inputField styleClass="hideDropdown" value="{!taskChild.QA_Esc_5__c}"/>
+                        </apex:pageblockSection>
+                        
+                        <apex:pageBlockSection title="CE Escalation Details" columns="2">
+                            <apex:outputField value="{!STMTask__c.Escalation_for_CE__c}"/>
+                            <apex:inputField value="{!STMTask__c.Days_for_CE_Escalation__c}"/>
+                            <apex:pageBlockSectionItem >
+                              <apex:outputLabel value="CE 1" />
+                              <apex:outputPanel styleClass="requiredInput" layout="block">
+                                <apex:outputPanel styleClass="requiredBlock" layout="block" />
+                                <apex:inputField styleClass="hideDropdown" value="{!taskChild.CE_Esc_1__c}" />
+                              </apex:outputPanel>
+                            </apex:pageBlockSectionItem>
+                            <apex:inputField styleClass="hideDropdown" value="{!taskChild.CE_Esc_2__c}"/>
+                            <apex:inputField styleClass="hideDropdown" value="{!taskChild.CE_Esc_3__c}"/>
+                            <apex:inputField styleClass="hideDropdown" value="{!taskChild.CE_Esc_4__c}"/>
+                            <apex:inputField styleClass="hideDropdown" value="{!taskChild.CE_Esc_5__c}"/>
+                        </apex:pageblockSection>
+                        
+                   </apex:tab>
+                   
+                   <apex:tab label="Alert Details for Report" name="Alert Details for Report" id="AlertDetails" rendered="false" >
+                        <apex:pageBlockSection title="Report Details" columns="2">
+                            <apex:inputField value="{!STMTask__c.Days_for_Report_Upload__c}"/>
+                            <apex:pageBlockSectionItem >
+                              <apex:outputLabel value="Alert Reminder User1" />
+                              <apex:outputPanel styleClass="requiredInput" layout="block">
+                                <apex:outputPanel styleClass="requiredBlock" layout="block" />
+                                <apex:inputField styleClass="hideDropdown" value="{!taskChild.Alert_Reminder_User1__c}" />
+                              </apex:outputPanel>
+                            </apex:pageBlockSectionItem>
+                            <apex:inputField styleClass="hideDropdown" value="{!taskChild.Alert_Reminder_User2__c}"/>
+                            <apex:inputField styleClass="hideDropdown" value="{!taskChild.Alert_Reminder_User3__c}"/>
+                        </apex:pageblockSection>
+                   </apex:tab>
+                   
+               </apex:tabPanel>
+               
+            </apex:pageBlockSection>
+            
+        </apex:pageBlock>
+        
+    </apex:form>
+    
+</apex:page>

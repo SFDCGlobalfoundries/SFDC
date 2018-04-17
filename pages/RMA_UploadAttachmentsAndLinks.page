@@ -1,0 +1,101 @@
+<apex:page title="Upload Attachments & Links" id="rma_uploadMulAttPage" doctype="html-5.0" standardController="RMA__c" extensions="RMA_UploadAttachmentsAndLinksExtn" 
+                                         sidebar="false" showChat="false" tabstyle="RMA__c" action="{!checkSelectedTab}">
+     
+    <apex:sectionHeader title="Upload Attachments" subtitle="{!RMA__c.Name}" />
+    <apex:form id="rma_uploadMulAttForm">   
+        <apex:inputHidden value="{!RMA__c.Status__c}"/>
+        <apex:pageMessages id="pgmsgs" escape="false"/>
+        <apex:pagemessage summary="You are not authorized to upload attachments/links for this RMA." severity="warning" strength="3" rendered="{!NOT(hasUploadAccess)}"/>
+        <c:loadingPanel />
+        <apex:pageBlock id="rma_uploadMulAttBlk" title="Upload Attachment">
+            
+            <apex:pageBlockButtons location="top" id="pbb">
+                <input id="uploadbtn" value="Upload Attachments" class="btn" name="Upload Attachments" 
+                    onclick="openVFinNewWindow('{!$Page.RMA_UploadAttachmentPopup}', '{!selTab}')" title="Upload Attachments" type="button" 
+                    															style="display: {!IF($CurrentPage.parameters.SelTab == 'RMA_ALL','none','')}" />
+                <input value=" Back to RMA" class="btn" name="Back to RMA" onclick="RedirectToRMA()" title="Back to RMA" type="button"/>
+                <apex:actionFunction name="RedirectToRMA" action="{!backToRMA}" immediate="true"/> 
+            </apex:pageBlockButtons>
+           
+            <!-- <div id="MessageBox" class="divInfo"/>
+            <apex:pageBlockSection collapsible="false" columns="1" id="pbsAttach" rendered="{!NOT($CurrentPage.parameters.SelTab == 'RMA_ALL')}">
+               <apex:pageblockTable value="{!RMA__c.name}" var="temp" width="50%">
+                    <apex:column headerValue="Select File"><br/>
+                        <input type="file" id="fileLink" title="file" onchange="validateFileSize(this)"/>
+                    </apex:column>
+               </apex:pageblockTable>
+            </apex:pageBlockSection>-->
+            
+            <apex:pageBlockSection collapsible="false" columns="1" id="uploadedAttachSec">
+                <apex:outputPanel id="attachmentsPanel">
+                    <apex:pageblockTable value="{!contentDocumentList}" var="cDocLink" rendered="{!contentDocumentList.size > 0}">
+                        <apex:column headerValue="Action" styleClass="actionColumn">
+                            <a download="{!cDocLink.contentDocument.Title}"
+                                href="/sfc/servlet.shepherd/version/download/{!cDocLink.contentDocument.LatestPublishedVersionId}"
+                                class="actionLink" >Download</a>
+                            <apex:outputLabel value=" | " rendered="{!NOT($CurrentPage.parameters.SelTab == 'RMA_ALL')}"/> 
+                            <apex:commandLink value="Del" action="{!deleteRMAAttachment}" styleClass="actionLink" rerender="pgmsgs,attachmentsPanel" status="LoadingStatusSpinner" 
+                                rendered="{!AND(OR(cDocLink.contentDocument.OwnerId == $User.Id,isAdmin), hasDeleteAccess, NOT($CurrentPage.parameters.SelTab == 'RMA_ALL'))}">
+                                <apex:param name="contentDocid" assignTo="{!delContentDocId}" value="{!cDocLink.ContentDocumentId}" />
+                                <apex:param name="delFileName" assignTo="{!fileName}" value="{!cDocLink.contentdocument.title}" />
+                            </apex:commandLink>
+                        </apex:column>
+                        <apex:column headerValue="Title">
+                            <!-- <apex:outputLink target="_blank" value="/{!cDocLink.contentDocumentid}">{!cDocLink.contentDocument.Title}</apex:outputLink>-->
+                            <apex:outputText value="{0}.{1}">
+                            	<apex:param value="{!cDocLink.contentDocument.Title}"/>
+                            	<apex:param value="{!cDocLink.contentDocument.FileExtension}"/>
+                            </apex:outputText>
+                        </apex:column>
+                        <apex:column headerValue="Created Date" value="{!cDocLink.contentDocument.ContentModifiedDate}" />
+                        <apex:column headerValue="Created By" value="{!cDocLink.contentDocument.OwnerId}" />
+                    </apex:pageblockTable>
+                    <apex:outputText value="There are no attachments to display." rendered="{!contentDocumentList.size == 0}"/>
+                 </apex:outputPanel>
+             </apex:pageBlockSection>    
+        </apex:pageBlock>
+        <apex:pageBlock id="rma_uploadLinkBlock" mode="detail" title="Uploaded links"> 
+            <apex:pageBlockSection id="linkSection" columns="2" collapsible="false" rendered="{!NOT($CurrentPage.parameters.SelTab == 'RMA_ALL')}">
+                <apex:inputText value="{!linkUrl}" label="Resource Url"/>
+            </apex:pageBlockSection>
+            
+            <apex:pageBlockSection columns="1" collapsible="false">
+                <apex:outputPanel id="uploadedLinksPanel">
+                    <apex:pageBlockTable value="{!rmaLinksList}" var="rmaLink" rendered="{!rmaLinksList.size > 0}">
+                        <apex:column headerValue="Action" styleClass="actionColumn" rendered="{!NOT($CurrentPage.parameters.SelTab == 'RMA_ALL')}">
+                            <apex:commandLink value="Delete" action="{!deleteRMALink}" styleClass="actionLink" rerender="pgmsgs,uploadedLinksPanel" status="LoadingStatusSpinner" rendered="{!AND(OR(rmaLink.CreatedById == $User.Id,isAdmin), hasDeleteAccess)}">
+                                <apex:param name="contentDocid" assignTo="{!delrmaLinkId}" value="{!rmaLink.id}" />
+                                <apex:param name="delLinkUrl" assignTo="{!delLinkUrl}" value="{!rmaLink.Resource_URL__c}" />
+                            </apex:commandLink>
+                        </apex:column>
+                        <apex:column headerValue="Url">
+                            <apex:outputLink value="{!rmaLink.Resource_URL__c}" target="_blank">{!rmaLink.Resource_URL__c}</apex:outputLink>
+                        </apex:column>
+                        <apex:column value="{!rmaLink.CreatedById}"/>
+                        <apex:column headerValue="Created Date" value="{!rmaLink.CreatedDate}"/>
+                    </apex:pageBlockTable>
+                    <apex:outputText value="There are no links to display." rendered="{!rmaLinksList.size == 0}"/>
+                </apex:outputPanel>  
+            </apex:pageBlockSection>
+            <apex:pageblockButtons location="both" rendered="{!NOT($CurrentPage.parameters.SelTab == 'RMA_ALL')}">
+                <apex:commandButton value="Add Link" action="{!addLink}" status="LoadingStatusSpinner" rerender="rma_uploadLinkBlock,pgmsgs" disabled="{!NOT(hasUploadAccess)}"/>
+            </apex:pageblockButtons>
+        </apex:pageBlock>
+        <input type="hidden" name="_dontcare"/>
+    </apex:form>
+    <script>
+    	var x = 0, y = 0; // default values
+
+		if (document.all) {
+		  x = window.screenTop;
+		  y = window.screenLeft;
+		}
+		else if (document.layers) {
+		  x = window.screenX;
+		  y = window.screenY;
+		}
+    	function openVFinNewWindow(page,param){ 
+            window.open(page+'?id={!RMA__c.id}&selTab='+param,'_blank', 'titlebar=no, toolbar=no, scrollbars=no, resizable=no, top='+y+', screenY='+y+', screenX='+x+', left='+x+', width=800, height=200');
+        }
+    </script>
+</apex:page>

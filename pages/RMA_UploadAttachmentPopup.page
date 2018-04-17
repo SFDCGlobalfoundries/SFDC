@@ -1,0 +1,173 @@
+<apex:page standardController="RMA__c" title="Upload Attachment" extensions="RMA_UploadAttachmentsAndLinksExtn" action="{!checkSelectedTab}" showheader="false" sidebar="false">
+	<apex:form >
+		<apex:inputHidden value="{!RMA__c.Status__c}"/>
+		<div id="el_loading" class="loadingDiv" style="display:none;">
+	         <span id="loadingHolder" class="loadingHolder">
+	              <img class="loadingImage" title="Loading..." alt="Loading..." src="{!$Resource.SFDC_Loading}"/>
+	              <span class="loadingDescription">Please wait...</span>
+	         </span>
+	    </div>
+	    <apex:pageblock title="Upload Attachment">
+	    	<apex:pageBlockButtons location="top" id="pbb">
+				<input id="uploadbtn" disabled="disabled" value="Upload" class="btnDisabled" name="Upload Attachments" 
+                	    onclick="uploadFile()" title="Upload Attachments" type="button"/>
+			</apex:pageBlockButtons>    
+	    	<apex:pageBlockSection collapsible="false" columns="1" id="pbsAttach">
+               <apex:pageblockTable value="{!RMA__c.name}" var="temp" width="50%">
+                    <apex:column headerValue="Select File"><br/>
+                        <input type="file" id="fileLink" title="file" onchange="validateFileSize(this)"/>
+                    </apex:column>
+               </apex:pageblockTable>
+            </apex:pageBlockSection>
+	    </apex:pageblock>
+	    <div id="rmaModal"></div>
+	</apex:form>
+	
+	<style>
+        .loadingImage { vertical-align:bottom; }.loadingDescription { padding:0 1.5em 0 0.5em; }
+        .loadingHolder {
+             background-color: #FFFFCC; 
+             border: 1px solid #333333;
+             font-size: 1.2em;
+             font-weight: bold;
+             padding: 0.5em;
+             position: relative; 
+             top: 45%;
+             white-space: nowrap;
+        }
+        .loadingDiv {
+             background-color: rgba(211, 211, 211, 0.75);
+             filter: alpha(opacity=75); /* IE's opacity*/
+             text-align: center;
+             width: 100%;
+             height: 100%;
+             position: fixed;
+             z-index: 300;
+             top: 0;
+             left: 0;
+        }
+         /*jQuery dialog titlebar css*/
+        .ui-dialog-titlebar {
+          background-color: #F96B07;
+          background-image: none;
+          color: #FFFFFF;
+        }
+    </style> 
+   	<c:JqueryLibrary />
+   	<script src="{!$Resource.forcetk}"></script>
+   	<script type="text/javascript">
+        var __sfdcSessionId = '{!GETSESSIONID()}';
+        var rmaFileName;
+        var uploadedFile = 0;    
+        
+        window.onunload = function(){
+  			window.opener.location.reload();
+		};
+        var client = new forcetk.Client();
+        client.setSessionToken('{!$Api.Session_ID}');
+        
+        function showLoader(){
+            document.getElementById('el_loading').style.display = 'block';
+        }
+        function hideLoader(){
+                document.getElementById('el_loading').style.display = 'none';
+        }
+        
+        function validateFileSize(ele){
+            var limitSize = parseInt('{!$Label.RMA_Attachment_Size_Limit}');
+            
+            if(ele.files[0].size/1048576 > limitSize){
+                ele.parentNode.replaceChild(ele.cloneNode(true),ele);
+                ele.focus();
+                
+                var haveNoFiles = true;
+                $("input[type=file]").each(function() {
+                        if($(this).val() != ''){
+                            haveNoFiles = false;
+                         }
+                 });
+                rmaAlert('You cannot upload more than '+limitSize+' MB', 'Warning');
+            }else{
+                if('{!hasUploadAccess}' == 'true' || '{!hasUploadAccess}' == true){
+                    $('#uploadbtn').attr('class', 'btn');
+                    $('#uploadbtn').prop('disabled', false);
+                }
+            }
+        }
+        function disableUploadBtn(haveNoFiles){
+            if(haveNoFiles){
+                $('#uploadbtn').attr('class', 'btnDisabled');
+                $('#uploadbtn').prop('disabled', true);
+            }
+        }
+        
+       function uploadFile() {
+           disableUploadBtn(true);  
+           showLoader();
+           var filesToUpload = [];
+           $("input[id$='fileLink']").each(function() { 
+                if($(this).val() != ''){
+                     filesToUpload.push($(this)[0].files[0]);
+                }
+            });    
+             if(filesToUpload.length > 0 ){
+                rmaFileName = filesToUpload[0].name;
+                client.createBlob('ContentVersion', {
+                                                        Origin: 'H', 
+                                                        PathOnClient: rmaFileName 
+                                                    }, 
+                                                    rmaFileName, 'VersionData', filesToUpload[0],
+                                                    successHandler,
+                                                    failureHandler);             
+             } 
+             
+       }
+       
+       function successHandler(response){
+            var fileInput = document.getElementById('fileLink');
+            console.log(response);
+            fileInput.parentNode.replaceChild(fileInput.cloneNode(true),fileInput);
+            fileInput.focus();
+            Visualforce.remoting.Manager.invokeAction('{!$RemoteAction.RMA_UploadAttachmentsAndLinksExtn.insertRMAAttachment}',
+       													'{!RMA__c.id}', response.id, '{!sectionName}', rmaFileName,
+       													notifyUploadStatus
+       									       		 );
+            
+       }
+       
+       function notifyUploadStatus(result, event){
+       		console.log(result);
+       		console.log(event);
+       		if(event.status){
+       			hideLoader();
+       			rmaAlert('<b>' + rmaFileName + '</b> uploaded successfully.', 'Success');
+       			$('#rmaModal').dialog('option', {close: function( event, ui ) {
+                                                  window.close();
+                                                  window.opener.location.reload();
+                                                }});
+       		}else if(event.type === 'exception'){
+       			hideLoader();
+       			rmaAlert('Failed to upload ' + rmaFileName + '. Please try again.', 'Error');
+       		}
+       }
+       function failureHandler(request, status, response){
+            rmaAlert(rmaFileName + 'failed to upload. Please try again.', 'Error');
+            hideLoader();
+            resetVariables();
+       }
+       
+       function resetVariables(){
+            rmaFileName ='';
+            disableUploadBtn(true);
+       }
+       function rmaAlert(message, titleText){
+           $('#rmaModal').html(message).dialog({
+                 modal: true, 
+                 title: titleText,
+                 draggable:false,
+                 resizable:false,
+                 closeOnEscape: false
+            });
+        }
+   </script>
+</apex:page>

@@ -1,0 +1,85 @@
+<apex:page sidebar="false"  standardController="Account_Team_Proxy__c" extensions="UserAccountTeamMemberController">
+ <apex:sectionHeader title="{!AccountName}" subtitle="New Account Team Proxy"/>
+ <apex:form id="frm">
+ <apex:actionFunction reRender="pb" name="addNewRowCall" action="{!addNewRow}"/>
+ 
+ <apex:pageBlock mode="Edit" id="pb">
+        <apex:pageblockButtons >
+        <apex:commandButton action="{!Save}" value="Save"/>
+        <apex:commandButton onclick="addNewRowCall();return false;"  value="Add New Member" />
+        <apex:commandButton onclick="window.open('/{!contentIds}','_parent');return false;" value="Cancel" />
+        </apex:pageblockButtons>
+     
+     <apex:pageMessages />
+     <apex:pageBlockSection columns="1" title="Information">
+      
+     
+      
+    <apex:pageBlockSection columns="{!if(isInternalAccount,6,7)}">
+         <apex:outputLabel style="font-weight:bold" value="Team Member"/>
+         <apex:outputLabel style="font-weight:bold" value="Account Access"/>
+         <apex:outputLabel style="font-weight:bold" value="Opportunity Access" rendered="{!!isInternalAccount}"/>
+         <apex:outputLabel style="font-weight:bold" value="Team Role"/>
+         <apex:outputLabel style="font-weight:bold" value="Fab Assignment"/>
+         <apex:outputLabel style="font-weight:bold" value="Flag for Delete"/>
+         <apex:outputLabel style="padding-right:30px;" value=""/>
+         
+     
+      <apex:repeat value="{!AccountTeamProxyList}" var="atpModel" >
+            <apex:outputText >
+                  <apex:outputLabel value="{!atpModel.atpObj.User__r.Name}" rendered="{!atpModel.atpObj.id!=''}"/>
+                  <apex:inputField label="" value="{!atpModel.atpObj.User__c}" rendered="{!atpModel.atpObj.id=''}"/>
+            </apex:outputText>
+                 
+            <apex:outputText >
+                 <apex:outputLabel value="{!atpModel.atpObj.Account_Access__c}" rendered="{!atpModel.readonly}"/>
+                 <apex:inputField label="" value="{!atpModel.atpObj.Account_Access__c}" rendered="{!Not(atpModel.readonly)}"/>
+             </apex:outputText>    
+         
+                       
+             <apex:outputText rendered="{!!isInternalAccount}">
+                 <apex:outputLabel value="{!atpModel.atpObj.Opportunity_Access__c}" rendered="{!atpModel.readonly}"/>
+                 <apex:inputField label="" value="{!atpModel.atpObj.Opportunity_Access__c}" rendered="{!Not(atpModel.readonly)}"/>
+             </apex:outputText>
+             
+             <apex:outputText >
+                 <apex:outputLabel value="{!atpModel.atpObj.Team_Role__c}" rendered="{!atpModel.readonly}"/>
+                 <apex:inputField id="test1" label="" value="{!atpModel.atpObj.Team_Role__c}" rendered="{!Not(atpModel.readonly)}" />
+             </apex:outputText>
+             
+             <!--<apex:outputLabel value="{!atpModel.atpObj.Fab_Assignment__c}" style="width:100px"/>-->
+             <apex:outputText rendered="{!atpModel.atpObj.Team_Role__c=='Customer Engineer'||atpModel.atpObj.Team_Role__c='Fab Planner'}" >
+                 <apex:inputField label="" value="{!atpModel.atpObj.Fab_Assignment__c}" rendered="{!atpModel.fabassign}"/>
+             </apex:outputText>
+
+             <apex:outputText rendered="{!atpModel.atpObj.Team_Role__c!='Customer Engineer' && atpModel.atpObj.Team_Role__c!='Fab Planner'}"/>
+                       
+             <apex:outputText rendered="{!(atpModel.atpObj.id!='')}">
+                 <apex:inputCheckbox label="" style="width:100px" value="{!atpModel.atpObj.Flag_for_Delete__c}" disabled="{!atpModel.readonly}"/>
+             </apex:outputText>
+             
+             <apex:outputText rendered="{!(atpModel.atpObj.id='')}" style="width:80px"/> 
+             <apex:outputText style="padding-right:30px;"></apex:outputText>
+             
+     </apex:repeat>
+     
+  </apex:pageBlockSection>  
+  </apex:pageBlockSection> 
+  
+      <script>
+       function removeOption(){
+           var select = document.getElementsByTagName('select');
+           for(var j=0;j<select.length;j++){
+               for (var i=0;i<select[j].length;  i++) {
+                  if (select[j].options[i].value=='CustomerSuccessUserLookup') {
+                    select[j].remove(i);
+                  }
+               }
+           }
+       }
+       window.onload=removeOption();    
+    </script>  
+    
+ </apex:pageblock>
+</apex:form>
+</apex:page>

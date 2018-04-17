@@ -1,0 +1,435 @@
+<apex:page standardController="Apttus_Proposal__Proposal__c" extensions="CPQ_OpportunityIPRController" sidebar="false">
+    <apex:includeScript value="{!URLFOR($Resource.sldsV17,'/sldsV17/jquery.min.js')}"/>
+     <apex:includeScript value="{!URLFOR($Resource.sldsV17,'/sldsV17/jquery.dataTables.min.js')}" />
+       <apex:includeScript value="{!URLFOR($Resource.sldsV17,'/sldsV17/dataTables.buttons.min.js')}" />
+        <apex:includeScript value="{!URLFOR($Resource.sldsV17,'/sldsV17/buttons.html5.min.js')}" />
+        <apex:includeScript value="{!URLFOR($Resource.sldsV17,'/sldsV17/buttons.print.min.js')}" />
+      <apex:includeScript value="{!URLFOR($Resource.sldsV17,'/sldsV17/datatable/media/js/dataTables.bootstrap1.js')}" />
+      <apex:stylesheet value="{!URLFOR($Resource.sldsV17,'/sldsV17/datatable/media/css/dataTables.bootstrap.css')}" />
+    
+       
+    
+    <apex:stylesheet value="{!URLFOR($Resource.sldsV17, '/sldsV17/styles/salesforce-lightning-design-system-vf.min.css')}" />
+   
+   <style>
+     .green{
+           border-color: #60c170 !important ;
+           background-color: #60c170 !important ;
+     }
+     .orange{
+           border-color: orange !important ;
+           background-color: orange !important ;
+     }
+     .red{
+           border-color: red !important ;
+           background-color: red !important ;
+     }
+     table.messageTable td {
+            vertical-align: top;
+            border-top: 0px solid #ddd !important;
+        }
+         table.messageTable{
+           width:auto !important;
+         }
+        .maxLength1{
+            word-break:break-all;
+            max-width:20rem;
+            white-space:initial;
+            min-width: 14rem;
+        } 
+        .maxLength2{
+            word-break:break-all;
+            max-width:12rem;
+            min-width: 6rem;
+            white-space:initial;
+        } 
+   .selectedIP [type=checkbox]:checked+.slds-checkbox--faux:after,.EditIP [type=checkbox]+.slds-checkbox--faux:after{
+    content: attr(data-check-on) !important;
+    position: absolute;
+    left: .4rem !important;
+    background-color: transparent !important;
+    color: #fff;
+    font-size: .625rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    line-height: 1.3rem;
+    border-bottom: 0 !important;
+    border-right: 0 !important;
+    top:2px !important;
+    transform: rotate(0deg) !important;
+    }
+    
+    .selectedIP [type=checkbox]:checked+.slds-checkbox--faux:before{
+      background-color: #60c170 !important;
+    }
+    
+    .delAcn{
+      width: 3rem;
+    height: 1.5rem;
+    border: 1px solid #d8dde6;
+    padding: .125rem;
+    background-color: #fff;
+    color: #0070d2 !important;
+    border-radius: 15rem;
+    }
+   .GFCPQ .slds-text-heading--label{
+	letter-spacing: initial;
+	font-size: 91%;
+	font-weight: bold;
+	color: #4a4a56 !important;
+}
+
+  .GFCPQ,.GFCPQ h1, .GFCPQ h2, .GFCPQ h3, .GFCPQ h4, .GFCPQ h5, .GFCPQ h6, .GFCPQ td, .GFCPQ th {
+     font-family: Arial,Helvetica,sans-serif !important;
+	
+   }
+ </style>
+ 
+   
+ <div class='GFCPQ'> 
+ <c:actionstatus ></c:actionstatus>  
+  <apex:outputpanel layout="none" rendered="{!viewAll}"> 
+      <div class="slds-button-group" role="group" style='display:inline-flex;'>
+       <!-- <a href="/{!$CurrentPage.parameters.id}" target='_self' class="slds-button slds-button--neutral">Return to Configuration Detail <span class="slds-assistive-text">Show Configuration Detail</span></a>-->
+      <a href="javascript:window.history.back();" target='_self' class="slds-button slds-button--neutral">Return to Configuration Detail <span class="slds-assistive-text">Show Configuration Detail</span></a>
+       
+      </div>
+  </apex:outputpanel>
+ 
+<div class="slds-tabs--default">
+  <ul class="slds-tabs--default__nav" role="tablist">
+    <li class="slds-tabs--default__item slds-text-heading--label {!IF(!viewAll,'slds-active','')}" title="Available IPs" role="presentation" data-containerId='tab-default-1'>
+    <a class="slds-tabs--default__link" href="javascript:void(0);" role="tab" tabindex="0" aria-selected="true" aria-controls="tab-default-1" id="tab-default-1__item">
+       Available IPs</a>
+    </li>
+    <li class="slds-tabs--default__item slds-text-heading--label  {!IF(viewAll,'slds-active','')}" title="IP Requests"
+      role="presentation" data-containerId='tab-default-2'>
+         <a class="slds-tabs--default__link"  href="javascript:void(0);" role="tab" tabindex="-1" aria-selected="false" aria-controls="tab-default-2" id="tab-default-2__item" content-dataId='tab-default-1'>
+         IP Requests</a>
+       </li>
+   
+  </ul>
+  <div id="tab-default-1" class="slds-tabs--default__content {!IF(!viewAll,'slds-show','slds-hide')}  contentsec" role="tabpanel" aria-labelledby="tab-default-1__item">
+      <apex:include pageName="CPQIPSection"/>
+</div>
+  <div id="tab-default-2" class="slds-tabs--default__content  contentsec {!IF(viewAll,'slds-show','slds-hide')}" role="tabpanel" aria-labelledby="tab-default-2__item">
+   <apex:form id="pageBlock2" styleclass="GFCPQ">
+    <apex:actionFunction name="refresh" reRender="pageBlock2" action="{!editAction}" id="refresh" oncomplete="initDataTable();hideOverLay();"/>
+    <apex:actionFunction name="saveCoomentAction" action="{!saveAction}" reRender="pageBlock2"  oncomplete="initDataTable();hideOverLay();"/>
+    <apex:actionFunction name="delIPRequestAction" action="{!delIPRequest}" reRender="pageBlock2"  oncomplete="initDataTable();hideOverLay();"/>
+    
+       <apex:pageMessages />
+   <apex:inputHidden value="{!delIPReq}" id="ipreqid"/>
+   
+    <apex:outputpanel rendered="{!iprFlag}">
+        <div class='GFCPQ'>
+          
+            <div class="slds-card">
+                <div class="slds-card__header slds-grid">
+                  <div class="slds-no-flex">
+                    
+                    <div class="slds-button-group" role="group">
+                     
+                       <apex:outputpanel layout="none" rendered="{!isEdit && hasEditPerm}">
+                          <button type='button' class="slds-button slds-button--neutral" style='background: #4bca81;color: #fff;' onclick='showOverLay();saveCoomentAction();'>Save</button>
+                        </apex:outputpanel>
+                       <apex:outputpanel layout="none" rendered="{!hasEditPerm}">
+                          <apex:outputLink target="_parent" value="{!URLFOR($Action.CMOS_BU_IP_Request__c.New)}&{!strOppLookupMetaId}={!config.Apttus_Proposal__Opportunity__r.Name}&{!strOppLookupMetaId}_lkid={!config.Apttus_Proposal__Opportunity__c}&{!strGeoMetaId}={!config.Apttus_Proposal__Opportunity__r.Process_Geometry__c}&saveURL=/{!config.id}" styleClass="slds-button slds-button--brand">
+                            Create New IP Request
+                        </apex:outputLink>
+                      </apex:outputpanel>
+                      <apex:outputpanel layout="none" rendered="{!!viewAll}"> 
+                           <a href="{!$page.CPQ_OpportunityIPRPage}?id={!$CurrentPage.parameters.id}&viewAll=true" target='_parent' class="slds-button slds-button--neutral">View More Information <span class="slds-assistive-text">View More Information</span></a>
+                        </apex:outputpanel>
+                    </div> </div>
+                    <header class="slds-media slds-media_center slds-has-flexi-truncate">
+                        <div class="slds-media__figure">
+                            <span class="slds-icon_container slds-icon-standard-contact" title="description of icon when needed">
+        
+                           </span>
+                        </div>
+                        <div class="slds-media__body">
+                            <h2>
+                                  <!--  <a href="/{!config.Apttus_Proposal__Opportunity__r.Id}" class="slds-card__header-link slds-truncate" title="" target='_blank'>
+                                    <span class="slds-text-heading_small">IP Requests under Opportunity : {!config.Apttus_Proposal__Opportunity__r.Name}</span>
+                                  </a> -->
+                                   <span class="slds-text-heading_small link">IP Requests under Opportunity : 
+                                    <apex:outputfield value="{!config.Apttus_Proposal__Opportunity__c}" rendered="{!viewAll}"/>
+                                    <apex:outputpanel layout="none" rendered="{!!viewAll}">
+                                       <a href="/{!config.Apttus_Proposal__Opportunity__r.Id}">{!config.Apttus_Proposal__Opportunity__r.Name}</a>
+                                   </apex:outputpanel>
+                                    </span> 
+                                 
+                                </h2>
+                        </div>
+                    </header>
+                  
+                        
+                   
+                </div>
+                <div class="slds-card__body">
+               
+                    <table class="iprequest slds-table slds-table--bordered slds-no-row-hover slds-table--cell-buffer">
+                        <thead>
+                            <tr class="slds-text-title_caps">
+                            <th>Included IP</th>
+                                <th scope="col">
+                                    <div class="slds-truncate" title="IPR Name">IPR Name</div>
+                                </th>
+                                <th scope="col">
+                                  IP Type
+                                </th>
+                                <th scope="col">
+                                   IP Subtype
+                                </th>
+                                <th scope="col">
+                                   Stage
+                                </th>
+                                <th scope="col">
+                                   Owner
+                                </th>
+                             
+                                <th scope="col">
+                                   IP Project
+                                </th>
+                                <th scope="col">
+                                    Additional Description
+                                </th>
+                                <th scope="col">
+                                   Comments
+                                </th>
+                                <apex:outputpanel layout="none" rendered="{!ptFlag}">
+                                    <th scope="col">
+                                       IPs under {!config.Process_Technology_Lookup__r.Name}
+                                    </th>
+                                  <!--   <th scope="col">IP Link</th> -->
+                                </apex:outputpanel>
+                                <apex:outputpanel layout="none" rendered="{!viewAll}">
+                                 <th scope="col">
+                                   Metal Stack
+                                </th>
+                                <th scope="col">
+                                   Front End Design Kit Required Date
+                                </th>
+                                <th scope="col">
+                                   Update Existing IP
+                                </th>
+                                 <th scope="col">
+                                   Preferred IP Vendor
+                                </th>
+                                </apex:outputpanel>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <apex:repeat value="{!iprMap}" id="pageBlock" var="iprId">
+                                <tr>
+                                  <td style='padding-left:.3rem;'>
+                                     <div class="slds-form--inline">
+                                       <apex:outputpanel layout="none" rendered="{!iprMap[iprId].objIPRConfig.id != null && iprMap[iprId].objIPRConfig.id != ''}">  
+                                           <div class="slds-form-element" style='width:16%;margin-right: 0.1rem;'>
+                                          <label class="slds-checkbox--toggle slds-grid slds-grid--vertical-align-center selectedIP" >
+											    <input name="checkbox" type="checkbox" checked=" " disabled='true' />
+											    <span class="slds-checkbox--faux green"  data-check-on="IN" data-check-off="Off"></span>
+											  </label>
+										</div>	 
+										<div class="slds-form-element" style='width:auto;margin-right: 1px!important;'>
+                                             <input type='button' value='Del' class='delAcn' onclick="delAction('{!iprMap[iprId].objIPRConfig.id}');"/>
+										</div> 
+                                       </apex:outputpanel>
+                                    <div class="slds-form-element">
+                                        <label class="slds-checkbox--toggle slds-grid slds-grid--vertical-align-center {!IF(iprMap[iprId].objIPRConfig.id != null && iprMap[iprId].objIPRConfig.id != '','EditIP','')}">
+                                            <apex:inputCheckbox value="{!iprMap[iprId].isChecked}" onchange="showOverLay();refresh();"></apex:inputCheckbox>
+                                            <span class="slds-checkbox--faux" style='width:3.3rem;' data-check-on="Edit" data-check-off="Off"></span>
+                                          <!-- {!IF(iprMap[iprId].objIPRConfig.id != null,'green',
+                                                                                                  IF(iprMap[iprId].objIPRConfig.Id == null, 'orange1',
+                                                                                                  IF(iprMap[iprId].objIPRConfig.Id != null, 'green','')))} -->   
+                                        </label> 
+                                    </div>
+                                   
+                                    </div>
+                                  </td>
+                                    <td>
+                                        <div class="slds-truncate" title="">
+                                          <a href='/{!iprMap[iprId].iprRec.Id}' target='_blank'>{!iprMap[iprId].iprRec.Name}</a>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="slds-truncate1 maxLength2 link" title="">{!iprMap[iprId].iprRec.IP_Type__c}</div>
+                                    </td>
+                                    <td>
+                                        <div class="slds-truncate1 maxLength2 link" title="">{!iprMap[iprId].iprRec.IP_Subtype__c}</div>
+                                    </td>
+                                    <td>
+                                        <div class="slds-truncate1 maxLength2 link" title="">{!iprMap[iprId].iprRec.Stage__c}</div>
+                                    </td>
+                                     <td>
+                                        <div class="slds-truncate1 maxLength2 link" title="">{!iprMap[iprId].iprRec.Owner.Name}</div>
+                                    </td>
+                                    <td>
+                                        <div class="slds-truncate1 link" title="">
+                                        <apex:outputfield value="{!iprMap[iprId].iprRec.IP_Project__c}" ></apex:outputfield> </div>
+                                    </td>
+                                    <td>
+                                        <div class="{!IF(viewAll,'','slds-truncate1')} maxLength1 link comment more" title="" >
+                                         <apex:outputtext value="{!iprMap[iprId].iprRec.Additional_Description__c}" escape="false"> </apex:outputtext>
+                                         </div>
+                                    </td>
+                                    <td>
+                                        <div class="{!IF(viewAll,'','slds-truncate1')} maxLength1 link " title="" >
+                                           <div class='comment more'> 
+                                             <apex:outputText value="{!iprMap[iprId].objIPRConfig.comments__c}" rendered="{!!iprMap[iprId].isChecked}" ></apex:outputText>
+                                            </div> 
+                                            <apex:inputTextarea value="{!iprMap[iprId].comments}" styleclass="slds-textarea" html-placeholder="Enter Comment" rendered="{!iprMap[iprId].isChecked}" />  </div>
+                                    </td>
+                                    <apex:outputpanel layout="none" rendered="{!ptFlag}">
+                                        <td>
+                                            <apex:selectList styleclass="slds-select" value="{!iprMap[iprId].selectedIP}" size="1" rendered="{!iprMap[iprId].isChecked && lstIPsFromPT.size>1}">
+                                                <apex:selectOptions value="{!lstIPsFromPT}"></apex:selectOptions>
+                                            </apex:selectList>
+                                            <!-- <apex:outputText value="{!iprMap[iprId].objIPRConfig.IP__c}" style="{align-right;}" rendered="{!!iprMap[iprId].isChecked && lstIPsFromPT.size>1}" /> -->
+                                            
+                                              <apex:outputpanel layout="none" rendered="{!!iprMap[iprId].isChecked && iprMap[iprId].BaseIpId!=null && iprMap[iprId].BaseIpId!=''}">
+                                               <a href='/{!iprMap[iprId].BaseIpId}' target='_blank'>{!iprMap[iprId].BaseIpName}</a>
+                                           </apex:outputpanel>
+                                            <apex:outputpanel layout="none" rendered="{!!iprMap[iprId].isChecked && (iprMap[iprId].BaseIpId==null || iprMap[iprId].BaseIpId=='')}">
+                                              {!iprMap[iprId].objIPRConfig.IP__c}
+                                           </apex:outputpanel>
+                                            <apex:outputText value="IPs not available." style="{align-right;}" rendered="{!lstIPsFromPT.size==1}" />
+                                        </td>
+                                       <!--  <td>
+                                           <apex:outputpanel layout="none" rendered="{!iprMap[iprId].BaseIpId!=null && iprMap[iprId].BaseIpId!=''}">
+                                               <a href='/{!iprMap[iprId].BaseIpId}' target='_blank'>{!iprMap[iprId].BaseIpName}</a>
+                                           </apex:outputpanel>
+                                        </td> -->
+                                    </apex:outputpanel>
+                               <apex:outputpanel layout="none" rendered="{!viewAll}">
+                                 <th scope="col">
+                                  <div class="slds-truncate1 maxLength2" title="">{!iprMap[iprId].iprRec.Metal_Stack__c}</div>
+                                </th>
+                                <th scope="col">
+                                   <div class="slds-truncate1 maxLength2 link" title="">
+                                      <apex:outputfield value="{!iprMap[iprId].iprRec.Front_End_Design_Kit_Required_Date__c}" ></apex:outputfield>
+                                   </div>
+                                </th>
+                                <th scope="col">
+                                   <apex:outputfield value="{!iprMap[iprId].iprRec.Existing_IP__c}" ></apex:outputfield>
+                                </th>
+                                 <th scope="col">
+                                  <div class="{!IF(viewAll,'','slds-truncate1')} maxLength1" title="" >
+                                        <div class='comment more'> 
+                                          <apex:outputtext value="{!iprMap[iprId].iprRec.Preferred_IP_Vendor__c}" ></apex:outputtext>
+                                        </div>
+                                    </div>
+                                </th>
+                                </apex:outputpanel>
+                                </tr>
+                            </apex:repeat>
+                          
+                        </tbody>
+                    </table>
+                </div>
+               <apex:outputpanel layout="none" rendered="{!!viewAll && !isEdit }"> 
+                  <footer class="slds-card__footer"><a href="{!$page.CPQ_OpportunityIPRPage}?id={!$CurrentPage.parameters.id}&viewAll=true" target='_parent'>View More Information <span class="slds-assistive-text">entity type</span></a></footer>
+              </apex:outputpanel>
+               <apex:outputpanel layout="none" rendered="{!viewAll && !isEdit }"> 
+                  <footer class="slds-card__footer"><a href="/{!$CurrentPage.parameters.id}" target='_self'>Show Configuration Detail <span class="slds-assistive-text">entity type</span></a></footer>
+              </apex:outputpanel>
+            </div>
+             
+        </div>
+        </apex:outputpanel>
+       
+    </apex:form>
+
+  </div>
+ </div>
+</div>  
+ <script type="text/javascript" charset="utf-8">
+    /* Table initialisation */
+    function initDataTable() {
+        $('.slds-truncate a,.link a').attr('target','_blank');
+        $.extend($.fn.dataTableExt.oStdClasses, {
+            "sSortAsc": "header headerSortDown",
+            "sSortDesc": "header headerSortUp",
+            "sSortable": "header"
+        });
+        $('.iprequest').dataTable({
+            "sDom": "<'row'<'span8'l><'span8'f><'span8'B>r>t<'row'<'span8'i>>",
+            // "sDom": '<" table-navbar-header rounded-tops"ilf><"table search-results-table" t><"center"p> ',
+            "bPaginate": "false",
+            "oLanguage": {
+                "sLengthMenu": "_MENU_ records per page",
+                "sEmptyTable": "IP request not found."
+            },
+            "iDisplayLength": 100,
+            "aLengthMenu":[[10, 25, 50,100, -1], [10, 25, 50,100, "All"]],
+            /*"aoColumnDefs": [{
+                'bSortable': false,
+                'aTargets': [0]
+            }],*/
+             buttons: [
+             'csv', 'print'
+        ],
+            "aaSorting": [0,1]
+        });
+        shortner();
+    }
+    function shortner(){
+var showChar = 190;
+    var ellipsestext = "...";
+    var moretext = "more";
+    var lesstext = "less";
+  
+    $('.more').each(function() {
+        var content = $(this).text();
+        
+        if(content.length > showChar) {
+
+            var c = content.substr(0, showChar);
+            var h = content.substr(showChar-1, content.length - showChar);
+
+            var html = c + '<span class="moreellipses">' + ellipsestext+ '&nbsp;</span><span class="morecontent"><span>' + h + '</span> &nbsp;&nbsp; <a href="javascript:void(0);" class="morelink">' + moretext + '</a></span>';
+
+            $(this).html(html);
+        }
+
+    });
+
+    $(".morelink").click(function(){
+        if($(this).hasClass("less")) {
+            $(this).removeClass("less");
+            $(this).html(moretext);
+        } else {
+            $(this).addClass("less");
+            $(this).html(lesstext);
+        }
+        $(this).parent().prev().toggle();
+        $(this).prev().toggle();
+        return false;
+    });
+
+}
+    $(document).ready(function() {
+        initDataTable();
+        $("li").click(function(){
+         if(!$(this).hasClass('slds-active')){
+           $('li').removeClass('slds-active');
+           $('div.contentsec').removeClass('slds-show').addClass('slds-hide');
+           $(this).addClass('slds-active');
+          $('#'+$(this).data('containerid')).removeClass('slds-hide').addClass('slds-show');
+         }
+      });
+   
+    });
+     function delAction(reqid){
+        var res = confirm("Are you sure?");
+         if (res == true) {
+         showOverLay();
+           $( "input[id$='ipreqid']" ).val(reqid);
+           delIPRequestAction();
+         }
+        
+       
+     }
+    </script> 
+   </apex:page>

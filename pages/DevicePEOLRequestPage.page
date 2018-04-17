@@ -1,0 +1,76 @@
+<apex:page showHeader="true" sidebar="true" standardController="Device_PEOL_Request__c" extensions="DevicePEOLRequestControllerExt">
+    <style>
+        .center{
+            text-align:center;
+        }
+    </style>
+    <apex:includeScript value="{!$Resource.PEOL}"/>
+    <apex:sectionHeader title="Device PEOL Request Form" subtitle="{!Device_PEOL_Request__c.Name}" />
+    <apex:form >
+    <apex:actionFunction action="{!removeDeviceFromAddredDevices}" name="removeThis" reRender="addedDevices,availableDevices">
+        <apex:param assignTo="{!removeThisDevice}" value="" name="removedDevice"/>
+    </apex:actionFunction>
+    <apex:actionFunction action="{!addSelectedDeviceToPEOL}" name="addThis" reRender="addedDevices,availableDevices">
+        <apex:param assignTo="{!addThisDeviceWithKey}" value="" name="addedDevice"/>
+    </apex:actionFunction>
+    <apex:pageMessages ></apex:pageMessages>
+    <apex:pageBlock title="Device PEOL Request Details">
+        <apex:pageBlockSection columns="1" id="searchForm">
+            <apex:repeat value="{!$ObjectType.Device_PEOL_Request__c.FieldSets.PEOL_Request_Form}" var="fieldname">
+                <!-- IF it is not Customer field is should as input-->
+                <apex:inputField value="{!Device_PEOL_Request__c[fieldname]}" rendered="{!IF(fieldname != 'Customer__c', true, false)}"/>
+                <!-- IF it is  Customer field  and Customer is null then should as input-->
+                <apex:inputField value="{!Device_PEOL_Request__c[fieldname]}" rendered="{!IF((fieldname == 'Customer__c' && Device_PEOL_Request__c.Customer__c == null), true, false)}" required="{!IF(fieldname == 'Customer__c', true, false)}" styleClass="{!IF(fieldname == 'Customer__c', 'customerField', '')}"/>
+                <!-- IF it is  Customer field  and Customer is not null then should as output link-->
+                <apex:outputField value="{!Device_PEOL_Request__c[fieldname]}" rendered="{!IF( AND(fieldname == 'Customer__c', Device_PEOL_Request__c.Customer__c != null), true, false)}"/>
+            </apex:repeat>
+            <apex:inputText value="{!deviceNameForSearch}" label="Device Name"/>
+        </apex:pageBlockSection>
+        <apex:pageBlockButtons location="bottom">
+            <apex:commandButton value="Search Available Devices" action="{!searchDevices}" reRender="availableDevices,searchForm"/>
+            <apex:commandButton value="Save Request Form" action="{!savePEOLRequest}" />
+            <apex:commandButton value="Close Request Form" action="{!cancel}"/>
+        </apex:pageBlockButtons>
+    </apex:pageBlock>
+    <apex:pageBlock title="Added Devices" id="addedDevices">
+        <apex:pageBlockTable value="{!addedDevices}" var="device">
+            <apex:column headerValue="Remove" styleClass="center" headerClass="center"><button type="button" style="color:red; font-weight:700; padding: 3px 10px 3px 10px;" onclick="removeThis('{!device.ERP_Device__c}-{!device.Fab__c}')"> X </button></apex:column>
+            <apex:column headerValue="Copy Dates" styleClass="center" headerClass="center"><button type="button" onclick="copyLTSLTB(this)"><img src="/img/icon/campaigns16.png" title="Copy this date to other devices"/></button></apex:column>
+            
+            <apex:column value="{!device.ERP_Device__c}"/>
+            <apex:column value="{!device.Fab__c}"/>
+            <apex:column headerValue="Last Time Buy Date">
+                <apex:inputField value="{!device.Last_Time_Buy_Date__c}" styleClass="ltbDate"/>
+            </apex:column>
+            <apex:column headerValue="Last Time Ship Date">
+                <apex:inputField value="{!device.Last_Time_Ship_Date__c}"  styleClass="ltsDate"/>
+            </apex:column>
+        </apex:pageBlockTable>
+    </apex:pageBlock>
+    <apex:pageBlock title="Available Devices" id="availableDevices" >
+       <apex:pageBlockSection columns="1">
+            <apex:pageBlockTable value="{!displayDevices}" var="item">
+                 <apex:column >
+                    <apex:outputPanel rendered="{!item.previousStatus == 'Failed' || item.previousStatus == null}">
+                        <button type="button" style="color:green; font-weight:700; padding: 3px 10px 3px 10px;" onclick="addThis('{!item.customerItem.ERP_Device__c}-{!item.fab}')"> + </button>
+                     </apex:outputPanel>
+                     
+                 </apex:column>
+                <apex:repeat value="{!$ObjectType.Customer_Item__c.FieldSets.PEOL_Request_Form}" var="field"> 
+                    <apex:column value="{!item.customerItem[field]}" rendered="{!IF(field == 'ERP_Device__r.Fab__c', false, true)}"/>
+                </apex:repeat>
+                 <apex:column value="{!item.fab}" headerValue="Fab"/>
+                 <apex:column value="{!item.previousStatus}" headerValue="Previous PEOL Status"/>
+            </apex:pageBlockTable>
+        </apex:pageBlockSection>
+
+        <apex:pageBlockButtons location="bottom">
+            <apex:commandButton value=" ◄◄ "  style="font-size:1.2em;"  reRender="availableDevices" action="{!getFirst}" disabled="{!!hasPrevious}"/>
+            <apex:commandButton value=" ◄ "  style="font-size:1.2em;"  reRender="availableDevices" action="{!getPrevious}" disabled="{!!hasPrevious}"/>
+            <apex:commandButton value=" ► " style="font-size:1.2em;" reRender="availableDevices" action="{!getNext}" disabled="{!!hasNext}"/>
+            <apex:commandButton value=" ►► "  style="font-size:1.2em;"  reRender="availableDevices" action="{!getLast}" disabled="{!!hasNext}"/>
+        </apex:pageBlockButtons>
+    
+    </apex:pageBlock>
+    </apex:form>
+</apex:page>

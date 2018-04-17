@@ -1,0 +1,104 @@
+<!--
+ Type Name: VFDeProvisionSubPDK
+ Author: Cognizant Technology Solutions
+ Created Date: 12-June-2013
+ Reason: This page displays the ability to DeProvision Sub PDKs.
+ Change History:
+ Author: 
+ Modified Date: 
+ Reason: 
+ …….. 
+ ……..
+-->
+
+
+<apex:page standardController="Sub_PDK__c" extensions="ClsDeProvisionSubPDKController">
+
+<script type="text/javascript">
+    function checkAll(cb,section)
+        {
+            //alert(section);
+            
+            var inputElem = document.getElementsByTagName('input');                     
+            for(var i=0; i<inputElem.length; i++)
+            {                                                   
+                    if(inputElem[i].id.indexOf(section)!=-1){
+                        inputElem[i].checked = cb.checked;
+                        //alert('inside for loop.'+cb.checked);
+                    }               
+            }
+        }
+        
+     function checkContacts(cb,accid){
+        var inputElem = document.getElementsByTagName('input');                            
+        for(var i=0; i<inputElem.length; i++){ 
+            if(inputElem[i].parentNode.getAttribute('rowid')==accid)                                                 
+                inputElem[i].checked = cb.checked;               
+            }
+    }
+</script>
+  
+<apex:form id="theForm">
+                                         
+        <apex:pageBlock mode="detail" title="PDK DeProvisioning">
+            
+            <apex:pagemessages id="msg" /> 
+            <apex:pageBlockButtons location="both" >
+                <apex:commandButton value="DeProvision From Contacts" action="{!removeProvisioningRecords}" />&nbsp;&nbsp;            
+                <apex:commandButton value="Cancel" action="{!cancel}" status="addAccountStatus" reRender="theForm"/>
+           </apex:pageBlockButtons>
+            
+            <apex:pageblockSection title="PDK Information" columns="2" >
+
+                <apex:repeat value="{!$ObjectType.Sub_PDK__c.FieldSets.Provisioning_Fields}" var="f">
+                    <apex:outputField value="{!objSubPDK[f]}"/>                     
+                </apex:repeat>
+                
+            </apex:pageblockSection>
+            
+            <apex:pageBlockSection title="DeProvision From Contacts" columns="1" collapsible="no" >
+              
+              <apex:pageBlock > 
+                   
+               <apex:repeat value="{!lstAccUserWrapper}" var="accUser" id="provisioningTable">
+                    
+                        <!--apex:outputText value="Customer - {!accUser.accName}"  style="font-weight: bold;font-size:14px"/--> 
+                        <apex:pageBlockSection title="Customer - {!accUser.accName}" columns="1">             
+                  
+                  <!-- apex:pageBlock --> 
+                  
+                  <apex:pageBlockTable value="{!accUser.Sortedcontactlist}" var="mapUser" width="100%" rendered="{!accUser.lstUserSize>0}"> <!--Cognizant added on 25/11/2013---->
+                   
+                       <apex:column >
+                            
+                            <apex:facet name="header">
+                                <apex:inputcheckbox id="selectAllContacts" onclick="checkContacts(this,'{!accUser.accId}')" />
+                            </apex:facet>
+                           <div id="divid" rowid="{!accUser.accId}">
+                                <apex:inputCheckBox value="{!accUser.mapUserIdToChecked[mapUser]}" id="userCheckBox" />
+                           </div>
+                           
+                       </apex:column>
+                       <apex:column headerValue="Contact Name" >
+                            <apex:outputText value="{!mapUserNames[mapUser].Name}" />             
+                       </apex:column>
+                       <apex:column headerValue="Contact Email" >
+                            <apex:outputText value="{!mapUserNames[mapUser].Email}" />             
+                       </apex:column>
+                   </apex:pageBlockTable>
+                   <apex:outputLabel value="No Active Contacts found corresponding to this Customer for De-Provisioning" rendered="{!accUser.lstUserSize=0}"/>
+                   
+                   <!-- /apex:pageBlock -->
+                   
+                   </apex:pageBlockSection>               
+                   
+               </apex:repeat> 
+                <apex:outputLabel value="No Customer found for De-Provisioning" rendered="{!lstAccUserWrapper.size=0}"/>       
+               </apex:pageBlock>
+           </apex:pageBlockSection> 
+            
+      </apex:pageBlock>
+      
+ </apex:form>
+    
+</apex:page>

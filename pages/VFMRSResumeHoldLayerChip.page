@@ -1,0 +1,630 @@
+<apex:page standardController="MRS__c" showHeader="false" sideBar="false" standardStylesheets="false" id="pageId2" extensions="MRSResumeHoldLayerChipExtn">
+   <apex:stylesheet value="{!URLFOR($Resource.Swift_MRS_Hold_Test,'css/jquery.scombobox.min.css')}"/>
+   <apex:stylesheet value="{!URLFOR($Resource.Swift_MRS_Hold_Test,'css/jquery.multiselect.css')}"/>
+   <apex:stylesheet value="{!URLFOR($Resource.Swift_MRS_Hold_Test,'css/style.css')}"/>
+   <apex:stylesheet value="{!URLFOR($Resource.SWIFT_MRS_Changed,'css/style_LayerSummary.css')}"/>
+   <apex:stylesheet value="{!URLFOR($Resource.SWIFT_MRS_Changed,'css/style_LayerSummary.css')}"/>
+   <apex:stylesheet value="{!URLFOR($Resource.SWIFT_MRS_Changed,'css/jquery-ui.css')}"/>
+
+   <!--[if IE]>
+            <link rel="stylesheet" type="text/css" href="{!URLFOR($Resource.Swift_MRS_Hold_Test, 'css/iestyle.css')}" />
+   <![endif]-->
+   <apex:form id="frm2">
+    <apex:inputHidden value="{!ValueCatcher}" id="HiddenselectedLayers"/>
+    
+   <!--Wrapper Div Starts-->
+    <div id="wrapper">
+    <!--Container Div Starts-->
+       <!-- <div id="container" class="use-sidebar"> -->
+        <!-- Start of Right side content-->
+     <!--   <div id="content"> -->
+    
+            <!--Breadcrumb Starts-->
+            <apex:outputPanel rendered="{!NOT(internalView)}">
+                <div class="breadcrumb" id="breadcrumbDiv">
+                    <label><a href="javascript:void(0);" onclick="openMyDevices();"><u>My Devices</u></a></label> &gt;
+                    <label>Tapeout</label> &gt;
+                    <label>MRS</label> &gt;
+                    <label><apex:outputLink value="{!$Page.VFMRSResumeHold}"><u>Hold/Resume Layer </u></apex:outputLink></label> &gt;
+                    <label>Hold/Resume Layer Chip</label>
+                </div>
+            </apex:outputPanel>
+            <apex:outputPanel rendered="{!internalView}">
+                <div class="breadcrumb" id="breadcrumbDiv">
+                    <label>MRS</label> &gt;
+                    <label><apex:outputLink value="{!$Page.VFMRSResumeHold}"><u>Hold/Resume Layer </u></apex:outputLink></label> &gt;
+                    <label>Hold/Resume Layer Chip</label>
+                </div>
+            </apex:outputPanel>
+            <!--Breadcrumb Ends-->
+            
+            <div id="holdResumeLayerChip" class="right-panel-section">
+                <!-- Start DRT Right side Header-->
+                <h3>Hold / Resume Layer Chip</h3> 
+                <!-- End Right side Header-->                 
+                
+        <div class="quicklinks">
+          <a href="javascript:OpenExcelOrCSV('CSV');"><img src="{!URLFOR($Resource.Swift_MRS_Hold_Test,'images/expToCsv.png')}" width="24" height="24" alt="Export to CSV" title="Export to CSV"/></a>
+          <a href="javascript:OpenExcelOrCSV('excel');"><img src="{!URLFOR($Resource.Swift_MRS_Hold_Test,'images/excel-icon.png')}" width="23" height="23" alt="Export to Excel" title="Export to Excel"/></a>          
+          <a href="{!$Label.SWIFT_Support_Link}" target="_blank"><img src="{!URLFOR($Resource.Swift_MRS_Hold_Test,'images/help-icon.png')}" width="23" height="23" alt="Help"  title="Help"/></a>
+        </div>
+        <!-- --------------- First Row Starts --------------- -->
+                <div id="firstRowContentDiv" class="right-section-row right-section-row-borderbottom">  
+                    <dl>
+            <dt class="bold-font">Customer Name:</dt>
+                <dd class="pading-left">{!SelectedCustomerName}</dd>
+        </dl>
+        <dl class="display-inline">
+          <dt class="bold-font">Mask Set Title:</dt>
+          <dd class="pading-left">
+          {!SelectedMSTName}  
+          </dd>
+                </dl>
+          <dl class="display-inline">
+                    <dt class="bold-font">Mask Layer:</dt>
+                    <dd>
+           {!maskLayerName}
+                 </dd>
+                </dl> 
+            <div class="clear"></div>
+        </div>
+        <!-- --------------- First Row Ends --------------- -->
+        <!--Filters goes here................. -->
+        <div class="right-section-panel border-bottom" id="chipFilterId">
+        <div id="filters" class="right-section-row-filter-border" title="filterContent">                
+                <a href="javascript:void(0)" id="filter_anchor" name="filterContent" class="filters_slideDown">Filters</a>
+      </div>
+      <div id="filterContent">                        
+        <dl class="margin-top-5">
+          <dt class="bold-font">Layer Status</dt>
+          <dd class="pading-left">
+          <apex:outputpanel id="chiplayerStatusId">
+            <select id="layersummarydropdown" class="layerStatus-drpdwn-size multiSelect" multiple="multiple" onchange="getLayerValues(this);">
+                  <apex:repeat value="{!lstLayerStatusOption}" var="layerVal">
+                      <option value="{!layerVal.value}" selected="selected">{!layerVal.label}</option>
+                  </apex:repeat>
+            </select>
+          </apex:outputpanel>
+          </dd>
+        </dl>
+        <dl>
+          <dt class="bold-font">Device ID</dt>
+          <dd class="pading-left">
+            <apex:outputpanel id="deviceIdDropdown">
+              <select id="drtdropdown4" class="dropdown-size-big-normal">
+              <apex:repeat value="{!lstDeviceIdOption}" var="devId">
+                  <option value="{!devId.Value}">{!devId.label}</option>
+              </apex:repeat>
+              </select>
+            </apex:outputpanel>
+          </dd>
+        </dl>
+        <dl>
+          <dt class="line-height-15 bold-font">Tech Geo</dt>
+          <dd class="float-left">
+          <apex:outputpanel id="techGeoDropdown">
+              <select id="drtdropdown5" class="dropdown-size-big-normal">
+              <apex:repeat value="{!lstTechGeoOption}" var="techGeo">
+                      <option value="{!techGeo.Value}">{!techGeo.label}</option>
+              </apex:repeat>
+              </select>
+          </apex:outputpanel>
+          </dd>
+          <dd class="pading-left float-left"><input type="button" id="apply" value="Apply" class="no-margin"  onclick="retrieveTable()"/></dd>
+          <dd class="pading-left float-left"><input type="button" id="clear" value="Clear" class="no-margin" onclick="clearFilters();"/></dd>
+            </dl>
+            </div>
+      <div class="clear"></div>
+     </div>
+         <!--Filters ends here...................-->
+     <!-- --------------- Second Row Starts --------------- --> 
+   <apex:outputPanel id="displayChipHoldId">
+    <div id="secondRowContentDiv" class="right-section-row no-padding-top">
+      <div class="advance-datagrid no-padding" id="chipStartingTable">
+      <apex:outputpanel id="displayChipButtonId">
+        <apex:outputpanel rendered="{!isHoldActive}">
+            <input type="button" id="hold_chip_review_button" value="Hold" class="margin-top-10 tcell-width-58 margin-right-30 no-margin-left"  data-hold="true" onclick="renderChipHoldData();"/>
+        </apex:outputpanel>  
+        <apex:outputpanel rendered="{!isResumeActive}"> 
+            <input type="button" id="btnChipResume" value="Resume" class="margin-top-10 tcell-width-78" onclick="renderChipResumeData();"/>  
+        </apex:outputpanel>
+      </apex:outputpanel>
+      <apex:outputpanel id="displayTableId"> 
+        <apex:outputpanel rendered="{!records}"> 
+            <table class="data-table" id="review-customer-table">
+              <thead>
+              <tr class="tcell-height-35">
+                  <th class="tcell_width_25">No.</th>
+                  <th class="tcell-width-124">Chip</th>
+                  <th class="tcell-width-163">PTRF/DRT Number</th>
+                  <th class="tcell-width-130">Layer Chip Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                <apex:repeat value="{!mrsWrapperLists}" var="objWrapper" >
+                        <apex:outputLabel rendered="{!NOT(objWrapper.color)}">
+                          <tr class="alt-row-bgcolor tcell-height-30">
+                            <td class="text-align-centre">{!objWrapper.count}</td>
+                            <!--<td><apex:outputLink value="/{!objWrapper.mrs}" title="{!objWrapper.mrs.Name}" id="link_MRS-2">{!objWrapper.mrs.Name}</apex:outputLink></td>-->
+                            <td>{!objWrapper.mrs.Chip__r.Name}<input type='hidden' value='{!objWrapper.mrs}' id=''/></td>
+                            
+                            <td>
+                            <!-- TASK-2469 -->
+                            <apex:outputLink value="{! $Label.HYPERLINK_TO_SWIFT + objWrapper.ptrfOrDRTName }" title="{!objWrapper.ptrfOrDRTName}" id="link1" target="_blank">{!objWrapper.ptrfOrDRTName}</apex:outputLink>
+                            <!-- TASK-2469 END -->
+                            </td>
+                            
+                            <td class="text-align-centre">{!objWrapper.mrs.Layer_Chip_Status__c}</td>    
+                          </tr>
+                        </apex:outputLabel>               
+                        <apex:outputLabel rendered="{!objWrapper.color}">
+                          <tr class="tcell-height-30">
+                            <td class="text-align-centre">{!objWrapper.count}</td>
+                            <td>{!objWrapper.mrs.Chip__r.Name}<input type='hidden' value='{!objWrapper.mrs}' id=''/></td>
+                            
+                            <td>
+                            <!-- TASK-2469 -->
+                            <apex:outputLink value="{! $Label.HYPERLINK_TO_SWIFT + objWrapper.ptrfOrDRTName }" title="{!objWrapper.ptrfOrDRTName}" id="link2" target="_blank">{!objWrapper.ptrfOrDRTName}</apex:outputLink>
+                            <!-- TASK-2469 END -->
+                            </td>
+                            
+                            <td class="text-align-centre">{!objWrapper.mrs.Layer_Chip_Status__c}</td>  
+                          </tr>
+                        </apex:outputLabel>
+                    </apex:repeat> 
+              </tbody>
+             </table>
+          </apex:outputpanel>
+          <apex:outputPanel rendered="{!!records}">
+                    <div class="error-container margin-top-10" style="color:#000000">No records to display</div>
+          </apex:outputPanel>
+        </apex:outputPanel> 
+        </div>
+        <input type='hidden' id='btnDetection'/>
+        <div id="controllPageMsgId1">
+          <font color="red"><apex:pageMessages id="pageMsgId1"/></font>
+        </div>
+        </div>
+        </apex:outputPanel>  
+        <apex:outputPanel id="performChipholdId">
+        <apex:outputPanel rendered="{!performChipHold}">
+        <div class="perform_table review-customer-table display-none padding-left-14 width-98-percent" id="perform-table-ready">
+        <div>
+            <table class="data-table approve-button-1" id="review-customer-table-1">
+            <thead>
+              <tr class="tcell-height-35">
+                <th class="tcell_width_25 fixedHeaderChecked">No.</th>
+                <th class="tcell-width-124 fixedHeaderChecked">Chip</th>
+                <th class="tcell-width-163 fixedHeaderChecked">PTRF/DRT Number</th>
+                <th class="tcell-width-130 hasCheckbox ie-line-height22"><span class="tcell-width-20"><apex:inputCheckbox id="ChipChkbox0" styleClass="checkAllCheckbox"/></span><span class="tcell-width-102">Layer Chip Status</span></th>
+              </tr>
+            </thead>
+            <tbody>
+            <apex:repeat value="{!mrsWrapperLists}" var="objWrapper" >
+                    <apex:outputLabel rendered="{!NOT(objWrapper.color)}">
+                      <tr class="alt-row-bgcolor tcell-height-30">
+                        <td class="text-align-centre">{!objWrapper.count}</td>
+                        <!--<td><apex:outputLink value="/{!objWrapper.mrs}" title="{!objWrapper.mrs.Name}" id="link_MRS">{!objWrapper.mrs.Name}</apex:outputLink></td>-->
+                        <td>{!objWrapper.mrs.Chip__r.Name}<input type='hidden' value='{!objWrapper.mrs}' id=''/></td>
+                        <td>
+                            <!-- TASK-2469 -->
+                            <apex:outputLink value="{! $Label.HYPERLINK_TO_SWIFT + objWrapper.ptrfOrDRTName }" title="{!objWrapper.ptrfOrDRTName}" id="link3" target="_blank">{!objWrapper.ptrfOrDRTName}</apex:outputLink>
+                            <!-- TASK-2469 END -->
+                        </td>
+                            
+                         <td class="text-align-centre">
+                             <apex:inputCheckbox value="{!objWrapper.isChecked}" styleClass="checkAllCheckbox[]"/>
+                             <span>{!objWrapper.mrs.Layer_Chip_Status__c}</span>
+                             
+                             <!-- LONG LUU SWGP-988 -->
+                            <input type="hidden" value="{!objWrapper.mrs.Layer__r.Layer_Status__c}" />
+                            <!-- LONG LUU END -->
+                         </td>
+                      </tr>
+                    </apex:outputLabel>               
+                    <apex:outputLabel rendered="{!objWrapper.color}">
+                      <tr class="tcell-height-30">
+                        <td class="text-align-centre">{!objWrapper.count}</td>
+                        <!--<td><apex:outputLink value="/{!objWrapper.mrs}" title="{!objWrapper.mrs.Name}" id="link_MRS-1">{!objWrapper.mrs.Name}</apex:outputLink></td>-->
+                        <td>{!objWrapper.mrs.Chip__r.Name}<input type='hidden' value='{!objWrapper.mrs}' id=''/></td>
+                        
+                        <td>
+                        <!-- TASK-2469 -->
+                        <apex:outputLink value="{! $Label.HYPERLINK_TO_SWIFT + objWrapper.ptrfOrDRTName }" title="{!objWrapper.ptrfOrDRTName}" id="link4" target="_blank">{!objWrapper.ptrfOrDRTName}</apex:outputLink>
+                        <!-- TASK-2469 END -->
+                        </td>
+                        
+                        
+                        <td class="text-align-centre">
+                            <apex:inputCheckbox value="{!objWrapper.isChecked}" styleClass="checkAllCheckbox[]"/>
+                            <span>{!objWrapper.mrs.Layer_Chip_Status__c}</span>
+                            
+                            <!-- LONG LUU SWGP-988 --><input type="hidden" value="{!objWrapper.mrs.Layer__r.Layer_Status__c}" /><!-- LONG LUU END -->
+
+                        </td>
+                      </tr>
+                    </apex:outputLabel>
+                </apex:repeat>  
+            </tbody>
+        </table>
+        
+        <input type="button" value="Proceed" class="approve-button-style review-customer-table-1" id="approve-n-button-1" data-hold="true" data-chip="true" onclick = "displayChipProceedTable();"/>
+        <input type="button" value="Discard" class="approve-button-style margin-left-30" id="disapprove-button-1" onclick="discard();"/>
+        <div class="button-spacer"></div>
+         </div>  
+      <div class="clear"></div>
+    </div> 
+    </apex:outputPanel>
+  </apex:outputPanel>
+    <!-- --------------- Second Row Ends --------------- -->    
+           
+      <!-- ----------------Proceed section starts here-------------- --> 
+           <div id="approved-table-data" class="padding-left-9">
+           <apex:outputpanel id="proceedChipData" styleClass="padding-left-9 float-left">
+           <apex:outputpanel rendered="{!enableProceedTable}" >
+           <div id="controllPageMsgId">
+               <font color="red"><apex:pageMessages id="pageMsgId"/></font>
+               </div>
+             <div class="error-container margin-top-10" id="HoldSelectId">
+             <apex:outputpanel rendered="{!isHold}" styleClass="bold-font">
+             {!$Label.SWIFT_Confirm_Hold_Selection}
+              </apex:outputPanel>
+               <apex:outputpanel rendered="{!!isHold}" styleClass="bold-font">
+             {!$Label.SWIFT_Confirm_Resume_Selection}
+              </apex:outputPanel>
+             </div>
+                 <div class="clear">
+             </div>
+                 <table class="data-table approve-button-1 hideCheckboxTh" id="review-customer-table-1-approved">
+                     <thead>
+                         <tr class="alt-row-bgcolor tcell-height-35">
+                             <th class="tcell_width_25 fixedHeaderChecked">No.</th>
+                             <th class="tcell-width-124 fixedHeaderChecked">
+                                 <span class="span-wordwrap tcell-width-124">Chip</span>
+                             </th>
+                             <th class="tcell-width-163 fixedHeaderChecked">PTRF/DRT Number</th>
+                             <th class="tcell-width-130 fixedHeaderChecked">                      
+                                 <span class="span-wordwrap tcell-width-130">Layer Chip Status</span>
+                             </th>    
+                         </tr>
+                     </thead>
+                         <tbody>
+                             <apex:repeat value="{!wrapperlst}" var="objWrapper" >
+                    <apex:outputLabel rendered="{!NOT(objWrapper.color)}">
+                      <tr class="alt-row-bgcolor tcell-height-30">
+                        <td class="text-align-centre">{!objWrapper.count}</td>
+                        <td>{!objWrapper.mrs.Chip__r.Name}<input type='hidden' value='{!objWrapper.mrs}' id=''/></td>
+                        <td>
+                        <!-- TASK-2469 -->
+                        <apex:outputLink value="{! $Label.HYPERLINK_TO_SWIFT + objWrapper.ptrfOrDRTName }" title="{!objWrapper.ptrfOrDRTName}" id="link6" target="_blank">{!objWrapper.ptrfOrDRTName}</apex:outputLink>
+                        <!-- TASK-2469 END -->
+                        </td>
+                        
+                        
+                        
+                         <td class="text-align-centre">
+                             {!objWrapper.mrs.Layer_Chip_Status__c}
+                         </td>
+                      </tr>
+                    </apex:outputLabel>               
+                    <apex:outputLabel rendered="{!objWrapper.color}">
+                      <tr class="tcell-height-30">
+                        <td class="text-align-centre">{!objWrapper.count}</td>
+                        <td>{!objWrapper.mrs.Chip__r.Name}<input type='hidden' value='{!objWrapper.mrs}' id=''/></td>
+                        <td>   
+                        <!-- TASK-2469 -->
+                        <apex:outputLink value="{! $Label.HYPERLINK_TO_SWIFT + objWrapper.ptrfOrDRTName }" title="{!objWrapper.ptrfOrDRTName}" id="link7" target="_blank">{!objWrapper.ptrfOrDRTName}</apex:outputLink>
+                        <!-- TASK-2469 END -->
+                        </td>
+                        
+                        
+                         <td class="text-align-centre">
+                             {!objWrapper.mrs.Layer_Chip_Status__c}
+                         </td>
+                      </tr>
+                    </apex:outputLabel>
+                </apex:repeat>     
+           </tbody>
+       </table>
+             <div class="textarea-holder margin-top-9">
+                 <dl id="secondcreatedrt"></dl>
+                     <dt class="full-width no-margin-top">
+                         <span class="no-padding commentDisapproveReason" id="commentId"><strong>{!$Label.SWIFT_Release_Comment}</strong></span>
+                         <span class="red-font no-padding display-none">*</span></dt><dd class="full-width">
+                         <textarea id="descriprionArea" class="textArea"></textarea>
+                             </dd>
+                                 <div class="clear"></div>
+                                   <apex:outputPanel rendered="{!showError}" id="showErrorId">
+                                     <dt class="comment-note error-container margin-top-5 red-font" id="NoteId">{!$Label.SWIFT_Hold_Resume_Confirmation}</dt>
+                                   </apex:outputPanel>
+                                 <div class="clear"></div>
+             </div>
+             <div class="clear"></div>
+                    <input type="button" value="Proceed"  class="approve-button-style review-customer-table-1" id="approve-button-1-n"  data-hold="true" onclick = "getlayerChipUpdateOnProceed();"/>
+                    <input type="button" value="Discard" class="approve-button-style margin-left-30" id="disapprove-button-1-n" onclick="nextdiscard();"/>
+                    
+                                <div id="approved-table-data" ></div>
+                                 <div id="successMsg" class="padding-top-5 error-container successful-message-color">
+                                 </div>
+                             </apex:outputpanel> 
+                         </apex:outputpanel>
+       </div>
+       <!-- ----------------Proceed section Ends here-------------- -->
+      
+    <div class="clear"></div>
+    </div>
+    </div>
+        <!--End of content-->
+    <!--End of container div--> 
+ <apex:inputhidden id="flgForChipHoldId" value="{!showError}"/> 
+
+<apex:inputhidden id="isChecking" value="{!isChecking}"/>
+<apex:inputhidden id="commentIsNull" value="{!commentIsNull}"/>
+<apex:inputhidden id="isHold" value="{!isHold}"/>
+<apex:inputhidden id="commentsId" value="{!comments}"/>
+<apex:inputhidden id="arrPTRFids" value="{!arrPTRFids}"/>
+<apex:actionFunction name="getMSTchipLayer" action="{!getMSTchipLayer}" reRender="chiplayerStatusId">
+
+    </apex:actionFunction>
+<apex:actionFunction name="acfn_exportToCSV"  action="{!exportToCSV}"/>
+<apex:actionFunction name="acfn_exportToExcel"  action="{!exportToExcel}"/>  
+<apex:actionFunction name="acfn_refreshTableChip"  action="{!acfn_refreshTableChip}" reRender="performChipholdId" oncomplete="displayInitialProceedTable();SwiftGen.rowHover();callIncreaseIframe();"/>
+<apex:actionFunction name="displayChipProceedData"  action="{!displayChipProceedData}" reRender="proceedChipData" oncomplete="SwiftGen.rowHover();callIncreaseIframe();"/> 
+<apex:actionFunction name="chipLayerUpdateOnProceed"  action="{!chipLayerUpdateOnProceed}" reRender="displayChipButtonId,displayTableId,chiplayerStatusId" oncomplete="displayChipFirstTable();callIncreaseIframe();"/> 
+<apex:actionFunction name="IsCommentBlank"  action="{!IsCommentBlank}" reRender="pageMsgId"/>
+<apex:actionFunction name="isCheckBoxTrue"  action="{!isCheckBoxTrue}" reRender="pageMsgId1" oncomplete="SwiftGen.rowHover();"/>
+<apex:actionFunction name="anfn_discard"  action="{!anfn_discard}" reRender="displayChipHoldId,performChipholdId" oncomplete="displayFirstProceedTable();SwiftGen.rowHover();callIncreaseIframe();hideLoader();"/>
+<apex:actionFunction name="acfn_discardHold"  action="{!acfn_discardHold}" reRender="displayChipButtonId" oncomplete="displayHoldTable();SwiftGen.rowHover();callIncreaseIframe();"/>
+<apex:actionFunction name="getMRSTblData" action="{!getMRSTblData}" reRender="proceedChipData" oncomplete="callIncreaseIframe();hideLoader();">
+<apex:param name="MSTDevice" value="" assignTo="{!selectedLayerStatus}" />
+ <apex:param name="MSTTeschGeo" value="" assignTo="{!selectedDeviceId}" />
+ <apex:param name="MST1" value="" assignTo="{!selectedTechGeo}" />
+</apex:actionFunction>
+<apex:actionFunction name="acfn_clear"  action="{!clearFilter}" reRender="proceedChipData,deviceIdDropdown,techGeoDropdown" oncomplete="callIncreaseIframe();;hideLoader();"/>
+</apex:form>  
+
+<script>
+   function discard(){
+    acfn_discardHold();
+    
+    }
+   function displayHoldTable(){
+   jQuery( "#chipFilterId" ).removeClass( "display-none" );
+   jQuery('#perform-table-ready').addClass('display-none');
+   jQuery('#controllPageMsgId1').addClass('display-none');
+   jQuery('#review-customer-table').removeClass('display-none');
+   jQuery( "#chipStartingTable" ).removeClass( "display-none" );
+   
+   } 
+   function nextdiscard(){
+       showLoader('gf-bigcircle');
+       jQuery('.checkAllCheckbox').removeAttr('checked');   
+       anfn_discard();
+   }
+   function OpenExcelOrCSV(exportTo){
+    if(exportTo=='CSV'){   
+         acfn_exportToCSV();
+       }else{
+         acfn_exportToExcel();
+       }
+   } 
+   function displayFirstProceedTable(){
+    jQuery('#perform-table-ready').removeClass('display-none');
+    jQuery( "#approve-n-button-1" ).removeClass( "display-none");
+    jQuery( "#disapprove-button-1" ).removeClass( "display-none");
+    jQuery( "#chipStartingTable" ).addClass( "display-none" );
+    
+    jQuery( "#controllPageMsgId" ).addClass( "display-none" );
+    jQuery( "#approve-button-1-n" ).addClass( "display-none" );
+    jQuery( "#disapprove-button-1-n" ).addClass( "display-none");
+    jQuery( "#review-customer-table-1-approved" ).addClass( "display-none");
+    jQuery( "#descriprionArea" ).addClass( "display-none");
+    jQuery( "#HoldSelectId" ).addClass( "display-none");
+    jQuery( "#commentId" ).addClass( "display-none");
+    jQuery( "#NoteId" ).addClass( "display-none");
+    
+    } 
+   function displayChipFirstTable()
+   {
+   jQuery( "#controllPageMsgId" ).addClass( "display-none" );
+   jQuery('#chipStartingTable').removeClass('display-none');
+   jQuery( "#chipFilterId" ).removeClass( "display-none" );  
+   } 
+   function displayInitialProceedTable()
+   {
+   jQuery('#perform-table-ready').removeClass('display-none');
+   if(jQuery('#btnDetection').val()=="holdBtn"){
+   (jQuery('#review-customer-table-1 thead tr th .checkAllCheckbox').is(":checked"))?jQuery('#review-customer-table-1 thead tr th .checkAllCheckbox').removeAttr("checked"):"";
+   jQuery('#review-customer-table-1 tbody tr').each(function(index){
+            var status =jQuery(this).find("td").eq(3).text();
+            
+            jQuery(this).find("td").eq(3).find("input:checkbox").addClass('visibility-hidden');
+            if(status.trim() == "Released" || status.trim() == "In Progress"){    
+                jQuery(this).find("td").eq(3).find("input:checkbox").removeClass('visibility-hidden');
+            } 
+        });
+      }
+      else if(jQuery('#btnDetection').val()=="resumeBtn"){
+      (jQuery('#review-customer-table-1 thead tr th .checkAllCheckbox').is(":checked"))?jQuery('#review-customer-table-1 thead tr th .checkAllCheckbox').removeAttr("checked"):"";
+        jQuery('#review-customer-table-1 tbody tr').each(function(index){
+            var status =jQuery(this).find("td").eq(3).text();
+            
+            jQuery(this).find("td").eq(3).find("input:checkbox").addClass('visibility-hidden');
+            if(status.trim() == "Hold"){    
+                jQuery(this).find("td").eq(3).find("input:checkbox").removeClass('visibility-hidden');
+            } 
+        });
+    }  
+   }  
+   function getlayerChipUpdateOnProceed(){
+        var comment = jQuery('#descriprionArea').val();
+        if(comment.length == 0){
+        document.getElementById("{!$Component.frm2:commentIsNull}").value = 'commentIsNull';
+        IsCommentBlank();
+        }
+       else{
+       jQuery( "#controllPageMsgId" ).addClass( "display-none" );
+       jQuery( "#HoldSelectId" ).addClass( "display-none");
+       jQuery( "#review-customer-table-1-approved" ).addClass( "display-none");
+       jQuery( "#commentId" ).addClass( "display-none");
+       jQuery( "#NoteId" ).addClass( "display-none");
+       jQuery( "#descriprionArea" ).addClass( "display-none");
+       jQuery( "#approve-button-1-n" ).addClass( "display-none" ); 
+       jQuery( "#disapprove-button-1-n" ).addClass( "display-none");
+       var comments = jQuery('#descriprionArea').val();
+       document.getElementById("{!$Component.frm2:commentsId}").value = comments;
+       var arrPTRFid = new Array();
+        jQuery("#review-customer-table-1-approved tbody tr").each(function(){
+            if(!jQuery(this).hasClass("display-none")) {
+                var idValue1=jQuery(this).find("td").eq(1).find("input[type='hidden']").val();
+                if(checkEmptyOrNull(idValue1)) {
+                    var PTRFids=idValue1;
+                }
+                arrPTRFid.push(PTRFids);
+            }    
+                document.getElementById("{!$Component.frm2:arrPTRFids}").value = arrPTRFid;           
+        });
+        if($("#btnDetection").val()=="holdBtn"){
+        document.getElementById("{!$Component.frm2:isHold}").value = 'true';
+        chipLayerUpdateOnProceed();
+        }
+        else if($("#btnDetection").val()=="resumeBtn"){
+       document.getElementById("{!$Component.frm2:isHold}").value = 'false';
+       chipLayerUpdateOnProceed();
+       }
+     }  
+   }
+   function displayChipProceedTable()
+   {       
+            jQuery('#approved-table-data').removeClass('display-none');
+            var checkBoxChkd = false;
+            jQuery("table[id*='review-customer-table'] tr").each(function(){
+            if((jQuery(this).find("td").eq(3).find("input[type='checkbox']").is(":checked"))) {
+               document.getElementById("{!$Component.frm2:isChecking}").value = 'false';
+               checkBoxChkd = true;
+               //break;      
+            }
+            });
+            if(checkBoxChkd){ 
+            var chkChipFlag=false;
+            jQuery("table[id*='review-customer-table'] tr").each(function(){
+            
+                //SWGP-988
+                //if(jQuery(this).find("td").eq(3).text().trim()=="Released") {
+                if(jQuery(this).find("td").eq(3).find("input[type='hidden']").attr("value") == "Released") {//extract layer status from hidden input text
+                    if(jQuery(this).find("td").eq(3).find("input[type='checkbox']").is(":checked")) {
+                        chkChipFlag=true;
+                        return false;
+                    }
+                }
+                //SWGP-988-end
+            });
+            if(chkChipFlag){
+                customAlert('layer/chip has already started mask write.', "holdLayerChip",jQuery(this));
+                document.getElementById("pageId2:frm2:flgForChipHoldId").value = chkChipFlag;
+            } else {
+                document.getElementById("pageId2:frm2:flgForChipHoldId").value = chkChipFlag;
+                jQuery("#review-customer-table-1").addClass("display-none");
+                jQuery("#approve-n-button-1").addClass("display-none");
+                jQuery("#disapprove-button-1").addClass("display-none");
+                jQuery( "#controllPageMsgId1" ).addClass( "display-none" );
+                displayChipProceedData();
+            }
+        }
+        else{
+            isCheckBoxTrue();
+            jQuery('#controllPageMsgId1').removeClass('display-none');
+        }
+   }
+     function retrieveTable()
+     {  
+     showLoader('gf-bigcircle');
+         var layerStatusName;
+         var deviceIdName;
+         var techGeoName;
+         
+         var str_array= $("#layersummarydropdown").val();
+         
+         if(str_array==null)str_array="";
+         else {
+            for(var i = 0; i < str_array.length; i++) {
+               str_array[i] = str_array[i].replace(/^\s*/, "").replace(/\s*$/, "");
+            }
+         }
+         document.getElementById("{!$Component.frm2:HiddenselectedLayers}").value = str_array;
+         layerStatusName = str_array;  
+         deviceIdName = jQuery("[id$=drtdropdown4]").val();
+         techGeoName = jQuery("[id$=drtdropdown5]").val();
+         
+         getMRSTblData(layerStatusName,deviceIdName,techGeoName);
+        
+        jQuery('#approved-table-data').addClass('display-none');
+     } 
+    function showLoader(e) {
+        jQuery.loader({className: e,content: ""});
+    }
+                    
+    function hideLoader() {
+        jQuery.loader("close");
+    }
+  
+    function renderChipHoldData()
+   {   
+     document.getElementById("{!$Component.frm2:isHold}").value = 'true';
+       jQuery( "#chipFilterId" ).addClass( "display-none" );
+       jQuery( "#review-customer-table" ).addClass( "display-none" );
+       jQuery( "#hold_chip_review_button" ).addClass( "display-none" );
+       jQuery( "#btnChipResume" ).addClass( "display-none" );
+       jQuery('#btnDetection').val("holdBtn");
+       acfn_refreshTableChip();
+   }
+   function openMyDevices() {
+    try {
+        parent.refreshPage();
+    }catch(e) {
+        window.location.reload($label.SWIFT_COMMUNITY_URL+'MyDevices');
+    }
+   }
+   function renderChipResumeData()
+   {   
+     document.getElementById("{!$Component.frm2:isHold}").value = 'false';
+       jQuery( "#chipFilterId" ).addClass( "display-none" );
+       jQuery( "#review-customer-table" ).addClass( "display-none" );
+       jQuery( "#hold_chip_review_button" ).addClass( "display-none" );
+       jQuery( "#btnChipResume" ).addClass( "display-none" );
+       jQuery('#btnDetection').val("resumeBtn");
+       acfn_refreshTableChip();
+   }
+
+    function clearFilters(){
+        showLoader('gf-bigcircle');
+        acfn_clear();
+    }
+    
+    /*increase Iframe starts*/
+        function callIncreaseIframe() {
+            
+            try{
+                parent.iframeLoaded();
+                
+            }catch(err){}
+        }
+   /*increase Iframe ends*/
+    window.onload = callIncreaseIframe();
+</script> 
+   
+<script type="text/javascript" src="{!URLFOR($Resource.Swift_MRS_Hold_Test,'js/jquery.min.js')}"></script>
+<script type="text/javascript" src="{!URLFOR($Resource.Swift_MRS_Hold_Test,'js/leftmenu.js')}"></script>
+<script type="text/javascript" src="{!URLFOR($Resource.Swift_MRS_Hold_Test,'js/jquery.scombobox.min.js')}"></script>
+<script type="text/javascript" src="{!URLFOR($Resource.Swift_MRS_Hold_Test,'js/advancedDataGrid.js')}"></script>
+<script type="text/javascript" src="{!URLFOR($Resource.Swift_MRS_Hold_Test,'js/jquery-ui.min.js')}"></script>
+<script type="text/javascript" src="{!URLFOR($Resource.Swift_MRS_Hold_Test,'js/jquery.multiselect.js')}"></script>
+<script type="text/javascript" src="{!URLFOR($Resource.Swift_MRS_Hold_Test,'js/common-script.js')}"></script>
+<script type="text/javascript" src="{!URLFOR($Resource.Swift_MRS_Hold_Test,'js/sort.js')}"></script>   
+<script type="text/javascript" src="{!URLFOR($Resource.SWIFT_MRS_Changed,'js/jquery.loader.min.js')}"></script>
+<script>
+    $(function() {
+        $( document ).tooltip();
+     });
+</script>
+</apex:page>

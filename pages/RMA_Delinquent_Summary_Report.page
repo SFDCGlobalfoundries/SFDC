@@ -1,0 +1,83 @@
+<apex:page controller="RMA_Delinquent_Summary_Report_Controller"
+	id="thepage" sidebar="false" title="RMA Delinquent Summary Report">
+
+	<apex:stylesheet value="/sCSS/21.0/sprites/1297816277000/Theme3/default/gc/versioning.css" />
+
+	<apex:sectionHeader title="RMA" subtitle="Delinquent Summary Report" />
+
+	<c:loadingPanel ></c:loadingPanel>
+
+	<apex:form id="theform">
+		<apex:pageBlock id="theblock">
+			<apex:pageBlockButtons location="top">
+				<apex:commandButton value="Export" action="{!exportCsvFile}"
+					rendered="{!noOfRecords != null}" />
+			</apex:pageBlockButtons>
+
+			<apex:pageBlockSection id="thesection" collapsible="false"
+				columns="1">
+				<apex:pageBlockTable id="thereport" value="{!RMAWrapperList}"
+					var="rma" rendered="{!noOfRecords != null}">
+					<apex:column value="{!rma.rma.Customer_Name__c}">
+						<apex:facet name="header">Customer</apex:facet>
+					</apex:column>
+					<apex:column value="{!rma.dept}">
+						<apex:facet name="header">Responsible Dept</apex:facet>
+					</apex:column>
+					<apex:column value="{!rma.rma.Fab__c}">
+						<apex:facet name="header">FAB</apex:facet>
+					</apex:column>
+					<apex:column value="{!rma.rma.Region__c}">
+						<apex:facet name="header">Region</apex:facet>
+					</apex:column>
+					<apex:column value="{!rma.rma.RMA_Category__c}">
+						<apex:facet name="header">RMA Category</apex:facet>
+					</apex:column>
+					<apex:column value="{!rma.rma.Workflow_Stage__c}">
+						<apex:facet name="header">Stage</apex:facet>
+					</apex:column>
+					<apex:column >
+						<apex:outputLink value="/{!rma.rma.Id}">{!rma.rma.Name}</apex:outputLink>
+						<apex:facet name="header">RMA No</apex:facet>
+					</apex:column>
+					<apex:column value="{!rma.actualCycTime}">
+						<apex:facet name="header">Actual Cycle Time</apex:facet>
+					</apex:column>
+					<apex:column value="{!rma.targetCycTime}">
+						<apex:facet name="header">Targe Cycle Time</apex:facet>
+					</apex:column>
+					<apex:column value="{!rma.dueDays}">
+						<apex:facet name="header">Days Overdue</apex:facet>
+					</apex:column>
+				</apex:pageBlockTable>
+
+				<apex:outputLabel value="No Delinquent RMA Records Available."
+					rendered="{!noOfRecords == NULL}" style="font-weight:bold;" />
+
+				<apex:panelGrid columns="7" rendered="{!noOfRecords != null}">
+					<apex:commandButton reRender="theblock"
+						value="|<" action="{!first}" disabled="{!!hasPrevious}"
+						title="First Page" status="LoadingStatusSpinner" />
+					<apex:commandButton reRender="theblock"
+						value="<" action="{!previous}" disabled="{!!hasPrevious}"
+						title="Previous Page" status="LoadingStatusSpinner" />
+					<apex:commandButton reRender="theblock"
+						value=">" action="{!next}" disabled="{!!hasNext}"
+						title="Next Page" status="LoadingStatusSpinner" />
+					<apex:commandButton reRender="theblock"
+						value=">|" action="{!last}" disabled="{!!hasNext}"
+						title="Last Page" status="LoadingStatusSpinner" />
+					<apex:outputText >{!(pageNumber * size)+1-size}-{!IF((pageNumber * size)>noOfRecords, noOfRecords,(pageNumber * size))} of {!noOfRecords}</apex:outputText>
+					<apex:commandButton status="LoadingStatusSpinner"
+						reRender="theblock" value="Refresh" action="{!refresh}"
+						title="Refresh Page" />
+					<!-- <apex:outputPanel style="color:#4AA02C;font-weight:bold">
+						<apex:actionStatus id="fetchStatus" startText="Fetching..."
+							stopText="" />
+					</apex:outputPanel> -->
+				</apex:panelGrid>
+			</apex:pageBlockSection>
+		</apex:pageBlock>
+	</apex:form>
+
+</apex:page>

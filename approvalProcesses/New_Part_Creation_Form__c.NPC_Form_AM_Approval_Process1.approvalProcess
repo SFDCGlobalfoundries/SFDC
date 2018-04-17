@@ -1,0 +1,171 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ApprovalProcess xmlns="http://soap.sforce.com/2006/04/metadata">
+    <active>true</active>
+    <allowRecall>true</allowRecall>
+    <allowedSubmitters>
+        <type>owner</type>
+    </allowedSubmitters>
+    <approvalPageFields>
+        <field>Name</field>
+        <field>Account_Name__c</field>
+        <field>Fab__c</field>
+        <field>New_Part_ID__c</field>
+        <field>Reason_for_New_Part__c</field>
+        <field>Litho_Validate_Reticle_is_in_GF__c</field>
+        <field>Litho_Status__c</field>
+        <field>STF_Activation_Steps__c</field>
+    </approvalPageFields>
+    <approvalStep>
+        <allowDelegate>false</allowDelegate>
+        <assignedApprover>
+            <approver>
+                <name>Primary_Device_AM__c</name>
+                <type>relatedUserField</type>
+            </approver>
+            <approver>
+                <name>Primary_Device_AM2__c</name>
+                <type>relatedUserField</type>
+            </approver>
+            <whenMultipleApprovers>FirstResponse</whenMultipleApprovers>
+        </assignedApprover>
+        <entryCriteria>
+            <criteriaItems>
+                <field>New_Part_Creation_Form__c.No_of_AM_Approvers__c</field>
+                <operation>equals</operation>
+                <value>2</value>
+            </criteriaItems>
+        </entryCriteria>
+        <ifCriteriaNotMet>GotoNextStep</ifCriteriaNotMet>
+        <label>AM Approver</label>
+        <name>AM_Approver</name>
+    </approvalStep>
+    <approvalStep>
+        <allowDelegate>false</allowDelegate>
+        <assignedApprover>
+            <approver>
+                <name>Primary_Device_AM__c</name>
+                <type>relatedUserField</type>
+            </approver>
+            <whenMultipleApprovers>FirstResponse</whenMultipleApprovers>
+        </assignedApprover>
+        <entryCriteria>
+            <criteriaItems>
+                <field>New_Part_Creation_Form__c.No_of_AM_Approvers__c</field>
+                <operation>equals</operation>
+                <value>1</value>
+            </criteriaItems>
+            <criteriaItems>
+                <field>New_Part_Creation_Form__c.Primary_Device_AM__c</field>
+                <operation>notEqual</operation>
+            </criteriaItems>
+        </entryCriteria>
+        <label>AM Approver</label>
+        <name>AM_Approver1</name>
+        <rejectBehavior>
+            <type>RejectRequest</type>
+        </rejectBehavior>
+    </approvalStep>
+    <description>When Litho users approve NPC Form it is assigned to AM for approval.</description>
+    <emailTemplate>GLOBALFOUNDRIES/NPC_Mail_to_CE_for_Approval</emailTemplate>
+    <enableMobileDeviceAccess>false</enableMobileDeviceAccess>
+    <entryCriteria>
+        <formula>AND( 
+OR( 
+ISPICKVAL(NPC_Form_Status__c, &apos;Draft&apos;) 
+, ISPICKVAL(NPC_Form_Status__c, &apos;Pending Resubmission&apos;) 
+, ISPICKVAL(NPC_Form_Status__c, &apos;Pending Submission&apos;) 
+, ISPICKVAL(NPC_Form_Status__c, &apos;Pending Litho Verification&apos;) 
+), 
+AND( 
+ISPICKVAL(Reason_for_New_Part__c, &apos;Device Reactivation&apos;), 
+OR(ISPICKVAL(Is_reticle_available__c, &apos;Yes,at GF&apos;),
+   ISPICKVAL(Is_reticle_available__c, &apos;Yes Return to Customer&apos;)),
+OR(ISPICKVAL(Litho_Status__c, &apos;Yes&apos;),
+   ISPICKVAL(Litho_Status__c, &apos;No&apos;), 
+   ISPICKVAL(Litho_Status__c, &apos;&apos;)),
+OR(ISPICKVAL(STF_Activation_Steps__c, &apos;Step 1&apos;),
+   ISPICKVAL(STF_Activation_Steps__c, &apos;&apos;)),
+NOT(ISNULL(Primary_Device_AM__c)), 
+NOT(CONTAINS($Profile.Name, &apos;GF Integration&apos;) 
+) 
+)
+)</formula>
+    </entryCriteria>
+    <finalApprovalActions>
+        <action>
+            <name>NPC_Form_Status_Draft</name>
+            <type>FieldUpdate</type>
+        </action>
+        <action>
+            <name>Set_NPC_STF_Activation_Steps_to_Step_2</name>
+            <type>FieldUpdate</type>
+        </action>
+    </finalApprovalActions>
+    <finalApprovalRecordLock>true</finalApprovalRecordLock>
+    <finalRejectionActions>
+        <action>
+            <name>NPC_Form_Approval_Status_Rejected</name>
+            <type>FieldUpdate</type>
+        </action>
+        <action>
+            <name>Set_NPC_Rec_Type_to_StatusRejected</name>
+            <type>FieldUpdate</type>
+        </action>
+        <action>
+            <name>Set_NPC_Status_to_Pending_Resubmission</name>
+            <type>FieldUpdate</type>
+        </action>
+        <action>
+            <name>Update_Send_Recall_Email_Flag</name>
+            <type>FieldUpdate</type>
+        </action>
+    </finalRejectionActions>
+    <finalRejectionRecordLock>false</finalRejectionRecordLock>
+    <initialSubmissionActions>
+        <action>
+            <name>NPC_Form_Approval_Status_Pending</name>
+            <type>FieldUpdate</type>
+        </action>
+        <action>
+            <name>NPC_Pending_AM_Approval</name>
+            <type>FieldUpdate</type>
+        </action>
+        <action>
+            <name>NPC_Update_PIYE_Approver_1</name>
+            <type>FieldUpdate</type>
+        </action>
+        <action>
+            <name>NPC_Update_PIYE_Approver_2</name>
+            <type>FieldUpdate</type>
+        </action>
+        <action>
+            <name>NPC_Update_PIYE_Approver_3</name>
+            <type>FieldUpdate</type>
+        </action>
+        <action>
+            <name>Set_NPC_Form_Submitted_Date</name>
+            <type>FieldUpdate</type>
+        </action>
+        <action>
+            <name>Set_NPC_Rec_Type_to_StatusSubmitted</name>
+            <type>FieldUpdate</type>
+        </action>
+    </initialSubmissionActions>
+    <label>NPC Form AM Approval Process</label>
+    <recallActions>
+        <action>
+            <name>NPC_Form_Approval_Status_Recalled</name>
+            <type>FieldUpdate</type>
+        </action>
+        <action>
+            <name>Set_NPC_Status_to_Pending_Resubmission</name>
+            <type>FieldUpdate</type>
+        </action>
+        <action>
+            <name>Update_Send_Recall_Email_Flag</name>
+            <type>FieldUpdate</type>
+        </action>
+    </recallActions>
+    <recordEditability>AdminOnly</recordEditability>
+    <showApprovalHistory>false</showApprovalHistory>
+</ApprovalProcess>

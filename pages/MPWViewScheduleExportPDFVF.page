@@ -1,0 +1,198 @@
+<!--
+    Author: Abhita Bansal
+    Description: This page is used as the view the MPW Schedule data in pdf format
+    History: 
+        ABansal     05152015    - Page creation.
+-->
+<apex:page id="MPWViewScheduleExportPDFVF" controller="MPWTrainScheduleTabController" renderAs="pdf" applyBodyTag="false" applyHtmlTag="false" showHeader="false" contentType="application/pdf">
+    <html>
+        <head>
+            <style>
+                @page {
+                	size: 14.00in 8.50in; 
+                    margin-top: 2cm;
+                    margin-bottom: 6cm;
+                    margin-left: 1cm;
+                    margin-right: 2cm;  
+                    @top-center {
+                        content : element(header);
+                    } 
+                    @bottom-center {
+                        content : element(footer);
+                    }                 
+                }               
+                div.header {
+                    position : running(header) ;
+                }
+                div.footer {
+                    position : running(footer) ;
+                }
+                .outBorder
+                {
+                    border-right:1px outset black;
+                    
+                }               
+                .inBorder
+                {
+                    border-top:1px outset black;
+                    border-left:1px outset black;                    
+                } 
+                .outBorder1
+                {
+                    border-bottom:1px outset black;
+                } 
+            </style>          
+        </head>
+        
+        <apex:form >
+            <body>
+                <div class="header">     
+                    <table width="110%">
+                        <tr>
+                            <td align="left">                     
+                                <apex:image value="{!URLFOR($Resource.GFLogo)}" height="5%" style="position:relative;background-repeat:repeat-x;"/>                    
+                            </td>
+                            <td>
+                                <apex:outputText value="{0,date,MMMM dd, yyyy}" style="font-family: Arial,Helvetica,sans-serif;font-size:80%;">
+                                     <apex:param value="{!TODAY()}" />
+                                </apex:outputText>
+                            </td> 
+                            <td>
+                                <apex:outputLabel style="font-family: Arial,Helvetica,sans-serif;font-size:80%;">Confidential</apex:outputLabel>
+                            </td>       
+                        </tr>   
+                    </table> 
+                </div>
+                
+                <div class="footer">
+                    <apex:pageBlock >
+                        <apex:pageBlockTable columns="1" id="scheduleNotesList" value="{!listScheduleNotes}" var="n" style="width:100%;font-size:60%;font-family: Arial,Helvetica,sans-serif;">     
+                            <apex:column >
+                                <apex:outputField value="{!n.Value__c}" />                
+                            </apex:column>
+                        </apex:pageBlockTable>
+                    </apex:pageBlock>
+                </div>
+            </body>
+            <apex:pageBlock mode="maindetail">            
+                <apex:repeat value="{!mapMPWTrain}" var="key" id="mapList">
+                    <div style="{!if(key < 2, 'page-break-before:avoid;','page-break-before:always;')}"> 
+                    <br/>     
+                        <apex:pageBlockTable id="mpwTb3" value="{!mapMPWTrain[key]}" var="m" styleClass="outBorder1" style="width:100%;font-size:72.5%;">
+                            <apex:column styleClass="inBorder" width="5%">                           
+                            <apex:facet name="header">MPW #<br/><br/><br/><br/></apex:facet>
+                            <table>                        
+                                <tr>
+                                    <td>
+                                        <apex:outputField value="{!m.mpwScheduleTrain.Name}" />
+                                    </td>                                   
+                                </tr>
+                            </table>
+                            </apex:column>
+                            <apex:column styleClass="inBorder" width="5%">
+                            <apex:facet name="header">Geometry<br/><br/><br/><br/></apex:facet>
+                            <table>
+                                <tr>
+                                    <td>
+                                        <apex:outputField value="{!m.mpwScheduleTrain.Geometry__c}" />
+                                    </td>
+                                </tr>
+                            </table>
+                            </apex:column>
+                            <apex:column styleClass="inBorder" width="7%">
+                            <apex:facet name="header">Reservation<br/>Close Date*<br/><br/><br/></apex:facet>
+                            <table>
+                                <tr>
+                                    <td>    
+                                        <apex:outputText value="{!MONTH(DATEVALUE(m.mpwScheduleTrain.Reservation_Close_Date__c))}/{!DAY(DATEVALUE(m.mpwScheduleTrain.Reservation_Close_Date__c))}/{!YEAR(DATEVALUE(m.mpwScheduleTrain.Reservation_Close_Date__c))}" rendered="{!IF(NOT(ISBLANK(DATEVALUE(m.mpwScheduleTrain.Reservation_Close_Date__c))), true, false)}" />
+                                    </td>
+                                </tr>
+                            </table>
+                            </apex:column>
+                            <apex:column styleClass="inBorder" width="7%">
+                            <apex:facet name="header">CDRS Submit<br/>Date<sup>@</sup><br/><br/><br/></apex:facet>
+                            <table>
+                                <tr>
+                                    <td>
+                                        <apex:outputText value="{!MONTH(DATEVALUE(m.mpwScheduleTrain.CDRS_Submit_Date__c))}/{!DAY(DATEVALUE(m.mpwScheduleTrain.CDRS_Submit_Date__c))}/{!YEAR(DATEVALUE(m.mpwScheduleTrain.CDRS_Submit_Date__c))}" rendered="{!IF(NOT(ISBLANK(m.mpwScheduleTrain.CDRS_Submit_Date__c)), true, false)}" />
+                                    </td>
+                                </tr>
+                            </table>
+                            </apex:column>
+                            <apex:column styleClass="inBorder" width="7%">
+                            <apex:facet name="header">Cancellation Deadline<br/><br/><br/></apex:facet>
+                            <table>
+                                <tr>
+                                    <td>
+                                        <apex:outputText value="{!MONTH(DATEVALUE(m.mpwScheduleTrain.Cancellation_Deadline__c))}/{!DAY(DATEVALUE(m.mpwScheduleTrain.Cancellation_Deadline__c))}/{!YEAR(DATEVALUE(m.mpwScheduleTrain.Cancellation_Deadline__c))}" rendered="{!IF(NOT(ISBLANK(m.mpwScheduleTrain.Cancellation_Deadline__c)), true, false)}" />
+                                    </td>
+                                </tr>
+                            </table>
+                            </apex:column>
+                            <apex:column styleClass="inBorder" width="8%">
+                            <apex:facet name="header">Dry Run DRC<br/>CutOff<br/><br/></apex:facet>
+                            <table>
+                                <tr>
+                                    <td>
+                                        <apex:outputText value="{!MONTH(DATEVALUE(m.mpwScheduleTrain.GDSII_Cutoff_for_Dry_Run_DRC__c))}/{!DAY(DATEVALUE(m.mpwScheduleTrain.GDSII_Cutoff_for_Dry_Run_DRC__c))}/{!YEAR(DATEVALUE(m.mpwScheduleTrain.GDSII_Cutoff_for_Dry_Run_DRC__c))}" rendered="{!IF(NOT(ISBLANK(m.mpwScheduleTrain.GDSII_Cutoff_for_Dry_Run_DRC__c)), true, false)}" />
+                                    </td>
+                                </tr>
+                            </table>
+                            </apex:column>
+                            <apex:column styleClass="inBorder" width="7%">
+                            <apex:facet name="header">Other<br/>Participants<br/>Tapeout Date<sup>#&#38;</sup><br/><br/></apex:facet>
+                            <table>
+                                <tr>
+                                    <td>    
+                                        <apex:outputText value="{!MONTH(DATEVALUE(m.mpwScheduleTrain.Tapeout_Date_Other_Participant__c))}/{!DAY(DATEVALUE(m.mpwScheduleTrain.Tapeout_Date_Other_Participant__c))}/{!YEAR(DATEVALUE(m.mpwScheduleTrain.Tapeout_Date_Other_Participant__c))}" rendered="{!IF(NOT(ISBLANK(m.mpwScheduleTrain.Tapeout_Date_Other_Participant__c)), true, false)}" />
+                                    </td>
+                                </tr>
+                            </table>
+                            </apex:column>
+                            <apex:column styleClass="inBorder" width="7%">
+                            <apex:facet name="header">Customer<br/>Tapeout Date<sup>#</sup><br/><br/><br/></apex:facet>
+                            <table>
+                                <tr>
+                                    <td>
+                                        <apex:outputText value="{!MONTH(DATEVALUE(m.mpwScheduleTrain.Tapeout_Date_Customer__c))}/{!DAY(DATEVALUE(m.mpwScheduleTrain.Tapeout_Date_Customer__c))}/{!YEAR(DATEVALUE(m.mpwScheduleTrain.Tapeout_Date_Customer__c))}" rendered="{!IF(NOT(ISBLANK(m.mpwScheduleTrain.Tapeout_Date_Customer__c)), true, false)}" />
+                                    </td>
+                                </tr>
+                            </table>
+                            </apex:column>
+                            <apex:column styleClass="inBorder" width="7%">
+                            <apex:facet name="header">Projected 1st<br/>Batch Bare Die<br/>Ship<sup>$</sup><br/><br/></apex:facet>
+                            <table>
+                                <tr>
+                                    <td>
+                                        <apex:outputText value="{!m.mpwScheduleTrain.Projected_1st_Batch_Bare_Die_Ship__c}" rendered="{!IF(NOT(ISBLANK(m.mpwScheduleTrain.Projected_1st_Batch_Bare_Die_Ship__c)), true, false)}" />
+                                    </td>
+                                </tr>
+                            </table>
+                            </apex:column>
+                            <apex:column styleClass="inBorder" width="7%">
+                            <apex:facet name="header">Projected 2nd<br/>Batch Bare Die<br/>Ship<sup>$</sup><br/><br/></apex:facet>
+                            <table>
+                                <tr>
+                                    <td> 
+                                        <apex:outputText value="{!m.mpwScheduleTrain.Projected_2nd_Batch_Bare_Die_Ship__c}" rendered="{!IF(NOT(ISBLANK(m.mpwScheduleTrain.Projected_2nd_Batch_Bare_Die_Ship__c)), true, false)}" />
+                                    </td>
+                                </tr>
+                            </table>
+                            </apex:column>
+                            <apex:column styleClass="inBorder outBorder" width="14%">
+                            <apex:facet name="header">Process Offering<br/><br/><br/><br/></apex:facet>
+                            <table>
+                                <tr>
+                                    <td>
+                                        <apex:outputField value="{!m.mpwScheduleTrain.Status__c}" />
+                                    </td>
+                                </tr>
+                            </table>                        
+                            </apex:column>
+                        </apex:pageBlockTable>
+                    </div>
+                </apex:repeat>        
+            </apex:pageBlock>
+        </apex:form>
+    </html>
+</apex:page>

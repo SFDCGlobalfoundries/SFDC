@@ -1,0 +1,151 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Workflow xmlns="http://soap.sforce.com/2006/04/metadata">
+    <alerts>
+        <fullName>DWP_1st_Close_Out_Approved</fullName>
+        <description>DWP 1st Close Out Approved</description>
+        <protected>false</protected>
+        <recipients>
+            <type>creator</type>
+        </recipients>
+        <recipients>
+            <type>owner</type>
+        </recipients>
+        <senderType>CurrentUser</senderType>
+        <template>DWP_Email_Templates/X02_1st_Close_Out_Submission_Approved</template>
+    </alerts>
+    <alerts>
+        <fullName>DWP_1st_Close_Out_Recalled</fullName>
+        <description>DWP 1st Close Out Recalled</description>
+        <protected>false</protected>
+        <recipients>
+            <type>creator</type>
+        </recipients>
+        <recipients>
+            <recipient>DWP_Fab_8_Approval_Group</recipient>
+            <type>group</type>
+        </recipients>
+        <recipients>
+            <type>owner</type>
+        </recipients>
+        <senderType>CurrentUser</senderType>
+        <template>DWP_Email_Templates/X02_1st_Close_Out_Submission_Recalled</template>
+    </alerts>
+    <alerts>
+        <fullName>DWP_1st_Close_Out_Rejected</fullName>
+        <description>DWP 1st Close Out Rejected</description>
+        <protected>false</protected>
+        <recipients>
+            <type>creator</type>
+        </recipients>
+        <recipients>
+            <type>owner</type>
+        </recipients>
+        <senderType>CurrentUser</senderType>
+        <template>DWP_Email_Templates/X02_1st_Close_Out_Submission_Rejected</template>
+    </alerts>
+    <alerts>
+        <fullName>DWP_1st_Close_Out_created</fullName>
+        <description>DWP 1st Close Out created</description>
+        <protected>false</protected>
+        <recipients>
+            <type>creator</type>
+        </recipients>
+        <recipients>
+            <type>owner</type>
+        </recipients>
+        <senderType>CurrentUser</senderType>
+        <template>DWP_Email_Templates/X01_1st_Close_Out_Submission_Confirmation</template>
+    </alerts>
+    <alerts>
+        <fullName>DWP_2nd_Close_Out_Approved</fullName>
+        <description>DWP 2nd Close Out Approved</description>
+        <protected>false</protected>
+        <recipients>
+            <type>creator</type>
+        </recipients>
+        <recipients>
+            <type>owner</type>
+        </recipients>
+        <senderType>CurrentUser</senderType>
+        <template>DWP_Email_Templates/X02_2nd_Close_Out_Submission_Approved</template>
+    </alerts>
+    <alerts>
+        <fullName>DWP_2nd_Close_Out_Recalled</fullName>
+        <description>DWP 2nd Close Out Recalled</description>
+        <protected>false</protected>
+        <recipients>
+            <type>creator</type>
+        </recipients>
+        <recipients>
+            <recipient>DWP_Fab_8_Approval_Group</recipient>
+            <type>group</type>
+        </recipients>
+        <recipients>
+            <type>owner</type>
+        </recipients>
+        <senderType>CurrentUser</senderType>
+        <template>DWP_Email_Templates/X02_2nd_Close_Out_Submission_Recalled</template>
+    </alerts>
+    <alerts>
+        <fullName>DWP_2nd_Close_Out_Rejected</fullName>
+        <description>DWP 2nd Close Out Rejected</description>
+        <protected>false</protected>
+        <recipients>
+            <type>creator</type>
+        </recipients>
+        <recipients>
+            <type>owner</type>
+        </recipients>
+        <senderType>CurrentUser</senderType>
+        <template>DWP_Email_Templates/X02_2nd_Close_Out_Submission_Rejected</template>
+    </alerts>
+    <alerts>
+        <fullName>DWP_2nd_Close_Out_created_and_submitted</fullName>
+        <description>DWP 2nd Close Out created and submitted</description>
+        <protected>false</protected>
+        <recipients>
+            <type>creator</type>
+        </recipients>
+        <recipients>
+            <type>owner</type>
+        </recipients>
+        <senderType>CurrentUser</senderType>
+        <template>DWP_Email_Templates/X02_2nd_Close_Out_Submission_Confirmation</template>
+    </alerts>
+    <fieldUpdates>
+        <fullName>Approval_Stamp</fullName>
+        <field>Close_Out_Stamp__c</field>
+        <formula>Now()</formula>
+        <name>Approval Stamp</name>
+        <notifyAssignee>false</notifyAssignee>
+        <operation>Formula</operation>
+        <protected>false</protected>
+    </fieldUpdates>
+    <fieldUpdates>
+        <fullName>Change_Status_to_Requested</fullName>
+        <field>Close_Out_Status__c</field>
+        <literalValue>Requested</literalValue>
+        <name>Change Status to Requested</name>
+        <notifyAssignee>false</notifyAssignee>
+        <operation>Literal</operation>
+        <protected>false</protected>
+    </fieldUpdates>
+    <fieldUpdates>
+        <fullName>Set_Status_back_to_Draft</fullName>
+        <field>Close_Out_Status__c</field>
+        <literalValue>Draft</literalValue>
+        <name>Set Status back to Draft</name>
+        <notifyAssignee>false</notifyAssignee>
+        <operation>Literal</operation>
+        <protected>false</protected>
+    </fieldUpdates>
+    <fieldUpdates>
+        <fullName>Set_Status_to_Approved</fullName>
+        <field>Close_Out_Status__c</field>
+        <literalValue>Approved</literalValue>
+        <name>Set Status to Approved</name>
+        <notifyAssignee>false</notifyAssignee>
+        <operation>Literal</operation>
+        <protected>false</protected>
+    </fieldUpdates>
+</Workflow>

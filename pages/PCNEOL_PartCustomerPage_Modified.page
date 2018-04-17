@@ -1,0 +1,129 @@
+<!--
+ Type Name: PCNEOL_PartCustomerPage_Modified
+ Author: Dinesh Suggala
+ Created Date: 11/19/2016
+ Reason: This Page is used as Inline VF in End of Life Object Layouts
+ 
+ Author: Cognizant
+ Modified Date: 21-Feb-2017
+ Reason: To add 2 new columns contactExist and acknowledged in pageBlockTable
+ …….. 
+ ……..
+-->
+<apex:page standardController="PCN_EOL__c" sidebar="false" extensions="PCNEOL_PartCustomerController1" showChat="true" action="{!openPCNEOL}">
+ <apex:form >
+  <apex:pageMessages id="message"/>
+  <apex:outputpanel rendered="{!AND(hide,Isportal)}">
+   <b>GUIDE</b><br/>
+    <apex:image value="/img/msg_icons/confirm16.png" />Customer has been Notified.<br/>
+    <apex:image value="/img/samples/flag_yellow.gif"/> Customer Notification is still Pending.<br/>
+   </apex:outputPanel>
+   
+    <apex:outputpanel rendered="{!AND(hide,!(Isportal))}"> 
+   <br/><b>GUIDE</b><br/>
+    <apex:image value="/img/icon/ideabubble16.png"/>Use the Show Feed function to enter any comments or questions about this EOL. When done, click on Share.Message will be sent to the PCN Originator.
+    <style>body {color: white;}</style>
+    <br/>
+    <br/>
+   </apex:outputPanel>
+   
+   
+   <apex:pageBlock id="pb1" rendered="{!hide}">
+    <apex:pageBlockTable value="{!listwrapper}" var="l" width="100%" >
+       <apex:column headerValue="Action"  rendered="{!Isportal}">
+            <apex:inputCheckbox value="{!l.selected}" id="checkedone" disabled="{!IF((l.checkflag==true || l.contactExist='No'),true,false)}" />  
+       </apex:column>
+         <apex:column headerValue="Email Sent" rendered="{!Isportal}">
+         
+           <apex:image value="/img/msg_icons/confirm16.png"  rendered="{!IF(l.checkflag==true,true,false)}" />   
+           <apex:image value="/img/samples/flag_yellow.gif" rendered="{!IF(l.checkflag==false,true,false)}"/>
+          
+       </apex:column>
+      
+     <apex:column headerValue="Customer Name" style="width:100px">
+      <apex:outputText value="{!l.AccountName}"/>
+     </apex:column>
+     
+      <apex:column rendered="{!Isportal}">
+       <apex:facet name="header">
+        Contact User <br/>Exist <br/>(PCRB / EOL PCN)
+        </apex:facet>
+        <apex:outputText value="{!l.contactExist}"/>
+     </apex:column>
+     
+      <apex:column headerValue="Release Date" rendered="{!Isportal}">
+        <apex:outputText value="{!l.releaseDate}"/>
+     </apex:column>
+     
+     <apex:column headerValue="Acknowledged">
+         <apex:inputcheckbox value="{!l.acknowledged}" disabled="true"/>
+     </apex:column>
+    
+     <apex:column headerValue="Device P/N">
+      <table> 
+       <apex:repeat value="{!l.partcustomer}" var="p">
+       <tr>
+        <td> <apex:outputText value="{!p.IBM_Part_Number__c}"/></td>
+       </tr>
+      </apex:repeat>     
+      </table>
+     </apex:column>
+     
+     
+     <apex:column headerValue="Customer P/N" >
+     <table> 
+       <apex:repeat value="{!l.partcustomer}" var="p">
+       <tr>
+        <td> <apex:outputText value="{!p.Shipment_Line_Internal__r.Cust_Part_Num__c}"/></td>
+       </tr>
+       </apex:repeat>     
+      </table>
+     </apex:column>
+     
+     <apex:column headerValue="PO#" >
+      <table> 
+       <apex:repeat value="{!l.partcustomer}" var="p">
+       <tr>
+        <td> <apex:outputText value="{!p.Shipment_Line_Internal__r.PO_Num__c}" rendered="{!IF(l.mposelected,TRUE,FALSE)}" /></td>
+        <td> <apex:outputText value="-" rendered="{!IF(l.mposelected,FALSE,TRUE)}" /></td>
+       </tr>
+       </apex:repeat>     
+      </table>
+     </apex:column>
+          
+     <apex:column headerValue="Team Role" style="width:100px">
+      <table> 
+       <apex:repeat value="{!l.ATWrapper}" var="p">
+        <tr>
+         <td> <apex:outputText value="{!p.TeamRoleCE}"/></td>
+        </tr>
+       </apex:repeat>     
+      </table>
+     </apex:column>
+     
+     <apex:column headerValue="Name" >
+      <table> 
+       <apex:repeat value="{!l.ATWrapper}" var="p">
+        <tr>
+         <td> <apex:outputText value="{!p.UserName}"/></td>
+        </tr>
+       </apex:repeat>     
+      </table>
+     </apex:column>
+    </apex:pageBlockTable>
+    
+   <apex:pageBlockbuttons >
+     <apex:commandButton value="Notify Customer" action="{!SendtoCustomer}" rendered="{!AND(hide,Isportal)}" reRender="scriptOP" oncomplete="callSend();" disabled="{!NOT(SAApprove)}" />      
+   </apex:pageBlockbuttons>
+   </apex:pageBlock>
+   <apex:actionFunction name="callAction" />
+ </apex:form>
+ <apex:outputPanel id="scriptOP">
+ <script>
+     function callSend(){
+         alert('{!pgMsg}');
+         window.open('/{!Current_Id}','_top');
+     }
+ </script>
+ </apex:outputPanel>
+</apex:page>

@@ -1,0 +1,468 @@
+<!--
+    Author: Zymark Ambat
+    Description: This page is used for Yield Feedback modifications.
+    History: 
+        ZAmbat      11122014    - Page creation.
+-->
+
+<apex:page id="YieldFeedbackVF" controller="YieldFeedbackController" sidebar="true" showHeader="true" tabStyle="Device__c">
+    <apex:stylesheet value="/sCSS/21.0/sprites/1297816277000/Theme3/default/gc/versioning.css" />
+    <style>
+        .first1 {
+            background-image: url(/img/paginationArrows.gif);
+            background-repeat: no-repeat;
+            background-position: 0 1px;
+            width: 9px;
+            height: 10px;
+        }
+        
+        .firstoff1 {
+            background-image: url(/img/paginationArrows.gif);
+            background-repeat: no-repeat;
+            background-position: 0 -10px;
+            width: 9px;
+            height: 10px;
+        }
+        
+        .prev1 {
+            background-image: url(/img/paginationArrows.gif);
+            background-repeat: no-repeat;
+            background-position: -10px 1px;
+            width: 9px;
+            height: 10px;
+            margin: 0;
+            padding: 0;
+        }
+        
+        .prevoff1 {
+            background-image: url(/img/paginationArrows.gif);
+            background-repeat: no-repeat;
+            background-position: -10px -10px;
+            width: 9px;
+            height: 10px;
+            margin: 0;
+            padding: 0;
+        }
+        
+        .next1 {
+            background-image: url(/img/paginationArrows.gif);
+            background-repeat: no-repeat;
+            background-position: -17px 1px;
+            width: 9px;
+            height: 10px;
+            margin: 0;
+            padding: 0;
+        }
+        
+        .nextoff1 {
+            background-image: url(/img/paginationArrows.gif);
+            background-repeat: no-repeat;
+            background-position: -17px -10px;
+            width: 9px;
+            height: 10px;
+            margin: 0;
+            padding: 0;
+        }
+        
+        .last1 {
+            background-image: url(/img/paginationArrows.gif);
+            background-repeat: no-repeat;
+            background-position: -27px 1px;
+            width: 9px;
+            height: 10px;
+            margin: 0;
+            padding: 0;
+        }
+        
+        .lastoff1 {
+            background-image: url(/img/paginationArrows.gif);
+            background-repeat: no-repeat;
+            background-position: -27px -10px;
+            width: 9px;
+            height: 10px;
+            margin: 0;
+            padding: 0;
+        }
+        
+        .prevtext {
+            color: #333;
+            text-decoration: none;
+            display: inline-block;
+            vertical-align: middle;
+        }
+        
+        
+        .prevtextoff {
+            color: #a8a8a8;
+            text-decoration: none;
+            display: inline-block;
+            vertical-align: middle;
+        }
+        
+        .nexttext {
+            color: #333;
+            text-decoration: none;
+            display: inline-block;
+            vertical-align: middle;
+        }
+        
+        
+        .nexttextoff {
+            color: #a8a8a8;
+            text-decoration: none;
+            display: inline-block;
+            vertical-align: middle;
+        }
+        
+        .imgclass:hover {  
+            background-image: url(/img/help/helpOrbs.gif);  
+            background-repeat: no-repeat;  
+            width: 16px;  
+            height: 16px;     
+            background-position: right;  
+        }  
+        
+        .imgclass {  
+            background-image: url(/img/help/helpOrbs.gif);  
+            background-repeat: no-repeat;  
+            width: 16px;  
+            height: 16px;    
+        }  
+        
+        .helpTextStyle {
+            text-decoration: none;
+            position: absolute;
+            width: 15em;
+            z-index: 12;
+            background-color: #fefdb9;
+            padding: 2px 5px;
+            border: 1px solid orange;
+            text-align: left;
+            white-space: normal;
+            font-weight: normal;
+            color: #000;
+        }
+        
+        .pbSubheader {
+            background-color: #222;
+            font-weight: bold;
+            font-size: 100%;
+            padding: 2px 2px 2px 5px;
+            margin-top: 15px;
+            overflow: hidden;
+            margin-bottom: 2px;
+        }
+        
+        body .bPageBlock .pbBody .pbSubheader img {
+            margin-right: 4px;
+            background-repeat: no-repeat;
+            height: 16px;
+            width: 16px;
+        }
+    </style>
+
+    <script>
+        function setTabSelectedInfo(sTab) {
+            document.getElementById("{!$Component.YieldFeedbackVF.form1.tabSelectedInfo}").value = sTab;
+        }
+        
+        function captureKey(e) {
+            if (e.keyCode == 13) {
+                searchLots();
+                return false;
+            }
+            return true;
+        }
+        
+        function preventFormSubmission(e) {
+            if (e.keyCode == 13) {
+                return false;
+            }            
+            return true;
+        }
+        
+        function checkInput(event) {
+            var key = window.event.keyCode || event.keyCode;
+            return ((key >= 48 && key <= 57) || (key >= 96 && key <= 105) || (key == 8) || (key == 9) || (key == 37) || (key == 39) || (key == 46) || (key == 110) || (key == 190));
+        }
+        
+        function limitInput(sortYield) {
+            if (parseFloat(sortYield.value) > 100) {
+                alert("Value cannot be more than 100.");
+                sortYield.value = "";
+            }
+        }
+        
+        function showHelpText(id, element) {
+            var leftPos = 0;
+            var topPos = 0;
+            
+            while(element) {
+                leftPos += (element.offsetLeft - element.scrollLeft + element.clientLeft);
+                topPos += (element.offsetTop - element.scrollTop + element.clientTop);
+                element = element.offsetParent;
+            }
+            
+            document.getElementById(id).style.display = "block";
+            document.getElementById(id).style.opacity = 0.99;
+            document.getElementById(id).style.top = (topPos - 210) + "px";
+            document.getElementById(id).style.left = (leftPos + 10) + "px";
+        }
+        
+        function hideHelpText(id) {
+            document.getElementById(id).style.display = "none";
+            document.getElementById(id).style.opacity = -0.2;
+        }
+    </script>
+    
+    <apex:form id="form1">
+        <apex:pageBlock id="block1" title="Yield Feedback" mode="Edit">
+            <apex:pageBlockButtons >
+                <apex:commandButton value="Save" action="{!save}" rendered="{!IF(OR(AvailableLots.size > 0, SelectedLots.size > 0), true, false)}" />
+                <apex:commandButton value="{!IF(fromAccount, 'Back to Account', 'Back to Device')}" action="{!backToPage}" immediate="true" />
+            </apex:pageBlockButtons>
+            
+            <apex:pageMessages id="errorMsg" />
+            
+            <apex:pageBlockSection id="section1" columns="1" collapsible="false">
+                <apex:tabPanel id="tabPanel1" switchType="client" selectedTab="{!tabSelectedInfo}" tabClass="activeTab" inactiveTabClass="inactiveTab" rendered="{!AND(fromAccount, NOT(hideTabPanel))}" width="100%" style="font-size: 97%;" styleClass="theTabPanel">
+                    <apex:tab id="tab1" label="Select Existing Device" name="existingDevice" ontabenter="setTabSelectedInfo('existingDevice');">
+                        <apex:pageBlock id="block2" mode="Edit">
+                            <apex:pageBlockSection id="section2" columns="1" collapsible="false">
+                                <apex:facet name="header">
+                                    Device Details
+                                </apex:facet>
+                                
+                                <apex:outputPanel style="display: none;">
+                                    <apex:inputField id="account1" value="{!yieldFeedback.Account__c}" /> 
+                                </apex:outputPanel>
+                                <apex:outputField value="{!account.Name}" />
+                                <apex:inputField value="{!yieldFeedback.Device__c}" onkeypress="return preventFormSubmission(event);" />
+                                <apex:pageBlockSectionItem />
+                            </apex:pageBlockSection>
+                        </apex:pageBlock>
+                    </apex:tab>
+                    <apex:tab label="Add Device" name="manualDevice" ontabenter="setTabSelectedInfo('manualDevice');">
+                        <apex:pageBlock mode="Edit">
+                            <apex:pageBlockSection columns="2" collapsible="false">
+                                <apex:facet name="header">
+                                    Device Details
+                                </apex:facet>
+                                <apex:outputField value="{!account.Name}" />
+                                <apex:inputField value="{!yieldFeedback.Manual_Device__c}" onkeypress="return preventFormSubmission(event);" />
+                                <apex:inputField value="{!yieldFeedback.Tapeout_Type__c}" />
+                                <apex:inputField value="{!yieldFeedback.Fab__c}" />
+                                <apex:pageBlockSectionItem />
+                            </apex:pageBlockSection>
+                        </apex:pageBlock>
+                    </apex:tab>
+                </apex:tabPanel>
+            </apex:pageBlockSection>
+            
+            <apex:pageBlockSection columns="1" collapsible="false" rendered="{!OR(fromDevice, hideTabPanel)}">
+                <apex:facet name="header">
+                    Device Details
+                </apex:facet>
+                <apex:outputField value="{!account.Name}" />
+                <apex:outputField value="{!device.Name}" rendered="{!fromDevice}" />
+                <apex:outputField value="{!device.Fab__c}" rendered="{!fromDevice}" />
+            </apex:pageBlockSection>
+            
+            <apex:pageBlockSection id="searchlotSection" columns="1" collapsible="false" rendered="{!showSearchSection}">
+                <apex:facet name="header">
+                    Search Lots
+                    <img src="/s.gif" class="imgclass" onmouseover="showHelpText('divSearchLots', this);" onmouseout="hideHelpText('divSearchLots');" />
+                </apex:facet>
+                
+                <!-- Search -->
+                <apex:outputPanel layout="inline">
+                    <apex:outputText value="Search:" styleClass="labelCol" style="padding-right: 1px;" />
+                    &nbsp;
+                    <apex:inputText size="25" value="{!searchKey}" onkeypress="return captureKey(event);" />
+                    <apex:commandButton value="Search Lots" action="{!searchLots}" />
+                </apex:outputPanel>
+                
+                <!-- Available Lots -->
+                <apex:pageBlockTable id="availableLotsTbl" value="{!AvailableLots}" var="l" rendered="{!IF(AvailableLots.size > 0, true, false)}">
+                    <apex:column width="15">
+                        <apex:inputCheckbox value="{!l.isSelected}" />
+                    </apex:column>
+                    <apex:column >
+                        <apex:facet name="header">Lot ID</apex:facet>
+                        <apex:outputLink value="/{!l.lotId}" target="_blank">{!l.lotName}</apex:outputLink>
+                    </apex:column>
+                    <apex:column >
+                        <apex:facet name="header">Lot Purpose</apex:facet>
+                        <apex:inputField value="{!l.yieldFeedback.Lot_Purpose__c}" rendered="{!enableLotPurpose}" />
+                        <apex:outputField value="{!l.yieldFeedback.Lot_Purpose__c}" rendered="{!NOT(enableLotPurpose)}" />
+                    </apex:column>
+                    <apex:column >
+                        <apex:facet name="header">Lot Start Date</apex:facet>
+                        <apex:outputText value="{!MONTH(l.lotStartDate)}/{!DAY(l.lotStartDate)}/{!YEAR(l.lotStartDate)}" rendered="{!IF(NOT(ISBLANK(l.lotStartDate)), true, false)}" />
+                    </apex:column> 
+                    <apex:column >
+                        <apex:facet name="header">Lot Ship Date</apex:facet>
+                        <apex:outputText value="{!MONTH(l.lotShipDate)}/{!DAY(l.lotShipDate)}/{!YEAR(l.lotShipDate)}" rendered="{!IF(NOT(ISBLANK(l.lotShipDate)), true, false)}" />
+                    </apex:column> 
+                    <apex:column rendered="{!showFunctional}">
+                        <apex:facet name="header">Functional</apex:facet>
+                        <apex:inputField value="{!l.yieldFeedback.Functional__c}" />
+                    </apex:column>
+                    <apex:column rendered="{!showSortYield}">
+                        <apex:facet name="header">Sort/Final Test Yield (%)</apex:facet>
+                        <apex:inputField value="{!l.yieldFeedback.Sort_Yield__c}" onkeypress="return preventFormSubmission(event);" onkeydown="return checkInput(event, this);" onkeyup="limitInput(this);" />
+                    </apex:column>
+                    <apex:column rendered="{!showFirstTimeNotRight}">
+                        <apex:facet name="header">First Time Not Right</apex:facet>
+                        <apex:inputField value="{!l.yieldFeedback.First_Time_Not_Right__c}" onkeypress="return preventFormSubmission(event);" />
+                    </apex:column>
+                    <apex:column >
+                        <apex:facet name="header">Comments</apex:facet>
+                        <apex:inputField value="{!l.yieldFeedback.Comments__c}" onkeypress="return preventFormSubmission(event);" />
+                    </apex:column>
+                    <apex:facet name="footer">Showing Page {!currentPageNoAR} of {!totalNoOfPagesAR} ({!totalNoOfRecordsAR} Records)</apex:facet>
+                </apex:pageBlockTable>
+                <apex:outputText value="No record(s) retrieved." rendered="{!IF(AvailableLots.size > 0, false, true)}" />
+ 
+                <apex:outputPanel id="availableLotsControlPanel" layout="inline" style="margin: 0; white-space: nowrap; align: center; position: relative;" rendered="{!IF(AvailableLots.size > 0, true, false)}">
+                    <center>
+                        <apex:commandLink action="{!firstAR}" style="text-decoration: none;" rendered="{!IF(HasPreviousAR, true, false)}" rerender="availableLotsTbl, availableLotsControlPanel">
+                            <apex:image value="/s.gif" styleClass="first1" alt="First Page" />
+                        </apex:commandLink>
+                        <apex:outputPanel rendered="{!IF(NOT(HasPreviousAR), true, false)}">
+                            <apex:image value="/s.gif" styleClass="firstoff1" alt="First Page" />
+                        </apex:outputPanel>
+                        &nbsp;
+                        <apex:commandLink action="{!previousAR}" style="text-decoration: none;" rendered="{!IF(HasPreviousAR, true, false)}" rerender="availableLotsTbl, availableLotsControlPanel">
+                            <apex:image value="/s.gif" styleClass="prev1" alt="Previous" /><span class="prevtext">Previous</span>
+                        </apex:commandLink>
+                        <apex:outputPanel rendered="{!IF(NOT(HasPreviousAR), true, false)}">
+                            <apex:image value="/s.gif" styleClass="prevoff1" alt="Previous" /><span class="prevtextoff">Previous</span>
+                        </apex:outputPanel>
+                        &nbsp;&nbsp;
+                        <apex:commandLink action="{!nextAR}" style="text-decoration: none;" rendered="{!IF(HasNextAR, true, false)}" rerender="availableLotsTbl, availableLotsControlPanel">
+                            <span class="nexttext">Next</span><apex:image value="/s.gif" styleClass="next1" alt="Next" />
+                        </apex:commandLink>
+                        <apex:outputPanel rendered="{!IF(NOT(HasNextAR), true, false)}">
+                            <span class="nexttextoff">Next</span><apex:image value="/s.gif" styleClass="nextoff1" alt="Next" />
+                        </apex:outputPanel>
+                        &nbsp;
+                        <apex:commandLink action="{!lastAR}" style="text-decoration: none;" rendered="{!IF(HasNextAR, true, false)}" rerender="availableLotsTbl, availableLotsControlPanel">
+                            <apex:image value="/s.gif" styleClass="last1" alt="Last Page" />
+                        </apex:commandLink>
+                        <apex:outputPanel rendered="{!IF(NOT(HasNextAR), true, false)}">
+                            <apex:image value="/s.gif" styleClass="lastoff1" alt="Last Page" />
+                        </apex:outputPanel>
+                    </center>
+                </apex:outputPanel>
+            </apex:pageBlockSection>
+            
+            <apex:pageBlockSection id="selectedlotSection" columns="1" collapsible="false">
+                <apex:facet name="header">
+                    Selected Lots for Yield Feedback
+                    <img src="/s.gif" class="imgclass" onmouseover="showHelpText('divSelectedLots', this);" onmouseout="hideHelpText('divSelectedLots');" />
+                </apex:facet>
+                
+                <!-- Selected Lots -->
+                <apex:pageBlockTable id="selectedLotsTbl" value="{!SelectedLots}" var="l" rendered="{!IF(SelectedLots.size > 0, true, false)}">
+                    <apex:column width="15" rendered="{!showCheckbox}">
+                        <apex:inputCheckbox value="{!l.isSelected}" />
+                    </apex:column>
+                    <apex:column >
+                        <apex:facet name="header">Lot ID</apex:facet>
+                        <apex:outputLink value="/{!l.lotId}" target="_blank">{!l.lotName}</apex:outputLink>
+                    </apex:column>
+                    <apex:column rendered="{!fromAccount}">
+                        <apex:facet name="header">Device</apex:facet>
+                        <apex:outputLink value="/{!l.deviceId}" target="_blank" rendered="{!IF(NOT(ISBLANK(l.deviceId)), true, false)}">{!l.deviceName}</apex:outputLink>
+                        <apex:outputText value="{!l.deviceName}" rendered="{!IF(ISBLANK(l.deviceId), true, false)}" />
+                    </apex:column>
+                    <apex:column >
+                        <apex:facet name="header">Lot Purpose</apex:facet>
+                        <apex:inputField value="{!l.yieldFeedback.Lot_Purpose__c}" rendered="{!enableLotPurpose}" />
+                        <apex:outputField value="{!l.yieldFeedback.Lot_Purpose__c}" rendered="{!NOT(enableLotPurpose)}" />
+                    </apex:column>
+                    <apex:column >
+                        <apex:facet name="header">Lot Start Date</apex:facet>
+                        <apex:outputText value="{!MONTH(l.lotStartDate)}/{!DAY(l.lotStartDate)}/{!YEAR(l.lotStartDate)}" rendered="{!IF(NOT(ISBLANK(l.lotStartDate)), true, false)}" />
+                    </apex:column> 
+                    <apex:column >
+                        <apex:facet name="header">Lot Ship Date</apex:facet>
+                        <apex:outputText value="{!MONTH(l.lotShipDate)}/{!DAY(l.lotShipDate)}/{!YEAR(l.lotShipDate)}" rendered="{!IF(NOT(ISBLANK(l.lotShipDate)), true, false)}" />
+                    </apex:column> 
+                    <apex:column >
+                        <apex:facet name="header">Functional</apex:facet>
+                        <apex:inputField value="{!l.yieldFeedback.Functional__c}" rendered="{!showFunctional}" />
+                        <apex:outputField value="{!l.yieldFeedback.Functional__c}" rendered="{!NOT(showFunctional)}" />
+                    </apex:column>
+                    <apex:column >
+                        <apex:facet name="header">Sort/Final Test Yield (%)</apex:facet>
+                        <apex:inputField value="{!l.yieldFeedback.Sort_Yield__c}" onkeypress="return preventFormSubmission(event);" onkeydown="return checkInput(event, this);" onkeyup="limitInput(this);" rendered="{!showSortYield}" />
+                        <apex:outputField value="{!l.yieldFeedback.Sort_Yield__c}" rendered="{!NOT(showSortYield)}" />
+                    </apex:column>
+                    <apex:column >
+                        <apex:facet name="header">First Time Not Right</apex:facet>
+                        <apex:inputField value="{!l.yieldFeedback.First_Time_Not_Right__c}" onkeypress="return preventFormSubmission(event);" rendered="{!showFirstTimeNotRight}" />
+                        <apex:outputField value="{!l.yieldFeedback.First_Time_Not_Right__c}" rendered="{!NOT(showFirstTimeNotRight)}" />
+                    </apex:column>
+                    <apex:column >
+                        <apex:facet name="header">Yield Feedback Due Date</apex:facet>
+                        <apex:inputField value="{!l.yieldFeedback.Yield_Feedback_Due_Date_Modified__c}" rendered="{!IF(AND(showDueDate, NOT(ISBLANK(l.lotShipDate))), true, false)}" />
+                        <apex:outputField value="{!l.yieldFeedback.Yield_Feedback_Due_Date_Modified__c}" rendered="{!IF(OR(NOT(showDueDate), ISBLANK(l.lotShipDate)), true, false)}" />
+                    </apex:column>
+                    <apex:column >
+                        <apex:facet name="header">Comments</apex:facet>
+                        <apex:inputField value="{!l.yieldFeedback.Comments__c}" />
+                    </apex:column>
+                    <apex:column >
+                        <apex:facet name="header">Is Auto-Tagged?</apex:facet>
+                        <apex:outputField value="{!l.yieldFeedback.Is_Auto_Tagged__c}" />
+                    </apex:column>
+                    <apex:facet name="footer">Showing Page {!currentPageNoSR} of {!totalNoOfPagesSR} ({!totalNoOfRecordsSR} Records)</apex:facet>
+                </apex:pageBlockTable>
+                <apex:outputText value="No record(s) retrieved." rendered="{!IF(SelectedLots.size > 0, false, true)}" />
+                
+                <apex:outputPanel id="selectedLotsControlPanel" layout="inline" style="margin: 0; white-space: nowrap; align: center; position: relative;" rendered="{!IF(SelectedLots.size > 0, true, false)}">
+                    <center>
+                        <apex:commandLink action="{!firstSR}" style="text-decoration: none;" rendered="{!IF(HasPreviousSR, true, false)}" rerender="selectedLotsTbl, selectedLotsControlPanel">
+                            <apex:image value="/s.gif" styleClass="first1" alt="First Page" />
+                        </apex:commandLink>
+                        <apex:outputPanel rendered="{!IF(NOT(HasPreviousSR), true, false)}">
+                            <apex:image value="/s.gif" styleClass="firstoff1" alt="First Page" />
+                        </apex:outputPanel>
+                        &nbsp;
+                        <apex:commandLink action="{!previousSR}" style="text-decoration: none;" rendered="{!IF(HasPreviousSR, true, false)}" rerender="selectedLotsTbl, selectedLotsControlPanel">
+                            <apex:image value="/s.gif" styleClass="prev1" alt="Previous" /><span class="prevtext">Previous</span>
+                        </apex:commandLink>
+                        <apex:outputPanel rendered="{!IF(NOT(HasPreviousSR), true, false)}">
+                            <apex:image value="/s.gif" styleClass="prevoff1" alt="Previous" /><span class="prevtextoff">Previous</span>
+                        </apex:outputPanel>
+                        &nbsp;&nbsp;
+                        <apex:commandLink action="{!nextSR}" style="text-decoration: none;" rendered="{!IF(HasNextSR, true, false)}" rerender="selectedLotsTbl, selectedLotsControlPanel">
+                            <span class="nexttext">Next</span><apex:image value="/s.gif" styleClass="next1" alt="Next" />
+                        </apex:commandLink>
+                        <apex:outputPanel rendered="{!IF(NOT(HasNextSR), true, false)}">
+                            <span class="nexttextoff">Next</span><apex:image value="/s.gif" styleClass="nextoff1" alt="Next" />
+                        </apex:outputPanel>
+                        &nbsp;
+                        <apex:commandLink action="{!lastSR}" style="text-decoration: none;" rendered="{!IF(HasNextSR, true, false)}" rerender="selectedLotsTbl, selectedLotsControlPanel">
+                            <apex:image value="/s.gif" styleClass="last1" alt="Last Page" />
+                        </apex:commandLink>
+                        <apex:outputPanel rendered="{!IF(NOT(HasNextSR), true, false)}">
+                            <apex:image value="/s.gif" styleClass="lastoff1" alt="Last Page" />
+                        </apex:outputPanel>
+                    </center>
+                </apex:outputPanel>
+            </apex:pageBlockSection>
+        </apex:pageBlock>
+        <apex:inputHidden id="tabSelectedInfo" value="{!tabSelectedInfo}" />
+        <apex:actionFunction name="searchLots" action="{!searchLots}" />
+        
+        <div id="divSearchLots" class="helpTextStyle" style="display: none;">
+            <apex:outputText value="Search for Manufacturing Lots available for this {!IF(fromAccount, 'Account Hierarchy.', 'Device&#39;s Account Hierarchy.')}" escape="false" />
+        </div>
+        <div id="divSelectedLots" class="helpTextStyle" style="display: none;">
+            <apex:outputText value="List of Manufacturing Lots tagged for this {!IF(fromAccount, 'Account&#39;s Devices.', 'Device.')}" escape="false" />
+        </div>
+    </apex:form>
+</apex:page>

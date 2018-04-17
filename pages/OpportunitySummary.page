@@ -1,0 +1,261 @@
+<apex:page standardController="Opportunity" showHeader="true" sidebar="true" tabStyle="Opportunity" extensions="OpportunitySummaryExtension">
+    <apex:includeScript value="{!URLFOR($Resource.GF_DQ_jQueryLib, '/js/jquery-1.9.0.min.js')}"/>
+    <apex:form >
+        <apex:pageBlock title="{!opportunity.Account.Name} - {!opportunity.name} ({!designWinRevenue})" >
+            <apex:pageBlockButtons >
+                <apex:commandButton action="{!exportToExcel}" value="Export to Excel"/>
+                <apex:commandButton action="{!close}" value="Close"/>
+            </apex:pageBlockButtons>
+            <apex:pageMessages />
+            <apex:pageBlockSection title="Opportunity Detail" columns="1">
+                
+                <div>
+                    <span style="width: 70%; float: left;">
+                        <table class="list" border="0" cellpadding="0" cellspacing="0" >
+                            <!--<colgroup span="12"></colgroup>-->
+                            <thead class="">
+                                <tr class="headerRow">
+                                    <th class="headerRow" scope="col" colspan="1" ><div>{!$ObjectType.Opportunity.fields.Opportunity_Obstacles__c.Label}</div></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr class="dataRow even  first" onmouseover="if (window.hiOn){hiOn(this);} " onmouseout="if (window.hiOff){hiOff(this);} " onblur="if (window.hiOff){hiOff(this);}" onfocus="if (window.hiOn){hiOn(this);}">
+                                    <td class="dataCell" colspan="1"><span>{!opportunity.Opportunity_Obstacles__c}</span></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </span>
+                    <span style="width: 29%; float: right;">
+                        <table class="list" border="0" cellpadding="0" cellspacing="0" >
+                            <!--<colgroup span="12"></colgroup>-->
+                            <thead class="">
+                                <tr class="headerRow">
+                                    <th class="headerRow" scope="col" colspan="1" ><div>{!$ObjectType.Opportunity.fields.CloseDate.Label}</div></th>
+                                    <th class="headerRow" scope="col" colspan="1" ><div>{!$ObjectType.Opportunity.fields.Opty_Health__c.Label}</div></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr class="dataRow even  first" onmouseover="if (window.hiOn){hiOn(this);} " onmouseout="if (window.hiOff){hiOff(this);} " onblur="if (window.hiOff){hiOff(this);}" onfocus="if (window.hiOn){hiOn(this);}">
+                                    <td class="dataCell" colspan="1"><span>{!oppWrapper.closeDate}</span></td>
+                                    <td class="dataCell" colspan="1">
+                                        <span id="optyHealthImage"><img src="{!oppWrapper.optyHealthImageSrc}" alt="{!opportunity.Opportunity_Health__c}" title="{!opportunity.Opportunity_Health__c}" style="height:25px; width:45px;" border="0" /></span>
+                                        <span id="optyHealthText" style="display : none;">{!opportunity.Opportunity_Health__c}</span>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </span>
+                </div>
+                
+                <apex:pageBlockTable value="{!oppList}" var="oppObj" >
+                    <apex:column value="{!oppObj.Business_Unit__c}"/>
+                    <apex:column value="{!oppObj.Product_Line__c}"/>
+                    <apex:column value="{!oppObj.Market_Segment__c}"/>
+                    <apex:column value="{!oppObj.End_Application_for_Opty__c}"/>
+                    <apex:column value="{!oppObj.Semiconductor_Device__c}"/>
+                    <apex:column style="text-align: center;" value="{!oppObj.Target_Process_Node__c}"/>
+                    <apex:column style="text-align: center;" value="{!oppObj.Fab_Assignment_1__c}"/>
+                    <apex:column style="text-align: center;" value="{!oppObj.X1st_Product_TO_Date__c}"/>
+                    <apex:column style="text-align: center;" value="{!oppObj.X1st_Product_Production_Date__c}"/>
+                </apex:pageBlockTable>
+                
+                <apex:pageBlockTable value="{!oppList}" var="oppObj" >
+                    <apex:column width="17%">
+                        <apex:facet name="header">
+                            Opportunity Owner
+                        </apex:facet>
+                        <apex:outputLink value="/{!oppObj.Owner.Id}" target="_blank">{!oppObj.Owner.Name}</apex:outputLink>
+                    </apex:column>
+                    <apex:column width="17%" rendered="{!OR( oppObj.Design_Win_FAE__c != NULL, oppObj.Primary_Opportunity_FAE__c == NULL )}">
+                        <apex:facet name="header">
+                            {!$ObjectType.Opportunity.fields.Design_Win_FAE__c.Label}
+                        </apex:facet>
+                        <apex:outputLink value="/{!oppObj.Design_Win_FAE__r.Id}" target="_blank">{!oppObj.Design_Win_FAE__r.Name}</apex:outputLink>
+                    </apex:column>
+                    <apex:column width="17%" rendered="{!AND( oppObj.Design_Win_FAE__c == NULL, oppObj.Primary_Opportunity_FAE__c != NULL )}">
+                        <apex:facet name="header">
+                            {!$ObjectType.Opportunity.fields.Design_Win_FAE__c.Label}
+                        </apex:facet>
+                        <apex:outputLink value="/{!oppObj.Primary_Opportunity_FAE__r.Id}" target="_blank">{!oppObj.Primary_Opportunity_FAE__r.Name}</apex:outputLink>
+                    </apex:column>
+                    <apex:column width="17%" value="{!oppObj.Design_Win_Region__c}"/>
+                    
+                    <apex:column style="text-align: right;" value="{!oppObj.X2018_C__c}"/>
+                    <apex:column style="text-align: right;" value="{!oppObj.X2019_C__c}"/>
+                    <apex:column style="text-align: right;" value="{!oppObj.X2020_C__c}"/>
+                    <apex:column style="text-align: right;" value="{!oppObj.X2021_C__c}"/>
+                    <apex:column style="text-align: right;" value="{!oppObj.X2022_C__c}"/>
+                </apex:pageBlockTable>
+                
+                <apex:pageBlockTable value="{!oppWrapperList}" var="oppWrapperObj" >
+                    <apex:column value="{!oppWrapperObj.opp.StageName}"/>
+                    <apex:column style="text-align: center;" value="{!oppWrapperObj.opp.Probability}"/>
+                    <apex:column style="text-align: right;" value="{!oppWrapperObj.opp.LTR_Rev_M__c}"/>
+                    <apex:column width="21%">
+                        <apex:facet name="header">
+                            Customer Decision Maker
+                        </apex:facet>
+                        {!oppWrapperObj.opp.Customer_Decision_Maker__c}
+                    </apex:column>
+                    
+                    <apex:column style="text-align: right;">
+                        <apex:facet name="header">
+                            2018 (kwafers)
+                        </apex:facet>
+                        {!oppWrapperObj.kwafer_2018}
+                    </apex:column>
+                    <apex:column style="text-align: right;">
+                        <apex:facet name="header">
+                            2019 (kwafers)
+                        </apex:facet>
+                        {!oppWrapperObj.kwafer_2019}
+                    </apex:column>
+                    <apex:column style="text-align: right;">
+                        <apex:facet name="header">
+                            2020 (kwafers)
+                        </apex:facet>
+                        {!oppWrapperObj.kwafer_2020}
+                    </apex:column>
+                    <apex:column style="text-align: right;">
+                        <apex:facet name="header">
+                            2021 (kwafers)
+                        </apex:facet>
+                        {!oppWrapperObj.kwafer_2021}
+                    </apex:column>
+                    <apex:column style="text-align: right;">
+                        <apex:facet name="header">
+                            2022 (kwafers)
+                        </apex:facet>
+                        {!oppWrapperObj.kwafer_2022}
+                    </apex:column>
+                </apex:pageBlockTable>
+            </apex:pageBlockSection>
+
+            <br />
+            <apex:pageBlockTable value="{!oppIssues}" var="o" rendered="{!oppIssues.Size!=0}" id="results">
+                <apex:column >
+                    <apex:facet name="header">
+                        <apex:commandLink action="{!toggleSort}" value="Name" rerender="results" immediate="true" oncomplete="oppIssueActionComplete()">
+                            <apex:param value="Name" name="sortField" assignTo="{!sortField}" ></apex:param>
+                        </apex:commandLink>
+                     </apex:facet>
+                     <apex:outputLink value="/{!o.id}" target="_blank">{!o.Name}</apex:outputLink>
+                </apex:column>
+                <apex:column style="text-align: center;">
+                    <apex:facet name="header">
+                        <apex:commandLink StyleClass="Engmt_Step" action="{!toggleSort}" value="{!$ObjectType.Device_Gap__c.fields.Engmt_Step__c.Label}" rerender="results" immediate="true" oncomplete="oppIssueActionComplete()">
+                            <apex:param value="Engmt_Step__c" name="sortField" assignTo="{!sortField}" ></apex:param>
+                        </apex:commandLink>
+                     </apex:facet>
+                     <apex:outputField value="{!o.Engmt_Step__c}"/>
+                </apex:column>
+                <apex:column >
+                    <apex:facet name="header">
+                        <apex:commandLink action="{!toggleSort}" value="{!$ObjectType.Device_Gap__c.fields.Area__c.Label}" rerender="results" immediate="true" oncomplete="oppIssueActionComplete()">
+                            <apex:param value="Area__c" name="sortField" assignTo="{!sortField}" ></apex:param>
+                        </apex:commandLink>
+                     </apex:facet>
+                     <apex:outputField value="{!o.Area__c}"/>
+                </apex:column>
+                
+                <apex:column value="{!o.Issue_Comments__c}"/>
+                
+                <apex:column style="text-align: center;">
+                    <apex:facet name="header">
+                        <apex:commandLink action="{!toggleSort}" value="Stat (C)" rerender="results" immediate="true" oncomplete="oppIssueActionComplete()">
+                            <apex:param value="Status_With_sorting__c" name="sortField" assignTo="{!sortField}" ></apex:param>
+                        </apex:commandLink>
+                    </apex:facet>
+                    <apex:outputField value="{!o.Status__c}"/>
+                </apex:column>
+                <apex:column style="text-align: center;">
+                <apex:facet name="header">
+                    <apex:commandLink action="{!toggleSort}" value="Stat (P)" rerender="results" immediate="true" oncomplete="oppIssueActionComplete()">
+                        <apex:param value="StatusP_With_sorting__c" name="sortField" assignTo="{!sortField}" ></apex:param>
+                    </apex:commandLink>
+                    </apex:facet>
+                    <apex:outputField value="{!o.Status_P__c}"/>
+                </apex:column>
+                
+                <apex:column style="text-align: center;">
+                    <apex:facet name="header">
+                        <apex:commandLink action="{!toggleSort}" value="{!$ObjectType.Device_Gap__c.fields.Improve_Prob__c.Label}" rerender="results" immediate="true" oncomplete="oppIssueActionComplete()">
+                            <apex:param value="Improve_Prob__c" name="sortField" assignTo="{!sortField}" ></apex:param>
+                        </apex:commandLink>
+                     </apex:facet>
+                     <apex:outputField value="{!o.Improve_Prob__c}"/>
+                </apex:column>
+                <apex:column style="text-align: center;">
+                    <apex:facet name="header">
+                        <apex:commandLink action="{!toggleSort}" value="{!$ObjectType.Device_Gap__c.fields.Improve_Prob_P__c.Label}" rerender="results" immediate="true" oncomplete="oppIssueActionComplete()">
+                            <apex:param value="Improve_Prob_P__c" name="sortField" assignTo="{!sortField}" ></apex:param>
+                        </apex:commandLink>
+                     </apex:facet>
+                     <apex:outputField value="{!o.Improve_Prob_P__c}"/>
+                </apex:column>
+                
+                <apex:column value="{!o.Action_to_Close_Issue__c}"/>
+                
+                <apex:column >
+                    <apex:facet name="header">
+                        <apex:commandLink action="{!toggleSort}" value="{!$ObjectType.Device_Gap__c.fields.Solution_Owner__c.Label}" rerender="results" immediate="true" oncomplete="oppIssueActionComplete()">
+                            <apex:param value="Solution_Owner__c" name="sortField" assignTo="{!sortField}" ></apex:param>
+                        </apex:commandLink>
+                     </apex:facet>
+                     <apex:outputField value="{!o.Solution_Owner__c}"/>
+                </apex:column>
+                <apex:column >
+                    <apex:facet name="header">
+                        <apex:commandLink action="{!toggleSort}" value="{!$ObjectType.Device_Gap__c.fields.Action_Close_Date__c.Label}" rerender="results" immediate="true" oncomplete="oppIssueActionComplete()">
+                            <apex:param value="Action_Close_Date__c" name="sortField" assignTo="{!sortField}" ></apex:param>
+                        </apex:commandLink>
+                     </apex:facet>
+                     <apex:outputField value="{!o.Action_Close_Date__c}"/>
+                </apex:column>
+                <apex:column >
+                    <apex:facet name="header">
+                        <apex:commandLink action="{!toggleSort}" value="{!$ObjectType.Device_Gap__c.fields.Action_Close_Date_P__c.Label}" rerender="results" immediate="true" oncomplete="oppIssueActionComplete()">
+                            <apex:param value="Action_Close_Date_P__c" name="sortField" assignTo="{!sortField}" ></apex:param>
+                        </apex:commandLink>
+                     </apex:facet>
+                     <apex:outputField value="{!o.Action_Close_Date_P__c}"/>
+                </apex:column>
+            </apex:pageBlockTable>
+        </apex:pageBlock>
+        
+        <script>
+            var j$ = jQuery.noConflict();
+            j$(document).ready(function(){
+                var isOptyHealthImageExist = "{!oppWrapper.isOptyHealthImageExist}";
+                if(isOptyHealthImageExist == 'false'){
+                    j$("#optyHealthImage").hide(); 
+                    j$("#optyHealthText").show();
+                }
+                
+                showEngmtStepTitle();
+                
+                colorMilestone();                    
+            });
+            
+            function oppIssueActionComplete(){
+                showEngmtStepTitle();
+                
+                colorMilestone();
+            }
+            
+            function showEngmtStepTitle(){
+                j$(".Engmt_Step").attr("title", "A. Key Value Proposition / Account Strategy (Achieving Value Prop) \nB. DWIN Pre-Product Definition Plan & Resourcing (Schedule for achieving DWIN, Benchmarking) \nC. Customer Relationship/Engagement \nD. Competing Commercial Agreement");
+            }
+            
+            function colorMilestone(){
+                j$( 'table[id$=results]' ).find('tbody tr').each (function() {
+                    
+                    if(j$(this).find('td:eq(2)').text() == 'Milestone'){
+                        
+                        j$(this).css("background-color", "#C0C0C0");
+                    }
+                });
+            }
+        </script>
+    </apex:form>
+</apex:page>

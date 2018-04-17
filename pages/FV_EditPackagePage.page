@@ -1,0 +1,82 @@
+<apex:page standardController="Package__c" extensions="FV_EditPackageCls" id="pageId">
+    
+    <!---------------------------------------------------     JS File   ------------------------------------------------------------------>
+        <apex:stylesheet value="{!URLFOR($Resource.GF_DQ_JQueryLatest, '/jquery-ui-1.10.3/themes/base/jquery-ui.css')}"/>
+        <apex:includeScript value="{!URLFOR($Resource.GF_DQ_jQueryLib, '/js/jquery-1.9.0.min.js')}"/>
+        <apex:includeScript value="{!URLFOR($Resource.GF_DQ_JQueryLatest, '/jquery-ui-1.10.3/ui/jquery-ui.js')}"/>
+        <apex:includeScript value="{!URLFOR($Resource.GF_DQ_jQueryLib, '/jquery.blockUI.js')}"/>
+    <!------------------------------------------------------------------------------------------------------------------------------------>
+    <script>
+        var newStatus='';
+        
+        function SaveReport(){
+           // Check if status is getting changed from Draft to any other status
+           var oldStatus='{!oldReleaseStatus}';
+           var count = '{!countOfprovisionedDocuments}';
+           if (newStatus=='Draft' && oldStatus!='Draft' && count>0){
+              $('<div></div>').appendTo('body')
+                      .html('<div><h6>Do you want to chage status to Draft (it will de-provison package)?</h6></div>')
+                      .dialog({
+                              modal: true, 
+                              title: 'message', 
+                              zIndex: 10000, 
+                              autoOpen: true,
+                              width: 'auto', 
+                              resizable: false,
+                              buttons: {
+                                  Yes: function () {
+                                     savePackage();
+                                     $(this).dialog("close");
+                                  },
+                                  No: function () {
+                                      $(this).dialog("close");
+                                  }
+                              },
+                              close: function (event, ui) {
+                                  $(this).remove();
+                              }
+                    });
+               
+           } else {
+                savePackage();
+           }
+        }
+        
+        function setStatus(status){
+            newStatus = status;
+        }
+    </script>
+
+    <apex:sectionHeader title="Design Package Edit" subtitle="{!designPackage.Name}"/>  
+    <apex:form id="formId">
+            <apex:actionFunction action="{!savePackage}" name="savePackage" reRender="pBlockId,msg"/>
+            <apex:pageBlock mode="detail" title="Design Package Edit" id="pBlockId">
+                <apex:pageMessages id="msg"/>
+                <apex:pageBlockButtons location="both" id="pBlockBtbId">
+                    <input type="button" value="Save" onclick="return SaveReport();" class="btn"/>
+                    <apex:commandButton value="Cancel" action="{!cancel}" immediate="true"/>
+                </apex:pageBlockButtons>
+                     
+                <apex:pageBlockSection title="Information" columns="2" id="pBlockSectionId">
+                    <apex:inputField value="{!designPackage.name}" />
+                    <apex:inputField value="{!designPackage.Ownerid}"/>
+                    <apex:inputField value="{!designPackage.Locked__c}"/>
+                    <apex:inputField value="{!designPackage.Technology_Type__c}"/>
+                    <apex:inputField value="{!designPackage.Package_Release_Status__c}" onchange="setStatus(this.value)" id="pkgStatusId"/>
+                    <apex:inputField value="{!designPackage.Tech_Geometry__c}"/>
+                    <apex:inputField value="{!designPackage.Package_Description__c}"/>
+                    <apex:inputField value="{!designPackage.Process_Type__c}"/>
+                    <apex:inputField value="{!designPackage.Package_Version__c}"/>
+                    <apex:inputField value="{!designPackage.OpenText_Id__c}"/>
+                    <apex:inputField value="{!designPackage.DateTime_Last_Synced_With_OpenText__c}"/>
+                    <apex:inputField value="{!designPackage.OpenText_Error_Message__c}"/>
+                    <apex:inputField value="{!designPackage.Sync_With_OpenText__c}"/>
+                    <apex:inputField value="{!designPackage.Document_Numbers_Associated__c}"/>
+                    <apex:inputField value="{!designPackage.Accounts_Provisioned_To__c}"/>
+                </apex:pageBlockSection>
+    
+            </apex:pageBlock>
+            
+        </apex:form>
+             
+</apex:page>

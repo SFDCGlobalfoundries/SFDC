@@ -1,0 +1,122 @@
+<!--
+    Author: Poulami Saha
+    Project Name: DIW Step Down Track 2 (TR) 
+    Created Date: 9/27/2016
+    Description: This serves as the Cloning page for Technical Requirement.
+    History: 
+-->
+<apex:page standardController="Customer_Requirement__c"
+           extensions="BNPTRCloneCtrl">
+    <apex:pageMessages id="msg"/>
+    <apex:form > 
+        <apex:pageBlock > 
+        <b><apex:outputText rendered="{!(respinSelected && !copySelected)}"> Respin Option</apex:outputText> </b>
+        <apex:outputText rendered="{!(copySelected && respinSelected)}">  <b>Copy Option with new Device</b>&nbsp;&nbsp;&nbsp; Option fields not copy over to new option:Deliverable Part Number(DPN),Design Assay PN,Customer part name,Wafer FAB sourcing location(wafer size),Design Execution Required,Last Accepted Quote,GF Part Name</apex:outputText>
+        <b><apex:outputText rendered="{!(!respinSelected && !copySelected)}"> Clone Option</apex:outputText> </b><br/><br/>
+            <apex:pageBlockButtons >
+                <apex:commandButton value="Create Respin"
+                                    action="{!createClone}" rendered="{!(respinSelected && !copySelected)}"/>
+                <apex:commandButton value="Create Copy"
+                                    action="{!createClone}" rendered="{!(copySelected && respinSelected)}"/>
+                <apex:commandButton value="Create Clone"
+                                    action="{!createClone}" rendered="{!(!respinSelected && !copySelected)}"/>
+                <apex:commandButton value="Cancel"
+                                    action="{!cancel}"/>
+            </apex:pageBlockButtons>
+            
+            <!--<apex:pageBlockSection columns="2">-->
+                <!--<apex:pageBlockSectionItem >
+                    <apex:outputLabel value="Provide Name of the new Technical Requirement"/>
+                    <apex:inputfield value="{!dummytechReqRec.Name}" required="true" />
+                    
+                </apex:pageBlockSectionItem>-->
+                <table>
+                <apex:outputPanel rendered="{!respinSelected}">
+                    <tr>
+                        <td>
+                            <apex:outputLabel value="Device Id :"/>
+                        </td>
+                        <td>
+                            <div class = "requiredInput">
+                                <div class = "requiredBlock"></div>
+                                <apex:inputText value="{!txtdeviceName}" label="Device Id" required="true"/><br/>
+                                </div>
+                        </td>                        
+                    </tr>
+                    <tr>
+                        <td>
+                        <apex:outputLabel value="Rit type :"/>
+                        </td>
+                        <td>
+                         <apex:selectList value="{!RitType}" multiselect="false" size="1">
+                            <apex:selectOption itemValue="A/B R" itemLabel="A/B R"/>
+                            <apex:selectOption itemValue="B R" itemLabel="B R"/>
+                           
+                        </apex:selectList>
+                       <!-- <apex:inputfield value="{!Customer_Requirement__c.Rit_Type__c}" />-->
+                        </td>
+                    </tr>
+                    </apex:outputPanel>
+                    <apex:outputPanel rendered="{!copySelected}">
+                    <tr>
+                        <td>
+                        <apex:outputLabel value="Tapeout type :"/>
+                        </td>
+                        <td>
+                         <apex:selectList value="{!TapeoutType}" multiselect="false" size="1">
+                            <apex:selectOption itemValue="Customer MPW" itemLabel="Customer MPW"/>
+                            <apex:selectOption itemValue="GlobalShuttle MPW" itemLabel="GlobalShuttle MPW"/>
+                            <apex:selectOption itemValue="Single Product" itemLabel="Single Product"/>
+                        </apex:selectList>
+                       <!-- <apex:inputfield value="{!Customer_Requirement__c.Rit_Type__c}" />-->
+                        </td>
+                    </tr>
+                    <tr>                       
+                        <td>
+                            <apex:outputLabel value="MPW Train Number:"/>
+                        </td>
+                        <td>
+                            <apex:inputField value="{!techReqRec.MPW_Train_Number__c}" />
+                        </td>
+                    </tr>
+                    </apex:outputPanel>
+                    <tr>                       
+                        <td>
+                            Deliverable Type:
+                        </td>
+                        <td>
+                            <apex:outputField value="{!techReqRec.Deliverable_Type__c}" />
+                        </td>
+                    </tr>
+                </table>                                               
+            <!--</apex:pageBlockSection>-->                            
+            <!--<apex:pageBlockSection columns="1">  -->
+            <apex:pageBlock id="riPb1">        
+                <apex:pageBlockSection columns="1" TItle="Select Deliverable types to clone"> 
+                    <!--<apex:outputLabel value="Select Option to clone :"/>-->
+                    <apex:inputCheckbox label="Service" value="{!serviceCheck}" rendered="{!deliberableType == 'Service' || deliberableType == 'Wafer' || deliberableType == 'Chip' || deliberableType == 'Module' || deliberableType == 'Package' || deliberableType == 'Design'}" disabled="{!isDisableService}"/>
+                    <apex:inputCheckbox label="Wafer" value="{!waferCheck}" rendered="{!deliberableType == 'Wafer' || deliberableType == 'Chip' || deliberableType == 'Module'}" disabled="{!isDisableWafer}"/>
+                    <apex:inputCheckbox label="Chip" value="{!chipCheck}" rendered="{!deliberableType == 'Chip' || deliberableType == 'Module' || deliberableType == 'Wafer'}" disabled="{!isDisableChip }"/>
+                    <apex:inputCheckbox label="Module" value="{!moduleCheck}" rendered="{!deliberableType == 'Module'}" disabled="{!isDisableModule}"/>
+                    <apex:inputCheckbox label="Package" value="{!packageCheck}" rendered="{!deliberableType == 'Module'}" disabled="{!isDisablePackage}"/>
+                    <apex:inputCheckbox label="Design" value="{!designCheck}" rendered="{!deliberableType == 'Service' || deliberableType == 'Wafer' || deliberableType == 'Chip' || deliberableType == 'Module' || deliberableType == 'Package' || deliberableType == 'Design'}" disabled="{!isDisableDesign}"/>
+                </apex:pageBlockSection>
+                <!--Section for Routing, Task Routing and Task Assigne--->
+                <apex:pageBlockSection id="riPbs2" columns="1" title="Select Records to Clone" rendered="{!isQuoteRequired}" >
+                    <apex:inputCheckbox label="RFQ Routings" value="{!copyRFQRoutings}">
+                        <apex:actionsupport event="onchange" action="{!reload}" reRender="riPb1"/>
+                    </apex:inputCheckbox>
+                    <apex:inputCheckbox label="RFQ Task Routings" value="{!copyRFQTaskRoutings}" disabled="{!IF(copyRFQRoutings==FALSE,TRUE,FALSE)}">
+                        <apex:actionsupport event="onchange" action="{!reload}" reRender="riPb1"/>
+                    </apex:inputCheckbox>
+                    <apex:inputCheckbox label="RFQ Task Assignees" value="{!copyRFQTaskAssignees}" disabled="{!IF(copyRFQTaskRoutings==FALSE,TRUE,FALSE)}"/>
+                </apex:pageBlockSection>
+            </apex:pageBlock>
+            <!--</apex:pageBlockSection>-->
+            
+        </apex:pageBlock>
+        
+        
+    </apex:form>
+           
+</apex:page>

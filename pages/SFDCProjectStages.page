@@ -1,0 +1,123 @@
+<apex:page controller="SFDCProjectStagesController" showChat="false">
+<style type="text/css">
+.dateFormat{ visibility:hidden; }//to hide the current-date-link
+.tableStyle {border-collapse: collapse; border-spacing: 0px 0px; }
+.colStyle1 { text-align:center; font-weight:bold; }
+.colStyle2 { text-align:center; padding-top:3px; padding-bottom:5px}
+.rowstyle { border-bottom-style:solid; border-bottom-width:1px;border-bottom-color:#E8E8E8 }
+</style>
+<script>
+function setFocusOnLoad() {} //JS FUNCTION OVERIDDEN TO KEEP CALENDAR FROM POPPING UP DURING PAGE LOAD, EMPTY ON PURPOSE
+
+function focusEndDate(endDate){ //workaround to disable the end-date fields.
+    var endDateId = endDate.id;
+    var index1 = endDateId.indexOf(':stageEndDateOut');
+    var thisSkipId = endDateId.substring(0,index1) + ":stageSkip";
+    //alert(thisSkipId);
+    if(document.getElementById(thisSkipId) != null){
+        //alert(document.getElementById(thisSkipId));
+        if(document.getElementById(thisSkipId).checked){
+            alert("Please unchecked the Skip in order to modify the End Date.");
+            return false;
+            //endDate.disabled = true;
+            //document.getElementById(thisSkipId).focus();
+            
+        }
+    }
+}
+
+function updateStartDate(endDate){ //to populate the end date value to the next start date.
+    var endDateId = endDate.id;
+    var index1 = endDateId.indexOf(':stageEndDateOut');
+    //var thisSkipId = endDateId.substring(0,index1) + ":stageSkip";
+    //alert(thisSkipId);
+    //if(document.getElementById(thisSkipId) != null){
+        //alert(document.getElementById(thisSkipId));
+        //if(document.getElementById(thisSkipId).checked){
+        //    endDate.disabled = true;
+        //    return;
+        //}
+    //}
+    var number1 = endDateId.substring(index1-1,index1);
+    var number2 = parseInt(number1) + 1;
+    //var nextStartDateId = endDateId.substring(0,index1-1) + number2 + ":stageStartDate";
+    var nextStartDateId = endDateId.substring(0,index1-1) + number2 + ":stageStartDateOut";
+    //alert(nextStartDateId);
+    //alert(document.getElementById(nextStartDateId));
+    if(document.getElementById(nextStartDateId) != null){
+        //document.getElementById(nextStartDateId).value = endDate.value;
+        document.getElementById(nextStartDateId).innerHTML = endDate.value;
+    }    
+}
+
+function toggleSkip(obj){
+    //alert(obj);
+    var objId = obj.id;
+    //alert("objId="+objId);
+    //alert("value="+obj.value);
+    //alert("checked="+obj.checked);
+    var index1 = objId.indexOf(':stageSkip');
+    //alert("index1="+index1);
+    var number1 = objId.substring(index1-1,index1);
+    var previousNumber = parseInt(number1) - 1;
+    var nextNumber = parseInt(number1) + 1;
+    //alert("number1="+number1);
+    var endDateObjId = objId.substring(0,index1-1) + number1 + ":stageEndDateOut";
+    var previousEndDateObjId = objId.substring(0,index1-1) + previousNumber + ":stageEndDateOut";
+    var nextStartDateId = objId.substring(0,index1-1) + nextNumber + ":stageStartDateOut";
+    //alert(endDateObjId);
+    if(document.getElementById(endDateObjId) != null){
+        //alert(document.getElementById(endDateObjId).value);
+        if(obj.checked){
+            if(document.getElementById(previousEndDateObjId) != null){
+                document.getElementById(endDateObjId).value = document.getElementById(previousEndDateObjId).value;
+                updateStartDate(document.getElementById(endDateObjId));
+            }
+            //document.getElementById(endDateObjId).disabled = true;
+        }else{
+            //document.getElementById(endDateObjId).disabled = false;
+        }
+    }
+}
+
+function showme(obj){
+    alert(obj);
+    alert(obj.id);
+    alert(obj.value);
+}
+</script>
+
+<apex:form id="frm">
+   <apex:sectionHeader title="{!Project.Name}" subtitle="SFDC Project Stages"/>
+  <apex:pageBlock mode="Edit" id="pb">
+      <apex:pageblockButtons >
+        <apex:commandButton action="{!Save}" value="Save"/>
+        <apex:commandButton action="{!Cancel}" value="Cancel"/>
+      </apex:pageblockButtons>
+      <apex:pageMessages /> 
+      <apex:pageBlockSection showHeader="true" title="Manage Stages" columns="7" id="projectStages">
+         <apex:outputLabel value="Stage" style="font-weight:bold;"/>
+         <apex:outputLabel value="Start Date" style="font-weight:bold;"/>
+         <apex:outputLabel value="End Date" style="font-weight:bold;"/>
+         <apex:outputLabel value="Completed" style="font-weight:bold;"/>
+         <apex:outputLabel value="Completed Date" style="font-weight:bold;"/>
+         <apex:outputLabel value="Skip" style="font-weight:bold;"/>
+         <apex:outputLabel value="Skip Justification" style="font-weight:bold;"/>
+       
+         <apex:repeat value="{!Stages}" var="stage" >
+              <apex:outputLabel >
+              <table><tr><td nowrap="nowrap">{!stage.Name__c}</td></tr><tr><td>{!stage.Hint_Time__c}</td></tr></table>
+              </apex:outputLabel>
+              <apex:outputField id="stageStartDateOut" rendered="{!FirstStageName != stage.Name}" label="" value="{!stage.Start_Date__c}" style="text-align=center"/>
+              <apex:inputField id="stageStartDate" rendered="{!FirstStageName== stage.Name}" label="" value="{!stage.Start_Date__c}" />
+              <!--<apex:inputField id="stageStartDate" label="" value="{!stage.Start_Date__c}" required="true"/>-->
+              <apex:inputField id="stageEndDateOut" label="" value="{!stage.End_Date__c}" onmousedown="return focusEndDate(this)" onchange="updateStartDate(this)" required="true"/>
+              <apex:inputField id="stageComp" label="" value="{!stage.Completed__c}" style="text-align:center;"/>
+              <apex:inputField id="stageCompletedDate" label="" value="{!stage.Completed_Date__c}"/>
+              <apex:inputField id="stageSkip" label="" value="{!stage.Skip__c}" style="text-align:center;" onclick="toggleSkip(this)"/>
+              <apex:inputField id="stageSkipJustification" style="width:300px;" label="" value="{!stage.Skip_Justification__c}"/>
+         </apex:repeat>
+      </apex:pageBlockSection>
+  </apex:pageBlock>
+</apex:form>   
+</apex:page>

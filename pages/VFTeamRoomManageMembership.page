@@ -1,0 +1,224 @@
+<!--
+ Type Name: VFTeamRoomManageMembership
+ Author: Cognizant Technology Solutions
+ Created Date: 21-May-2013
+ Reason: This page is used to add the Team room members to Team room.
+ Change History:
+ Author: Sunita
+ Modified Date: 25/3/2015
+ Reason: To delete multiple users at one go(case 38937)
+ …….. 
+ ……..
+-->
+
+<apex:page sidebar="true"  controller="clsTeamRoomManageMembership" >
+
+<script type="text/javascript">
+        function selectAllCheckboxes(obj,receivedInputID){
+            var inputCheckBox = document.getElementsByTagName("input");                  
+            for(var i=0; i<inputCheckBox.length; i++){          
+                if(inputCheckBox[i].id.indexOf(receivedInputID)!=-1){                                     
+                    inputCheckBox[i].checked = obj.checked;
+                }
+            }
+        }
+    </script>
+    <apex:sectionHeader title="New TeamRoom Member"/>
+    <apex:form id="frm">
+   
+   
+        <apex:pageBlock mode="Edit" id="pb" rendered="{!isAddDelMember}">
+            <apex:pageblockButtons >
+                <apex:commandButton value="Save" action="{!Save}"/>
+                <apex:commandButton value="Cancel" action="{!Cancel}"/>
+                <apex:commandButton value="Delete" action="{!DeleteUser}"/>
+            </apex:pageblockButtons>
+            <apex:pageMessages id="msgid"></apex:pageMessages>
+            
+            <apex:pageBlockSection title="Users" columns="1">
+                <apex:commandButton value="Add Row" action="{!addUserRow}" rerender="userTable"/>
+              
+                <apex:pageBlockTable value="{!IndividualMemberList}" var="individualMember" id="userTable">
+             
+                    <apex:column width="35%">
+                        <apex:facet name="header">Team Member</apex:facet>
+                        <apex:outputField rendered="{!individualMember.id!=''}" value="{!individualMember.User__c}"/>
+                        <apex:inputField rendered="{!individualMember.id=''}" value="{!individualMember.User__c}" id="UserInput" /> <!---Cognizant modified on 27/1/2013--->
+                    </apex:column>
+                    
+                    <apex:column width="35%">
+                        <apex:facet name="header">Team Member Role</apex:facet>
+                        <apex:outputText value="Moderator" rendered="{!IF((individualMember.Team_Room_Role__c=='Owner'),true,false)}"></apex:outputText>
+                        <apex:selectList value="{!individualMember.Team_Room_Role__c}" size="1" rendered="{!IF((individualMember.Team_Room_Role__c!='Owner'),true,false)}">
+                            <apex:selectOptions value="{!MemberRoleList}"></apex:selectOptions>
+                        </apex:selectList>
+                    </apex:column>
+                        <!--<apex:column >
+                                
+                        <apex:commandlink value="Del" rendered="{!IF(((individualMember.User__r.AccountId = AccId && individualMember.User__c!=null && blnExternalUser=True)|| (blnExternalUser=false && individualMember.User__c!=null)) && ((individualMember.Team_Room_Role__c!='Owner')),true,false)}" action="{!deleteUser}" rerender="userTable">
+                            <apex:param name="delname" assignTo="{!sDelRecordId}" value="{!individualMember.User__c}" />
+                        </apex:commandlink>
+                    </apex:column>-->         
+                  
+                    
+                    <apex:column width="0%">
+                    <apex:facet name="header">
+                        <apex:inputCheckbox onclick="selectAllCheckboxes(this,'SearchList')"/>
+                    </apex:facet>
+                    <apex:inputCheckbox id="SearchList" value="{!individualMember.User_Selected__c}" selected="{!individualMember.User_Selected__c}"  rendered="{!IF(((individualMember.User__r.AccountId = AccId && individualMember.User__c!=null && blnExternalUser=True)|| (blnExternalUser=false && individualMember.User__c!=null)) && ((individualMember.Team_Room_Role__c!='Owner')),true,false) && (individualMember.Id!=null)}"/>
+                    
+                </apex:column>
+                
+                <apex:column width="35%">
+                    <apex:facet name="header">
+                       Delete All 
+                    </apex:facet>
+                    
+                </apex:column>
+                
+                </apex:pageBlockTable>
+                  
+            </apex:pageBlockSection>
+            
+            <apex:pageBlockSection title="Account Team" columns="1" rendered="{!blnExternalUser==false}">
+                <apex:commandButton value="Add Row" action="{!addAccountRow}" rerender="accountTable"/> 
+                <apex:pageBlockTable value="{!AccountTeamList}" var="accountTeam" id="accountTable">
+                    <apex:column width="35%">
+                        <apex:facet name="header">Account Team Member</apex:facet>
+                        <apex:outputText rendered="{!accountTeam.blnSavedRecord==true}" value="{!accountTeam.sAccountName}"/>
+                        <!-- <apex:inputHidden rendered="{!accountTeam.AccountId!=''}" value="{!accountTeam.AccountId}"/> -->
+                        <apex:selectList id="acc" value="{!accountTeam.sAccountId}" size="1"  rendered="{!accountTeam.blnSavedRecord==false}">
+                            <apex:selectOptions value="{!AccountList}"></apex:selectOptions>
+                        </apex:selectList>
+                        <!-- <apex:image id="theImage" value="{!$Resource.UserBrowse}" width="25" height="25"/> -->
+                    </apex:column>  
+                    
+                    <apex:column width="35%">
+                        <apex:facet name="header">Team Member Role</apex:facet>
+                        <apex:selectList value="{!accountTeam.sMemberRole}" size="1"  >
+                            <apex:selectOptions value="{!MemberRoleList}"></apex:selectOptions>
+                        </apex:selectList>
+                    </apex:column>  
+ 
+                    <apex:column >
+                        <apex:commandLink value="Del"  rendered="{!accountTeam.blnSavedRecord==true}" action="{!deleteAccount}" rerender="accountTable">
+                            <apex:param name="delname" assignTo="{!sDelRecordId}" value="{!accountTeam.sAccountId}" />
+                        </apex:commandLink>
+                    </apex:column> 
+                </apex:pageBlockTable>  
+            </apex:pageBlockSection>
+            
+            <apex:pageBlockSection title="Group" columns="1" rendered="{!blnExternalUser==false}">
+                <apex:commandButton value="Add Row" action="{!addGroupRow}" rerender="groupTable"/>
+                <apex:pageBlockTable value="{!GroupMemberList}" var="groupMember" id="groupTable">
+                    <apex:column width="35%">
+                        <apex:facet name="header">Team Member</apex:facet>
+                        <apex:outputText rendered="{!groupMember.blnSavedRecord==true}" value="{!groupMember.sGroupName}"/>
+                        <!--<apex:inputHidden rendered="{!groupMember.GroupId!=''}" value="{!groupMember.GroupId}"/>-->
+                        <apex:selectList value="{!groupMember.sGroupId}" size="1" rendered="{!groupMember.blnSavedRecord==false}" >
+                            <apex:selectOptions value="{!PublicGroupList}" ></apex:selectOptions>
+                        </apex:selectList>
+                        <!-- <apex:image id="theImage" value="{!$Resource.UserBrowse}" width="25" height="25"/> -->
+                    </apex:column>
+
+              
+                    <apex:column width="35%">
+                        <apex:facet name="header">Team Member Role</apex:facet>
+                        <apex:selectList value="{!groupMember.sMemberRole}" size="1">
+                            <apex:selectOptions value="{!MemberRoleList}"></apex:selectOptions>
+                        </apex:selectList>
+                    </apex:column>  
+            
+                    <apex:column >
+                        <apex:commandLink value="Del" rendered="{!groupMember.blnSavedRecord==true}" action="{!deleteGroup}" rerender="groupTable">
+                            <apex:param name="delname" assignTo="{!sDelRecordId}" value="{!groupMember.sGroupId}" />
+                        </apex:commandLink>
+                    </apex:column> 
+                          
+                </apex:pageBlockTable>  
+            </apex:pageBlockSection>  
+            
+        </apex:pageBlock>
+        <apex:pageBlock rendered="{!Not(isAddDelMember)}">
+            <apex:pageMessage summary="You do not have permission to access this page." severity="warning" strength="3" />
+        </apex:pageBlock>
+    </apex:form>
+    
+    <!-----------------------------------------------lookup functionality start------------------------------------------------->
+    <script type="text/javascript">   
+        function openLookup(baseURL,width,modified,searchParam) {
+            var baseURLTemp = baseURL;
+            var user_contactId = '{!$User.ContactId}' ;
+            var PIds='';
+            var obj = '';
+            if(getURLParameter(baseURLTemp ,'lknm')!=null){
+               //retrieving the component ID using the funciton getURLParameter
+               PIds =getURLParameter(baseURLTemp ,'lknm');
+            }
+            else{
+               //retrieving the component ID using the funciton getURLParameter
+               PIds = getURLParameter(baseURLTemp ,'lkfm');
+            }  
+
+            
+            //if lookup is called from user input field. 
+            if(PIds != '' && PIds.indexOf('UserInput') != -1 && user_contactId!=''){
+                obj = 'User';  //query should be written on the user object. To retrieve the info in the custom lookup page.  
+                
+                //************* add your logic as required ***********************
+                //var processFam = ;
+                //var Geom = ;
+                //*********************************************/
+                
+                //creating BaseURL to call the custom Lookup Page
+                
+                
+                //var baseURL = "/VFCustomUserLookup?obj=User"; //define custom VF, VFCustomUserLookup
+                var user_contactId = '{!$User.ContactId}' ;
+                //var baseURL = '' ;
+              //  if(user_contactId=='')
+             //   {
+                    //baseURL = "/apex/VFCustomUserLookup?obj=User";
+                    //baseURL = '1' ;
+              //  }
+             //   else
+               // {
+                    baseURL =  '/'+'{!$Label.Community_Name}'+'/VFCustomUserLookup?obj=User' ;
+                    //baseURL = '2' ;
+               // }
+                
+                //alert(baseURL) ;  
+                /************add the values in the url.You may use them in the custom lookup page*************
+                //baseURL += "ProcFam="+ processFam;
+                //baseURL += "&Geom="+ Geom;
+                //baseURL += "&Objct="+ obj;
+                //baseURL += "&iptype="+ ipType ; 
+                ************************************/
+                
+                baseURL += "&frm=vfpage:vffrm";
+                baseURL += "&pids="+ PIds;
+                baseURL += "&lksearch=" + searchParam;
+                
+                //Opening the popup/lookup window
+                openPopup(baseURL, "lookup", 350, 480, "width="+width+",height=480,toolbar=no,status=no,directories=no,menubar=no,resizable=yes,scrollable=no", true);
+            }
+            else{
+                
+                //Opening the popup/lookup window
+                openPopup(baseURLTemp, "lookup", 350, 480, "width="+width+",height=480,toolbar=no,status=no,directories=no,menubar=no,resizable=yes,scrollable=no", true);
+            }
+                
+        }
+               
+        //This function returns the Component ID
+        function getURLParameter(url,name) {
+            return decodeURIComponent((new RegExp('[?|&]' + name + '=' + '([^&;]+?)(&|#|;|$)').exec(url)||[,""])[1].replace(/\+/g, '%20'))||null;
+        }
+               
+              
+    </script>    
+   
+    
+    <!-----------------------------------------------lookup functionality end------------------------------------------------->
+
+</apex:page>

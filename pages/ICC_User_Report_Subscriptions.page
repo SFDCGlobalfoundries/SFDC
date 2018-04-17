@@ -1,0 +1,41 @@
+<apex:page controller="ICC_User_Report_Subscriptions" showHeader="false" sidebar="false">
+    <apex:form >
+        <apex:actionFunction name="AF_Delete" action="{!deleteReportSubscription}" oncomplete="window.location.reload();" status="actStatusId" rerender="pb">
+            <apex:param name="delReportSubID" value=""/>
+        </apex:actionFunction>
+        <apex:actionstatus id="actStatusId">
+            <apex:facet name="start">
+                <div class="waitingSearchDiv" id="el_loading" style="background-color: #DCD6D6; height: 100%;opacity:0.65;width:100%;">
+                    <div class="waitingHolder" style="top: 74.2px; width: 91px;">
+                        <img class="waitingImage" src="/img/loading.gif" title="Please Wait..." />
+                        <span class="waitingDescription">Deleting...</span>
+                    </div>
+                </div>
+            </apex:facet>
+        </apex:actionstatus>
+        <apex:pageBlock title="My Report Subscriptions" id="pb"> 
+            <apex:pageMessages />
+            <apex:pageBlockButtons location="top">
+                <apex:commandButton value="New Report Subscription" 
+                                    rendered="{!lstReportSubscriptions.size < VALUE($Label.ICC_ReportSubscription_RecordLimitValue_UserSubscriptionPage)}" 
+                                    onclick="window.location.href='apex/ICC_New_Subscription?retURL={!$CurrentPage.URL}';" rerender="pb"/>
+            
+                <apex:commandButton value="Refresh Custom Reports" status="actStatusId" action="{!refreshAllSubscriptionSOQLs}" rerender="pb"/>
+            </apex:pageBlockButtons>
+            <apex:pageBlockTable value="{!lstReportSubscriptions}" var="rs" rendered="{!lstReportSubscriptions.size > 0}">
+                <apex:column headerValue="Action" width="10%">
+                    <a style="color:#015ba7; cursor:pointer" href="apex/ICC_New_Subscription?id={!rs.Id}&retURL={!$CurrentPage.URL}">Edit</a> 
+                    |
+                    <a style="color:#015ba7; cursor:pointer" onclick="if(confirm('Are you sure?')){AF_Delete('{!rs.Id}');}" href="#">Unsubscribe</a>
+                </apex:column>
+                <apex:column value="{!rs.Name}"/>
+                <apex:column value="{!rs.Report_Name__c}"/>
+                <apex:column value="{!rs.Report_Type__c}"/>
+                <apex:column value="{!rs.Interval__c}"/>
+            </apex:pageBlockTable> 
+            <apex:outputPanel rendered="{!lstReportSubscriptions.size == 0}">
+                <b style="color: red">No records</b>
+            </apex:outputPanel>
+        </apex:pageBlock>
+    </apex:form>
+</apex:page>

@@ -1,0 +1,899 @@
+<!--
+    Author: Zymark Ambat
+    Description: This page is used as the view page for Wafer Write Off.
+    History: 
+        ZAmbat      01292015    - Page creation.
+        NJain       04212015    - Added a page block for displaying History section and Export Excel button.
+-->
+
+<apex:page id="WaferWriteOffVF" standardController="Wafer_Write_Off__c" extensions="WaferWriteOffController" sidebar="true" showHeader="true" tabStyle="Wafer_Write_Off__c">
+    <apex:includeScript value="{!URLFOR($Resource.jquery, 'js/jquery-1.8.3.js')}" />
+    <apex:stylesheet value="/sCSS/21.0/sprites/1297816277000/Theme3/default/gc/versioning.css" />
+    <style>
+        .first1 {
+            background-image: url(/img/paginationArrows.gif);
+            background-repeat: no-repeat;
+            background-position: 0 1px;
+            width: 9px;
+            height: 10px;
+        }
+        
+        .firstoff1 {
+            background-image: url(/img/paginationArrows.gif);
+            background-repeat: no-repeat;
+            background-position: 0 -10px;
+            width: 9px;
+            height: 10px;
+        }
+        
+        .prev1 {
+            background-image: url(/img/paginationArrows.gif);
+            background-repeat: no-repeat;
+            background-position: -10px 1px;
+            width: 9px;
+            height: 10px;
+            margin: 0;
+            padding: 0;
+        }
+        
+        .prevoff1 {
+            background-image: url(/img/paginationArrows.gif);
+            background-repeat: no-repeat;
+            background-position: -10px -10px;
+            width: 9px;
+            height: 10px;
+            margin: 0;
+            padding: 0;
+        }
+        
+        .next1 {
+            background-image: url(/img/paginationArrows.gif);
+            background-repeat: no-repeat;
+            background-position: -17px 1px;
+            width: 9px;
+            height: 10px;
+            margin: 0;
+            padding: 0;
+        }
+        
+        .nextoff1 {
+            background-image: url(/img/paginationArrows.gif);
+            background-repeat: no-repeat;
+            background-position: -17px -10px;
+            width: 9px;
+            height: 10px;
+            margin: 0;
+            padding: 0;
+        }
+        
+        .last1 {
+            background-image: url(/img/paginationArrows.gif);
+            background-repeat: no-repeat;
+            background-position: -27px 1px;
+            width: 9px;
+            height: 10px;
+            margin: 0;
+            padding: 0;
+        }
+        
+        .lastoff1 {
+            background-image: url(/img/paginationArrows.gif);
+            background-repeat: no-repeat;
+            background-position: -27px -10px;
+            width: 9px;
+            height: 10px;
+            margin: 0;
+            padding: 0;
+        }
+        
+        .prevtext {
+            color: #333;
+            text-decoration: none;
+            display: inline-block;
+            vertical-align: middle;
+        }
+        
+        
+        .prevtextoff {
+            color: #a8a8a8;
+            text-decoration: none;
+            display: inline-block;
+            vertical-align: middle;
+        }
+        
+        .nexttext {
+            color: #333;
+            text-decoration: none;
+            display: inline-block;
+            vertical-align: middle;
+        }
+        
+        
+        .nexttextoff {
+            color: #a8a8a8;
+            text-decoration: none;
+            display: inline-block;
+            vertical-align: middle;
+        }
+        
+        .imgclass:hover {  
+            background-image: url(/img/help/helpOrbs.gif);  
+            background-repeat: no-repeat;  
+            width: 16px;  
+            height: 16px;     
+            background-position: right;  
+        }  
+        
+        .imgclass {  
+            background-image: url(/img/help/helpOrbs.gif);  
+            background-repeat: no-repeat;  
+            width: 16px;  
+            height: 16px;    
+        }  
+        
+        .helpTextStyle {
+            text-decoration: none;
+            position: absolute;
+            width: 15em;
+            z-index: 12;
+            background-color: #fefdb9;
+            padding: 2px 5px;
+            border: 1px solid orange;
+            text-align: left;
+            white-space: normal;
+            font-weight: normal;
+            color: #000;
+        }
+        
+        .pbSubheader {
+            background-color: #222;
+            font-weight: bold;
+            font-size: 100%;
+            padding: 2px 2px 2px 5px;
+            margin-top: 15px;
+            overflow: hidden;
+            margin-bottom: 2px;
+        }
+        
+        body .bPageBlock .pbBody .pbSubheader img {
+            margin-right: 4px;
+            background-repeat: no-repeat;
+            height: 16px;
+            width: 16px;
+        }
+    </style>
+    
+    <script>
+        function captureKey(e) {
+            if (e.keyCode == 13) {
+                searchLots();
+                return false;
+            }
+            return true;
+        }
+        
+        function preventFormSubmission(e) {
+            if (e.keyCode == 13) {
+                return false;
+            }            
+            return true;
+        }
+        
+        function showHelpText(id, element) {
+            var leftPos = 0;
+            var topPos = 0;
+            
+            while(element) {
+                leftPos += (element.offsetLeft - element.scrollLeft + element.clientLeft);
+                topPos += (element.offsetTop - element.scrollTop + element.clientTop);
+                element = element.offsetParent;
+            }
+            
+            document.getElementById(id).style.display = "block";
+            document.getElementById(id).style.opacity = 0.99;
+            document.getElementById(id).style.top = (topPos - 210) + "px";
+            document.getElementById(id).style.left = (leftPos + 10) + "px";
+        }
+        
+        function hideHelpText(id) {
+            document.getElementById(id).style.display = "none";
+            document.getElementById(id).style.opacity = -0.2;
+        }
+        
+        function checkAll(cbId, isChecked) {
+            if (cbId == "WaferWriteOffVF:form1:block1:lotSection:selectedLotsTbl1:mainStatusCheckbox") {
+                var inputs = document.getElementsByTagName("input");
+                for(var i = 0; i < inputs.length; i++) {
+                    if(inputs[i].type == "checkbox") {
+                        inputs[i].checked = isChecked; 
+                    }  
+                }
+            } else {
+                if (!isChecked) {
+                    document.getElementById("WaferWriteOffVF:form1:block1:lotSection:selectedLotsTbl1:mainStatusCheckbox").checked = false;
+                } else {
+                    var cbChecked = true;
+                    var inputs = document.getElementsByTagName("input");
+                    for(var i = 0; i < inputs.length; i++) {
+                        if(inputs[i].type == "checkbox" && inputs[i].id != "WaferWriteOffVF:form1:block1:lotSection:selectedLotsTbl1:mainStatusCheckbox") {
+                            if (inputs[i].checked == false) {
+                                cbChecked = false;
+                                break;
+                            } 
+                        }  
+                    }
+  
+                    document.getElementById("WaferWriteOffVF:form1:block1:lotSection:selectedLotsTbl1:mainStatusCheckbox").checked = cbChecked;
+                }
+            }
+        }
+        
+        function checkAllAvailable(cbId, isChecked) {
+            if (cbId == "WaferWriteOffVF:form1:block2:searchlotSection:availableLotsTbl:mainAvailableCheckbox") {
+                var inputs = document.getElementsByTagName("input");
+                for(var i = 0; i < inputs.length; i++) {
+                    if(inputs[i].type == "checkbox" && inputs[i].id.indexOf("availableCheckbox") > -1) {
+                        inputs[i].checked = isChecked; 
+                    }  
+                }
+            } else {
+                if (!isChecked) {
+                    document.getElementById("WaferWriteOffVF:form1:block2:searchlotSection:availableLotsTbl:mainAvailableCheckbox").checked = false;
+                } else {
+                    var cbChecked = true;
+                    var inputs = document.getElementsByTagName("input");
+                    for(var i = 0; i < inputs.length; i++) {
+                        if(inputs[i].type == "checkbox" && inputs[i].id.indexOf("availableCheckbox") > -1 && inputs[i].id != "WaferWriteOffVF:form1:block2:searchlotSection:availableLotsTbl:mainAvailableCheckbox") {
+                            if (inputs[i].checked == false) {
+                                cbChecked = false;
+                                break;
+                            } 
+                        }  
+                    }
+  
+                    document.getElementById("WaferWriteOffVF:form1:block2:searchlotSection:availableLotsTbl:mainAvailableCheckbox").checked = cbChecked;
+                }
+            }
+        }
+        
+        function checkAllSelected(cbId, isChecked) {
+            if (cbId == "WaferWriteOffVF:form1:block2:selectedlotSection:selectedLotsTbl2:mainSelectedCheckbox") {
+                var inputs = document.getElementsByTagName("input");
+                for(var i = 0; i < inputs.length; i++) {
+                    if(inputs[i].type == "checkbox" && inputs[i].id.indexOf("selectedCheckbox") > -1) {
+                        inputs[i].checked = isChecked; 
+                    }  
+                }
+            } else {
+                if (!isChecked) {
+                    document.getElementById("WaferWriteOffVF:form1:block2:selectedlotSection:selectedLotsTbl2:mainSelectedCheckbox").checked = false;
+                } else {
+                    var cbChecked = true;
+                    var inputs = document.getElementsByTagName("input");
+                    for(var i = 0; i < inputs.length; i++) {
+                        if(inputs[i].type == "checkbox" && inputs[i].id.indexOf("selectedCheckbox") > -1 && inputs[i].id != "WaferWriteOffVF:form1:block2:selectedlotSection:selectedLotsTbl2:mainSelectedCheckbox") {
+                            if (inputs[i].checked == false) {
+                                cbChecked = false;
+                                break;
+                            } 
+                        }  
+                    }
+  
+                    document.getElementById("WaferWriteOffVF:form1:block2:selectedlotSection:selectedLotsTbl2:mainSelectedCheckbox").checked = cbChecked;
+                }
+            }
+        }
+        
+        function checkSelectedReason() {
+            var reason = document.getElementById("WaferWriteOffVF:form1:block1:section1:wwoReasonInput_selected");
+            var showOtherReason = false;
+            for (var i=0; i<reason.length; i++) {
+                if (reason.options[i].text == "Others") {
+                    showOtherReason = true;
+                    break;
+                }
+            }
+            
+            if (showOtherReason) {
+                document.getElementById("WaferWriteOffVF:form1:block1:section1:item1:wwoOtherReasonInput").style.display = "block";
+                document.getElementById("WaferWriteOffVF:form1:block1:section1:item1:label1").style.display = "block";
+            } else {
+                document.getElementById("WaferWriteOffVF:form1:block1:section1:item1:wwoOtherReasonInput").style.display = "none";
+                document.getElementById("WaferWriteOffVF:form1:block1:section1:item1:label1").style.display = "none";
+            }
+        }
+        
+        function checkAvailableItems() {
+            var cbChecked = true;
+            var inputs = document.getElementsByTagName("input");
+            for(var i = 0; i < inputs.length; i++) {
+                if(inputs[i].type == "checkbox" && inputs[i].id.indexOf("availableCheckbox") > -1 && inputs[i].id != "WaferWriteOffVF:form1:block2:searchlotSection:availableLotsTbl:mainAvailableCheckbox") {
+                    if (inputs[i].checked == false) {
+                        cbChecked = false;
+                        break;
+                    } 
+                }  
+            }
+
+            document.getElementById("WaferWriteOffVF:form1:block2:searchlotSection:availableLotsTbl:mainAvailableCheckbox").checked = cbChecked;
+        }
+        
+        function checkSelectedItems() {
+            var cbChecked = true;
+            var inputs = document.getElementsByTagName("input");
+            for(var i = 0; i < inputs.length; i++) {
+                if(inputs[i].type == "checkbox" && inputs[i].id.indexOf("selectedCheckbox") > -1 && inputs[i].id != "WaferWriteOffVF:form1:block2:selectedlotSection:selectedLotsTbl2:mainSelectedCheckbox") {
+                    if (inputs[i].checked == false) {
+                        cbChecked = false;
+                        break;
+                    } 
+                }  
+            }
+
+            document.getElementById("WaferWriteOffVF:form1:block2:selectedlotSection:selectedLotsTbl2:mainSelectedCheckbox").checked = cbChecked;
+        }
+        
+        function checkValuesInput() {
+            var status = "{!waferWriteOff.Status__c}";
+            if (status == "Pending Finance Update of Write Off Value") {
+                var isValid = true;
+                var inputs = document.getElementsByTagName("input");
+                for(var i = 0; i < inputs.length; i++) {
+                    if (inputs[i].id.indexOf("valueUS") > -1 || inputs[i].id.indexOf("provisionedUS") > -1) {
+                        if (parseFloat(inputs[i].value) < 0) {
+                            alert("Value (US$) should be greater than or equal to zero (0).");
+                            inputs[i].focus();
+                            isValid = false;
+                            break;
+                        }
+                    }
+                }
+                
+                return isValid;
+            } else {
+                return true;
+            }
+        }
+        
+        function isNumber(evt, fieldValue) {
+            evt = (evt) ? evt : window.event;
+            var charCode = (evt.which) ? evt.which : evt.keyCode;
+            if (charCode > 31 && (charCode < 48 || charCode > 57) && charCode != 46) {
+                return false;
+            }
+            
+            if (charCode == 46 && fieldValue.indexOf(".") > -1) {
+                return false;
+            }
+            
+            return true;
+        }
+    </script>
+    
+    <script>
+        $(document).ready(function(){
+            var isNew = {!isNew};
+            var isEdit = {!isEdit}; 
+
+            if (isNew || isEdit) {
+                if (document.getElementById("WaferWriteOffVF:form1:block1:section1:wwoReasonInput_selected") != "undefined" && document.getElementById("WaferWriteOffVF:form1:block1:section1:wwoReasonInput_selected") != null) { 
+                    var reason = document.getElementById("WaferWriteOffVF:form1:block1:section1:wwoReasonInput_selected");
+                    var showOtherReason = false;
+                    for (var i=0; i<reason.length; i++) {
+                        if (reason.options[i].text == "Others") {
+                            showOtherReason = true;
+                            break;
+                        }
+                    }
+                    
+                    if (showOtherReason) {
+                        document.getElementById("WaferWriteOffVF:form1:block1:section1:item1:wwoOtherReasonInput").style.display = "block";
+                        document.getElementById("WaferWriteOffVF:form1:block1:section1:item1:label1").style.display = "block";
+                    } else {
+                        document.getElementById("WaferWriteOffVF:form1:block1:section1:item1:wwoOtherReasonInput").style.display = "none";
+                        document.getElementById("WaferWriteOffVF:form1:block1:section1:item1:label1").style.display = "none";
+                    }
+                }
+                
+                if (document.getElementById("WaferWriteOffVF:form1:block2:searchlotSection:availableLotsTbl:mainAvailableCheckbox") != "undefined" && document.getElementById("WaferWriteOffVF:form1:block2:searchlotSection:availableLotsTbl:mainAvailableCheckbox") != null) {
+                    var cbChecked = true;
+                    var inputs = document.getElementsByTagName("input");
+                    for(var i = 0; i < inputs.length; i++) {
+                        if(inputs[i].type == "checkbox" && inputs[i].id.indexOf("availableCheckbox") > -1 && inputs[i].id != "WaferWriteOffVF:form1:block2:searchlotSection:availableLotsTbl:mainAvailableCheckbox") {
+                            if (inputs[i].checked == false) {
+                                cbChecked = false;
+                                break;
+                            } 
+                        }  
+                    }
+        
+                    document.getElementById("WaferWriteOffVF:form1:block2:searchlotSection:availableLotsTbl:mainAvailableCheckbox").checked = cbChecked;
+                }
+                
+                if (document.getElementById("WaferWriteOffVF:form1:block2:selectedlotSection:selectedLotsTbl2:mainSelectedCheckbox") != "undefined" && document.getElementById("WaferWriteOffVF:form1:block2:selectedlotSection:selectedLotsTbl2:mainSelectedCheckbox") != null) {
+                    var cbChecked = true;
+                    var inputs = document.getElementsByTagName("input");
+                    for(var i = 0; i < inputs.length; i++) {
+                        if(inputs[i].type == "checkbox" && inputs[i].id.indexOf("selectedCheckbox") > -1 && inputs[i].id != "WaferWriteOffVF:form1:block2:selectedlotSection:selectedLotsTbl2:mainSelectedCheckbox") {
+                            if (inputs[i].checked == false) {
+                                cbChecked = false;
+                                break;
+                            } 
+                        }  
+                    }
+        
+                    document.getElementById("WaferWriteOffVF:form1:block2:selectedlotSection:selectedLotsTbl2:mainSelectedCheckbox").checked = cbChecked;
+                }  
+                
+                if (document.getElementById("WaferWriteOffVF:form1:block1:lotSection:selectedLotsTbl1:mainStatusCheckbox") != "undefined" && document.getElementById("WaferWriteOffVF:form1:block1:lotSection:selectedLotsTbl1:mainStatusCheckbox") != null) {
+                    var cbChecked = true;
+                    var inputs = document.getElementsByTagName("input");
+                    for(var i = 0; i < inputs.length; i++) {
+                        if(inputs[i].type == "checkbox" && inputs[i].id != "WaferWriteOffVF:form1:block1:lotSection:selectedLotsTbl1:mainStatusCheckbox") {
+                            if (inputs[i].checked == false) {
+                                cbChecked = false;
+                                break;
+                            } 
+                        }  
+                    }
+  
+                    document.getElementById("WaferWriteOffVF:form1:block1:lotSection:selectedLotsTbl1:mainStatusCheckbox").checked = cbChecked;              
+                }
+            } else {
+                if (document.getElementsByName("piSubmit")[0] != "undefined" && document.getElementsByName("piSubmit")[0] != null) {
+                    document.getElementsByName("piSubmit")[0].style.display = "none";
+                }
+                
+                if (document.getElementById("WaferWriteOffVF:form1:block1:section1:wwoReasonOutput") != "undefined" && document.getElementById("WaferWriteOffVF:form1:block1:section1:wwoReasonOutput") != null) {
+                    var reasonOutput = document.getElementById("WaferWriteOffVF:form1:block1:section1:wwoReasonOutput").innerHTML;
+                    if (reasonOutput.indexOf("Others") >= 0) {
+                        document.getElementById("WaferWriteOffVF:form1:block1:section1:item2:wwoOtherReasonOutput").style.display = "block";
+                        document.getElementById("WaferWriteOffVF:form1:block1:section1:item2:label2").style.display = "block";
+                    } else {
+                        document.getElementById("WaferWriteOffVF:form1:block1:section1:item2:wwoOtherReasonOutput").style.display = "none";
+                        document.getElementById("WaferWriteOffVF:form1:block1:section1:item2:label2").style.display = "none";
+                    }
+                }
+            }
+            
+            var wwoStatus = "{!waferWriteOff.Status__c}";
+            if (wwoStatus == "Pending Finance Update of Write Off Value") {
+                for (var z=0; z<document.getElementsByClassName("actionColumn").length; z++) {
+                    var parentElem = document.getElementsByClassName("actionColumn")[z];
+                    var childElem = parentElem.getElementsByClassName("actionLink");
+                    if (childElem.length > 0) {
+                        for (var i=0; i<childElem.length; i++) {
+                            if (childElem[i].innerHTML == "Approve / Reject") {
+                                childElem[i].innerHTML = "Approve";
+                                childElem[i].title = "Approve";
+                                childElem[i].href = "javascript:void(0);";
+                                childElem[i].onclick = function() {
+                                    validateValues("Approve");
+                                };
+                                
+                                var txt = document.createTextNode(" / ");
+                                parentElem.appendChild(txt); 
+                                
+                                var rejectLink = document.createElement('a');
+                                rejectLink.innerHTML = "Reject";
+                                rejectLink.title = "Reject";
+                                rejectLink.className = "actionLink";
+                                rejectLink.href = "javascript:void(0);";
+                                rejectLink.onclick = function() {
+                                    validateValues("Reject");
+                                };
+                                parentElem.appendChild(rejectLink);
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    </script>
+    
+    <apex:sectionHeader title="" subtitle="Write Off" help="https://help.salesforce.com/htviewhelpdoc?id=co_edit.htm&siteLang=en_US" />
+    <chatter:feed entityId="{!waferWriteOff.id}" rendered="{!IF(AND(NOT(isNew), NOT(isEdit)), true, false)}" />
+    <apex:form id="form1">
+        <!-- Main Selection -->
+        <apex:pageblock id="block1" mode="{!pageMode}" rendered="{!showMainSection}">
+            <apex:pageblockButtons location="top" >
+                <apex:image value="/img/lock_small.gif" alt="Locked" width="16" height="16" title="Locked" rendered="{!ShowLockImage}" />
+                <apex:commandButton value="Edit" action="{!goToEditMode}" rendered="{!ShowEditButton}" />
+                <apex:commandButton value="Save" action="{!save}" rendered="{!ShowSaveButton}" onclick="return checkValuesInput();" />
+                <apex:commandButton value="Submit" action="{!submitForApproval}" rendered="{!ShowSubmitButton}" />
+                <apex:commandButton value="Cancel" action="{!cancel}" rendered="{!ShowCancelButton}" immediate="true" />
+                <apex:commandButton value="Void" action="{!voidForm}" rendered="{!ShowVoidButton}" />
+                <apex:commandButton value="Clone" action="{!cloneRecord}" rendered="{!ShowCloneButton}" />
+                <apex:commandButton value="Export to PDF" action="{!exportRecord}" rendered="{!ShowExportButton}" />
+                <apex:commandLink action="{!exportExcel}" target="_blank" rendered="{!ShowExportButton}" style="text-decoration:none" oncomplete="window.close();">
+                    <apex:commandButton value="Export to Excel"/>
+                </apex:commandLink>
+                
+            </apex:pageblockButtons>
+            
+            <apex:pageMessages id="errorMsg" escape="false" />
+
+            <apex:pageBlocksection id="section1" title="Request Details" columns="2" collapsible="false">
+                <apex:outputField value="{!waferWriteOff.Name}" rendered="{!ShowOtherFields}" />
+                <apex:outputField value="{!waferWriteOff.Status__c}" rendered="{!ShowOtherFields}" />
+                
+                <!-- Account and Fab Input -->
+                <apex:inputField value="{!waferWriteOff.Customer_Name__c}" rendered="{!ShowInputFields}" required="true" />
+                <apex:inputField value="{!waferWriteOff.Fab__c}" rendered="{!ShowInputFields}" required="true" />
+                
+                <!-- Account and Fab Output -->
+                <apex:outputField value="{!waferWriteOff.Customer_Name__c}" rendered="{!NOT(ShowInputFields)}" />
+                <apex:outputField value="{!waferWriteOff.Fab__c}" rendered="{!NOT(ShowInputFields)}" />
+                
+                <apex:outputField value="{!waferWriteOff.Customer_Name__r.Short_Name__c}" rendered="{!ShowOtherFields}" />
+                <apex:outputField value="{!waferWriteOff.Customer_Name__r.Region__c}" rendered="{!ShowOtherFields}" />
+                
+                <!-- Reason and Other Reason Input -->
+                <apex:inputField id="wwoReasonInput" value="{!waferWriteOff.Reason__c}" rendered="{!ShowReasonCommentFields}" onchange="checkSelectedReason()" />                
+                <apex:pageBlockSectionItem id="item1" rendered="{!ShowReasonCommentFields}">
+                    <apex:outputlabel id="label1" value="Other Reason" />
+                    <apex:outputPanel >
+                        <div class="requiredInput">
+                            <div id="requiredBlockDiv" class="requiredBlock"></div>
+                            <apex:inputField id="wwoOtherReasonInput" value="{!waferWriteOff.Other_Reason__c}" />
+                        </div>
+                    </apex:outputPanel>
+                </apex:pageBlockSectionItem>
+                
+                <!-- Reason and Other Reason Output -->
+                <apex:outputField id="wwoReasonOutput" value="{!waferWriteOff.Reason__c}" rendered="{!NOT(ShowReasonCommentFields)}" />
+                <apex:pageBlockSectionItem id="item2" rendered="{!NOT(ShowReasonCommentFields)}">
+                    <apex:outputlabel id="label2" value="Other Reason" />
+                    <apex:outputField id="wwoOtherReasonOutput" value="{!waferWriteOff.Other_Reason__c}" />
+                </apex:pageBlockSectionItem> 
+                <apex:pageBlockSectionItem rendered="{!ShowOtherFields}">
+                    <apex:outputLabel value="Created By" />
+                    <apex:outputPanel >
+                        <apex:outputField value="{!waferWriteOff.CreatedById}" />, &nbsp;
+                        <apex:outputText value="{!createdDateTime}" />
+                    </apex:outputPanel>
+                </apex:pageBlockSectionItem>
+                <apex:pageBlockSectionItem rendered="{!ShowOtherFields}">
+                    <apex:outputLabel value="Last Modified By" />
+                    <apex:outputPanel >
+                        <apex:outputField value="{!waferWriteOff.LastModifiedById}" />, &nbsp;
+                        <apex:outputText value="{!lastModifiedDateTime}" />
+                    </apex:outputPanel>
+                </apex:pageBlockSectionItem>    
+            </apex:pageBlocksection>
+            <apex:pageBlocksection id="section2" title="WIP Valuation" columns="2" collapsible="false" rendered="{!ShowOtherFields}">
+                <!-- Total Value -->
+                <apex:inputField value="{!waferWriteOff.Total_Value__c}" id="valueUS" onkeypress="return isNumber(event, this.value);" rendered="{!IF(AND(isEdit, editValue, waferWriteOff.Status__c == 'Pending Finance Update of Write Off Value'), true, false)}" />
+                <apex:outputField value="{!waferWriteOff.Total_Value__c}" rendered="{!IF(OR(AND(NOT(isNew), NOT(isEdit), editValue), AND(isEdit, editValue, waferWriteOff.Status__c != 'Pending Finance Update of Write Off Value')), true, false)}" />
+                
+                <!-- Total Provisioned -->
+                <apex:inputField value="{!waferWriteOff.Total_Provisioned__c}" id="provisionedUS" onkeypress="return isNumber(event, this.value);" rendered="{!IF(AND(isEdit, editValue, waferWriteOff.Status__c == 'Pending Finance Update of Write Off Value'), true, false)}" />
+                <apex:outputField value="{!waferWriteOff.Total_Provisioned__c}" rendered="{!IF(OR(AND(NOT(isNew), NOT(isEdit), editValue), AND(isEdit, editValue, waferWriteOff.Status__c != 'Pending Finance Update of Write Off Value')), true, false)}" />
+                
+                <apex:outputField value="{!waferWriteOff.Total_Impact_to_P_L__c}" rendered="{!IF(OR(AND(NOT(isNew), NOT(isEdit)), AND(isEdit, waferWriteOff.Status__c != 'Pending Finance Update of Write Off Value')), true, false)}" />
+                <apex:pageBlockSectionItem />
+            </apex:pageBlocksection>
+            <apex:pageBlocksection id="lotSection" title="Write Off Details" columns="1" collapsible="false">
+                <apex:commandButton value="Search/Edit Lots" action="{!goToLotSelectionPage}" rendered="{!ShowSearchLotsButton}" />
+                <apex:panelGrid columns="2" rendered="{!ShowUpdateLotStatus}">
+                    <apex:outputLabel value="Status" styleClass="labelCol" />
+                    <apex:inputField value="{!wwomlStatusComments.Status__c}" />
+                    <apex:outputLabel value="Comments" styleClass="labelCol" />
+                    <apex:inputField value="{!wwomlStatusComments.Comments__c}" />
+                    <apex:pageBlocksectionItem />
+                    <apex:commandButton value="Update All Selected Lots" action="{!updateLotStatusAndComments}" />
+                </apex:panelGrid>
+                <apex:pageBlockTable id="selectedLotsTbl1" value="{!SelectedLots}" var="l" rendered="{!IF(SelectedLots.size > 0, true, false)}">
+                    <apex:column rendered="{!IF(AND(isEdit, waferWriteOff.Status__c == 'Approved and Pending Planning'), true, false)}">
+                        <apex:facet name="header"><apex:inputCheckbox id="mainStatusCheckbox" onchange="checkAll(this.id, this.checked);" /></apex:facet>
+                        <apex:inputCheckbox value="{!l.isSelectedStatus}" onchange="checkAll(this.id, this.checked);" />
+                    </apex:column>
+                    <apex:column value="{!l.accountName}">
+                        <apex:facet name="header">Customer</apex:facet>
+                    </apex:column>
+                    <apex:column >
+                        <apex:facet name="header">Lot ID</apex:facet>
+                        <apex:outputLink value="/{!l.wwoml.Manufacturing_Lot__c}" target="_blank">{!l.lotName}</apex:outputLink>
+                    </apex:column>
+                    <apex:column value="{!l.deviceMES}">
+                        <apex:facet name="header">Part ID</apex:facet>
+                    </apex:column>
+                    <apex:column value="{!l.lotType}">
+                        <apex:facet name="header">Lot Type</apex:facet>
+                    </apex:column>
+                    <apex:column value="{!l.currentWaferQty}">
+                        <apex:facet name="header">Current Wafer/Chip Qty</apex:facet>
+                    </apex:column>
+                    <apex:column value="{!l.currentDieQty}">
+                        <apex:facet name="header">Die Qty</apex:facet>
+                    </apex:column>
+                    <apex:column value="{!l.storedWriteOffQty}">
+                        <apex:facet name="header">Write Off Qty</apex:facet>
+                    </apex:column>
+                    <apex:column value="{!l.holdStage}">
+                        <apex:facet name="header">Hold Stage</apex:facet>
+                    </apex:column>
+                    <apex:column >
+                        <apex:facet name="header">Lot Start Date</apex:facet>
+                        <apex:outputText value="{!DAY(l.lotStartDate)}/{!MONTH(l.lotStartDate)}/{!YEAR(l.lotStartDate)}" rendered="{!IF(NOT(ISBLANK(l.lotStartDate)), true, false)}" />
+                    </apex:column>
+                    <apex:column value="{!l.agedDays}">
+                        <apex:facet name="header">Aged (Days)</apex:facet>
+                    </apex:column>                
+                    <apex:column rendered="{!IF(AND(isEdit, waferWriteOff.Status__c == 'Approved and Pending Planning'), true, false)}">
+                        <apex:facet name="header">Status</apex:facet>
+                        <apex:inputField value="{!l.wwoml.Status__c}" />
+                    </apex:column>
+                    <apex:column rendered="{!IF(AND(NOT(isNew), NOT(isEdit), OR(waferWriteOff.Status__c == 'Approved and Pending Planning', waferWriteOff.Status__c == 'Closed')), true, false)}">
+                        <apex:facet name="header">Status</apex:facet>
+                        <apex:outputField value="{!l.wwoml.Status__c}" />
+                    </apex:column>
+                    <apex:column rendered="{!IF(AND(isEdit, OR(waferWriteOff.Status__c == 'Approved and Pending Planning', waferWriteOff.Status__c == 'Closed')), true, false)}">
+                        <apex:facet name="header">Comments</apex:facet>
+                        <apex:inputField value="{!l.wwoml.Comments__c}" />
+                    </apex:column>
+                    <apex:column rendered="{!IF(AND(NOT(isNew), NOT(isEdit), OR(waferWriteOff.Status__c == 'Approved and Pending Planning', waferWriteOff.Status__c == 'Closed')), true, false)}">
+                        <apex:facet name="header">Comments</apex:facet>
+                        <apex:outputField value="{!l.wwoml.Comments__c}" />
+                    </apex:column>
+                    <apex:facet name="footer">
+                        Showing Page {!currentPageNoSL} of {!totalNoOfPagesSL} ({!totalNoOfRecordsSL} Records)
+                    </apex:facet>
+                </apex:pageBlockTable>
+                <apex:outputText value="No record(s) retrieved." style="font-style: italic;" rendered="{!IF(SelectedLots.size > 0, false, true)}" />
+                
+                <apex:outputPanel id="selectedLotsControlPanel1" layout="inline" style="margin: 0; white-space: nowrap; align: center; position: relative;" rendered="{!IF(SelectedLots.size > 0, true, false)}">
+                    <center>
+                        <apex:commandLink action="{!firstSL}" style="text-decoration: none;" rendered="{!IF(HasPreviousSL, true, false)}" rerender="selectedLotsTbl1, selectedLotsControlPanel1">
+                            <apex:image value="/s.gif" styleClass="first1" alt="First Page" />
+                        </apex:commandLink>
+                        <apex:outputPanel rendered="{!IF(NOT(HasPreviousSL), true, false)}">
+                            <apex:image value="/s.gif" styleClass="firstoff1" alt="First Page" />
+                        </apex:outputPanel>
+                        &nbsp;
+                        <apex:commandLink action="{!previousSL}" style="text-decoration: none;" rendered="{!IF(HasPreviousSL, true, false)}" rerender="selectedLotsTbl1, selectedLotsControlPanel1">
+                            <apex:image value="/s.gif" styleClass="prev1" alt="Previous" /><span class="prevtext">Previous</span>
+                        </apex:commandLink>
+                        <apex:outputPanel rendered="{!IF(NOT(HasPreviousSL), true, false)}">
+                            <apex:image value="/s.gif" styleClass="prevoff1" alt="Previous" /><span class="prevtextoff">Previous</span>
+                        </apex:outputPanel>
+                        &nbsp;&nbsp;
+                        <apex:commandLink action="{!nextSL}" style="text-decoration: none;" rendered="{!IF(HasNextSL, true, false)}" rerender="selectedLotsTbl1, selectedLotsControlPanel1">
+                            <span class="nexttext">Next</span><apex:image value="/s.gif" styleClass="next1" alt="Next" />
+                        </apex:commandLink>
+                        <apex:outputPanel rendered="{!IF(NOT(HasNextSL), true, false)}">
+                            <span class="nexttextoff">Next</span><apex:image value="/s.gif" styleClass="nextoff1" alt="Next" />
+                        </apex:outputPanel>
+                        &nbsp;
+                        <apex:commandLink action="{!lastSL}" style="text-decoration: none;" rendered="{!IF(HasNextSL, true, false)}" rerender="selectedLotsTbl1, selectedLotsControlPanel1">
+                            <apex:image value="/s.gif" styleClass="last1" alt="Last Page" />
+                        </apex:commandLink>
+                        <apex:outputPanel rendered="{!IF(NOT(HasNextSL), true, false)}">
+                            <apex:image value="/s.gif" styleClass="lastoff1" alt="Last Page" />
+                        </apex:outputPanel>
+                    </center>
+                </apex:outputPanel>
+            </apex:pageBlocksection>
+            
+        </apex:pageblock>
+        
+        <!-- Manufacturing Lot Selection -->
+        <apex:pageblock id="block2" mode="Edit" title="Select Manufacturing Lots" rendered="{!showLotSelectionSection}">
+            <apex:pageBlockButtons location="top" >
+                <apex:commandButton value="Save and Go to Record page" action="{!saveAndExit}" />
+            </apex:pageBlockButtons>
+            
+            <apex:pageMessages id="errorMsg" />
+            
+            <apex:pageBlockSection id="searchlotSection" columns="1" collapsible="false">
+                <apex:facet name="header">
+                    Search Lots
+                    <img src="/s.gif" class="imgclass" onmouseover="showHelpText('divSearchLots', this);" onmouseout="hideHelpText('divSearchLots');" />
+                </apex:facet>
+                
+                <!-- Search -->
+                <apex:panelGrid columns="2">
+                    <apex:outputLabel value="Lot Type:" styleClass="labelCol" /> 
+                    <apex:selectList value="{!lotType}" multiselect="false" size="1">
+                        <apex:selectOptions value="{!LotTypes}"/>
+                    </apex:selectList>
+                    <apex:outputLabel value="Lot Id:" styleClass="labelCol" /> 
+                    <apex:inputText size="25" value="{!lotName}" onkeypress="return captureKey(event);" />
+                    <apex:pageBlockSectionItem />
+                    <apex:outputText value="OR" styleClass="labelCol" />
+                    <apex:outputLabel value="MES Device Id:" styleClass="labelCol" /> 
+                    <apex:inputText size="25" value="{!mesDeviceId}" onkeypress="return captureKey(event);" />
+                    <apex:commandButton value="Search Lots" action="{!searchLots}" />
+                </apex:panelGrid>
+                
+                <!-- Available Lots -->
+                <apex:pageBlockTable id="availableLotsTbl" value="{!AvailableLots}" var="l" rendered="{!IF(AvailableLots.size > 0, true, false)}">
+                    <apex:column width="15">
+                        <apex:facet name="header"><apex:inputCheckbox id="mainAvailableCheckbox" onchange="checkAllAvailable(this.id, this.checked);" /></apex:facet>
+                        <apex:inputCheckbox id="availableCheckbox" value="{!l.isSelected}" onchange="checkAllAvailable(this.id, this.checked);" />
+                    </apex:column>
+                    <apex:column value="{!l.accountName}">
+                        <apex:facet name="header">Customer</apex:facet>
+                    </apex:column>
+                    <apex:column >
+                        <apex:facet name="header">Lot ID</apex:facet>
+                        <apex:outputLink value="/{!l.wwoml.Manufacturing_Lot__c}" target="_blank">{!l.lotName}</apex:outputLink>
+                    </apex:column>
+                    <apex:column value="{!l.deviceMES}">
+                        <apex:facet name="header">Part ID</apex:facet>
+                    </apex:column>
+                    <apex:column value="{!l.lotType}">
+                        <apex:facet name="header">Lot Type</apex:facet>
+                    </apex:column>
+                    <apex:column value="{!l.currentWaferQty}">
+                        <apex:facet name="header">Current Wafer/Chip Qty</apex:facet>
+                    </apex:column>
+                    <apex:column value="{!l.currentDieQty}">
+                        <apex:facet name="header">Die Qty</apex:facet>
+                    </apex:column>
+                    <apex:column >
+                        <apex:facet name="header">Write Off Qty</apex:facet>
+                        <apex:outputText value="{!l.currentWriteOffQty}" rendered="{!NOT(l.enableWriteOffQtyEdit)}"/>
+                        <apex:inputText value="{!l.currentWriteOffQty}" rendered="{!l.enableWriteOffQtyEdit}"/>
+                    </apex:column>
+                    <apex:column value="{!l.holdStage}">
+                        <apex:facet name="header">Hold Stage</apex:facet>
+                    </apex:column>
+                    <apex:facet name="footer">
+                        <apex:outputPanel >
+                            <apex:commandButton value="Select Lots" action="{!saveSelectedLots}" />
+                            Showing Page {!currentPageNoAL} of {!totalNoOfPagesAL} ({!totalNoOfRecordsAL} Records)
+                        </apex:outputPanel>
+                    </apex:facet>
+                </apex:pageBlockTable>
+                <apex:outputText value="No record(s) retrieved." style="font-style: italic;" rendered="{!IF(AvailableLots.size > 0, false, true)}" />
+                
+                <apex:outputPanel id="availableLotsControlPanel" layout="inline" style="margin: 0; white-space: nowrap; align: center; position: relative;" rendered="{!IF(AvailableLots.size > 0, true, false)}">
+                    <center>
+                        <apex:commandLink action="{!firstAL}" style="text-decoration: none;" rendered="{!IF(HasPreviousAL, true, false)}" rerender="availableLotsTbl, availableLotsControlPanel" oncomplete="checkAvailableItems();">
+                            <apex:image value="/s.gif" styleClass="first1" alt="First Page" />
+                        </apex:commandLink>
+                        <apex:outputPanel rendered="{!IF(NOT(HasPreviousAL), true, false)}">
+                            <apex:image value="/s.gif" styleClass="firstoff1" alt="First Page" />
+                        </apex:outputPanel>
+                        &nbsp;
+                        <apex:commandLink action="{!previousAL}" style="text-decoration: none;" rendered="{!IF(HasPreviousAL, true, false)}" rerender="availableLotsTbl, availableLotsControlPanel" oncomplete="checkAvailableItems();">
+                            <apex:image value="/s.gif" styleClass="prev1" alt="Previous" /><span class="prevtext">Previous</span>
+                        </apex:commandLink>
+                        <apex:outputPanel rendered="{!IF(NOT(HasPreviousAL), true, false)}">
+                            <apex:image value="/s.gif" styleClass="prevoff1" alt="Previous" /><span class="prevtextoff">Previous</span>
+                        </apex:outputPanel>
+                        &nbsp;&nbsp;
+                        <apex:commandLink action="{!nextAL}" style="text-decoration: none;" rendered="{!IF(HasNextAL, true, false)}" rerender="availableLotsTbl, availableLotsControlPanel" oncomplete="checkAvailableItems();">
+                            <span class="nexttext">Next</span><apex:image value="/s.gif" styleClass="next1" alt="Next" />
+                        </apex:commandLink>
+                        <apex:outputPanel rendered="{!IF(NOT(HasNextAL), true, false)}">
+                            <span class="nexttextoff">Next</span><apex:image value="/s.gif" styleClass="nextoff1" alt="Next" />
+                        </apex:outputPanel>
+                        &nbsp;
+                        <apex:commandLink action="{!lastAL}" style="text-decoration: none;" rendered="{!IF(HasNextAL, true, false)}" rerender="availableLotsTbl, availableLotsControlPanel" oncomplete="checkAvailableItems();">
+                            <apex:image value="/s.gif" styleClass="last1" alt="Last Page" />
+                        </apex:commandLink>
+                        <apex:outputPanel rendered="{!IF(NOT(HasNextAL), true, false)}">
+                            <apex:image value="/s.gif" styleClass="lastoff1" alt="Last Page" />
+                        </apex:outputPanel>
+                    </center>
+                </apex:outputPanel>
+            </apex:pageBlockSection>
+            
+            <apex:pageBlockSection id="selectedlotSection" columns="1" collapsible="false">
+                <apex:facet name="header">
+                    Selected Lots for Wafer Write Off
+                    <img src="/s.gif" class="imgclass" onmouseover="showHelpText('divSelectedLots', this);" onmouseout="hideHelpText('divSelectedLots');" />
+                </apex:facet>
+                
+                <!-- Selected Lots -->
+                <apex:pageBlockTable id="selectedLotsTbl2" value="{!SelectedLots}" var="l" rendered="{!IF(SelectedLots.size > 0, true, false)}">
+                    <apex:column width="15">
+                        <apex:facet name="header"><apex:inputCheckbox id="mainSelectedCheckbox" onchange="checkAllSelected(this.id, this.checked);" /></apex:facet>
+                        <apex:inputCheckbox id="selectedCheckbox" value="{!l.isSelected}" onchange="checkAllSelected(this.id, this.checked);" />
+                    </apex:column>
+                    <apex:column value="{!l.accountName}">
+                        <apex:facet name="header">Customer</apex:facet>
+                    </apex:column>
+                    <apex:column >
+                        <apex:facet name="header">Lot ID</apex:facet>
+                        <apex:outputLink value="/{!l.wwoml.Manufacturing_Lot__c}" target="_blank">{!l.lotName}</apex:outputLink>
+                    </apex:column>
+                    <apex:column value="{!l.deviceMES}">
+                        <apex:facet name="header">Part ID</apex:facet>
+                    </apex:column>
+                    <apex:column value="{!l.lotType}">
+                        <apex:facet name="header">Lot Type</apex:facet>
+                    </apex:column>
+                    <apex:column value="{!l.currentWaferQty}">
+                        <apex:facet name="header">Current Wafer/Chip Qty</apex:facet>
+                    </apex:column>
+                    <apex:column value="{!l.currentDieQty}">
+                        <apex:facet name="header">Die Qty</apex:facet>
+                    </apex:column>
+                    <apex:column value="{!l.currentWriteOffQty}">
+                        <apex:facet name="header">Write Off Qty</apex:facet>
+                    </apex:column>
+                    <apex:column value="{!l.holdStage}">
+                        <apex:facet name="header">Hold Stage</apex:facet>
+                    </apex:column>
+                    <apex:facet name="footer">
+                        <apex:outputPanel >
+                            <apex:commandButton value="Remove Lots" action="{!removeSelectedLots}" />
+                            Showing Page {!currentPageNoSL} of {!totalNoOfPagesSL} ({!totalNoOfRecordsSL} Records)
+                        </apex:outputPanel>
+                    </apex:facet>
+                </apex:pageBlockTable>
+                <apex:outputText value="No record(s) retrieved." style="font-style: italic;" rendered="{!IF(SelectedLots.size > 0, false, true)}" />
+                
+                <apex:outputPanel id="selectedLotsControlPanel2" layout="inline" style="margin: 0; white-space: nowrap; align: center; position: relative;" rendered="{!IF(SelectedLots.size > 0, true, false)}">
+                    <center>
+                        <apex:commandLink action="{!firstSL}" style="text-decoration: none;" rendered="{!IF(HasPreviousSL, true, false)}" rerender="selectedLotsTbl2, selectedLotsControlPanel2" oncomplete="checkSelectedItems();">
+                            <apex:image value="/s.gif" styleClass="first1" alt="First Page" />
+                        </apex:commandLink>
+                        <apex:outputPanel rendered="{!IF(NOT(HasPreviousSL), true, false)}">
+                            <apex:image value="/s.gif" styleClass="firstoff1" alt="First Page" />
+                        </apex:outputPanel>
+                        &nbsp;
+                        <apex:commandLink action="{!previousSL}" style="text-decoration: none;" rendered="{!IF(HasPreviousSL, true, false)}" rerender="selectedLotsTbl2, selectedLotsControlPanel2" oncomplete="checkSelectedItems();">
+                            <apex:image value="/s.gif" styleClass="prev1" alt="Previous" /><span class="prevtext">Previous</span>
+                        </apex:commandLink>
+                        <apex:outputPanel rendered="{!IF(NOT(HasPreviousSL), true, false)}">
+                            <apex:image value="/s.gif" styleClass="prevoff1" alt="Previous" /><span class="prevtextoff">Previous</span>
+                        </apex:outputPanel>
+                        &nbsp;&nbsp;
+                        <apex:commandLink action="{!nextSL}" style="text-decoration: none;" rendered="{!IF(HasNextSL, true, false)}" rerender="selectedLotsTbl2, selectedLotsControlPanel2" oncomplete="checkSelectedItems();">
+                            <span class="nexttext">Next</span><apex:image value="/s.gif" styleClass="next1" alt="Next" />
+                        </apex:commandLink>
+                        <apex:outputPanel rendered="{!IF(NOT(HasNextSL), true, false)}">
+                            <span class="nexttextoff">Next</span><apex:image value="/s.gif" styleClass="nextoff1" alt="Next" />
+                        </apex:outputPanel>
+                        &nbsp;
+                        <apex:commandLink action="{!lastSL}" style="text-decoration: none;" rendered="{!IF(HasNextSL, true, false)}" rerender="selectedLotsTbl2, selectedLotsControlPanel2" oncomplete="checkSelectedItems();">
+                            <apex:image value="/s.gif" styleClass="last1" alt="Last Page" />
+                        </apex:commandLink>
+                        <apex:outputPanel rendered="{!IF(NOT(HasNextSL), true, false)}">
+                            <apex:image value="/s.gif" styleClass="lastoff1" alt="Last Page" />
+                        </apex:outputPanel>
+                    </center>
+                </apex:outputPanel>
+            </apex:pageBlockSection>
+            
+        </apex:pageblock>
+        <apex:actionFunction name="searchLots" action="{!searchLots}" />
+        <apex:actionFunction name="validateValues" action="{!validateValues}" rerender="form1">
+            <apex:param name="pApprovalAction" value="" />
+        </apex:actionFunction>
+        
+        <div id="divSearchLots" class="helpTextStyle" style="display: none;">
+            <apex:outputText value="Search for Manufacturing Lots available for this Account." escape="false" />
+        </div>
+        <div id="divSelectedLots" class="helpTextStyle" style="display: none;">
+            <apex:outputText value="List of Manufacturing Lots selected for this Write Off." escape="false" />
+        </div>
+        
+        <apex:pageBlock title="Wafer Write Off History Details" rendered="{!AND(showMainSection,QueryWWOML.size>0)}" id="HistoryPgBlk">
+            <apex:pageBlockTable id="WWOMLtable" value="{!QueryWWOML}" var="hist">
+                <apex:column value="{!hist.Parent.Manufacturing_Lot__c}"/>
+                <apex:column value="{!hist.CreatedBy.Name}"/>
+                <apex:column value="{!hist.CreatedDate}"/>
+                <apex:column value="{!hist.Field}"/>
+                <apex:column value="{!hist.OldValue}"/>
+                <apex:column value="{!hist.NewValue}"/>
+            </apex:pageBlockTable>
+            <apex:pageBlockButtons location="bottom">
+                <apex:commandButton value="Previous" action="{!Previous}" rerender="WWOMLtable,HistoryPgBlk"
+                        status="status" disabled="{!DisablePrevious}" />
+                <apex:commandButton value="Next" action="{!Next}" reRender="WWOMLtable,HistoryPgBlk"
+                        status="status" disabled="{!DisableNext}" />
+                <apex:actionStatus id="status" startText="Please Wait..."/>
+            </apex:pageBlockButtons>
+        </apex:pageBlock>
+        
+    </apex:form>
+    
+    <apex:relatedList subject="{!Wafer_Write_Off__c}" list="CombinedAttachments" rendered="{!IF(AND(NOT(isNew), NOT(isEdit)), true, false)}" />
+    <apex:relatedList list="ProcessSteps" rendered="{!IF(AND(NOT(isNew), NOT(isEdit)), true, false)}" />
+    
+</apex:page>

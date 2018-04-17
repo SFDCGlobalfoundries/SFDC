@@ -1,0 +1,114 @@
+<!-- 
+   Type Name:  CaseCustomLookup.page
+   Author: UCM Team
+   Created Date: 12-Oct-2017
+   Reason: 
+   Change History:
+   Author: 
+   Modified Date: 
+   Reason: 
+    -->
+<apex:page controller="CCtoCaseController"
+   title="Search for Predefined Teams" 
+   showHeader="false" 
+   sideBar="false" 
+   tabStyle="Case" 
+   id="pg">
+   <style>
+      .outerdiv {
+      background-repeat: repeat-x;
+      background-position: left top;
+      background: white url(/img/alohaSkin/lookup_bg.png) repeat-x;
+      padding-left: 10px;
+      height: 100%;        
+      }
+      .innerdiv {
+      background-image: url(/img/sprites/master.png);
+      background-position: 0px -1202px;
+      width: 32px;
+      height: 32px;
+      }  
+   </style>
+   <apex:form >
+      <div class="outerdiv">
+         <div class="innerdiv"></div>
+         <div style="float: left; width: 50px; margin-top: -20px; margin-left: 40px">
+            <h1>Lookup</h1>
+         </div>
+         
+         <apex:outputPanel id="page" layout="block" style="margin:5px;padding:10px;padding-top:2px;">
+            <apex:actionRegion >
+               <apex:outputPanel id="top" layout="block" style="margin:5px;padding:10px;padding-top:2px;">
+                  <apex:outputLabel value="Search" style="font-weight:Bold;padding-right:10px;" for="txtSearch"/>
+                  <apex:inputText id="txtSearch" value="{!caseTeamSearchString}"/>
+                  <span style="padding-left:5px">
+                     <apex:commandButton id="btnGo" value="Go!" action="{!runSearch}" rerender="pnlMain"></apex:commandButton>
+                  </span>
+        </apex:outputPanel>
+             
+        <apex:outputPanel id="usersearchSuccess" rendered="{!displayReadOnly = true}">     
+            <apex:pageBlock title="Predefined Case Team Selected:">
+                <apex:pageBlockButtons location="Top">
+                    <apex:commandButton value="Clear" onclick="setClearButton();"/>
+                </apex:pageBlockButtons>
+                <apex:pageblockTable value="{!listCaseTeam}" var="a" >
+                    <apex:column >  
+                        <apex:inputCheckbox value="{!a.isSelected}" onclick="addUser();" disabled="{!displayReadOnly == true}"/>                      
+                    </apex:column> 
+                    <apex:column value="{!a.casePreTeam.name}"  headerValue="Name"/>                    
+                </apex:pageblockTable>
+            </apex:pageBlock>     
+        </apex:outputPanel>    
+               
+               
+               
+               
+               
+               
+               
+               
+               
+               
+               
+               <apex:outputPanel id="pnlMain" >
+               
+                  <apex:outputLabel id="lblErrMessages" rendered="{!isErrorMessages}" value="Error: Please enter a search string at least 2 characters long." style="color:red;padding-right:10px;" />
+                  <apex:outputPanel id="pnlResults" rendered="{!searchflag == true}"  >
+                     <apex:outputLabel id="lblSearchResult" rendered="{!listCaseTeam.size>0}" style="font-weight:Bold;padding-right:10px;" />
+                     <apex:outputPanel id="pnlSearchResults"  style="margin:10px;height:350px;overflow-Y:auto;" layout="block">
+                        <apex:pageBlock id="searchResults" title="Search Results">
+                        <apex:pageblockbuttons location="Top">
+                                <apex:commandButton value="Add" onclick="setUserIds();"/>
+                        </apex:pageblockbuttons>
+                           <apex:pageBlockTable value="{!listCaseTeam }" var="a" id="tblResults" rendered="{!listCaseTeam.size>0}" >                                                         
+                                <apex:column >
+                                    <apex:inputCheckbox value="{!a.isSelected}" onclick="addUser();" />                      
+                                </apex:column> 
+                                <apex:column value="{!a.casePreTeam.name}"  headerValue="Name"/> 
+                                                     
+                           </apex:pageBlockTable>
+                           <apex:outputLabel id="lblNoRecord" rendered="{!listCaseTeam.empty}" value="No records were found based on your criteria." />
+                        </apex:pageBlock>
+                     </apex:outputPanel>
+                  </apex:outputPanel>
+               </apex:outputPanel>
+            </apex:actionRegion>
+         </apex:outputPanel>
+      </div>
+       <apex:actionFunction name="addUser" action="{!addAllUsers}">     
+   </apex:actionFunction> 
+   </apex:form>
+   
+    <script>
+        function setUserIds(){
+            if('{!searchUserString}' != ''){
+                top.window.opener.setUserIdsInParent('{!searchUserString}','{!searchUserId}' ,'{!clearFlag}');
+                top.close();
+            } 
+        }
+        function setClearButton(){            
+                top.window.opener.setUserIdsInParent('{!searchUserString}','{!searchUserId}' ,'{!clearFlag}');
+                top.close();            
+        }        
+    </script>
+</apex:page>

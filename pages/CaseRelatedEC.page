@@ -1,0 +1,193 @@
+<apex:page controller="CaseRelatedECController" showchat="false" cache="false" >
+<apex:sectionHeader subtitle="Map Existing Cases" title="{!objEC.Name} : {!objEC.Subject__c}"/>
+    <apex:form id="TheForm" rendered="{!objEC!=null}" >
+        <!-- ******************************************************* -->
+        <!-- Search Criteria               -->
+        <apex:pagemessages id="msg" />
+        <apex:pageBlock mode="mainDetails" id="pageblock1" >
+            <div class="search-block">
+                <div class="rowText">
+                    <table width="100%" style="border-collapse: collapse;">
+                        <tr >
+                            <td style="width: 9%; align:left;"> 
+                                <span>Subject:</span>
+                            </td>
+                            <td style="width: 25%; align:left;">
+                                <div style="display: inline-table" class="col-md-6">
+                                    <apex:inputText value="{!SearchName}" />
+                                </div>
+                            </td>
+                            <td style="width: 9%; align:left;"> 
+                                <span>Case Number:</span>
+                            </td>
+                            <td style="width: 25%; align:left;">
+                                <div style="display: inline-table" class="col-md-6">
+                                    <apex:inputText value="{!SearchCaseNumber}" />
+                                </div>
+                            </td>
+                            <td style="width: 9%; align:left;"> 
+                                <span>Case Creator:</span>
+                            </td>
+                            <td style="width: 25%; align:left;">
+                                <div style="display: inline-table" class="col-md-6">
+                                    <apex:inputText value="{!creator}" />
+                                </div>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+            <!-- ******************************************************* -->
+            <!-- Search buttons       -->
+            <div class="process-block">
+                <apex:outputPanel >
+                    <apex:commandButton styleClass="search-block-button" value="Search" action="{!SearchCase}" rerender="TablePanel,msg" status="searchStatus"/>
+                    <apex:commandButton styleClass="search-block-button" value="Clear All" action="{!ClearAll}" rerender="TheForm,TablePanel" status="searchStatus"/>
+                    <apex:commandButton styleClass="search-block-button" value="Close" action="{!closeEvent}"/>
+                </apex:outputPanel>
+                <apex:actionStatus id="searchStatus">
+                    <apex:facet name="start">
+                        <apex:image url="/img/loading32.gif" height="20px" />
+                    </apex:facet>
+                </apex:actionStatus>
+            </div>
+        </apex:pageBlock>
+        <!-- ******************************************************* -->
+        <!-- search results table      -->
+        <apex:pageBlock id="TablePanel" >
+            <apex:outputPanel id="searchresultpanel" >
+                <apex:outputPanel layout="block" style="max-height:300px;overflow:auto;" rendered="true">
+                    <apex:pageBlockTable value="{!caseSearchList}" var="a" id="TablePanel1" style="padding-top: 15px;" >
+                        <apex:column headerValue="All" style="width:10px" >
+                            <apex:facet name="header">
+                                <apex:inputcheckbox id="selectAllSearchList"
+                                    onclick="checkAll(this,'SearchList')" />
+                            </apex:facet>
+                            <apex:inputCheckbox value="{!a.isChecked}" id="SearchList" />
+                        </apex:column>
+                        <apex:column style="width:30px" headerValue="Case Number">
+                            <apex:outputLink value="/{!a.objEC.Id}" target="_blank">{!a.objEC.CaseNumber}</apex:outputlink>
+                        </apex:column>
+                        <apex:column style="width:280px" headerValue="Subject">
+                            <apex:outputLink value="/{!a.objEC.Id}" target="_blank">{!a.objEC.Subject}</apex:outputlink>
+                        </apex:column>
+                        <apex:column style="width:100px" headerValue="Account">
+                            <label>{!a.objEC.Account_Name__c}</label>
+                        </apex:column>
+                        <apex:column style="width:100px" rendered="{!ISPICKVAL($User.UserType,'Standard')}"  headerValue="Record Type">
+                            <label>{!a.objEC.Case_Record_Type__c}</label>
+                        </apex:column>
+                        <apex:column style="width:100px" headerValue="Category">
+                            <label>{!a.objEC.Category__c}</label>
+                        </apex:column>
+                        <apex:column style="width:80px" headerValue="Subcategory">
+                            <label>{!a.objEC.Subcategory__c}</label>
+                        </apex:column>
+                        <apex:column style="width:80px" headerValue="Priority">                            
+                            <label>{!a.objEC.Priority}</label>
+                        </apex:column>
+                        <apex:column style="width:80px" headerValue="Status">                            
+                            <label>{!a.objEC.Status}</label>
+                        </apex:column>
+                        <apex:column style="width:80px" headerValue="Owner Name">                            
+                            <label>{!a.objEC.Owner.Name}</label>
+                        </apex:column>
+                        <apex:column style="width:80px" headerValue="CreatedDate">
+                            <apex:outputText value="{0,date,MM'/'dd'/'yyyy}">
+                                <apex:param value="{!a.objEC.CreatedDate}" />
+                            </apex:outputText>
+                        </apex:column>
+                    </apex:pageBlockTable>
+                </apex:outputPanel>
+                <!-- Search buttons       -->
+                <div class="process-block">
+                    <apex:outputPanel rendered="{!caseSearchList.size>0}" >
+                        <apex:commandButton styleClass="search-block-button" value="Save" action="{!add}" />
+                    </apex:outputPanel>
+                    <apex:actionStatus id="searchStatus">
+                        <apex:facet name="start">
+                            <apex:image url="/img/loading32.gif" height="20px" />
+                        </apex:facet>
+                    </apex:actionStatus>
+                </div>
+            </apex:outputPanel>
+        </apex:pageBlock>
+    </apex:form>
+    <script type="text/javascript">
+        function checkAll(cb,section)
+            {
+                
+                var inputElem = document.getElementsByTagName('input');                     
+                for(var i=0; i<inputElem.length; i++)
+                {                                                   
+                        if(inputElem[i].id.indexOf(section)!=-1){
+                            inputElem[i].checked = cb.checked;
+                        }               
+                }
+            }
+         
+    </script>
+    <style type="text/css">
+        .loading-icon {
+        background-image: url(/img/loading.gif);
+        width: 16px;
+        height: 16px;
+        } 
+        a.alpha-link {
+        font-weight: normal;
+        font-size: 91%;
+        padding: 0 4px;
+        color: #015BA7 !important;
+        } 
+        a.alpha-link+a.alpha-link {
+        border-left: 1px solid #CFCECE;
+        }
+        a.alpha-link:hover {
+        background-color: #e0f5fc !important;
+        } 
+        a.alpha-select {
+        font-weight: bold;
+        text-decoration: none;
+        background-color: #C6E1FF;
+        color: #000000 !important;
+        }
+        .casetable {
+        height: 200px;
+        overflow-y: scroll;
+        }
+        .search-block {
+        text-align: left;
+        }
+        .search-block input {
+        margin: 0px 0px 2px 0px;
+        }
+        .search-block-button {
+        min-width: 70px;
+        }
+        .search-block span{
+        font-weight: bold;
+        }
+        .rowText {
+        padding-bottom: 10px;
+        }
+        .rowPicklist1 {
+        padding-bottom: 10px;
+        }
+        .process-block {
+        text-align: center;
+        margin-top: 3px;
+        } 
+        .process-block input {
+        margin: 0px 2px;
+        }
+        .process-block-button {
+        min-width: 100px;
+        }
+        .page-buttons input {
+        min-width: 100px;
+        }
+        .page-buttonNext input {
+        min-width: 60px;
+        }
+    </style>
+</apex:page>

@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ApprovalProcess xmlns="http://soap.sforce.com/2006/04/metadata">
+    <active>false</active>
+    <allowRecall>true</allowRecall>
+    <allowedSubmitters>
+        <type>creator</type>
+    </allowedSubmitters>
+    <allowedSubmitters>
+        <submitter>FAE_Users</submitter>
+        <type>group</type>
+    </allowedSubmitters>
+    <allowedSubmitters>
+        <type>owner</type>
+    </allowedSubmitters>
+    <approvalPageFields>
+        <field>Name</field>
+        <field>Apttus_Proposal__Proposal_Name__c</field>
+        <field>Owner</field>
+        <field>Apttus_Proposal__Account__c</field>
+        <field>Apttus_Proposal__Approval_Stage__c</field>
+        <field>Apttus_Proposal__Description__c</field>
+    </approvalPageFields>
+    <approvalStep>
+        <allowDelegate>false</allowDelegate>
+        <approvalActions>
+            <action>
+                <name>Approval_Process_Submitted_for_FAE_Approval</name>
+                <type>Alert</type>
+            </action>
+            <action>
+                <name>Update_Stage_Submitted</name>
+                <type>FieldUpdate</type>
+            </action>
+        </approvalActions>
+        <assignedApprover>
+            <approver>
+                <name>FAE_Users</name>
+                <type>queue</type>
+            </approver>
+            <whenMultipleApprovers>FirstResponse</whenMultipleApprovers>
+        </assignedApprover>
+        <description>FAE Edits the proposal and approves the same which is also submitted to the next level automatically to the &apos;FTS Users&apos; Queue</description>
+        <entryCriteria>
+            <criteriaItems>
+                <field>Apttus_Proposal__Proposal__c.Apttus_Proposal__Approval_Stage__c</field>
+                <operation>equals</operation>
+                <value>Draft,Generated</value>
+            </criteriaItems>
+        </entryCriteria>
+        <ifCriteriaNotMet>ApproveRecord</ifCriteriaNotMet>
+        <label>FAE Approval Step</label>
+        <name>FAE_Approval_Step</name>
+        <rejectionActions>
+            <action>
+                <name>Update_Stage_Rejected</name>
+                <type>FieldUpdate</type>
+            </action>
+        </rejectionActions>
+    </approvalStep>
+    <description>Approval Process when a new generated Quote/Proposal is submitted for Approval either by the External Customer or by the Internal User</description>
+    <emailTemplate>unfiled$public/New_Proposal_Approval_Notification</emailTemplate>
+    <enableMobileDeviceAccess>false</enableMobileDeviceAccess>
+    <entryCriteria>
+        <formula>AND(OR(ISPICKVAL(Apttus_Proposal__Approval_Stage__c, &apos;Draft&apos;),ISPICKVAL(Apttus_Proposal__Approval_Stage__c, &apos;Generated&apos;)),
+	 NOT(OR(IF(ISPICKVAL($User.UserType,&apos;Standard&apos;),
+    			     AND(ISNULL(Device__c),
+    				      ISBLANK(Device__c)
+        	     		),
+    			AND(ISNULL(Team_Room__c),
+             			 ISBLANK(Team_Room__c)
+    			)
+		 ),
+        	 ISNULL(Mask_Set_Long__c)
+ 	  )
+     ),Poly_Orientation_Status_1__c 
+)</formula>
+    </entryCriteria>
+    <finalApprovalActions>
+        <action>
+            <name>Update_Stage_Submitted</name>
+            <type>FieldUpdate</type>
+        </action>
+    </finalApprovalActions>
+    <finalApprovalRecordLock>false</finalApprovalRecordLock>
+    <finalRejectionActions>
+        <action>
+            <name>Update_Stage_Rejected</name>
+            <type>FieldUpdate</type>
+        </action>
+    </finalRejectionActions>
+    <finalRejectionRecordLock>true</finalRejectionRecordLock>
+    <label>Proposal Approval Process (Single-Step)</label>
+    <recordEditability>AdminOrCurrentApprover</recordEditability>
+    <showApprovalHistory>true</showApprovalHistory>
+</ApprovalProcess>

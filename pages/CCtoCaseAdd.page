@@ -1,0 +1,239 @@
+<!-- 
+   Type Name: CCtoCaseAdd.page
+   Author: Cognizant 
+   Created Date: 21-Nov-2013
+   Reason: 
+   Change History:
+   Author: 
+   Modified Date: 
+   Reason: 
+    -->
+<apex:page standardController="Case" extensions="CCtoCaseController" >
+   <script type="text/javascript">      
+      function checkAll(cb,section)
+          {              
+              var inputElem = document.getElementsByTagName('input');                     
+              for(var i=0; i<inputElem.length; i++)
+              {                                                   
+                      if(inputElem[i].id.indexOf(section)!=-1){
+                          inputElem[i].checked = cb.checked;
+                      }               
+              }
+          }       
+   </script>
+   
+   <style type="text/css">
+      .label {
+      font-color: green;
+      }
+      .label1 {
+      font-color: red;
+      }
+   </style>
+
+   <apex:sectionHeader title="Email Subscription for #{!cas.CaseNumber}" subtitle="{!$Label.CC_to_Case}"/>
+   <apex:outputPanel layout="block">
+      <apex:form id="formId">
+         <apex:pageBlock id="pgBlock" mode="maindetail">
+            <apex:pageMessage summary="{!$Label.Case_CCtoCase_Notes}" severity="info" strength="3" /> 
+            <apex:pageMessages id="msg" />  
+            <apex:pageBlockSection title="{!$Label.CC_to_Case_Choose_a_Contact}" 
+               columns="1" collapsible="false" rendered="{!isClose}" >               
+                <apex:outputPanel style="padding-left:25%;padding-top:10%;padding-bottom:10%;" id="testID">                              
+                  <apex:commandButton value="View Suggested Contacts" action="{!AllContacts}" reRender="searchresultpanel,msg,txtSearch,chooseSearch"  status="searchStatus1"/>                     
+                     <apex:actionStatus id="searchStatus1">
+                        <apex:facet name="start">
+                            <apex:image url="/img/loading32.gif" height="20px" />
+                        </apex:facet>
+                    </apex:actionStatus>                  
+                  &nbsp;&nbsp;Or&nbsp;&nbsp;
+                  <!-- <input type="text" placeholder="Enter search string" id="txtSearch" styleClass="ui-corner-all" onkeyup="doSearch();"/> -->                  
+                   <apex:inputText id="txtSearch" value="{!searchString}" styleClass="ui-corner-all" />
+                  &nbsp;&nbsp;&nbsp;                   
+                        <apex:selectList id="chooseSearch" value="{!filterString}" size="1" >
+                           <apex:selectOption itemValue="Cont" itemLabel="Contact" />
+                           <apex:selectOption itemValue="User" itemLabel="User" rendered="{!portalCheck}" />
+                           <apex:selectOption itemValue="ContUser" itemLabel="Customer Portal User" rendered="{!portalCheck}" />
+                        </apex:selectList>
+                </apex:outputPanel>                                  
+                <apex:outputPanel style="padding-left:33%;padding-bottom:10%;">                                      
+                    <apex:commandButton value="Search"
+                     action="{!searchContact}" reRender="searchresultpanel,msg"
+                     status="searchStatus" />
+                    &nbsp;&nbsp;
+                    <apex:commandButton action="{!Cancel}"
+                     value="Cancel" />
+                    <apex:actionStatus id="searchStatus">
+                     <apex:facet name="start">
+                        <apex:image url="/img/loading32.gif" height="20px" />
+                     </apex:facet>
+                    </apex:actionStatus>               
+               </apex:outputPanel>                             
+               <apex:outputPanel id="searchresultpanel" >
+                  <apex:outputPanel layout="block" style="max-height:250px;overflow:auto;" rendered = "{!IF((contactSearchList.size>0 && filterString = 'Cont'),true,false)}">
+                      <apex:pageBlockTable value="{!contactSearchList}" var="co"  rendered="{!IF((contactSearchList.size>0 && filterString = 'Cont'),true,false)}">
+                         <apex:column >
+                            <apex:facet name="header">
+                               <apex:inputcheckbox id="selectAllSearchList"
+                                  onclick="checkAll(this,'SearchList')" />
+                            </apex:facet>
+                            <apex:inputCheckbox value="{!co.isChecked}" id="SearchList" />
+                         </apex:column>
+                         <apex:repeat value="{!$ObjectType.Contact.FieldSets.CC_To_Case}"
+                            var="f">
+                            <apex:column value="{!co.contactFound[f]}" />
+                         </apex:repeat>
+                      </apex:pageBlockTable>
+                  </apex:outputPanel>
+                    <apex:outputPanel rendered="{!IF((contactSearchList.size>0 && filterString = 'Cont'),true,false)}" >
+                     <br />
+                     <apex:commandButton action="{!add}" value="Add Contacts" status="addStatus"  reRender="formId" />
+                     <apex:actionStatus id="addStatus">
+                        <apex:facet name="start">
+                           <apex:image url="/img/loading32.gif" height="20px" />
+                        </apex:facet>
+                     </apex:actionStatus>
+                    </apex:outputPanel> 
+                    <apex:outputPanel layout="block" style="max-height:250px;overflow:auto;" rendered= "{!IF((userSearchList.size>0 && filterString = 'User'),true,false)}">
+                      <apex:pageBlockTable value="{!userSearchList}" var="co"  rendered="{!IF((userSearchList.size>0 && filterString = 'User'),true,false)}">
+                         <apex:column >
+                            <apex:facet name="header">
+                               <apex:inputcheckbox id="selectAllSearchList"
+                                  onclick="checkAll(this,'SearchList')" />
+                            </apex:facet>
+                            <apex:inputCheckbox value="{!co.isChecked}" id="SearchList" />
+                         </apex:column>
+                         <apex:column headerValue="Name">{!co.userFound.name}</apex:column>
+                         <apex:column headerValue="Member Role">
+                             <apex:selectList id="chooseSearch" value="{!co.roleSelected}" size="1" >
+                               <apex:selectOption itemValue="CaseCollaborator" itemLabel="Case Collaborator(External)"/>
+                               <apex:selectOption itemValue="CaseManager" itemLabel="Case Manager(Internal)"/>
+                               <apex:selectOption itemValue="Stakeholder" itemLabel="Stakeholder(internal)"/>
+                               <apex:selectOption itemValue="CaseCreator" itemLabel="Case Creator"/>
+                               <apex:selectOption itemValue="CaseCreatorExternal" itemLabel="Case Creator (External)"/>
+                            </apex:selectList>
+                         </apex:column>
+                        <apex:column headerValue="Email">{!co.userFound.email}</apex:column>
+                        <apex:column headerValue="Role">{!co.userFound.userrole.name}</apex:column> 
+                        <apex:column headerValue="Profile">{!co.userFound.profile.name}</apex:column>                
+                      </apex:pageBlockTable>
+                  </apex:outputPanel>
+                    <apex:outputPanel rendered="{!IF((userSearchList.size>0 && filterString = 'User'),true,false)}">
+                         <br />
+                         <apex:commandButton action="{!add}" value="Add Users" status="addStatus1"  reRender="formId" />
+                         <apex:actionStatus id="addStatus1">
+                            <apex:facet name="start">
+                               <apex:image url="/img/loading32.gif" height="20px" />
+                            </apex:facet>
+                         </apex:actionStatus>
+                    </apex:outputPanel> 
+                    <apex:outputPanel layout="block" style="max-height:250px;overflow:auto;" rendered= "{!IF((portalUserSearchList.size>0 && filterString = 'ContUser'),true,false)}">
+                      <apex:pageBlockTable value="{!portalUserSearchList}" var="co"  rendered="{!IF((portalUserSearchList.size>0 && filterString = 'ContUser'),true,false)}">
+                         <apex:column >
+                            <apex:facet name="header">
+                               <apex:inputcheckbox id="selectAllSearchList"
+                                  onclick="checkAll(this,'SearchList')" />
+                            </apex:facet>
+                            <apex:inputCheckbox value="{!co.isChecked}" id="SearchList" />
+                         </apex:column>                          
+                         <apex:column headerValue="Name">{!co.userFound.name}</apex:column>
+                         <apex:column headerValue="Member Role">
+                             <apex:selectList id="chooseSearch" value="{!co.roleSelected}" size="1" >
+                               <apex:selectOption itemValue="CaseCollaborator" itemLabel="Case Collaborator(External)"/>
+                               <apex:selectOption itemValue="CaseManager" itemLabel="Case Manager(Internal)"/>
+                               <apex:selectOption itemValue="Stakeholder" itemLabel="Stakeholder(internal)"/>
+                               <apex:selectOption itemValue="CaseCreator" itemLabel="Case Creator"/>
+                               <apex:selectOption itemValue="CaseCreatorExternal" itemLabel="Case Creator (External)"/>
+                            </apex:selectList>
+                         </apex:column>
+                        <apex:column headerValue="Email">{!co.userFound.email}</apex:column>
+                        <apex:column headerValue="Role">{!co.userFound.userrole.name}</apex:column> 
+                        <apex:column headerValue="Profile">{!co.userFound.profile.name}</apex:column>                
+                      </apex:pageBlockTable>
+                  </apex:outputPanel>
+                    <apex:outputPanel rendered="{!IF((portalUserSearchList.size>0 && filterString = 'ContUser'),true,false)}">
+                     <br />
+                     <apex:commandButton action="{!add}" value="Add Customer Users" status="addStatus2"  reRender="formId" />
+                     <apex:actionStatus id="addStatus2">
+                        <apex:facet name="start">
+                           <apex:image url="/img/loading32.gif" height="20px" />
+                        </apex:facet>
+                     </apex:actionStatus>
+                    </apex:outputPanel>                   
+               </apex:outputPanel>
+            </apex:pageBlockSection>            
+         </apex:pageBlock>
+                  
+            <apex:pageBlock rendered="{!AND(isClose == true,portalCheck == true)}">
+                <apex:outputPanel id="bgCreatedby">
+                         <apex:pageBlockSection title="Predefined Case Teams" collapsible="false">                           
+                                <apex:inputtext size="90" disabled="true" value="{!createdBy}" label="Predefined Case Team: " id="bgCreatedby1" styleClass="UserLookupCell" ></apex:inputText>
+                                <apex:image value="{!$Resource.User_Lookup}" onclick="openUserlookup();" style="cursor:pointer;vertical-align: middle;" />
+                                <apex:commandButton action="{!addCaseTeam}" value="Add"   reRender="formId,bgCreatedby,msg" />
+                            <script>
+                                function openUserlookup(){            
+                                    window.open('/apex/CaseTeamLookup?createdBy='+'{!createdByIds}'+'&userSearchFlag='+'true',target='_blank', 'toolbar=yes, scrollbars=yes, resizable=yes, top=250, left=400, width=700, height=500');
+                                }
+                               setUserIdsInParent = function(searchUserString,searchUserId,ClearFlag) {
+                                   createdBy =    searchUserString;
+                                   createdByIds = searchUserId;
+                                   ClearFlagParent = ClearFlag;
+                                   setVal(searchUserString,searchUserId,ClearFlag);
+                               }                             
+                           </script>                     
+                         </apex:pageBlockSection>
+                </apex:outputPanel>               
+            </apex:pageBlock>
+                                                   
+         <apex:pageBlock id="ExistCCListPB"
+            title="{!$Label.CC_to_Case_Subscription_List}" rendered="{!isClose}" >
+            <apex:outputPanel layout="block" style="max-height:300px;overflow:auto;">           
+                <apex:pageBlockTable value="{!existCCList}" var="cc" >
+                   <apex:column width="105px"  >
+                      <apex:facet name="header">Action</apex:facet>                      
+                      <apex:commandLink value="Edit" action="{!editCC}" immediate="true"  >
+                         <apex:param name="ccId" value="{!cc.Id}" id="ccIdEdit" />
+                      </apex:commandLink> 
+                      &nbsp;&nbsp;              
+                      <apex:commandLink value="Del"
+                         action="{!deleteCC}" immediate="true"  status="addStatus1" onclick="if (!confirm('Are you sure want to delete?')) return;" rendered="{!portalCheck}" rerender="formId">
+                         <apex:actionStatus id="addStatus1">
+                            <apex:facet name="start">
+                               <apex:image url="/img/loading32.gif" height="20px" />
+                            </apex:facet>
+                         </apex:actionStatus>
+                         <apex:param name="ccId" value="{!cc.Id}" id="ccIdDel" />
+                      </apex:commandLink>
+                   </apex:column>
+                   <apex:column headerValue="Name" value="{!cc.Name}" /> 
+                   <apex:column headerValue="Contact" value="{!cc.Contact__c}" />                   
+                   <apex:column headerValue="User" value="{!cc.User__c}"  />
+                   <apex:column headerValue="Account" value="{!cc.Contact__r.Account.Name}" />
+                   <!-- <apex:column headerValue="Case" value="{!cc.Case__c}" />  -->
+                   <apex:column headerValue="Email" value="{!cc.Email_Id__c}" />
+                   <apex:column headerValue="Subscribed" value="{!cc.Is_Subscribed__c}" />                   
+                </apex:pageBlockTable>                 
+             </apex:outputPanel>
+             <apex:pageBlockButtons location="top">
+                 <apex:commandButton action="{!unsubscribe}" status="subscribeStatus"  value="Unsubscribe All" title="Unsubscribe All" onclick="if (!confirm('Are you sure want to Unsubscribe all contacts from Subscription List?')) return;" rendered="{!existCCList.size > 0 && (ISPICKVAL($User.UserType,'Standard'))}" rerender="formId"/>
+                 <apex:commandButton action="{!subscribe}" status="subscribeStatus"  value="Subscribe All" title="Unsubscribe All" onclick="if (!confirm('Are you sure want to Subscribe all contacts from Subscription List?')) return;" rendered="{!existCCList.size > 0 && (ISPICKVAL($User.UserType,'Standard'))}" rerender="formId"/>
+                    <apex:actionStatus id="subscribeStatus">
+                        <apex:facet name="start">
+                           <apex:image url="/img/loading32.gif" height="20px" />
+                        </apex:facet>
+                    </apex:actionStatus>
+             </apex:pageBlockButtons>             
+         </apex:pageBlock>
+         
+         <apex:actionFunction name="setVal" action="{!SetValues}" rerender="bgCreatedby"> 
+             
+            <apex:param id="searchUserString" name="searchUserString"  assignTo="{!UserString}" value="" />
+            <apex:param id="searchUserId" name="searchUserId"  assignTo="{!UserId}" value=""/>
+            <apex:param id="ClearFlag" name="ClearFlag"  assignTo="{!clearFlagCheck}" value=""/> 
+        
+       </apex:actionFunction>  
+   
+   
+      </apex:form>
+   </apex:outputPanel>
+</apex:page>

@@ -1,0 +1,76 @@
+<!-- 
+   Type Name:  CaseCustomLookup.page
+   Author: Cognizant 
+   Created Date: 26-Feb-2014
+   Reason: 
+   Change History:
+   Author: 
+   Modified Date: 
+   Reason: 
+    -->
+<apex:page controller="CaseCustomLookupController"
+   title="Search" 
+   showHeader="false" 
+   sideBar="false" 
+   tabStyle="Case" 
+   id="pg">
+   <style>
+      .outerdiv {
+      background-repeat: repeat-x;
+      background-position: left top;
+      background: white url(/img/alohaSkin/lookup_bg.png) repeat-x;
+      padding-left: 10px;
+      height: 100%;        
+      }
+      .innerdiv {
+      background-image: url(/img/sprites/master.png);
+      background-position: 0px -1202px;
+      width: 32px;
+      height: 32px;
+      }  
+   </style>
+   <apex:form >
+      <div class="outerdiv">
+         <div class="innerdiv"></div>
+         <div style="float: left; width: 50px; margin-top: -20px; margin-left: 40px">
+            <h1>Lookup</h1>
+         </div>
+         <apex:outputPanel id="page" layout="block" style="margin:5px;padding:10px;padding-top:2px;">
+            <apex:actionRegion >
+               <apex:outputPanel id="top" layout="block" style="margin:5px;padding:10px;padding-top:2px;">
+                  <apex:outputLabel value="Search" style="font-weight:Bold;padding-right:10px;" for="txtSearch"/>
+                  <apex:inputText id="txtSearch" value="{!searchString}" />
+                  <span style="padding-left:5px">
+                     <apex:commandButton id="btnGo" value="Go" action="{!Search}" rerender="pnlMain"></apex:commandButton>
+                  </span>
+                  <apex:selectRadio id="rdoSelect" value="{!searchItems}" style="font-weight:Bold;padding-right:10px;" >
+                     <apex:selectOptions value="{!items}"/>
+                  </apex:selectRadio>
+               </apex:outputPanel>
+               <apex:outputPanel id="pnlMain" >
+                  <apex:outputLabel id="lblErrMessages" rendered="{!isErrorMessages}" value="Error: Please enter a search string at least 2 characters long." style="color:red;padding-right:10px;" />
+                  <apex:outputPanel id="pnlResults" rendered="{!isErrorMessages=false}"  >
+                     <apex:outputLabel id="lblSearchResult" rendered="{!results.size>0}" value="{!messages } Case [{!results.size}]" style="font-weight:Bold;padding-right:10px;" />
+                     <apex:outputPanel id="pnlSearchResults"  style="margin:10px;height:350px;overflow-Y:auto;" layout="block">
+                        <apex:pageBlock id="searchResults">
+                           <apex:pageBlockTable value="{!results}" var="a" id="tblResults" rendered="{!results.size>0}" >
+                              <apex:column >
+                                 <apex:facet name="header">
+                                    <apex:outputPanel >Case Number</apex:outputPanel>
+                                 </apex:facet>
+                                 <apex:outputLink value="javascript:top.window.opener.lookupPick2('{!FormTag}','{!TextBox}_lkid','{!TextBox}','{!a.Id}','{!a.CaseNumber}', false)" rendered="{!NOT(ISNULL(a.Id))}">{!a.CaseNumber}</apex:outputLink>
+                              </apex:column>
+                              <apex:repeat value="{!SelectedFields}" var="FieldLable">
+                                 <apex:column value="{!a[FieldLable]}" />
+                              </apex:repeat>
+                           </apex:pageBlockTable>
+                           <apex:outputLabel id="lblNoRecord" rendered="{!results.empty}" value="No records were found based on your criteria." />
+                        </apex:pageBlock>
+                     </apex:outputPanel>
+                  </apex:outputPanel>
+               </apex:outputPanel>
+            </apex:actionRegion>
+         </apex:outputPanel>
+      </div>
+   </apex:form>
+</apex:page>

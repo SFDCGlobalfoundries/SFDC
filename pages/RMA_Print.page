@@ -1,0 +1,735 @@
+<!--
+  Author: Surendranadh Nune
+  Company: GlobalFoundries,India
+  Project: Return Material Authorization
+  Description: This visualforce page is used to print the RMA record.
+  History:
+     SurendranadhNune 28122015  -   Created.
+     NJain            21062016  -   Updated for Fab 9 and 10.
+     Psamal           28072017  -   Modified for fab ALTIS
+-->
+<apex:page standardController="RMA__c" extensions="RMA_Edit_Extension,RMA_AccessClass" id="RMA_print" cache="true" 
+                                      doctype="html-5.0" sidebar="false" showheader="false" title="RMA : {!RMA__c.Name}" showChat="false">
+    <apex:variable var="isFoundryView" value="{!IF(CONTAINS($CurrentPage.URL, 'globalfoundryview'),true,false)}"/>
+    <style>
+        .highlightRow{
+            background-color :#B1D0B1;
+        }
+        @media print{
+            @page {
+                size: landscape;
+            }
+        } 
+    </style>
+    
+     <center>
+        <table width="80%" >
+          <tr>
+              <td align="center">    
+                  <apex:image value="{!URLFOR($Resource.GFLogo)}" style="position:relative;background-repeat:repeat-x;left: 0cm; top:0cm;"/>
+              </td>        
+          </tr>  
+                    
+          <tr>   
+            <td align="center" style="font-size:20px;font-weight:bold;"> Return Material Authorization </td>  
+          </tr>
+        </table>
+     </center>
+     <apex:form id="theForm">
+        
+        <apex:pageBlock mode="maindetail">
+            <apex:inputHidden value="{!RMA__c.ownerId}" rendered="{!RMA__c.Id != NULL}"/>
+            <center>
+                <apex:commandButton value="Print" rendered="{!NOT(CONTAINS($CurrentPage.URL, 'globalfoundryview'))}" onclick="alert('Please use Landscape orientation for better print result.');this.style.display = 'none';window.print();return false;"/>
+            </center>
+            <apex:outputPanel id="VoidReason" rendered="{!NOT(CONTAINS($CurrentPage.URL, 'globalfoundryview'))}">
+               <apex:pageBlockSection title="Reason to Void" collapsible="false" columns="1" rendered="{!OR(AND(isCSR,voidRMA),RMA__c.Status__c == 'Voided by System',RMA__c.Status__c == 'Voided RMA')}">
+                <apex:outputField value="{!RMA__c.Reason_to_Void__c}" style="width:50%" rendered="{!OR(RMA__c.Status__c == 'Voided by System',RMA__c.Status__c == 'Voided RMA')}"/>
+               </apex:pageBlockSection>
+            </apex:outputPanel>
+            
+            <apex:pageBlockSection id="ReportSection" columns="1"> 
+                    <apex:pageblock title="{!IF(CONTAINS($CurrentPage.URL, 'globalfoundryview'),'','RMA Information')}" id="RMAGenInfo" mode="maindetail">
+                       
+                        <apex:pageBlockSection title="RMA - Generic Information" columns="2">
+                            <apex:outputField value="{!RMA__c.Name}" rendered="{!RMA__c.Id != NULL}"/>
+                            <apex:outputField value="{!RMA__c.Customer__c}"/>
+                            <apex:outputField value="{!RMA__c.Region__c}" rendered="{!NOT(ISNULL(RMA__c.Region__c))}"/>
+                            <apex:outputField value="{!RMA__c.Fab__c}"/>
+                            <apex:outputField value="{!RMA__c.Status__c}"/>
+                            <apex:outputField value="{!RMA__c.Customer_Request_Date__c}"/>
+                            <apex:outputField value="{!RMA__c.Reason_Code__c}" rendered="{!NOT(ISBLANK(RMA__c.Reason_Code__c))}"/>
+                            <apex:outputField value="{!RMA__c.Reason_for_delay__c}" rendered="{!RMA__c.Reason_Code__c == 'Other'}"/>
+                            <apex:outputField value="{!RMA__c.Workflow_Stage__c}"/>
+                            <apex:outputField value="{!RMA__c.Intercompany__c}"/>
+                            <apex:outputField value="{!RMA__c.OwnerId}"/>
+                            <apex:outputField value="{!RMA__c.LastModifiedById}"/>
+                            <apex:outputField value="{!RMA__c.Originator_From_Lotus_Notes__c}" rendered="{!RMA__c.Is_Legacy__c}" />
+                            <apex:outputField value="{!RMA__c.Is_Legacy__c}" rendered="{!RMA__c.Is_Legacy__c}" />
+                        </apex:pageblockSection>
+                        <apex:pageBlockSection title="Return Lot Details" id="WaferDieDetails" columns="2" rendered="{!RMA__c.Id != NULL}">
+                            <apex:outputField value="{!RMA__c.RMA_By__c}"/>
+                            <apex:outputField value="{!RMA__c.ITAR_Part__c}" rendered="{!isFab9or10}"/>
+                            <!--<apex:outputField value="{!RMA__c.Business_Unit__c}" rendered="{!isFab9or10}"/>
+                            <apex:outputField value="{!RMA__c.Product_Line__c}" rendered="{!isFab9or10}"/>-->
+                            <apex:outputField value="{!RMA__c.RMA_Category__c}" rendered="{!isFab9or10}"/>
+                            <apex:outputField value="{!RMA__c.Business_Category__c}" rendered="{!isFab9or10}"/>
+                            <apex:outputField value="{!RMA__c.ReasonCode__c}" rendered="{!isFab9or10}"/>
+                        </apex:pageBlockSection>
+                        <apex:pageBlockSection columns="1" rendered="{!RMA__c.Id != NULL}">
+                            <apex:pageBlockTable value="{!lstLineItemWrapper}" var="riWrapper">
+                                <apex:column >
+                                    <apex:facet name="header">Invoice #</apex:facet>
+                                    <apex:outputField value="{!riWrapper.RIrec.Invoice_Number__c}"/>                  
+                                </apex:column>
+                                <apex:column >
+                                    <apex:facet name="header">Invoice Date</apex:facet>
+                                    <apex:outputField value="{!riWrapper.RIrec.Invoice_Date__c}"/>                  
+                                </apex:column>
+                                <apex:column >
+                                    <apex:facet name="header">Lot #</apex:facet>
+                                    <apex:outputField value="{!riWrapper.RIrec.Lot_Number__c}"/>     
+                                </apex:column>
+                                <apex:column >
+                                    <apex:facet name="header">Device</apex:facet>
+                                    <apex:outputField value="{!riWrapper.RIrec.Device__c}"/>                  
+                                </apex:column>
+                                <apex:column rendered="{!RMA__c.RMA_By__c != 'Module' && (RMA__c.Fab__c != 'FAB 9' && RMA__c.Fab__c != 'FAB 10' && RMA__c.Fab__c != 'ALTIS')}">
+                                    <apex:facet name="header">Wafer Id<br/>(CSR Submission)</apex:facet>
+                                    <apex:outputField value="{!riWrapper.RIrec.Wafer_Id_CSR_Submission__c}" />
+                                </apex:column>
+                                <apex:column rendered="{!RMA__c.RMA_By__c != 'Module' && (RMA__c.Fab__c == 'FAB 9' || RMA__c.Fab__c == 'FAB 10' || RMA__c.Fab__c == 'ALTIS')}">
+                                    <apex:facet name="header">Wafer Id<br/>(CSR Submission)</apex:facet>
+                                    <apex:outputField value="{!riWrapper.RIrec.Wafer_Id_Fab_9_10_CSR_Submission__c}" />
+                                </apex:column>
+                                <apex:column rendered="{!RMA__c.RMA_By__c == 'Wafer'}">
+                                    <apex:facet name="header">Wafer Quantity<br/>(CSR Submission)</apex:facet>
+                                    <apex:outputField value="{!riWrapper.RIrec.Wafer_Quantity__c}"/>                 
+                                </apex:column>
+                                <apex:column rendered="{!RMA__c.RMA_By__c == 'Module'}">
+                                    <apex:facet name="header">Module Quantity<br/>(CSR Submission)</apex:facet>
+                                    <apex:outputField value="{!riWrapper.RIrec.Module_Quantity__c}"/>                 
+                                </apex:column>
+                                <apex:column >
+                                    <apex:facet name="header">Scrap Limit</apex:facet>
+                                    <apex:outputField value="{!riWrapper.RIrec.Scrap_Limit__c}"/>                                                      
+                                </apex:column>
+                                <apex:column >
+                                    <apex:facet name="header">Wafer Yield</apex:facet>
+                                    <apex:outputField value="{!riWrapper.RIrec.Wafer_Yield__c}"/>                                                          
+                                </apex:column>
+                                <apex:column rendered="{!RMA__c.RMA_By__c == 'Die'}">
+                                    <apex:facet name="header">GDPW</apex:facet>
+                                    <apex:outputField value="{!riWrapper.RIrec.GDPW__c}"/>
+                                </apex:column>
+                                <apex:column rendered="{!RMA__c.RMA_By__c == 'Die'}">
+                                    <apex:facet name="header">Die Quantity</apex:facet>
+                                    <apex:outputField value="{!riWrapper.RIrec.Die_Quantity__c}"/>
+                                </apex:column>                                
+                                <apex:column rendered="{!RMA__c.RMA_By__c == 'Die'}">
+                                    <apex:facet name="header">Die Selling<br/>Price</apex:facet>
+                                    <apex:outputField value="{!riWrapper.RIrec.Die_Selling_Price__c}"/>                                                                              
+                                </apex:column>
+                                <apex:column rendered="{!SystemModeOn && RMA__c.RMA_By__c != 'Die' && RMA__c.ReasonCode__c != 'R81'}">
+                                    <!--<apex:facet name="header">Wafer/Die<br/>Unit Price</apex:facet>-->
+                                    <apex:facet name="header">Unit Selling<br/>Price</apex:facet>
+                                    <apex:outputText value="${0, number, ###,##0.00}">
+                                        <apex:param value="{!riWrapper.WaferDieAmt}"/>
+                                    </apex:outputText>                                                                             
+                                </apex:column>
+                                <apex:column rendered="{!RMA__c.ReasonCode__c == 'R81'}">
+                                    <apex:facet name="header">Existing Form Factor</apex:facet>
+                                    <apex:outputField value="{!riWrapper.RIrec.Existing_Form_Factor__c}"/>                                                                             
+                                </apex:column>
+                                <apex:column rendered="{!SystemModeOn}">
+                                    <apex:facet name="header">{!IF(RMA__c.ReasonCode__c != 'R81','Adjusted Unit Price','Existing Form Factor Price')}</apex:facet>
+                                    <apex:outputText value="${0, number, ###,##0.00}">
+                                        <apex:param value="{!riWrapper.AdjustedAmt}"/>
+                                    </apex:outputText>                                                                             
+                                </apex:column>
+                                <apex:column rendered="{!SystemModeOn && RMA__c.ReasonCode__c == 'R81'}">
+                                    <apex:facet name="header">Existing Form<br/>Factor Quantity</apex:facet>
+                                    <apex:outputField value="{!riWrapper.RIrec.Existing_Form_Factor_Quantity__c}"/>                                                                             
+                                </apex:column>
+                                <apex:column rendered="{!SystemModeOn}">
+                                    <apex:facet name="header">Total Price<br/>(CSR Submission)</apex:facet>
+                                    <apex:outputText value="${0, number, ###,##0.00}">
+                                        <apex:param value="{!riWrapper.TotalCSR}"/>
+                                    </apex:outputText>                                                                             
+                                </apex:column>
+                            </apex:pageBlockTable>
+                            <apex:pageBlockSection title="" showHeader="false" columns="2">
+                                <apex:outputField value="{!RMA__c.Potential_Impact_Wafers__c}" rendered="{!RMA__c.Total_Wafers__c != 0}"/>
+                                <apex:pageBlockSectionItem rendered="{!isFab9or10}"/>
+                                <apex:outputField value="{!RMA__c.RMA_Category__c}" rendered="{!AND(NOT(isFab9or10),RMA__c.Total_Wafers__c != 0)}"/>
+                                <apex:pageBlockSectionItem rendered="{!AND(NOT(isFab9or10),infoTab,RMA__c.RMA_Category__c == 'Technical/ Turnkey')}"/>
+                                <apex:outputField value="{!RMA__c.Assign_To__c}" rendered="{!AND(NOT(isFab9or10),infoTab,RMA__c.RMA_Category__c == 'Technical/ Turnkey')}"/>
+                                <apex:outputField value="{!RMA__c.Compensation_Type__c}" rendered="{!RMA__c.Total_Wafers__c != 0}" />
+                                <apex:pageBlockSectionItem rendered="{!RMA__c.Total_Wafers__c != 0}" />
+                                <apex:outputField value="{!RMA__c.Warranty__c}" rendered="{!AND(isFab9or10,RMA__c.RMA_Category__c != 'Failure Analysis',RMA__c.Total_Wafers__c != 0)}" /> 
+                                <apex:outputField value="{!RMA__c.Total_Wafers__c}" rendered="{!RMA__c.Total_Wafers__c != 0}"/>
+                                <apex:outputText value="${0, number, ###,##0.00}" label="Grand Total (CSR Submission)" rendered="{!RMA__c.Total_Wafers__c != 0 && rmaWrap.grandTotalCSR != 0}">
+                                    <apex:param value="{!rmaWrap.grandTotalCSR}"/>
+                                </apex:outputText>
+                            </apex:pageblockSection>
+                        </apex:pageBlockSection>
+                      <apex:outputPanel rendered="{!Not(CONTAINS($CurrentPage.URL, 'globalfoundryview'))}">       
+                        <apex:pageBlockSection title="Customer Return Particulars" id="CustRetDetails" columns="1" 
+                                            rendered="{!RMA__c.Id != NULL && RMA__c.Count_Line_Item__c != NULL && RMA__c.Count_Line_Item__c>0}">
+                            
+                            <apex:outputPanel id="FRFpanel" layout="block" styleClass="blockStyleClass">
+                                <apex:pageBlockSection >
+                                        <apex:outputField value="{!RMA__c.RMA_due_to_Field_reliability_Failure__c}"/>
+                                </apex:pageBlockSection>
+                                <apex:outputPanel id="checkBxFRF">
+                                    <apex:pageBlockSection rendered="{!RMA__c.RMA_due_to_Field_reliability_Failure__c}" id="pgBlockFRF" >
+                                        <apex:outputField value="{!RMA__c.Lot_Device_FRF__c}"/>
+                                        <apex:outputField value="{!RMA__c.Remarks_Field_Reliability_Failure__c}" style="width:100%;"/>
+                                    </apex:pageblockSection>
+                                    <apex:pageBlockSection rendered="{!NOT(RMA__c.RMA_due_to_Field_reliability_Failure__c)}" columns="2">
+                                        <apex:outputField value="{!RMA__c.Justification_Field_Reliability_Failure__c}" style="width:100%;" rendered="{!justificationFlag}"/>
+                                    </apex:pageblockSection>
+                                </apex:outputpanel>
+                            </apex:outputpanel>                            
+                            
+                            <apex:outputPanel id="WaiverIssuePanel" layout="block" styleClass="blockStyleClass">
+                                <apex:pageBlockSection >
+                                    <apex:outputField value="{!RMA__c.RMA_related_to_Waiver_Issue__c}"/>
+                                </apex:pageblockSection>
+                                <apex:outputPanel id="checkBxWI">
+                                    <apex:pageBlockSection rendered="{!RMA__c.RMA_related_to_Waiver_Issue__c}" id="pgBlockWI" >
+                                        <apex:outputField value="{!RMA__c.Lot_Device_Design_Rule_Waiver__c}"/>
+                                        <apex:outputField value="{!RMA__c.Lot_Device_ET_Waiver__c}"/>
+                                        <apex:outputField value="{!RMA__c.Remarks_Waiver_Issue__c}" style="width:100%;"/>
+                                    </apex:pageblockSection>
+                                </apex:outputpanel>
+                            </apex:outputPanel>
+                            
+                            <apex:outputPanel id="RiskProdPanel" layout="block" styleClass="blockStyleClass">
+                                <apex:pageBlockSection >
+                                    <apex:outputField value="{!RMA__c.Risk_Production__c}"/>
+                                </apex:pageblockSection>
+                                <apex:outputPanel id="checkBxRP">
+                                    <apex:pageBlockSection rendered="{!RMA__c.Risk_Production__c}" id="pgBlockRP" >
+                                        <apex:outputField value="{!RMA__c.Lot_Device_Risk_Production__c}"/>
+                                        <apex:outputField value="{!RMA__c.Remarks_Risk_Production__c}" style="width:100%;"/>
+                                    </apex:pageblockSection>
+                                </apex:outputpanel>
+                            </apex:outputpanel>
+                            
+                            <apex:outputPanel id="PRFpanel" layout="block" styleClass="blockStyleClass">
+                                <apex:pageBlockSection >
+                                    <apex:outputField value="{!RMA__c.Is_the_RMA_lot_s_related_to_PRF__c}"/>
+                                    <apex:outputField value="{!RMA__c.Justification_PRF__c}" style="width:100%;"/>
+                                </apex:pageblockSection>
+                                <apex:outputPanel id="checkBxPRF">
+                                    <apex:pageBlockSection rendered="{!RMA__c.Is_the_RMA_lot_s_related_to_PRF__c}" id="pgBlockPRF" >
+                                        <apex:pageBlockTable id="prfTable" value="{!PRFParticulars}" var="prf">
+                                            <apex:column headerValue="PRF #" value="{!prf.PRF__c}"/>
+                                            <apex:column headerValue="Lot #" value="{!prf.Lot__c}"/>
+                                        </apex:pageBlockTable>
+                                    </apex:pageblockSection>
+                                </apex:outputpanel>
+                            </apex:outputpanel>
+                            
+                            <apex:outputPanel id="CARpanel" layout="block" styleClass="blockStyleClass">
+                                <apex:pageBlockSection >
+                                    <apex:outputField value="{!RMA__c.Customer_CAR_Raised__c}"/>
+                                    <apex:outputField value="{!RMA__c.Justification_CAR__c}" style="width:100%;"/>
+                                </apex:pageblockSection>
+                                <apex:outputPanel id="checkBxCAR">
+                                    <apex:pageBlockSection rendered="{!RMA__c.Customer_CAR_Raised__c}" id="pgBlockCAR" >
+                                        <apex:pageBlockTable id="carTable" value="{!CARParticulars}" var="car"> 
+                                            <apex:column headerValue="Car #" value="{!car.Car__c}"/>
+                                            <apex:column headerValue="Lot #" value="{!car.Lot__c}"/>
+                                        </apex:pageBlockTable>
+                                    </apex:pageblockSection>
+                                </apex:outputpanel>
+                            </apex:outputpanel> 
+                            
+                             <apex:outputPanel id="OthersPanel" layout="block" styleClass="blockStyleClass">
+                                <apex:pageBlockSection >
+                                    <apex:outputField value="{!RMA__c.If_Others__c}"/>
+                                </apex:pageblockSection>
+                                <apex:outputPanel id="checkBxOther">
+                                    <apex:pageBlockSection rendered="{!RMA__c.If_Others__c}" id="pgBlockOther" >
+                                        <apex:outputField value="{!RMA__c.Remarks_if_Others__c}" style="width:100%;"/>
+                                    </apex:pageblockSection>
+                                </apex:outputpanel>
+                            </apex:outputpanel>
+                            
+                            <apex:outputPanel id="GeneralPanel" layout="block" styleClass="blockStyleClass">
+                                <apex:pageBlockSection columns="1">
+                                    <apex:outputField value="{!RMA__c.Access_Impact__c}"/>
+                                    <!--<apex:pageBlockSectionItem ></apex:pageBlockSectionItem>
+                                    <apex:outputField value="{!RMA__c.Remarks__c}" style="width:100%;"/>-->
+                                    <apex:outputField value="{!RMA__c.Description_of_Reason_s__c}" style="width:100%;"/>
+                                </apex:pageblockSection>
+                            </apex:outputpanel>
+                            <!-- <apex:repeat value="{!$ObjectType.RMA__c.FieldSets.RMA_Hidden_Fields_For_View_Page}" var="hidField">
+                                <apex:inputHidden value="{!RMA__c[hidField]}" />
+                            </apex:repeat>
+                            <apex:repeat value="{!$ObjectType.RMA__c.FieldSets.RMA_Non_Fab_Approvers}" var="nonFab">
+                                <apex:inputHidden value="{!RMA__c[nonFab]}" />
+                            </apex:repeat> -->                            
+                        </apex:pageBlockSection>
+                             
+                        <apex:pageBlockSection title="Attachments & links" rendered="{!OR(AND(RMA__c.Status__c != 'Voided',NOT(isFab9or10)),AND(isFab9or10,NOT(RMA__c.ITAR_Part__c)))}" columns="1">
+                            <apex:outputPanel id="attachmentsPanel">
+                                <apex:pageblockTable value="{!lstRMAattachmentsINFO}" var="cDocLink" rendered="{!lstRMAattachmentsINFO.size != 0}">
+                                    <apex:column headerValue="Title">
+                                        <apex:outputLink target="_blank" value="/{!cDocLink.contentDocumentid}">{!cDocLink.contentDocument.Title}</apex:outputLink>
+                                    </apex:column>
+                                    <apex:column headerValue="Created Date" 
+                                        value="{!cDocLink.contentDocument.ContentModifiedDate}" />
+                                    <apex:column headerValue="Created By"
+                                        value="{!cDocLink.contentDocument.OwnerId}" />
+                                </apex:pageblockTable>
+                                <apex:outputText value="There are no attachments to display." rendered="{!lstRMAattachmentsINFO.size == 0}"/>
+                            </apex:outputPanel>
+                            <apex:outputPanel id="uploadedLinksPanel">
+                                <apex:pageBlockTable value="{!lstRMALinksINFO}" var="rmaLink" rendered="{!lstRMALinksINFO.size != 0}">
+                                    <apex:column headerValue="Url">
+                                        <apex:outputLink value="{!rmaLink.Resource_URL__c}" target="_blank">{!rmaLink.Resource_URL__c}</apex:outputLink>
+                                    </apex:column>
+                                    <apex:column value="{!rmaLink.CreatedById}"/>
+                                    <apex:column headerValue="Created Date" value="{!rmaLink.CreatedDate}"/>
+                                </apex:pageBlockTable>
+                                <apex:outputText value="There are no links to display." rendered="{!lstRMALinksINFO.size == 0}"/>
+                            </apex:outputPanel>
+                        </apex:pageBlockSection>
+                       </apex:outputPanel>
+                    </apex:pageBlock>
+                    
+                    <apex:pageblock title="Disposition of Wafers" id="DisposeDetails" mode="maindetail" rendered="{!NOT(CONTAINS($CurrentPage.URL, 'globalfoundryview'))}">
+                        <apex:pageBlockSection title="Disposition of Wafers">
+                            <apex:pageBlockSectionItem >
+                                <apex:outputLabel value="Site"/>
+                                <apex:outputText value="{!site}"/>
+                            </apex:pageBlockSectionItem>
+                            <apex:outputField value="{!RMA__c.Fab__c}" />
+                            <apex:outputField value="{!RMA__c.Disposition_of_Wafers__c}" />
+                            <apex:outputField value="{!RMA__c.Return_Location__c}" rendered="{!AND(isFab9or10,OR(RMA__c.Disposition_of_Wafers__c == 'Return to GF',RMA__c.Disposition_of_Wafers__c == 'Return to GF and to Scrap at Customer Site'))}"/>
+                            <apex:outputField value="{!RMA__c.Carrier_Vendor__c}" rendered="{!AND(isFab9or10,OR(RMA__c.Disposition_of_Wafers__c == 'Return to GF',RMA__c.Disposition_of_Wafers__c == 'Return to GF and to Scrap at Customer Site'))}"/>
+                            <apex:outputField value="{!RMA__c.Carrier_Vendor_Account_Number__c}" rendered="{!AND(isFab9or10,OR(RMA__c.Disposition_of_Wafers__c == 'Return to GF',RMA__c.Disposition_of_Wafers__c == 'Return to GF and to Scrap at Customer Site'))}"/>
+                            <apex:outputField value="{!RMA__c.New_Carrier_Vendor__c}" rendered="{!AND(isFab9or10,OR(RMA__c.Disposition_of_Wafers__c == 'Return to GF',RMA__c.Disposition_of_Wafers__c == 'Return to GF and to Scrap at Customer Site'))}"/>
+                            <apex:outputField value="{!RMA__c.Sales_Order_Number_CRO__c}" rendered="{!RMA__c.Workflow_Stage__c != 'RMA Raised' && RMA__c.Workflow_Stage__c != 'Rejected RMA' && RMA__c.Workflow_Stage__c != 'Pending for Quality Validation' && RMA__c.Compensation_Type__c == 'Credit with charged replacement'}"/>
+                            <apex:pageBlockSectionItem rendered="{!RMA__c.Workflow_Stage__c != 'RMA Raised' && RMA__c.Workflow_Stage__c != 'Rejected RMA' && RMA__c.Workflow_Stage__c != 'Pending for Quality Validation' && RMA__c.Compensation_Type__c == 'Credit with charged replacement'}"/>
+                            <apex:outputField value="{!RMA__c.ERP_Success_Error_Message_CRO__c}" rendered="{!RMA__c.Workflow_Stage__c != 'RMA Raised' && RMA__c.Workflow_Stage__c != 'Rejected RMA' && RMA__c.Workflow_Stage__c != 'Pending for Quality Validation' && RMA__c.Compensation_Type__c == 'Credit with charged replacement'}"/>
+                        </apex:pageBlockSection>
+                        <apex:pageBlockSection title="Disposition By Quality" rendered="{!isFab9or10}" columns="1">
+                            <apex:outputField value="{!RMA__c.Disposition_by_Quality__c}"/>
+                            <apex:outputField value="{!RMA__c.Comments_Quality__c}"/>
+                        </apex:pageBlockSection>
+                        <apex:pageBlockSection title="Alternative Customer" columns="1" rendered="{!AND(isFab9or10,RMA__c.ReasonCode__c == 'R81')}">
+                            <apex:outputField value="{!RMA__c.Alternative_Customer__c}"/>
+                        </apex:pageBlockSection>
+                        
+                        <apex:pageBlockSection title="Scrap to Customer Site" rendered="{!dispDispositionScrapBool}" id="pgBlockDisposition" columns="1">
+                            <apex:outputField value="{!RMA__c.Certificate_Received_Date__c}"/>
+                            <apex:outputField value="{!RMA__c.Certificate_No__c}"/>
+                            <apex:outputField value="{!RMA__c.Remarks_Disposition__c}"/>
+                            <apex:pageBlockSectionItem >
+                                <apex:outputLabel value="Receiver Name (if 'Scrap at Customer site')" />
+                                <apex:outputField value="{!RMA__c.Receiver_Names_for_Scrap__c}" />
+                            </apex:pageBlockSectionItem>
+                            <apex:outputField value="{!RMA__c.Lot_Device_Requires_Scrap_Certificate__c}" />
+                        </apex:pageBlockSection>
+                        
+                        <apex:pageBlockSection id="pgBlockDisposition5" rendered="{!IF(AND(OR(RMA__c.Status__c == 'Submitted',RMA__c.Status__c == 'Approved',RMA__c.Status__c == 'Rejected'),dispDispositionScrapBool),true,false)}">
+                           <apex:outputField value="{!RMA__c.Acknowledged_Wafer_Scrap__c}" />
+                           <apex:outputField value="{!RMA__c.Remarks_Reason_Wafer_Scrap__c}" />
+                           <apex:outputField value="{!RMA__c.Acknowledge_By_Wafer_Scrap__c}" />
+                           <br/>
+                           <apex:outputField value="{!RMA__c.Acknowledge_On_Wafer_Scrap__c}" />
+                        </apex:pageBlockSection>
+                        
+                       <apex:pageBlockSection title="Return to GF - Spore/Dresden/Malta" rendered="{!dispDispositionReturnBool}" id="pgBlockDisposition2" columns="1">
+                           <apex:pageBlockSectionItem >
+                               <apex:outputLabel value="Receiver Name (If 'Return to GF- Spore/Dresden/Malta')" />
+                               <apex:outputField value="{!RMA__c.Receiver_Names_for_Wafer__c}" />  
+                           </apex:pageBlockSectionItem>
+                           <apex:outputField value="{!RMA__c.Lot_Device_To_Return__c}" />
+                           <apex:outputField value="{!RMA__c.Return_Estimated_Date__c}"/>
+                           <apex:outputField value="{!RMA__c.Receiver_Address__c}" />
+                           <apex:outputField value="{!RMA__c.Ship_from_Address__c}" rendered="{!isFab9or10}"/>
+                           <apex:outputField value="{!RMA__c.Contact_Information__c}" rendered="{!isFab9or10}"/>
+                       </apex:pageBlockSection>
+                       
+                       <apex:pageBlockSection id="pgBlockDisposition4" rendered="{!IF(AND(OR(RMA__c.Status__c == 'Submitted',RMA__c.Status__c == 'Approved',RMA__c.Status__c == 'Rejected'),dispDispositionReturnBool),true,false)}">
+                           <apex:outputField value="{!RMA__c.Date_of_Wafer_Receipt__c}" />
+                           <apex:outputField value="{!RMA__c.Air_way_Bill_No__c}" />
+                           <apex:outputField value="{!RMA__c.Quantity_Received__c}" />
+                           <apex:outputField value="{!RMA__c.Acknowledged_Wafer_Return__c}" />
+                           <apex:outputField value="{!RMA__c.Remarks_Reason_Wafer_Receipt__c}" />
+                           <apex:outputField value="{!RMA__c.Acknowledge_By_Wafer_Return__c}"/>
+                           <br/>
+                           <apex:outputField value="{!RMA__c.Acknowledge_On_Wafer_Return__c}"/>
+                        </apex:pageBlockSection>
+                        
+                        <apex:pageBlockSection title="Notify / Circulate to (FE / Fab YE / Others)" id="pgBlockDisposition3" columns="1">
+                           <apex:pageBlockSectionItem >
+                               <apex:outputLabel value="Notify / Circulate to (FE / Fab YE / Others): " />
+                               <apex:outputField value="{!RMA__c.Notify_Circulate_to_FE_Fab_YE_Others__c}" />
+                           </apex:pageBlockSectionItem>
+                        </apex:pageBlockSection>
+                        
+                        <apex:pageBlockSection title="Attachments & links" rendered="{!OR(AND(RMA__c.Status__c != 'Voided',NOT(isFab9or10)),AND(isFab9or10,NOT(RMA__c.ITAR_Part__c)),AND(isFab9or10,RMA__c.ITAR_Part__c,OR(RMA__c.Disposition_of_Wafers__c == 'To Scrap at Customer Site',RMA__c.Disposition_of_Wafers__c == 'Return to GF and to Scrap at Customer Site')))}" columns="1">
+                           <apex:outputPanel id="attachmentsPanel">
+                               <apex:pageblockTable value="{!lstRMAattachmentsDISP}" var="cDocLink" rendered="{!lstRMAattachmentsDISP.size != 0}">
+                                   <apex:column headerValue="Title">
+                                       <apex:outputLink target="_blank" value="/{!cDocLink.contentDocumentid}">{!cDocLink.contentDocument.Title}</apex:outputLink>
+                                   </apex:column>
+                                   <apex:column headerValue="Created Date" 
+                                       value="{!cDocLink.contentDocument.ContentModifiedDate}" />
+                                   <apex:column headerValue="Created By"
+                                       value="{!cDocLink.contentDocument.OwnerId}" />
+                               </apex:pageblockTable>
+                               <apex:outputText value="There are no attachments to display." rendered="{!lstRMAattachmentsDISP.size == 0}"/>
+                           </apex:outputPanel>
+                           <apex:outputPanel id="uploadedLinksPanel">
+                               <apex:pageBlockTable value="{!lstRMALinksDISP}" var="rmaLink" rendered="{!lstRMALinksDISP.size != 0}">
+                                   <apex:column headerValue="Url">
+                                       <apex:outputLink value="{!rmaLink.Resource_URL__c}" target="_blank">{!rmaLink.Resource_URL__c}</apex:outputLink>
+                                   </apex:column>
+                                   <apex:column value="{!rmaLink.CreatedById}"/>
+                                   <apex:column headerValue="Created Date" value="{!rmaLink.CreatedDate}"/>
+                               </apex:pageBlockTable>
+                               <apex:outputText value="There are no links to display." rendered="{!lstRMALinksDISP.size == 0}"/>
+                           </apex:outputPanel>
+                        </apex:pageBlockSection>
+                    </apex:pageblock>
+                    
+                    <apex:pageblock title="Technical Validation" id="FabValidation" rendered="{!techTabActive && NOT(CONTAINS($CurrentPage.URL, 'globalfoundryview'))}" mode="maindetail">
+                         <apex:pageBlockSection title="Fab Technical Validation"
+                               rendered="{!AND(reAssign == NULL,OR(RMA__c.ReAssign_To__c == 'Assign to Fab',RMA__c.ReAssign_To__c == 'Assign to Turnkey'))}"
+                               columns="1">
+                               <apex:pageBlockSectionItem >
+                                   <apex:outputLabel value="{!$ObjectType.RMA__c.fields.Extension_for_Fab_validation_required__c.label}" />
+                                   <apex:outputField value="{!RMA__c.Extension_for_Fab_validation_required__c}" />
+                               </apex:pageBlockSectionItem>
+                               <apex:pageBlockSectionItem rendered="{!RMA__c.Extension_for_Fab_validation_required__c}">
+                                   <apex:outputLabel value="{!$ObjectType.RMA__c.fields.Number_of_Days__c.label}" />
+                                   <apex:outputField value="{!RMA__c.Number_of_Days__c}" />
+                               </apex:pageBlockSectionItem>
+                               <apex:pageBlockSectionItem rendered="{!RMA__c.Extension_for_Fab_validation_required__c}">
+                                   <apex:outputLabel value="{!$ObjectType.RMA__c.fields.Extension_Reason__c.label}" />
+                                   <apex:outputField value="{!RMA__c.Extension_Reason__c}" />
+                               </apex:pageBlockSectionItem>
+                               <apex:pageBlockSectionItem rendered="{!RMA__c.Extension_Approve_Reject_Reason__c != NULL}">
+                                   <apex:outputLabel value="{!$ObjectType.RMA__c.fields.Extension_Approve_Reject_Reason__c.label}" />
+                                   <apex:outputField value="{!RMA__c.Extension_Approve_Reject_Reason__c}" />
+                               </apex:pageBlockSectionItem>
+                               <apex:pageBlockSectionItem rendered="{!RMA__c.ReAssign_To__c == 'Assign to Fab'}">
+                                   <apex:outputLabel value="Assignee: " />
+                                   <apex:outputField value="{!RMA__c.Notify_For_Fab__c}" />
+                               </apex:pageBlockSectionItem>
+                               <apex:pageBlockSectionItem rendered="{!RMA__c.ReAssign_To__c == 'Assign to Turnkey'}">
+                                   <apex:outputLabel value="Turnkey Assignee: " />
+                                   <apex:outputField value="{!RMA__c.Notify_For_Turnkey__c}" />
+                               </apex:pageBlockSectionItem>
+                               <apex:inputHidden value="{!RMA__c.Escalation_Date_for_Fab_Validation__c}" />
+                           </apex:pageBlockSection>
+                           
+                           <apex:pageBlockSection title="Non-Fab Validation" rendered="{!AND(reAssign == NULL,RMA__c.ReAssign_To__c == 'Assign to Non-Fab')}">
+                               <apex:pageBlockSectionItem >
+                                   <apex:outputLabel value="Notify personnel who need to validate for Non-Fab : " />
+                                   <apex:outputField value="{!RMA__c.Notify_For_Non_Fab__c}" />
+                               </apex:pageBlockSectionItem>
+                           </apex:pageBlockSection>
+                            
+                            <apex:pageBlockSection title="Investigation Results" rendered="{!reAssign == NULL}">
+                                <apex:outputField value="{!RMA__c.Lot_Comments__c}"/>
+                                <apex:outputField value="{!RMA__c.E_Test__c}"/>
+                                <apex:outputField value="{!RMA__c.Sort_Map__c}"/>
+                                <apex:outputField value="{!RMA__c.Possible_Root_Cause__c}"/>
+                                <apex:outputField value="{!RMA__c.Technical_Return_Classification__c}"/>
+                                <apex:outputField value="{!RMA__c.Remarks_Techincal_Validation__c}"/>
+                            </apex:pageBlockSection>
+                            
+                            <apex:pageBlockSection title="Failure Mode" columns="1" rendered="{!reAssign == NULL}">
+                               <apex:pageBlockTable value="{!failureModeList}" var="fmode"
+                                   rendered="{!failureModeList.size != 0}" style="width:50%;">
+                                   <apex:column value="{!fmode.Failure_Mode__c}" />
+                                   <apex:column value="{!fmode.Lot__c}" />
+                               </apex:pageBlockTable>
+                            </apex:pageBlockSection>
+                           
+                            <apex:pageBlockSection title="Return Lot Details" rendered="{!reAssign == NULL}" columns="1">
+                                <apex:pageBlockTable value="{!lstLineItemWrapper}" var="riWrapper">
+                                    <apex:column value="{!riWrapper.RIrec.Invoice_Number__c}"/>
+                                    <apex:column value="{!riWrapper.RIrec.Lot_Number__c}"/>
+                                    <apex:column value="{!riWrapper.RIrec.Wafer_Id_CSR_Submission__c}" 
+                                        rendered="{!RMA__c.RMA_By__c == 'Wafer' && (RMA__c.Fab__c != 'FAB 9' && RMA__c.Fab__c != 'FAB 10' && RMA__c.Fab__c != 'ALTIS')}"/>
+                                    <apex:column value="{!riWrapper.RIrec.Wafer_Id_Fab_9_10_CSR_Submission__c}" headerValue="Wafer Id (CSR Submission)"
+                                        rendered="{!RMA__c.RMA_By__c == 'Wafer' && (RMA__c.Fab__c == 'FAB 9' || RMA__c.Fab__c == 'FAB 10' || RMA__c.Fab__c == 'ALTIS')}"/>
+                                    <apex:column value="{!riWrapper.RIrec.Wafer_Id_Fab_Validated__c}" 
+                                        rendered="{!RMA__c.RMA_By__c == 'Wafer' && (RMA__c.Fab__c != 'FAB 9' && RMA__c.Fab__c != 'FAB 10' && RMA__c.Fab__c != 'ALTIS')}"/>
+                                    <apex:column value="{!riWrapper.RIrec.Wafer_Id_Fab_9_10_Fab_Validated__c}" headerValue="Wafer Id (Fab Validated)"
+                                        rendered="{!RMA__c.RMA_By__c == 'Wafer' && (RMA__c.Fab__c == 'FAB 9' || RMA__c.Fab__c == 'FAB 10' || RMA__c.Fab__c == 'ALTIS')}"/>
+                                    <apex:column value="{!riWrapper.RIrec.Wafer_Id_Fab_In_Validated__c}" 
+                                        rendered="{!RMA__c.RMA_By__c == 'Wafer' && (RMA__c.Fab__c != 'FAB 9' && RMA__c.Fab__c != 'FAB 10' && RMA__c.Fab__c != 'ALTIS')}"/>
+                                    <apex:column value="{!riWrapper.RIrec.Wafer_Id_Fab_9_10_Fab_Invalidated__c}" headerValue="Wafer Id (Fab Invalidated)"
+                                        rendered="{!RMA__c.RMA_By__c == 'Wafer' && (RMA__c.Fab__c == 'FAB 9' || RMA__c.Fab__c == 'FAB 10' || RMA__c.Fab__c == 'ALTIS')}"/>
+                                    <apex:column value="{!riWrapper.RIrec.Die_Quantity__c}" rendered="{!RMA__c.RMA_By__c == 'Die'}"/>
+                                    <apex:column value="{!riWrapper.RIrec.Die_Quantity_Fab_Validated__c}" rendered="{!RMA__c.RMA_By__c == 'Die'}"/>
+                                    <apex:column value="{!riWrapper.RIrec.Total_Wfr_Qty_after_validation__c}" rendered="{!RMA__c.RMA_By__c == 'Wafer'}"/>                                        
+                                    <apex:column rendered="{!RMA__c.RMA_By__c == 'Module'}">
+                                        <apex:facet name="header">Module Quantity<br/>(CSR Submission)</apex:facet>
+                                        <apex:outputField value="{!riWrapper.RIrec.Module_Quantity__c}"/>                 
+                                    </apex:column>
+                                    <apex:column rendered="{!RMA__c.RMA_By__c == 'Module'}">
+                                        <apex:facet name="header">Module Quantity<br/>(Fab Validated)</apex:facet>
+                                        <apex:outputField value="{!riWrapper.RIrec.Module_Quantity_Fab_Validated__c}"/>                 
+                                    </apex:column>
+                                    <apex:column rendered="{!SystemModeOn}">
+                                        <apex:facet name="header">Unit Selling<br/>Price</apex:facet>
+                                        <apex:outputText value="${0, number, ###,##0.00}">
+                                            <apex:param value="{!riWrapper.WaferDieAmt}"/>
+                                        </apex:outputText>                                                                             
+                                    </apex:column>
+                                    <apex:column rendered="{!SystemModeOn}">
+                                        <apex:facet name="header">Adjusted<br/>Unit Price</apex:facet>
+                                        <apex:outputText value="${0, number, ###,##0.00}">
+                                            <apex:param value="{!riWrapper.AdjustedAmt}"/>
+                                        </apex:outputText>                                                                             
+                                    </apex:column>
+                                    <apex:column rendered="{!SystemModeOn}">
+                                        <apex:facet name="header">Total Price<br/>(FAB Validation)</apex:facet>
+                                        <apex:outputText value="${0, number, ###,##0.00}">
+                                            <apex:param value="{!riWrapper.TotalTec}"/>
+                                        </apex:outputText>                                                                             
+                                    </apex:column>
+                                </apex:pageBlockTable>
+                            </apex:pageBlockSection>
+                        <apex:pageBlockSection title="" showHeader="false" columns="2">
+                            <apex:outputField value="{!RMA__c.Total_Wafers_FAB_Validation__c}" rendered="{!RMA__c.Total_Wafers_FAB_Validation__c != 0}"/>
+                            <apex:outputText value="${0, number, ###,##0.00}" label="Grand Total (FAB Validation)" rendered="{!RMA__c.Total_Wafers_FAB_Validation__c != 0 && SystemModeOn}">
+                                <apex:param value="{!rmaWrap.grandTotalTec}"/>
+                            </apex:outputText>
+                        </apex:pageBlockSection>
+                        <apex:pageBlockSection title="Investigation/Integration" rendered="{!reAssign == NULL}">
+                            <apex:outputField value="{!RMA__c.Lot_Yield_Results__c}" />
+                            <apex:outputField value="{!RMA__c.Is_this_RMA_related_to_the_MRB_eDR__c}" />
+                            <apex:outputField value="{!RMA__c.Is_this_RMA_related_to_the_PRF__c}" />
+                            <apex:outputField value="{!RMA__c.Is_this_RMA_related_to_the_SPSR_ERF__c}" />
+                        </apex:pageBlockSection>
+                        <apex:pageBlockSection title="Attachments & links" rendered="{!OR(AND(RMA__c.Status__c != 'Voided',NOT(isFab9or10)),AND(isFab9or10,NOT(RMA__c.ITAR_Part__c)))}" columns="1">
+                            <apex:outputPanel id="attachmentsPanel">
+                               <apex:pageblockTable value="{!lstRMAattachmentsFAB}" var="cDocLink" rendered="{!lstRMAattachmentsFAB.size > 0}">
+                                   <apex:column headerValue="Title">
+                                       <apex:outputLink target="_blank" value="/{!cDocLink.contentDocumentid}">{!cDocLink.contentDocument.Title}</apex:outputLink>
+                                   </apex:column>
+                                   <apex:column headerValue="Created Date" 
+                                       value="{!cDocLink.contentDocument.ContentModifiedDate}" />
+                                   <apex:column headerValue="Created By"
+                                       value="{!cDocLink.contentDocument.OwnerId}" />
+                               </apex:pageblockTable>
+                               <apex:outputText value="There are no attachments to display." rendered="{!lstRMAattachmentsFAB.size == 0}"/>
+                            </apex:outputPanel>
+                            <apex:outputPanel id="uploadedLinksPanel">
+                               <apex:pageBlockTable value="{!lstRMALinksFAB}" var="rmaLink" rendered="{!lstRMALinksFAB.size != 0}">
+                                   <apex:column headerValue="Url">
+                                       <apex:outputLink value="{!rmaLink.Resource_URL__c}" target="_blank">{!rmaLink.Resource_URL__c}</apex:outputLink>
+                                   </apex:column>
+                                   <apex:column value="{!rmaLink.CreatedById}"/>
+                                   <apex:column headerValue="Created Date" value="{!rmaLink.CreatedDate}"/>
+                               </apex:pageBlockTable>
+                               <apex:outputText value="There are no links to display." rendered="{!lstRMALinksFAB.size == 0}"/>
+                            </apex:outputPanel>
+                        </apex:pageBlockSection>
+                    </apex:pageblock>
+                    
+                    <!--<apex:pageblock title="Reg Personnel Recommendation" id="RegValidation" rendered="{!regnTabActive && NOT(CONTAINS($CurrentPage.URL, 'globalfoundryview'))}" mode="maindetail">-->
+                    <apex:pageblock title="{!IF(AND(isFab9or10,RMA__c.RMA_Category__c == 'Business',RMA__c.ReasonCode__c == 'R25'),'CSR Manager/Logistics Approval',IF(AND(isFab9or10,RMA__c.RMA_Category__c == 'Business',RMA__c.ReasonCode__c == 'R30'),'CSR Manager','Reg Personnel Recommendation'))}" 
+                              id="RegValidation" rendered="{!regnTabActive && NOT(CONTAINS($CurrentPage.URL, 'globalfoundryview'))}" mode="maindetail">
+                        <apex:pageBlockSection title="{!IF(AND(isFab9or10,RMA__c.RMA_Category__c == 'Business',RMA__c.ReasonCode__c == 'R25'),'CSR Manager/Logistics Approval',IF(AND(isFab9or10,RMA__c.RMA_Category__c == 'Business',RMA__c.ReasonCode__c == 'R30'),'CSR Manager','Regional Sales / Biz Operation Personnel Decision'))}" columns="1">
+                                    <apex:pageBlockTable value="{!lstLineItemWrapper}" var="riWrapper">
+                                <apex:column value="{!riWrapper.RIrec.Invoice_Number__c}"/>
+                                <apex:column value="{!riWrapper.RIrec.Lot_Number__c}"/>
+                                <apex:column value="{!riWrapper.RIrec.Wafer_Id_CSR_Submission__c}" 
+                                    rendered="{!RMA__c.RMA_By__c == 'Wafer' && (RMA__c.Fab__c != 'FAB 9' && RMA__c.Fab__c != 'FAB 10' && RMA__c.Fab__c != 'ALTIS')}"/>
+                                <apex:column value="{!riWrapper.RIrec.Wafer_Id_Fab_9_10_CSR_Submission__c}" headerValue="Wafer Id (CSR Submission)"
+                                    rendered="{!RMA__c.RMA_By__c == 'Wafer' && (RMA__c.Fab__c == 'FAB 9' || RMA__c.Fab__c == 'FAB 10' || RMA__c.Fab__c == 'ALTIS')}"/>
+                                <apex:column value="{!riWrapper.RIrec.Wafer_Id_Fab_Validated__c}" 
+                                    rendered="{!RMA__c.RMA_By__c == 'Wafer' && (RMA__c.Fab__c != 'FAB 9' && RMA__c.Fab__c != 'FAB 10' && RMA__c.Fab__c != 'ALTIS')}"/>
+                                <apex:column value="{!riWrapper.RIrec.Wafer_Id_Fab_9_10_Fab_Validated__c}" headerValue="Wafer Id (Fab Validated)"
+                                    rendered="{!RMA__c.RMA_By__c == 'Wafer' && (RMA__c.Fab__c == 'FAB 9' || RMA__c.Fab__c == 'FAB 10' || RMA__c.Fab__c == 'ALTIS')}"/>
+                                <apex:column value="{!riWrapper.RIrec.Wafer_Id_Fab_In_Validated__c}" 
+                                    rendered="{!RMA__c.RMA_By__c == 'Wafer' && (RMA__c.Fab__c != 'FAB 9' && RMA__c.Fab__c != 'FAB 10' && RMA__c.Fab__c != 'ALTIS')}"/>
+                                <apex:column value="{!riWrapper.RIrec.Wafer_Id_Fab_9_10_Fab_Invalidated__c}" headerValue="Wafer Id (Fab Invalidated)"
+                                    rendered="{!RMA__c.RMA_By__c == 'Wafer' && (RMA__c.Fab__c == 'FAB 9' || RMA__c.Fab__c == 'FAB 10' || RMA__c.Fab__c == 'ALTIS')}"/>
+                                <apex:column value="{!riWrapper.RIrec.Wafer_Id_Regional_Personnel_Recommended__c}" 
+                                    rendered="{!RMA__c.RMA_By__c == 'Wafer' && (RMA__c.Fab__c != 'FAB 9' && RMA__c.Fab__c != 'FAB 10' && RMA__c.Fab__c != 'ALTIS')}"/>
+                                <apex:column value="{!riWrapper.RIrec.Wafer_Id_Fab_9_10_Regional_Validated__c}" headerValue="{!IF(AND(isFab9or10,RMA__c.RMA_Category__c == 'Business',RMA__c.ReasonCode__c == 'R25'),'Wafer Id (Logistics/CSR Manager Validated)',IF(AND(isFab9or10,RMA__c.RMA_Category__c == 'Business',RMA__c.ReasonCode__c == 'R30'),'Wafer Id (CSR Manager Validated)','Wafer Id (Regional Validated)'))}"
+                                    rendered="{!RMA__c.RMA_By__c == 'Wafer' && (RMA__c.Fab__c == 'FAB 9' || RMA__c.Fab__c == 'FAB 10' || RMA__c.Fab__c == 'ALTIS')}"/>
+                                <apex:column value="{!riWrapper.RIrec.Wafer_Id_Regional_Personnel_Not_Rec__c}" 
+                                    rendered="{!RMA__c.RMA_By__c == 'Wafer' && (RMA__c.Fab__c != 'FAB 9' && RMA__c.Fab__c != 'FAB 10' && RMA__c.Fab__c != 'ALTIS')}"/>
+                                <apex:column value="{!riWrapper.RIrec.Wafer_Id_Fab_9_10_Regional_Invalidated__c}" headerValue="{!IF(AND(isFab9or10,RMA__c.RMA_Category__c == 'Business',RMA__c.ReasonCode__c == 'R25'),'Wafer Id (Logistics/CSR Manager Invalidated)',IF(AND(isFab9or10,RMA__c.RMA_Category__c == 'Business',RMA__c.ReasonCode__c == 'R30'),'Wafer Id (CSR Manager Invalidated)','Wafer Id (Regional Invalidated)'))}"
+                                    rendered="{!RMA__c.RMA_By__c == 'Wafer' && (RMA__c.Fab__c == 'FAB 9' || RMA__c.Fab__c == 'FAB 10' || RMA__c.Fab__c == 'ALTIS')}"/>
+                                <apex:column value="{!riWrapper.RIrec.Final_RMA_Wfr_Qty_To_Issue_CN_SO__c}" rendered="{!RMA__c.RMA_By__c == 'Wafer'}"/>
+                                <apex:column value="{!riWrapper.RIrec.Die_Quantity__c}" rendered="{!RMA__c.RMA_By__c == 'Die'}"/>
+                                <apex:column value="{!riWrapper.RIrec.Die_Quantity_Fab_Validated__c}" rendered="{!RMA__c.RMA_By__c == 'Die'}"/>
+                                <apex:column value="{!riWrapper.RIrec.Die_Quantity_Regional_Validated__c}" rendered="{!RMA__c.RMA_By__c == 'Die'}"/>
+                                <apex:column value="{!riWrapper.RIrec.Module_Quantity__c}" rendered="{!RMA__c.RMA_By__c == 'Module'}"/>
+                                <apex:column value="{!riWrapper.RIrec.Module_Quantity_Fab_Validated__c}" rendered="{!RMA__c.RMA_By__c == 'Module'}"/>
+                                <apex:column value="{!riWrapper.RIrec.Module_Quantity_Regional_Validated__c}" rendered="{!RMA__c.RMA_By__c == 'Module'}"/>
+                                <apex:column rendered="{!SystemModeOn}">
+                                     <apex:facet name="header">Unit Selling<br/>Price</apex:facet>
+                                     <apex:outputText value="${0, number, ###,##0.00}">
+                                         <apex:param value="{!riWrapper.WaferDieAmt}"/>
+                                     </apex:outputText>               
+                                </apex:column>
+                                <apex:column rendered="{!SystemModeOn}">
+                                    <apex:facet name="header">Adjusted<br/>Unit Price</apex:facet>
+                                    <apex:outputText value="${0, number, ###,##0.00}">
+                                        <apex:param value="{!riWrapper.AdjustedAmt}"/>
+                                    </apex:outputText>                                                                             
+                                </apex:column>
+                                <apex:column rendered="{!SystemModeOn}">
+                                    <apex:facet name="header">Total Price<br/>(Final)</apex:facet>
+                                    <apex:outputText value="${0, number, ###,##0.00}">
+                                        <apex:param value="{!riWrapper.TotalReg}"/>
+                                    </apex:outputText>                                                                             
+                                </apex:column>
+                            </apex:pageBlockTable>
+                        </apex:pageBlockSection>
+                        <apex:pageBlockSection title="" showHeader="false" columns="2">
+                            <apex:outputField value="{!RMA__c.Total_Wafers_Final__c}" rendered="{!RMA__c.Total_Wafers_Final__c!= 0}"/>
+                            <apex:outputText value="${0, number, ###,##0.00}" label="Grand Total (Final)" 
+                                 rendered="{!RMA__c.Total_Wafers_Final__c != 0 && SystemModeOn}">
+                                 <apex:param value="{!rmaWrap.grandTotalReg}"/>
+                            </apex:outputText>
+                        </apex:pageBlockSection>
+                        <apex:pageBlockSection columns="1">
+                            <apex:outputField value="{!RMA__c.Remarks_Regional_Recommendation__c}" />
+                        </apex:pageBlockSection>
+                    </apex:pageblock>
+                    
+                    <apex:pageblock title="Finance Section" id="FinanceSection" rendered="{!fincTabActive && NOT(CONTAINS($CurrentPage.URL, 'globalfoundryview'))}" mode="maindetail">
+                        <apex:pageBlockSection title="Finance Approval Section" columns="1">
+                            <apex:outputField value="{!RMA__c.Remarks_Finance_Approval__c}"/>
+                            <apex:outputField value="{!RMA__c.Sales_Order_Number__c}"/>
+                            <apex:outputField value="{!RMA__c.Oracle_Creation_Date__c}" rendered="{!NOT(isFab9or10)}"/>
+                            <apex:outputField value="{!RMA__c.ERP_Success_Error_Message__c}" rendered="{!NOT(isFab9or10)}"/>
+                            <apex:outputField value="{!RMA__c.CN_DN_Number__c}" />
+                         </apex:pageBlockSection>
+                    </apex:pageblock>
+                    <apex:pageblock title="Audit log" id="audit_log" rendered="{!NOT(CONTAINS($CurrentPage.URL, 'globalfoundryview'))}" mode="maindetail">
+                       <apex:pageBlockSection title="Cycle Time" columns="1">
+                           <apex:outputPanel >
+                                <table class="list" border="0" cellpadding="0" cellspacing="0">
+                                     <tr class="headerRow ">
+                                        <th class="headerRow ">Queue Name</th>
+                                        <th class="headerRow ">Queue In time</th>
+                                        <th class="headerRow ">Queue Out time</th>
+                                        <th class="headerRow">Desired Cycle time</th>
+                                        <th class="headerRow">Consumed Cycle time</th>
+                                     </tr>
+                                     <tr class="dataRow">
+                                        <td class="dataCell">CSR Submission</td>
+                                        <apex:repeat value="{!$Objecttype.RMA__c.Fieldsets.RMA_CSR_Submission_Cycle_time}" var="csrField">
+                                            <td class="dataCell">
+                                                <apex:outputText value="{!RMA__c[csrField]}" rendered="{!csrField.Type != 'datetime'}"/>
+                                                <c:RMA_UserLocaleDateTimeFormatter date_Timevalue="{!RMA__c[csrField]}" rendered="{!csrField.Type == 'datetime'}"/>
+                                            </td>
+                                        </apex:repeat>
+                                    </tr>
+                                    <apex:variable var="v" value="" rendered="{!isFab9or10}">
+                                        <tr class="dataRow">
+                                            <td class="dataCell">Customer Quality Validation</td>
+                                            <apex:repeat value="{!$Objecttype.RMA__c.Fieldsets.RMA_CQ_Validation_Cycle_Time}" var="fabField">
+                                                <td class="dataCell">
+                                                    <apex:outputText value="{!RMA__c[fabField]}" rendered="{!fabField.Type != 'datetime'}"/>
+                                                    <c:RMA_UserLocaleDateTimeFormatter date_Timevalue="{!RMA__c[fabField]}" rendered="{!fabField.Type == 'datetime'}"/>
+                                                </td>
+                                            </apex:repeat>
+                                        </tr>
+                                    </apex:variable>
+                                    <tr class="dataRow{!IF(RMA__c.Extension_Status__c == 'Approved',' highlightRow',null)}">
+                                        <td class="dataCell">
+                                            <apex:outputText value="{!IF(RMA__c.Is_SMPLSI__c, 'PE Manager', 'Fab Validation' )}" rendered="{! NOT(RMA__c.Extension_Status__c == 'Approved')}"/>
+                                            <apex:outputText value="PE Manager (Extended by {!RMA__c.Number_of_Days__c} days)" rendered="{!RMA__c.Is_SMPLSI__c && RMA__c.Extension_Status__c == 'Approved'}"/>
+                                            <apex:outputText value="Fab Validation (Extended by {!RMA__c.Number_of_Days__c} days)" rendered="{!Not(RMA__c.Is_SMPLSI__c) && RMA__c.Extension_Status__c == 'Approved'}"/>
+                                        </td>
+                                        <apex:repeat value="{!$Objecttype.RMA__c.Fieldsets.RMA_Fab_Validation_Cycle_time}" var="fabField">
+                                            <td class="dataCell">
+                                                <apex:outputText value="{!RMA__c[fabField]}" rendered="{!fabField.Type != 'datetime'}"/>
+                                                <c:RMA_UserLocaleDateTimeFormatter date_Timevalue="{!RMA__c[fabField]}" rendered="{!fabField.Type == 'datetime'}"/>
+                                            </td>
+                                        </apex:repeat>
+                                    </tr>
+                                    <tr class="dataRow">
+                                        <td class="dataCell">{!IF(AND(isFab9or10,RMA__c.RMA_Category__c == 'Business',RMA__c.ReasonCode__c == 'R25'),
+                                                            'CSR Manager/Logistics Approval',IF(AND(isFab9or10,RMA__c.RMA_Category__c == 'Business',
+                                                            RMA__c.ReasonCode__c == 'R30'),'CSR Manager Approval','Regional Approval'))}</td>
+                                        <apex:repeat value="{!$Objecttype.RMA__c.Fieldsets.RMA_Regional_Approval_Cycle_Time}" var="regionalField">
+                                            <td class="dataCell">
+                                                <apex:outputText value="{!RMA__c[regionalField]}" rendered="{!regionalField.Type != 'datetime'}"/>
+                                                <c:RMA_UserLocaleDateTimeFormatter date_Timevalue="{!RMA__c[regionalField]}" rendered="{!regionalField.Type == 'datetime'}"/>
+                                            </td>
+                                        </apex:repeat>
+                                    </tr>
+                                    <tr class="dataRow">
+                                        <td class="dataCell">Finance Approval</td>
+                                        <apex:repeat value="{!$Objecttype.RMA__c.Fieldsets.RMA_Finance_Approval_Cycle_Time}" var="financeField">
+                                            <td class="dataCell">
+                                                <apex:outputText value="{!RMA__c[financeField]}" rendered="{!financeField.Type != 'datetime'}"/>
+                                                <c:RMA_UserLocaleDateTimeFormatter date_Timevalue="{!RMA__c[financeField]}" rendered="{!financeField.Type == 'datetime'}"/>
+                                            </td>
+                                        </apex:repeat>
+                                    </tr>
+                                    <tr class="dataRow">
+                                        <td class="dataCell">Wafer Acknowledgement</td>
+                                        <apex:repeat value="{!$Objecttype.RMA__c.Fieldsets.RMA_Wafer_Acknowledgement_Cycle_Time}" var="waferAckField">
+                                            <td class="dataCell">
+                                                <apex:outputText value="{!RMA__c[waferAckField]}" rendered="{!waferAckField.Type != 'datetime'}"/>
+                                                <c:RMA_UserLocaleDateTimeFormatter date_Timevalue="{!RMA__c[waferAckField]}" rendered="{!waferAckField.Type == 'datetime'}"/>
+                                            </td>
+                                        </apex:repeat>
+                                    </tr>
+                                </table>
+                           </apex:outputPanel>
+                       </apex:pageBlockSection>
+                       <apex:pageBlockSection id="MaillogSec" title="Mail log" columns="1" >
+                           <apex:pageBlockTable style="table-layout: fixed;" value="{!maillogList}" var="maillog" columnsWidth="17%,17%,25%,25%,10%">
+                                 <apex:column style="word-wrap:break-word;" headerValue="Subject" value="{!mailLog.Subject__c}"/>
+                                 <apex:column style="word-wrap:break-word;" headerValue="Send By" value="{!maillog.From__c}"/>
+                                 <apex:column style="word-wrap:break-word;" headerValue="Send To"  value="{!maillog.To__c}"/>
+                                 <apex:column style="word-wrap:break-word;" headerValue="CC"  value="{!maillog.Cc__c}"/>
+                                 <apex:column headerValue="Sent Date" value="{!maillog.createdDate}"/>
+                           </apex:pageBlockTable>
+                           <apex:outputPanel id="maillogdisplaytxt">
+                               <apex:outputText value="There are no mail logs to display" rendered="{!maillogList.size == 0}"/>
+                           </apex:outputPanel>
+                       </apex:pageBlockSection>
+                       <apex:pageBlockSection title="RMA History" columns="1">
+                           <c:RMA_HistoryComponent Object="{!RMA__c}" print="true" rendered="{!RMA__c.Id != NULL}"/>
+                       </apex:pageBlockSection>
+                    </apex:pageblock>
+                     <apex:pageblock title="Vendor Code" id="vendor_code" rendered="{!RMA__c.Fab__c == 'FAB 7' && NOT(CONTAINS($CurrentPage.URL, 'globalfoundryview'))}" mode="maindetail">
+                         <apex:pageBlockSection title="Vendor Code">
+                             <apex:pageblockTable value="{!vendorCodes}" var="vendorCode">
+                                 <apex:column headerValue="{!$Objecttype.RMA_Vendor_Code__c.fields['lot_id__c'].label}" value="{!vendorCode.Lot_Id__c}"/>
+                                 <apex:column headerValue="{!$Objecttype.RMA_Vendor_Code__c.fields['wafer_id__c'].label}" value="{!vendorCode.Wafer_Id__c}"/>
+                                 <apex:column headerValue="Vendor Code" value="{!vendorCode.name}"/> 
+                             </apex:pageblockTable>
+                         </apex:pageBlockSection>
+                     </apex:pageblock>
+            </apex:pageBlockSection>
+        </apex:pageBlock>
+        
+    </apex:form>
+    <apex:pageBlock mode="maindetail" rendered="{!NOT(CONTAINS($CurrentPage.URL, 'globalfoundryview'))}">
+         <apex:relatedList list="ProcessSteps" rendered="{!RMA__c.Id != NULL}" pageSize="50000">
+            
+         </apex:relatedList>
+    </apex:pageBlock>   
+     <script src="//code.jquery.com/jquery-1.11.2.min.js"></script>
+    <script language="JavaScript" type="text/javascript">
+        var rmaJ$ = jQuery.noConflict();
+        rmaJ$('a.actionLink').hide();
+        document.getElementsByName('piSubmit')[0].style.display = "none"; 
+    </script>
+    
+</apex:page>

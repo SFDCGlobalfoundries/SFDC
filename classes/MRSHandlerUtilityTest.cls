@@ -1,0 +1,682 @@
+/*
+Type Name: MRSHandlerUtilityTest
+Author: Cognizant 
+Created Date: 2-June-2014
+Reason: 
+Change History:
+Author: 
+Modified Date: 
+Reason: 
+Author: Cognizant Technology Solutions
+Modified Date:
+??..
+??..
+*/
+@istest(SeeAllData=false)
+public class MRSHandlerUtilityTest{
+    
+    /**
+    This method initialize data using throughout this test class.
+    The create data method are: 
+    - SwiftDataUtilityTest.customSystemData();
+    @author     SWIFT TEAM
+    @since      7-April-2015
+    */
+    @testSetup static void setup() {
+        SwiftDataUtilityTest.customSystemData();
+    }
+    
+    /**
+        This test method sets All the Layer Chip values.
+        @method name: setLayerChipFlagValues
+        @parameter:   MRS_Layer_Chip_Association__c object.
+        @return :     MRS_Layer_Chip_Association__c object.
+     **/    
+
+    public static MRS_Layer_Chip_Association__c setLayerChipFlagValues(MRS_Layer_Chip_Association__c objLayerChip){
+        objLayerChip.Is_Customer_GDSOUT_Review_Updated__c=true;
+        objLayerChip.Is_Foundry_GDSOUT_Review_Updated__c=true;
+        objLayerChip.Is_Customer_Frame_Mockup_Updated__c=true;
+        objLayerChip.Is_Foundry_Frame_Mockup_Updated__c=true;
+        objLayerChip.Is_Send_Prime_Data_Updated__c=true;
+        objLayerChip.Is_Send_Frame_Data_Updated__c=true;
+        objLayerChip.Is_Customer_Prime_Remote_Jobview_Updated__c=true;
+        objLayerChip.Is_Customer_Frame_Remote_Jobview_Updated__c=true;
+        objLayerChip.Is_Foundry_Prime_Remote_Jobview_Updated__c=true;
+        objLayerChip.Is_Foundry_Frame_Remote_Jobview_Updated__c=true;
+        objLayerChip.Is_ORC_Updated__c=true;
+        objLayerChip.Is_DRW_Updated__c=true;
+        objLayerChip.Is_Prime_MEBES_Received_Updated__c=true;
+        objLayerChip.Is_Frame_MEBES_Received_Updated__c=true;
+        objLayerChip.Is_Customer_MEBES_Jobview_Updated__c=true;
+        objLayerChip.Is_Foundry_MEBES_Jobview_Updated__c=true;
+        objLayerChip.Is_Tapeout_Centre_MEBES_Jobview_Updated__c=true;
+        objLayerChip.Is_Tapeout_Apps_MEBES_Jobview_Updated__c=true;
+        objLayerChip.Is_GlobalShuttle_MEBES_Jobview_Updated__c=true;
+        objLayerChip.Is_MDP_MEBES_Jobview_Updated__c=true;
+        objLayerChip.Is_TDTI_MPW_MEBES_Jobview_Updated__c=true;
+        objLayerChip.Customer_MEBES_Jobview__c='Ready';
+        objLayerChip.Foundry_MEBES_Jobview__c='Ready';
+        objLayerChip.GlobalShuttle_MEBES_Jobview__c='Ready';
+        objLayerChip.MDP_MEBES_Jobview__c='Ready';
+        objLayerChip.Tapeout_Centre_MEBES_Jobview__c='Ready';
+        objLayerChip.Tapeout_Applications_MEBES_Jobview__c='Ready';
+        objLayerChip.TDTI_MPW_MEBES_Jobview__c='Ready';
+        return objLayerChip;    
+     }
+    
+    /**
+        This test method tests the  partingToCCBccAddress of MRSHandlerUtility class.
+        @method name: partingToCCBccAddressTest
+        @parameter:   none.
+        @return :     None.
+     **/
+      
+    public static testMethod void partingToCCBccAddressTest(){      
+        OrgWideEmailAddress Orgid=[Select id, DisplayName From OrgWideEmailAddress where DisplayName=:'GLOBALFOUNDRIES' LIMIT 1];
+        User sysAdminUser = [SELECT Id,Name FROM User WHERE Profile.Name = 'System Administrator' AND isActive = true].get(0);
+        
+        /*//Profile sysAdminProfile = [SELECT Id FROM Profile WHERE Name='System Administrator']; 
+        User userSA = [SELECT Id,Name FROM User WHERE Profile.Name = 'System Administrator' AND isActive = true].get(0);       
+        Group groupTA = [select Id, DeveloperName, Name from Group where DeveloperName = 'Swift_Tapeout_Application'];
+        Group groupTC = [select Id, DeveloperName, Name from Group where DeveloperName = 'Swift_Tapeout_Centre'];
+        Group groupTMPW = [select Id, DeveloperName, Name from Group where DeveloperName = 'Swift_TDTI_MPW'];
+        Group groupMDP = [select Id, DeveloperName, Name from Group where DeveloperName = 'Swift_MDP'];
+        Group groupGS = [select Id, DeveloperName, Name from Group where DeveloperName = 'Swift_GlobalShuttle'];
+        Group groupSA = [select Id, DeveloperName, Name from Group where DeveloperName = 'Swift_Admin'];
+        List<GroupMember> listGM = new List<GroupMember>(); 
+        GroupMember groupMemberTA = new GroupMember(GroupId = groupTA.Id,UserOrGroupId = userSA.Id); 
+        GroupMember groupMemberTC = new GroupMember(GroupId = groupTC.Id,UserOrGroupId = userSA.Id);
+        GroupMember groupMemberTMPW = new GroupMember(GroupId = groupTMPW.Id,UserOrGroupId = userSA.Id);
+        GroupMember groupMemberTMDP = new GroupMember(GroupId = groupMDP.Id,UserOrGroupId = userSA.Id);
+        GroupMember groupMemberGS = new GroupMember(GroupId = groupGS.Id,UserOrGroupId = userSA.Id);
+        GroupMember groupMemberSA = new GroupMember(GroupId = groupSA.Id,UserOrGroupId = userSA.Id);          
+        listGM.add(groupMemberTA);
+        listGM.add(groupMemberTC);
+        listGM.add(groupMemberTMPW);
+        listGM.add(groupMemberTMDP);
+        listGM.add(groupMemberGS);
+        listGM.add(groupMemberSA);
+        insert listGM;*/   
+          
+        System.runAs(sysAdminUser){ 
+            // comment-out, refactor with testSetup method setup()
+            //SwiftDataUtilityTest.customSystemData();                     
+            String[] toAddress = new String[71];
+            String[] ccAddress = new String[21];
+            String[] bccAddress = new String[21];
+            String[] toAddressSingle = new String[1];
+            String[] ccAddressSingle = new String[1];
+            String[] bccAddressSingle = new String[1];          
+            for(integer i=0;i<toAddress.size();i++){
+                toAddress[i] = i+'@test.com' ;
+            }          
+            for(integer i=0;i<ccAddress.size();i++){
+                ccAddress[i] = i+i+'@test.com' ;
+            }           
+            for(integer i=0;i<bccAddress.size();i++){
+                bccAddress[i] = i+i+i+'@test.com' ;
+            }
+            toAddressSingle[0] = 'to@test.com';
+            ccAddressSingle[0] = 'cc@test.com';
+            bccAddressSingle[0] = 'bcc@test.com';
+            String subject = 'Test Subject';    
+            String body = 'Test Body';
+            test.startTest();
+            MRSHandlerUtility.partingToCCBccAddress(toAddress, ccAddress, bccAddress, Orgid, false, subject, body);
+            MRSHandlerUtility.partingToCCBccAddress(toAddress, ccAddressSingle, bccAddressSingle, Orgid, false, subject, body);
+            MRSHandlerUtility.partingToCCBccAddress(toAddressSingle, ccAddress, bccAddressSingle, Orgid, false, subject, body);
+            MRSHandlerUtility.partingToCCBccAddress(toAddressSingle, ccAddressSingle, bccAddress, Orgid, false, subject, body);
+            MRSHandlerUtility.partingToCCBccAddress(toAddressSingle, ccAddressSingle, bccAddressSingle, Orgid, false, subject, body);
+            MRSHandlerUtility.partingToCCBccAddress(toAddress, ccAddress, bccAddress, Orgid, true, subject, body);
+            MRSHandlerUtility.partingToCCBccAddress(toAddress, ccAddressSingle, bccAddressSingle, Orgid, true, subject, body);
+            MRSHandlerUtility.partingToCCBccAddress(toAddressSingle, ccAddress, bccAddressSingle, Orgid, true, subject, body);
+            MRSHandlerUtility.partingToCCBccAddress(toAddressSingle, ccAddressSingle, bccAddress, Orgid, true, subject, body);
+            MRSHandlerUtility.partingToCCBccAddress(toAddressSingle, ccAddressSingle, bccAddressSingle, Orgid, true, subject, body);
+            system.assertEquals(toAddress.size(),71);
+            system.assertEquals(toAddressSingle.size(),1);
+            MRSHandlerUtility.resetMebesStatus('reset');
+            //MRSHandlerUtility.fetchCustomerName();
+            test.stopTest();
+        }
+           
+    }
+    
+    /**
+        This test method tests the functional methods of MRSHandlerUtility class.
+        @method name: MRSLayerRecordsTest
+        @parameter:   none.
+        @return :     None.
+     **/
+      
+     public static testMethod void MRSLayerRecordsTest(){
+        User sysAdminUser = [SELECT Id,Name FROM User WHERE Profile.Name = 'System Administrator' AND isActive = true].get(0);
+        Profile sysAdminProfile = [SELECT Id FROM Profile WHERE Name='System Administrator']; 
+        User userSA = new User(alias = 'testMRS', email='testMRS@test.com',
+        emailencodingkey='UTF-8', lastname='testMRSLast', firstname='testMRSFirst', languagelocalekey='en_US',
+        localesidkey='en_US', profileid = sysAdminProfile.Id,
+        timezonesidkey='America/Los_Angeles', username='testMRS@test.com',communitynickname='testMRS');
+        insert userSA;
+        System.runAs(sysAdminUser){      
+            // comment-out, refactor with testSetup method setup()      
+            // SwiftDataUtilityTest.customSystemData();
+            // Insert Custom Settings Data---//
+            /*
+            list<environment_variable__c> lstEV = new list<environment_variable__c>();
+            lstEV.add(new environment_variable__c(Name='SWIFT_MRS_PTRF_EndPoint',Value__c='_www.test.globalfoundries.com'));
+            lstEV.add(new environment_variable__c(Name='SWIFT_MRS_PTRF_OnOff',Value__c='ON'));
+            insert lstEV;
+            */
+            //---------------------------------------------//
+            Account acc = SwiftDataUtilityTest.createTestAccount();
+            Account_Team_Proxy__c atp = new Account_Team_Proxy__c(User__c = userSA.id,Account__c=acc.id,Account_Access__c='Read/Write',
+            Opportunity_Access__c='Read/Write',Team_Role__c='Primary Customer Service Rep',Sequence_No__c='1',Account_Role_ID__c='test1239');       
+            insert atp;
+            Mask_Set_Title__c objMST = SwiftDataUtilityTest.createMST('MST001');
+            insert objMST;
+            PTRF__c objPTRF = new PTRF__c(Name ='PTRF1',Order_Type__c ='Test Order Type',Recticle_Type__c ='Single Layer Reticle (SLR)',MaskSetTitle__c=objMST.Id,Customer__c=acc.id,Customer_jobview__c='Gating mask release',Foundry_jobview__c='Gating mask release');
+            insert objPTRF;
+            DRT__c objDRT = new DRT__c(Name='DRT1');
+            insert objDRT;
+            DRT_PTRF_Association__c objDRTPTRF = new DRT_PTRF_Association__c(PTRF__c=objPTRF.Id,DRT__c=objDRT.Id);
+            insert objDRTPTRF;
+            system.assertEquals(objDRTPTRF.PTRF__c,objPTRF.Id);
+            system.assertEquals(objDRTPTRF.DRT__c,objDRT.Id);
+            List<PTRF_JobViewer_Info__c> listPTRFJVI = new List<PTRF_JobViewer_Info__c>();
+            PTRF_JobViewer_Info__c objPTRFJVC = new PTRF_JobViewer_Info__c(Name='SAC',PTRF__c=objPTRF.Id,Jobview__c='Customer',Jobview_Type__c='Frame Mockup;Prime GDSOUT Review;MEBES Jobview',User__c=userSA.Id);
+            PTRF_JobViewer_Info__c objPTRFJVF = new PTRF_JobViewer_Info__c(Name='SAF',PTRF__c=objPTRF.Id,Jobview__c='Foundry',Jobview_Type__c='Frame Mockup;Prime GDSOUT Review;MEBES Jobview',User__c=userSA.Id);
+            listPTRFJVI.add(objPTRFJVC);
+            listPTRFJVI.add(objPTRFJVF);
+            insert listPTRFJVI;
+            MRS__c objMRS = new MRS__c(Mask_Set_Title__c=objMST.Id);
+            insert objMRS;
+            List<MRS_Layer_Association__c> listMRSLA = new List<MRS_Layer_Association__c>();
+            MRS_Layer_Association__c objMRSLA1 = new MRS_Layer_Association__c(MRS__c=objMRS.Id,Layer_Status__c='Ready',Name='RX',Mask_Layer_Rev__c='AZ',ROM_Code__c='123');
+            MRS_Layer_Association__c objMRSLA2 = new MRS_Layer_Association__c(MRS__c=objMRS.Id,Layer_Status__c='Ready',Name='RY',Mask_Layer_Rev__c='AZ',ROM_Code__c='123');
+            listMRSLA.add(objMRSLA1);
+            listMRSLA.add(objMRSLA2);
+            insert listMRSLA;   
+            List<MRS_Chip_Details__c> listMRSCD = new List<MRS_Chip_Details__c>();
+            MRS_Chip_Details__c objMRSCD1 = new MRS_Chip_Details__c(MRS__c=objMRS.Id,Name='Chip001');
+            MRS_Chip_Details__c objMRSCD2 = new MRS_Chip_Details__c(MRS__c=objMRS.Id,Name='Chip002');
+            MRS_Chip_Details__c objMRSCD3 = new MRS_Chip_Details__c(MRS__c=objMRS.Id,Name='Frame');
+            listMRSCD.add(objMRSCD1);
+            listMRSCD.add(objMRSCD2);
+            listMRSCD.add(objMRSCD3);
+            insert listMRSCD;
+            List<MRS_Layer_Chip_Association__c> listMRSLCA = new List<MRS_Layer_Chip_Association__c>();
+            MRS_Layer_Chip_Association__c objMRSLCA1 = new MRS_Layer_Chip_Association__c(Layer__c=objMRSLA1.Id,Chip__c=objMRSCD1.Id,PTRF__c=objPTRF.Id,Tech_Geo__c='0.019UM',Device_Id__c='1',Layer_Chip_Status__c='In Progress');
+            MRS_Layer_Chip_Association__c objMRSLCA2 = new MRS_Layer_Chip_Association__c(Layer__c=objMRSLA1.Id,Chip__c=objMRSCD2.Id,PTRF__c=objPTRF.Id,Tech_Geo__c='0.019UM',Device_Id__c='1',Layer_Chip_Status__c='In Progress');
+            MRS_Layer_Chip_Association__c objMRSLCA3 = new MRS_Layer_Chip_Association__c(Layer__c=objMRSLA2.Id,Chip__c=objMRSCD1.Id,PTRF__c=objPTRF.Id,Tech_Geo__c='0.019UM',Device_Id__c='1',Layer_Chip_Status__c='In Progress');
+            MRS_Layer_Chip_Association__c objMRSLCA4 = new MRS_Layer_Chip_Association__c(Layer__c=objMRSLA2.Id,Chip__c=objMRSCD2.Id,PTRF__c=objPTRF.Id,Tech_Geo__c='0.019UM',Device_Id__c='1',Layer_Chip_Status__c='In Progress');
+            MRS_Layer_Chip_Association__c objMRSLCA5 = new MRS_Layer_Chip_Association__c(Layer__c=objMRSLA1.Id,Chip__c=objMRSCD3.Id,PTRF__c=objPTRF.Id,Tech_Geo__c='0.019UM',Device_Id__c='1',Layer_Chip_Status__c='In Progress');
+            MRS_Layer_Chip_Association__c objMRSLCA6 = new MRS_Layer_Chip_Association__c(Layer__c=objMRSLA2.Id,Chip__c=objMRSCD3.Id,PTRF__c=objPTRF.Id,Tech_Geo__c='0.019UM',Device_Id__c='1',Layer_Chip_Status__c='In Progress');
+            objMRSLCA1=MRSHandlerUtility.setDRTLayerChipDefaultValues(objMRSLCA1);
+            system.assertEquals(objMRSLCA1.Prime_MEBES_Received__c, null);
+            listMRSLCA.add(objMRSLCA1);
+            listMRSLCA.add(objMRSLCA2);
+            listMRSLCA.add(objMRSLCA3);
+            listMRSLCA.add(objMRSLCA4);
+            listMRSLCA.add(objMRSLCA5);
+            listMRSLCA.add(objMRSLCA6);
+            insert listMRSLCA;
+            test.startTest();
+            Map<Id,MRS_Layer_Association__c> mapLayerDetails = MRSHandlerUtility.fetchMRSLayerSummaryDetails();
+            system.assertEquals(mapLayerDetails.size(), 2);
+            MRSHandlerUtility.searchMrsChipLayerSummary(objMRSLA1.Id, '1', 'In Progress', 'PTRF1', '0.019UM');
+            set<String> setLayerIds = new set<String>();
+            setLayerIds.add(objMRSLA1.Id);
+            setLayerIds.add(objMRSLA2.Id);
+            //MRSHandlerUtility.retrieveLayerChipDetailsForVoidCancelStatus(setLayerIds);
+            map<String,List<MRS_Layer_Chip_Association__c>> mapLayerChips = new map<String,List<MRS_Layer_Chip_Association__c>>();
+            for(MRS_Layer_Chip_Association__c obj:listMRSLCA){
+                List<MRS_Layer_Chip_Association__c> tempList = new List<MRS_Layer_Chip_Association__c>();
+                if(mapLayerChips.containsKey(obj.Layer__c)){
+                    tempList.addAll(mapLayerChips.get(obj.Layer__c));       
+                }
+                tempList.add(obj);
+                mapLayerChips.put(obj.Layer__c,tempList);   
+            }
+            MRSHandlerUtility.setLayerStatusForVoidCancelStatus(listMRSLA,mapLayerChips);
+            listMRSLCA.clear();
+            mapLayerChips.clear();
+            objMRSLCA1.Layer_Chip_Status__c='Void';
+            objMRSLCA2.Layer_Chip_Status__c='Void';
+            objMRSLCA3.Layer_Chip_Status__c='Void';
+            objMRSLCA4.Layer_Chip_Status__c='Void';
+            objMRSLCA5.Layer_Chip_Status__c='Void';
+            objMRSLCA6.Layer_Chip_Status__c='Void';
+            objMRSLCA6.CAD_Update__c = true;
+            listMRSLCA.add(objMRSLCA1);
+            listMRSLCA.add(objMRSLCA2);
+            listMRSLCA.add(objMRSLCA3);
+            listMRSLCA.add(objMRSLCA4);
+            listMRSLCA.add(objMRSLCA5);
+            listMRSLCA.add(objMRSLCA6);
+            MRSHandlerUtility.numberOfLayerChipRecords = listMRSLCA.size();
+            update listMRSLCA;
+            system.assertEquals(objMRSLCA1.Layer_Chip_Status__c, 'Void');
+            for(MRS_Layer_Chip_Association__c obj:listMRSLCA){
+                List<MRS_Layer_Chip_Association__c> tempList = new List<MRS_Layer_Chip_Association__c>();
+                if(mapLayerChips.containsKey(obj.Layer__c)){
+                    tempList.addAll(mapLayerChips.get(obj.Layer__c));       
+                }
+                tempList.add(obj);
+                mapLayerChips.put(obj.Layer__c,tempList);   
+            }
+            MRSHandlerUtility.setLayerStatusForVoidCancelStatus(listMRSLA,mapLayerChips);
+            system.assertEquals(objMRSLA2.Layer_Status__c, 'Void');
+            listMRSLCA.clear();
+            mapLayerChips.clear();
+            objMRSLCA1.Layer_Chip_Status__c='Cancel';
+            objMRSLCA2.Layer_Chip_Status__c='Cancel';
+            objMRSLCA3.Layer_Chip_Status__c='Cancel';
+            objMRSLCA4.Layer_Chip_Status__c='Cancel';
+            objMRSLCA5.Layer_Chip_Status__c='Cancel';
+            objMRSLCA6.Layer_Chip_Status__c='Cancel';
+            listMRSLCA.add(objMRSLCA1);
+            listMRSLCA.add(objMRSLCA2);
+            listMRSLCA.add(objMRSLCA3);
+            listMRSLCA.add(objMRSLCA4);
+            listMRSLCA.add(objMRSLCA5);
+            listMRSLCA.add(objMRSLCA6);
+            update listMRSLCA;
+            system.assertEquals(objMRSLCA1.Layer_Chip_Status__c, 'Cancel');
+            for(MRS_Layer_Chip_Association__c obj:listMRSLCA){
+                List<MRS_Layer_Chip_Association__c> tempList = new List<MRS_Layer_Chip_Association__c>();
+                if(mapLayerChips.containsKey(obj.Layer__c)){
+                    tempList.addAll(mapLayerChips.get(obj.Layer__c));       
+                }
+                tempList.add(obj);
+                mapLayerChips.put(obj.Layer__c,tempList);   
+            }
+            MRSHandlerUtility.setLayerStatusForVoidCancelStatus(listMRSLA,mapLayerChips);
+            system.assertEquals(objMRSLA1.Layer_Status__c, 'Cancel');
+            test.stopTest();
+        }   
+     }
+     
+     /**
+        This test method tests the email sending methods of MRSHandlerUtility class - Part 1.
+        @method name: EmailSendingMethodsTest
+        @parameter:   none.
+        @return :     None.
+     **/
+     
+     public static testMethod void EmailSendingMethodsTest(){
+        User sysAdminUser = [SELECT Id,Name FROM User WHERE Profile.Name = 'System Administrator' AND isActive = true].get(0);
+        Profile sysAdminProfile = [SELECT Id FROM Profile WHERE Name='System Administrator']; 
+        User userSA = new User(alias = 'testMRS', email='testMRS@test.com',
+        emailencodingkey='UTF-8', lastname='testMRSLast', firstname='testMRSFirst', languagelocalekey='en_US',
+        localesidkey='en_US', profileid = sysAdminProfile.Id,
+        timezonesidkey='America/Los_Angeles', username='testMRS@test.com',communitynickname='testMRS');
+        insert userSA;
+        Group groupTA = [select Id, DeveloperName, Name from Group where DeveloperName = 'Swift_Tapeout_Application'];
+        Group groupTC = [select Id, DeveloperName, Name from Group where DeveloperName = 'Swift_Tapeout_Centre'];
+        Group groupTMPW = [select Id, DeveloperName, Name from Group where DeveloperName = 'Swift_TDTI_MPW'];
+        Group groupMDP = [select Id, DeveloperName, Name from Group where DeveloperName = 'Swift_MDP'];
+        Group groupGS = [select Id, DeveloperName, Name from Group where DeveloperName = 'Swift_GlobalShuttle'];
+        Group groupSA = [select Id, DeveloperName, Name from Group where DeveloperName = 'Swift_Admin'];
+        List<GroupMember> listGM = new List<GroupMember>(); 
+        GroupMember groupMemberTA = new GroupMember(GroupId = groupTA.Id,UserOrGroupId = userSA.Id); 
+        GroupMember groupMemberTC = new GroupMember(GroupId = groupTC.Id,UserOrGroupId = userSA.Id);
+        GroupMember groupMemberTMPW = new GroupMember(GroupId = groupTMPW.Id,UserOrGroupId = userSA.Id);
+        GroupMember groupMemberTMDP = new GroupMember(GroupId = groupMDP.Id,UserOrGroupId = userSA.Id);
+        GroupMember groupMemberGS = new GroupMember(GroupId = groupGS.Id,UserOrGroupId = userSA.Id);
+        GroupMember groupMemberSA = new GroupMember(GroupId = groupSA.Id,UserOrGroupId = userSA.Id);          
+        listGM.add(groupMemberTA);
+        listGM.add(groupMemberTC);
+        listGM.add(groupMemberTMPW);
+        listGM.add(groupMemberTMDP);
+        listGM.add(groupMemberGS);
+        listGM.add(groupMemberSA);
+        insert listGM;   
+        System.runAs(sysAdminUser){            
+            // comment-out, refactor with testSetup method setup()
+            // SwiftDataUtilityTest.customSystemData();
+            // Insert Custom Settings Data---//
+            /*
+            list<environment_variable__c> lstEV = new list<environment_variable__c>();
+            lstEV.add(new environment_variable__c(Name='SWIFT_MRS_PTRF_EndPoint',Value__c='_www.test.globalfoundries.com'));
+            lstEV.add(new environment_variable__c(Name='SWIFT_MRS_PTRF_OnOff',Value__c='ON'));
+            insert lstEV;
+            */
+            //---------------------------------------------//
+
+            Account acc = SwiftDataUtilityTest.createTestAccount();
+            Account_Team_Proxy__c atp = new Account_Team_Proxy__c(User__c = userSA.id,Account__c=acc.id,Account_Access__c='Read/Write',
+            Opportunity_Access__c='Read/Write',Team_Role__c='Primary Customer Service Rep',Sequence_No__c='1',Account_Role_ID__c='test1239');       
+            insert atp;
+            Mask_Set_Title__c objMST = SwiftDataUtilityTest.createMST('MST001');
+            insert objMST;
+            PTRF__c objPTRF = new PTRF__c(Name ='PTRF1',Order_Type__c ='Test Order Type',Recticle_Type__c ='Single Layer Reticle (SLR)',MaskSetTitle__c=objMST.Id,Customer__c=acc.id,Tech_Geo_Value__c='0.019UM',Customer_jobview__c='Gating mask release');
+            insert objPTRF;
+            DRT__c objDRT = new DRT__c(Name='DRT1');
+            insert objDRT;
+            DRT_PTRF_Association__c objDRTPTRF = new DRT_PTRF_Association__c(PTRF__c=objPTRF.Id,DRT__c=objDRT.Id);
+            insert objDRTPTRF;
+            List<PTRF_JobViewer_Info__c> listPTRFJVI = new List<PTRF_JobViewer_Info__c>();
+            PTRF_JobViewer_Info__c objPTRFJVC = new PTRF_JobViewer_Info__c(Name='SAC',PTRF__c=objPTRF.Id,Jobview__c='Customer',Jobview_Type__c='Frame Mockup;Prime GDSOUT Review;MEBES Jobview',User__c=userSA.Id);
+            PTRF_JobViewer_Info__c objPTRFJVF = new PTRF_JobViewer_Info__c(Name='SAF',PTRF__c=objPTRF.Id,Jobview__c='Foundry',Jobview_Type__c='Frame Mockup;Prime GDSOUT Review;MEBES Jobview',User__c=userSA.Id);
+            listPTRFJVI.add(objPTRFJVC);
+            listPTRFJVI.add(objPTRFJVF);
+            insert listPTRFJVI;
+            MRS__c objMRS = new MRS__c(Mask_Set_Title__c=objMST.Id);
+            insert objMRS;
+            List<MRS_Layer_Association__c> listMRSLA = new List<MRS_Layer_Association__c>();
+            MRS_Layer_Association__c objMRSLA1 = new MRS_Layer_Association__c(MRS__c=objMRS.Id,Layer_Status__c='Ready',Name='RX',Mask_Layer_Rev__c='AZ',ROM_Code__c='123');
+            MRS_Layer_Association__c objMRSLA2 = new MRS_Layer_Association__c(MRS__c=objMRS.Id,Layer_Status__c='Ready',Name='RY',Mask_Layer_Rev__c='AZ',ROM_Code__c='123');
+            listMRSLA.add(objMRSLA1);
+            listMRSLA.add(objMRSLA2);
+            insert listMRSLA;   
+            List<MRS_Chip_Details__c> listMRSCD = new List<MRS_Chip_Details__c>();
+            MRS_Chip_Details__c objMRSCD1 = new MRS_Chip_Details__c(MRS__c=objMRS.Id,Name='Chip001');
+            MRS_Chip_Details__c objMRSCD2 = new MRS_Chip_Details__c(MRS__c=objMRS.Id,Name='Chip002');
+            MRS_Chip_Details__c objMRSCD3 = new MRS_Chip_Details__c(MRS__c=objMRS.Id,Name='Frame');
+            listMRSCD.add(objMRSCD1);
+            listMRSCD.add(objMRSCD2);
+            listMRSCD.add(objMRSCD3);
+            insert listMRSCD;
+            List<MRS_Layer_Chip_Association__c> listMRSLCA = new List<MRS_Layer_Chip_Association__c>();
+            MRS_Layer_Chip_Association__c objMRSLCA1 = new MRS_Layer_Chip_Association__c(Layer__c=objMRSLA1.Id,Chip__c=objMRSCD1.Id,PTRF__c=objPTRF.Id,Tech_Geo__c='0.019UM',Device_Id__c='1',Layer_Chip_Status__c='In Progress',Customer_Name__c=acc.Id);
+            MRS_Layer_Chip_Association__c objMRSLCA2 = new MRS_Layer_Chip_Association__c(Layer__c=objMRSLA1.Id,Chip__c=objMRSCD2.Id,PTRF__c=objPTRF.Id,Tech_Geo__c='0.019UM',Device_Id__c='1',Layer_Chip_Status__c='In Progress',Customer_Name__c=acc.Id);
+            MRS_Layer_Chip_Association__c objMRSLCA3 = new MRS_Layer_Chip_Association__c(Layer__c=objMRSLA2.Id,Chip__c=objMRSCD1.Id,PTRF__c=objPTRF.Id,Tech_Geo__c='0.019UM',Device_Id__c='1',Layer_Chip_Status__c='In Progress',Customer_Name__c=acc.Id);
+            MRS_Layer_Chip_Association__c objMRSLCA4 = new MRS_Layer_Chip_Association__c(Layer__c=objMRSLA2.Id,Chip__c=objMRSCD2.Id,PTRF__c=objPTRF.Id,Tech_Geo__c='0.019UM',Device_Id__c='1',Layer_Chip_Status__c='In Progress',Customer_Name__c=acc.Id);
+            MRS_Layer_Chip_Association__c objMRSLCA5 = new MRS_Layer_Chip_Association__c(Layer__c=objMRSLA1.Id,Chip__c=objMRSCD3.Id,PTRF__c=objPTRF.Id,Tech_Geo__c='0.019UM',Device_Id__c='1',Layer_Chip_Status__c='In Progress',Customer_Name__c=acc.Id);
+            MRS_Layer_Chip_Association__c objMRSLCA6 = new MRS_Layer_Chip_Association__c(Layer__c=objMRSLA2.Id,Chip__c=objMRSCD3.Id,PTRF__c=objPTRF.Id,Tech_Geo__c='0.019UM',Device_Id__c='1',Layer_Chip_Status__c='In Progress',Customer_Name__c=acc.Id);
+            objMRSLCA1=setLayerChipFlagValues(objMRSLCA1);
+            objMRSLCA2=setLayerChipFlagValues(objMRSLCA2);
+            objMRSLCA3=setLayerChipFlagValues(objMRSLCA3);
+            objMRSLCA4=setLayerChipFlagValues(objMRSLCA4);
+            objMRSLCA5=setLayerChipFlagValues(objMRSLCA5);
+            objMRSLCA6=setLayerChipFlagValues(objMRSLCA6);
+            listMRSLCA.add(objMRSLCA1);
+            listMRSLCA.add(objMRSLCA2);
+            listMRSLCA.add(objMRSLCA3);
+            listMRSLCA.add(objMRSLCA4);
+            listMRSLCA.add(objMRSLCA5);
+            listMRSLCA.add(objMRSLCA6);
+            insert listMRSLCA;
+            List<Notes__c> listNotes = new List<Notes__c>();
+            Notes__c objNotes1 = new Notes__c(Body__c='Reason1',Category__c='Customer Frame Remote Jobview Setup',ParentId__c=objMRSLCA1.Id);
+            Notes__c objNotes2 = new Notes__c(Body__c='Reason2',Category__c='Foundry Frame Remote Jobview Setup',ParentId__c=objMRSLCA2.Id);
+            Notes__c objNotes3 = new Notes__c(Body__c='Reason3',Category__c='Customer Prime Remote Jobview Setup',ParentId__c=objMRSLCA3.Id);
+            Notes__c objNotes4 = new Notes__c(Body__c='Reason4',Category__c='Foundry Prime Remote Jobview Setup',ParentId__c=objMRSLCA4.Id);
+            Notes__c objNotes5 = new Notes__c(Body__c='Reason5',Category__c='Prime MEBES Received',ParentId__c=objMRSLCA5.Id);
+            Notes__c objNotes6 = new Notes__c(Body__c='Reason6',Category__c='Frame MEBES Received',ParentId__c=objMRSLCA6.Id);
+            listNotes.add(objNotes1);
+            listNotes.add(objNotes2);
+            listNotes.add(objNotes3);
+            listNotes.add(objNotes4);
+            listNotes.add(objNotes5);
+            listNotes.add(objNotes6);
+            insert listNotes;
+            system.assertEquals(listNotes.size(), 6);
+            Map<Id,MRS_Layer_Chip_Association__c> mapLayerChipsOld = new Map<Id,MRS_Layer_Chip_Association__c>();
+            Map<Id,MRS_Layer_Chip_Association__c> mapLayerChipsNew = new Map<Id,MRS_Layer_Chip_Association__c>();
+            List<MRS_Layer_Chip_Association__c> listMRSLCANew = new List<MRS_Layer_Chip_Association__c>();  
+            set<String> setLayerChipIds = new set<String>();        
+            for(MRS_Layer_Chip_Association__c obj:listMRSLCA){
+                mapLayerChipsOld.put(obj.Id,obj);       
+            }
+            objMRSLCA1.Customer_Frame_Mockup__c='Ready';
+            objMRSLCA1.Send_Prime_Data__c='Done';
+            objMRSLCA2.Customer_Frame_Mockup__c='Ready';
+            objMRSLCA3.Customer_Frame_Mockup__c='Ready';
+            objMRSLCA4.Foundry_Frame_Mockup__c='Ready';
+            objMRSLCA5.Foundry_Frame_Mockup__c='Ready';
+            objMRSLCA6.Foundry_Frame_Mockup__c='Ready';
+            objMRSLCA1.Customer_GDSOUT_Review__c='Ready';
+            objMRSLCA2.Customer_GDSOUT_Review__c='Ready';
+            objMRSLCA3.Customer_GDSOUT_Review__c='Ready';
+            objMRSLCA4.Foundry_GDSOUT_Review__c='Ready';
+            objMRSLCA5.Foundry_GDSOUT_Review__c='Ready';
+            objMRSLCA6.Foundry_GDSOUT_Review__c='Ready';
+            listMRSLCANew.add(objMRSLCA1);
+            listMRSLCANew.add(objMRSLCA2);
+            listMRSLCANew.add(objMRSLCA3);
+            listMRSLCANew.add(objMRSLCA4);
+            listMRSLCANew.add(objMRSLCA5);
+            listMRSLCANew.add(objMRSLCA6);
+            setLayerChipIds.add(objMRSLCA1.Id);
+            setLayerChipIds.add(objMRSLCA2.Id);
+            setLayerChipIds.add(objMRSLCA3.Id);
+            setLayerChipIds.add(objMRSLCA4.Id);
+            setLayerChipIds.add(objMRSLCA5.Id);
+            setLayerChipIds.add(objMRSLCA6.Id);
+            test.startTest();
+            update listMRSLCANew;
+            List<MRS_Layer_Chip_Association__c> listMRSLCANewQueried = new List<MRS_Layer_Chip_Association__c>();
+            for(MRS_Layer_Chip_Association__c obj:[SELECT Approved__c,Chip_Hold_Warning__c,Chip_Name__c,Chip__c,CreatedById,CreatedDate,
+            Customer_Frame_Mockup_Date__c,Customer_Frame_Mockup__c,Customer_Frame_Remote_Jobview_Setup_Date__c,Customer_Frame_Remote_Jobview_Setup__c,
+            Customer_GDSOUT_Review_Date__c,Customer_GDSOUT_Review__c,Customer_MEBES_Jobview_Date__c,Customer_MEBES_Jobview__c,Customer_Name__c,
+            Customer_Prime_Remote_Jobview_Setup_Date__c,Customer_Prime_Remote_Jobview_Setup__c,Device_Id__c,DRT_Name__c,DRT__c,DRW_Date__c,DRW__c,
+            Error_Message_Oracle_DB__c,Error_Message_PTRF_Layer_SendPrimeFrame__c,Error_Message_Sync_Layer_Status__c,Foundry_Frame_Mockup_Date__c,
+            Foundry_Frame_Mockup__c,Foundry_Frame_Remote_Jobview_Setup_Date__c,Foundry_Frame_Remote_Jobview_Setup__c,Foundry_GDSOUT_Review_Date__c,
+            Foundry_GDSOUT_Review__c,Foundry_MEBES_Jobview_Date__c,Foundry_MEBES_Jobview__c,Foundry_Prime_Remote_Jobview_Setup_Date__c,
+            Foundry_Prime_Remote_Jobview_Setup__c,Frame_MEBES_Received_Date__c,Frame_MEBES_Received__c,Frame_TapeOut__c,PTRF__r.Name,
+            GlobalShuttle_MEBES_Jobview_Date__c,GlobalShuttle_MEBES_Jobview__c,Hold_Mask_Write_Date__c,Hold_Mask_Write__c,Id,IsDeleted,
+            Is_Active__c,Is_Customer_Frame_Mockup_Updated__c,Is_Customer_Frame_Remote_Jobview_Updated__c,Is_Customer_GDSOUT_Review_Updated__c,
+            Is_Customer_MEBES_Jobview_Updated__c,Is_Customer_Prime_Remote_Jobview_Updated__c,Is_DRW_Updated__c,Is_Foundry_Frame_Mockup_Updated__c,
+            Is_Foundry_Frame_Remote_Jobview_Updated__c,Is_Foundry_GDSOUT_Review_Updated__c,Is_Foundry_MEBES_Jobview_Updated__c,PTRF__r.Foundry_jobview__c,
+            Is_Foundry_Prime_Remote_Jobview_Updated__c,Is_Frame_MEBES_Received_Updated__c,Is_GlobalShuttle_MEBES_Jobview_Updated__c,
+            Is_MDP_MEBES_Jobview_Updated__c,Is_ORC_Updated__c,Is_Prime_MEBES_Received_Updated__c,Is_Send_Frame_Data_Updated__c,
+            Is_Send_Prime_Data_Updated__c,Is_Tapeout_Apps_MEBES_Jobview_Updated__c,Is_Tapeout_Centre_MEBES_Jobview_Updated__c,
+            Is_TDTI_MPW_MEBES_Jobview_Updated__c,LastModifiedById,LastModifiedDate,lastmodifieddate_sgt__c,PTRF__r.Customer_jobview__c,
+            Last_Sync_Req_Timestamp_Layer_Gen__c,Last_Sync_Req_Timestamp_ORCN_Job__c,Last_Sync_Req_Timestamp_Receive_MEBES__c,Layer__r.ROM_Code__c,Layer__r.Name,Layer__r.Mask_Layer_Rev__c,
+            Last_Sync_Req_Timestamp_Remote_Jobview__c,Last_Sync_Req_Timestamp_Send_Frame__c,Last_Sync_Req_Timestamp_Send_Prime__c,
+            Last_Sync_Req_Timestamp__c,Layer_Chip_Old_Status__c,Layer_Chip_Status_Date__c,Layer_Chip_Status__c,Layer_Name__c,
+            Layer_Send_Frame_Data__c,Layer_Send_Prime_Data__c,Layer__c,Lock_Record__c,Mask_Layer_Status__c,Mask_Layer__c,Mask_Set_Title_Name__c,
+            MDP_MEBES_Jobview_Date__c,MDP_MEBES_Jobview__c,MRS_ID__c,MST__c,Name,ORC_Date__c,ORC__c,Prime_MEBES_Received_Date__c,
+            Prime_MEBES_Received__c,Prime_TapeOut__c,PTRF_Number__c,PTRF_Or_DRT__c,PTRF__c,Rev__c,ROM_Code__c,Send_Frame_Data_Date__c,
+            Send_Frame_Data__c,Send_Prime_Data_Date__c,Send_Prime_Data__c,Synced_with_Oracle_DB__c,Sync_Layer_Status__c,PTRF__r.MaskSetTitle__r.Name,
+            Sync_PTRF_Layer_SendPrimeFrame_dotNET__c,Sync_PTRF_Layer_to_SWIFT_dotNET__c,SystemModstamp,Tapeout_Applications_MEBES_Jobview_Date__c,
+            Tapeout_Applications_MEBES_Jobview__c,Tapeout_Centre_MEBES_Jobview_Date__c,Tapeout_Centre_MEBES_Jobview__c,TDTI_MPW_MEBES_Date__c,
+            TDTI_MPW_MEBES_Jobview__c,Tech_Geo__c,Trigger_Sync_Layer_Status__c,Void__c,PTRF__r.Tech_Geo__c,Chip__r.Name FROM MRS_Layer_Chip_Association__c where Id IN:setLayerChipIds]){
+                listMRSLCANewQueried.add(obj);  
+                mapLayerChipsNew.put(obj.Id,obj);   
+            }
+            
+            MRSHandlerUtility.sendRedyMailToCustomerAndFoundry(listMRSLCANewQueried);
+            MRSHandlerUtility.sendDataDoneMailToCustomerAndFoundry(listMRSLCANewQueried);
+            MRSHandlerUtility.sendEmailToGlobalshuttle(listMRSLCANewQueried,'Jobdeck','CAD Email Content');
+            MRSHandlerUtility.sendRedyMailToGDSOUTReview(listMRSLCANewQueried,'CAD Email Content','hello'); 
+            MRSHandlerUtility.sendDoneEmailtoRemoteJobView(listMRSLCANewQueried,'Jobdeck',true,true,'jobViewRemark'); 
+            MRSHandlerUtility.sendEmailForRemoteJobViewToReviewersSubsequently(listMRSLCANewQueried,'Jobdeck','test@test.com','Jobview Remark',true,true);                  
+            test.stopTest();
+        }   
+     }
+     
+     /**
+        This test method tests the email sending methods of MRSHandlerUtility class - Part 2.
+        @method name: EmailSendingMethodsTest2
+        @parameter:   none.
+        @return :     None.
+     **/
+     
+     public static testMethod void EmailSendingMethodsTest2(){
+        User sysAdminUser = [SELECT Id,Name FROM User WHERE Profile.Name = 'System Administrator' AND isActive = true].get(0);
+        Profile sysAdminProfile = [SELECT Id FROM Profile WHERE Name='System Administrator']; 
+        User userSA = new User(alias = 'testMRS', email='testMRS@test.com',
+        emailencodingkey='UTF-8', lastname='testMRSLast', firstname='testMRSFirst', languagelocalekey='en_US',
+        localesidkey='en_US', profileid = sysAdminProfile.Id,
+        timezonesidkey='America/Los_Angeles', username='testMRS@test.com',communitynickname='testMRS');
+        insert userSA;
+        Group groupTA = [select Id, DeveloperName, Name from Group where DeveloperName = 'Swift_Tapeout_Application'];
+        Group groupTC = [select Id, DeveloperName, Name from Group where DeveloperName = 'Swift_Tapeout_Centre'];
+        Group groupTMPW = [select Id, DeveloperName, Name from Group where DeveloperName = 'Swift_TDTI_MPW'];
+        Group groupMDP = [select Id, DeveloperName, Name from Group where DeveloperName = 'Swift_MDP'];
+        Group groupGS = [select Id, DeveloperName, Name from Group where DeveloperName = 'Swift_GlobalShuttle'];
+        Group groupSA = [select Id, DeveloperName, Name from Group where DeveloperName = 'Swift_Admin'];
+        List<GroupMember> listGM = new List<GroupMember>(); 
+        GroupMember groupMemberTA = new GroupMember(GroupId = groupTA.Id,UserOrGroupId = userSA.Id); 
+        GroupMember groupMemberTC = new GroupMember(GroupId = groupTC.Id,UserOrGroupId = userSA.Id);
+        GroupMember groupMemberTMPW = new GroupMember(GroupId = groupTMPW.Id,UserOrGroupId = userSA.Id);
+        GroupMember groupMemberTMDP = new GroupMember(GroupId = groupMDP.Id,UserOrGroupId = userSA.Id);
+        GroupMember groupMemberGS = new GroupMember(GroupId = groupGS.Id,UserOrGroupId = userSA.Id);
+        GroupMember groupMemberSA = new GroupMember(GroupId = groupSA.Id,UserOrGroupId = userSA.Id);          
+        listGM.add(groupMemberTA);
+        listGM.add(groupMemberTC);
+        listGM.add(groupMemberTMPW);
+        listGM.add(groupMemberTMDP);
+        listGM.add(groupMemberGS);
+        listGM.add(groupMemberSA);
+        insert listGM;   
+        System.runAs(sysAdminUser){   
+            // comment-out, refactor with testSetup method setup()         
+            // SwiftDataUtilityTest.customSystemData();
+            // Insert Custom Settings Data---//
+            /*
+            list<environment_variable__c> lstEV = new list<environment_variable__c>();
+            lstEV.add(new environment_variable__c(Name='SWIFT_MRS_PTRF_EndPoint',Value__c='_www.test.globalfoundries.com'));
+            lstEV.add(new environment_variable__c(Name='SWIFT_MRS_PTRF_OnOff',Value__c='ON'));
+            insert lstEV;
+            */
+            //---------------------------------------------//
+
+            Account acc = SwiftDataUtilityTest.createTestAccount();
+            Account_Team_Proxy__c atp = new Account_Team_Proxy__c(User__c = userSA.id,Account__c=acc.id,Account_Access__c='Read/Write',
+            Opportunity_Access__c='Read/Write',Team_Role__c='Primary Customer Service Rep',Sequence_No__c='1',Account_Role_ID__c='test1239');       
+            insert atp;
+            Mask_Set_Title__c objMST = SwiftDataUtilityTest.createMST('MST001');
+            insert objMST;
+            PTRF__c objPTRF = new PTRF__c(Name ='PTRF1',Order_Type__c ='Test Order Type',Recticle_Type__c ='Single Layer Reticle (SLR)',MaskSetTitle__c=objMST.Id,Customer__c=acc.id,Tech_Geo_Value__c='0.019UM',Customer_jobview__c='Gating mask release');
+            insert objPTRF;
+            DRT__c objDRT = new DRT__c(Name='DRT1');
+            insert objDRT;
+            DRT_PTRF_Association__c objDRTPTRF = new DRT_PTRF_Association__c(PTRF__c=objPTRF.Id,DRT__c=objDRT.Id);
+            insert objDRTPTRF;
+            List<PTRF_JobViewer_Info__c> listPTRFJVI = new List<PTRF_JobViewer_Info__c>();
+            PTRF_JobViewer_Info__c objPTRFJVC = new PTRF_JobViewer_Info__c(Name='SAC',PTRF__c=objPTRF.Id,Jobview__c='Customer',Jobview_Type__c='Frame Mockup;Prime GDSOUT Review;MEBES Jobview',User__c=userSA.Id);
+            PTRF_JobViewer_Info__c objPTRFJVF = new PTRF_JobViewer_Info__c(Name='SAF',PTRF__c=objPTRF.Id,Jobview__c='Foundry',Jobview_Type__c='Frame Mockup;Prime GDSOUT Review;MEBES Jobview',User__c=userSA.Id);
+            listPTRFJVI.add(objPTRFJVC);
+            listPTRFJVI.add(objPTRFJVF);
+            insert listPTRFJVI;
+            MRS__c objMRS = new MRS__c(Mask_Set_Title__c=objMST.Id);
+            insert objMRS;
+            List<MRS_Layer_Association__c> listMRSLA = new List<MRS_Layer_Association__c>();
+            MRS_Layer_Association__c objMRSLA1 = new MRS_Layer_Association__c(MRS__c=objMRS.Id,Layer_Status__c='Ready',Name='RX',Mask_Layer_Rev__c='AZ',ROM_Code__c='123');
+            MRS_Layer_Association__c objMRSLA2 = new MRS_Layer_Association__c(MRS__c=objMRS.Id,Layer_Status__c='Ready',Name='RY',Mask_Layer_Rev__c='AZ',ROM_Code__c='123');
+            listMRSLA.add(objMRSLA1);
+            listMRSLA.add(objMRSLA2);
+            insert listMRSLA;   
+            List<MRS_Chip_Details__c> listMRSCD = new List<MRS_Chip_Details__c>();
+            MRS_Chip_Details__c objMRSCD1 = new MRS_Chip_Details__c(MRS__c=objMRS.Id,Name='Chip001');
+            MRS_Chip_Details__c objMRSCD2 = new MRS_Chip_Details__c(MRS__c=objMRS.Id,Name='Chip002');
+            MRS_Chip_Details__c objMRSCD3 = new MRS_Chip_Details__c(MRS__c=objMRS.Id,Name='Frame');
+            listMRSCD.add(objMRSCD1);
+            listMRSCD.add(objMRSCD2);
+            listMRSCD.add(objMRSCD3);
+            insert listMRSCD;
+            List<MRS_Layer_Chip_Association__c> listMRSLCA = new List<MRS_Layer_Chip_Association__c>();
+            MRS_Layer_Chip_Association__c objMRSLCA1 = new MRS_Layer_Chip_Association__c(Layer__c=objMRSLA1.Id,Chip__c=objMRSCD1.Id,PTRF__c=objPTRF.Id,Tech_Geo__c='0.019UM',Device_Id__c='1',Layer_Chip_Status__c='In Progress',Customer_Name__c=acc.Id);
+            MRS_Layer_Chip_Association__c objMRSLCA2 = new MRS_Layer_Chip_Association__c(Layer__c=objMRSLA1.Id,Chip__c=objMRSCD2.Id,PTRF__c=objPTRF.Id,Tech_Geo__c='0.019UM',Device_Id__c='1',Layer_Chip_Status__c='In Progress',Customer_Name__c=acc.Id);
+            MRS_Layer_Chip_Association__c objMRSLCA3 = new MRS_Layer_Chip_Association__c(Layer__c=objMRSLA2.Id,Chip__c=objMRSCD1.Id,PTRF__c=objPTRF.Id,Tech_Geo__c='0.019UM',Device_Id__c='1',Layer_Chip_Status__c='In Progress',Customer_Name__c=acc.Id);
+            MRS_Layer_Chip_Association__c objMRSLCA4 = new MRS_Layer_Chip_Association__c(Layer__c=objMRSLA2.Id,Chip__c=objMRSCD2.Id,PTRF__c=objPTRF.Id,Tech_Geo__c='0.019UM',Device_Id__c='1',Layer_Chip_Status__c='In Progress',Customer_Name__c=acc.Id);
+            MRS_Layer_Chip_Association__c objMRSLCA5 = new MRS_Layer_Chip_Association__c(Layer__c=objMRSLA1.Id,Chip__c=objMRSCD3.Id,PTRF__c=objPTRF.Id,Tech_Geo__c='0.019UM',Device_Id__c='1',Layer_Chip_Status__c='In Progress',Customer_Name__c=acc.Id);
+            MRS_Layer_Chip_Association__c objMRSLCA6 = new MRS_Layer_Chip_Association__c(Layer__c=objMRSLA2.Id,Chip__c=objMRSCD3.Id,PTRF__c=objPTRF.Id,Tech_Geo__c='0.019UM',Device_Id__c='1',Layer_Chip_Status__c='In Progress',Customer_Name__c=acc.Id);
+            objMRSLCA1=setLayerChipFlagValues(objMRSLCA1);
+            objMRSLCA2=setLayerChipFlagValues(objMRSLCA2);
+            objMRSLCA3=setLayerChipFlagValues(objMRSLCA3);
+            objMRSLCA4=setLayerChipFlagValues(objMRSLCA4);
+            objMRSLCA5=setLayerChipFlagValues(objMRSLCA5);
+            objMRSLCA6=setLayerChipFlagValues(objMRSLCA6);
+            listMRSLCA.add(objMRSLCA1);
+            listMRSLCA.add(objMRSLCA2);
+            listMRSLCA.add(objMRSLCA3);
+            listMRSLCA.add(objMRSLCA4);
+            listMRSLCA.add(objMRSLCA5);
+            listMRSLCA.add(objMRSLCA6);
+            insert listMRSLCA;
+            List<Notes__c> listNotes = new List<Notes__c>();
+            Notes__c objNotes1 = new Notes__c(Body__c='Reason1',Category__c='Customer Frame Remote Jobview Setup',ParentId__c=objMRSLCA1.Id);
+            Notes__c objNotes2 = new Notes__c(Body__c='Reason2',Category__c='Foundry Frame Remote Jobview Setup',ParentId__c=objMRSLCA2.Id);
+            Notes__c objNotes3 = new Notes__c(Body__c='Reason3',Category__c='Customer Prime Remote Jobview Setup',ParentId__c=objMRSLCA3.Id);
+            Notes__c objNotes4 = new Notes__c(Body__c='Reason4',Category__c='Foundry Prime Remote Jobview Setup',ParentId__c=objMRSLCA4.Id);
+            Notes__c objNotes5 = new Notes__c(Body__c='Reason5',Category__c='Prime MEBES Received',ParentId__c=objMRSLCA5.Id);
+            Notes__c objNotes6 = new Notes__c(Body__c='Reason6',Category__c='Frame MEBES Received',ParentId__c=objMRSLCA6.Id);
+            Notes__c objNotes7 = new Notes__c(Body__c='Reason7',Category__c='Tapeout Centre/MDP MEBES Jobview',ParentId__c=objMRSLCA6.Id);          
+            listNotes.add(objNotes1);
+            listNotes.add(objNotes2);
+            listNotes.add(objNotes3);
+            listNotes.add(objNotes4);
+            listNotes.add(objNotes5);
+            listNotes.add(objNotes6);
+            listNotes.add(objNotes7);
+            insert listNotes;
+            system.assertEquals(listNotes.size(), 7);
+            Map<Id,MRS_Layer_Chip_Association__c> mapLayerChipsOld = new Map<Id,MRS_Layer_Chip_Association__c>();
+            Map<Id,MRS_Layer_Chip_Association__c> mapLayerChipsNew = new Map<Id,MRS_Layer_Chip_Association__c>();
+            List<MRS_Layer_Chip_Association__c> listMRSLCANew = new List<MRS_Layer_Chip_Association__c>();  
+            set<String> setLayerChipIds = new set<String>();        
+            for(MRS_Layer_Chip_Association__c obj:listMRSLCA){
+                mapLayerChipsOld.put(obj.Id,obj);       
+            }
+            objMRSLCA1.Customer_Frame_Mockup__c='Ready';
+            objMRSLCA1.Send_Prime_Data__c='Done';
+            objMRSLCA2.Customer_Frame_Mockup__c='Ready';
+            objMRSLCA3.Customer_Frame_Mockup__c='Ready';
+            objMRSLCA4.Foundry_Frame_Mockup__c='Ready';
+            objMRSLCA5.Foundry_Frame_Mockup__c='Ready';
+            objMRSLCA6.Foundry_Frame_Mockup__c='Ready';
+            objMRSLCA1.Customer_GDSOUT_Review__c='Ready';
+            objMRSLCA2.Customer_GDSOUT_Review__c='Ready';
+            objMRSLCA3.Customer_GDSOUT_Review__c='Ready';
+            objMRSLCA4.Foundry_GDSOUT_Review__c='Ready';
+            objMRSLCA5.Foundry_GDSOUT_Review__c='Ready';
+            objMRSLCA6.Foundry_GDSOUT_Review__c='Ready';
+            listMRSLCANew.add(objMRSLCA1);
+            listMRSLCANew.add(objMRSLCA2);
+            listMRSLCANew.add(objMRSLCA3);
+            listMRSLCANew.add(objMRSLCA4);
+            listMRSLCANew.add(objMRSLCA5);
+            listMRSLCANew.add(objMRSLCA6);
+            setLayerChipIds.add(objMRSLCA1.Id);
+            setLayerChipIds.add(objMRSLCA2.Id);
+            setLayerChipIds.add(objMRSLCA3.Id);
+            setLayerChipIds.add(objMRSLCA4.Id);
+            setLayerChipIds.add(objMRSLCA5.Id);
+            setLayerChipIds.add(objMRSLCA6.Id);
+        test.startTest();
+            update listMRSLCANew;
+            List<MRS_Layer_Chip_Association__c> listMRSLCANewQueried = new List<MRS_Layer_Chip_Association__c>();
+            for(MRS_Layer_Chip_Association__c obj:[SELECT Approved__c,Chip_Hold_Warning__c,Chip_Name__c,Chip__c,CreatedById,CreatedDate,
+            Customer_Frame_Mockup_Date__c,Customer_Frame_Mockup__c,Customer_Frame_Remote_Jobview_Setup_Date__c,Customer_Frame_Remote_Jobview_Setup__c,
+            Customer_GDSOUT_Review_Date__c,Customer_GDSOUT_Review__c,Customer_MEBES_Jobview_Date__c,Customer_MEBES_Jobview__c,Customer_Name__c,
+            Customer_Prime_Remote_Jobview_Setup_Date__c,Customer_Prime_Remote_Jobview_Setup__c,Device_Id__c,DRT_Name__c,DRT__c,DRW_Date__c,DRW__c,
+            Error_Message_Oracle_DB__c,Error_Message_PTRF_Layer_SendPrimeFrame__c,Error_Message_Sync_Layer_Status__c,Foundry_Frame_Mockup_Date__c,
+            Foundry_Frame_Mockup__c,Foundry_Frame_Remote_Jobview_Setup_Date__c,Foundry_Frame_Remote_Jobview_Setup__c,Foundry_GDSOUT_Review_Date__c,
+            Foundry_GDSOUT_Review__c,Foundry_MEBES_Jobview_Date__c,Foundry_MEBES_Jobview__c,Foundry_Prime_Remote_Jobview_Setup_Date__c,
+            Foundry_Prime_Remote_Jobview_Setup__c,Frame_MEBES_Received_Date__c,Frame_MEBES_Received__c,Frame_TapeOut__c,Layer__r.ROM_Code__c,Layer__r.Name,Layer__r.Mask_Layer_Rev__c,
+            GlobalShuttle_MEBES_Jobview_Date__c,GlobalShuttle_MEBES_Jobview__c,Hold_Mask_Write_Date__c,Hold_Mask_Write__c,Id,IsDeleted,
+            Is_Active__c,Is_Customer_Frame_Mockup_Updated__c,Is_Customer_Frame_Remote_Jobview_Updated__c,Is_Customer_GDSOUT_Review_Updated__c,
+            Is_Customer_MEBES_Jobview_Updated__c,Is_Customer_Prime_Remote_Jobview_Updated__c,Is_DRW_Updated__c,Is_Foundry_Frame_Mockup_Updated__c,
+            Is_Foundry_Frame_Remote_Jobview_Updated__c,Is_Foundry_GDSOUT_Review_Updated__c,Is_Foundry_MEBES_Jobview_Updated__c,
+            Is_Foundry_Prime_Remote_Jobview_Updated__c,Is_Frame_MEBES_Received_Updated__c,Is_GlobalShuttle_MEBES_Jobview_Updated__c,
+            Is_MDP_MEBES_Jobview_Updated__c,Is_ORC_Updated__c,Is_Prime_MEBES_Received_Updated__c,Is_Send_Frame_Data_Updated__c,
+            Is_Send_Prime_Data_Updated__c,Is_Tapeout_Apps_MEBES_Jobview_Updated__c,Is_Tapeout_Centre_MEBES_Jobview_Updated__c,
+            Is_TDTI_MPW_MEBES_Jobview_Updated__c,LastModifiedById,LastModifiedDate,lastmodifieddate_sgt__c,PTRF__r.Customer_jobview__c,
+            Last_Sync_Req_Timestamp_Layer_Gen__c,Last_Sync_Req_Timestamp_ORCN_Job__c,Last_Sync_Req_Timestamp_Receive_MEBES__c,PTRF__r.Foundry_Jobview__c,
+            Last_Sync_Req_Timestamp_Remote_Jobview__c,Last_Sync_Req_Timestamp_Send_Frame__c,Last_Sync_Req_Timestamp_Send_Prime__c,
+            Last_Sync_Req_Timestamp__c,Layer_Chip_Old_Status__c,Layer_Chip_Status_Date__c,Layer_Chip_Status__c,Layer_Name__c,PTRF__r.Name,
+            Layer_Send_Frame_Data__c,Layer_Send_Prime_Data__c,Layer__c,Lock_Record__c,Mask_Layer_Status__c,Mask_Layer__c,Mask_Set_Title_Name__c,
+            MDP_MEBES_Jobview_Date__c,MDP_MEBES_Jobview__c,MRS_ID__c,MST__c,Name,ORC_Date__c,ORC__c,Prime_MEBES_Received_Date__c,
+            Prime_MEBES_Received__c,Prime_TapeOut__c,PTRF_Number__c,PTRF_Or_DRT__c,PTRF__c,Rev__c,ROM_Code__c,Send_Frame_Data_Date__c,
+            Send_Frame_Data__c,Send_Prime_Data_Date__c,Send_Prime_Data__c,Synced_with_Oracle_DB__c,Sync_Layer_Status__c,PTRF__r.MaskSetTitle__r.Name,
+            Sync_PTRF_Layer_SendPrimeFrame_dotNET__c,Sync_PTRF_Layer_to_SWIFT_dotNET__c,SystemModstamp,Tapeout_Applications_MEBES_Jobview_Date__c,
+            Tapeout_Applications_MEBES_Jobview__c,Tapeout_Centre_MEBES_Jobview_Date__c,Tapeout_Centre_MEBES_Jobview__c,TDTI_MPW_MEBES_Date__c,
+            TDTI_MPW_MEBES_Jobview__c,Tech_Geo__c,Trigger_Sync_Layer_Status__c,Void__c,PTRF__r.Tech_Geo__c,Chip__r.Name FROM MRS_Layer_Chip_Association__c where Id IN:setLayerChipIds]){
+                listMRSLCANewQueried.add(obj);  
+                mapLayerChipsNew.put(obj.Id,obj);   
+            }
+                        
+            MRSHandlerUtility.sendEmailToTapeoutApplication(listMRSLCANewQueried,'Jobdeck','CAD Email Content');
+            MRSHandlerUtility.mebbesReceivedSendEmailToReviewers(listMRSLCANewQueried,'Jobdeck','CAD Email Content',true); 
+            MRSHandlerUtility.mebbesReceivedSendEmailToReviewers(listMRSLCANewQueried,'Jobdeck','CAD Email Content',false); 
+            MRSHandlerUtility.mebbesReceivedSunsequentlySendEmailToReviewers(listMRSLCANewQueried,'Jobdeck',true,'Remark'); 
+            MRSHandlerUtility.sendEmailToMDPUser(listMRSLCANewQueried,'Jobdeck','CAD Email Content');    
+            MRSHandlerUtility.sendEmailToSubsequentMDPUser(listMRSLCANewQueried,'Jobdeck','Remark');            
+            test.stopTest();
+        }   
+     }
+}

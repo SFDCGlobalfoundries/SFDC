@@ -1,0 +1,156 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ApprovalProcess xmlns="http://soap.sforce.com/2006/04/metadata">
+    <active>true</active>
+    <allowRecall>false</allowRecall>
+    <allowedSubmitters>
+        <type>owner</type>
+    </allowedSubmitters>
+    <approvalPageFields>
+        <field>Name</field>
+        <field>Account_Name__c</field>
+        <field>Fab__c</field>
+    </approvalPageFields>
+    <approvalStep>
+        <allowDelegate>false</allowDelegate>
+        <assignedApprover>
+            <approver>
+                <name>Assignee_2__c</name>
+                <type>relatedUserField</type>
+            </approver>
+            <approver>
+                <name>Assignee_1__c</name>
+                <type>relatedUserField</type>
+            </approver>
+            <whenMultipleApprovers>FirstResponse</whenMultipleApprovers>
+        </assignedApprover>
+        <entryCriteria>
+            <booleanFilter>1 AND 2 AND 3</booleanFilter>
+            <criteriaItems>
+                <field>New_Part_Creation_Form__c.Assignee_1__c</field>
+                <operation>notEqual</operation>
+            </criteriaItems>
+            <criteriaItems>
+                <field>New_Part_Creation_Form__c.Assignee_2__c</field>
+                <operation>notEqual</operation>
+            </criteriaItems>
+            <criteriaItems>
+                <field>New_Part_Creation_Form__c.No_of_PI_YE_Assignes__c</field>
+                <operation>equals</operation>
+                <value>2</value>
+            </criteriaItems>
+        </entryCriteria>
+        <ifCriteriaNotMet>GotoNextStep</ifCriteriaNotMet>
+        <label>Reticle At GF</label>
+        <name>PI_YE_Update</name>
+    </approvalStep>
+    <approvalStep>
+        <allowDelegate>false</allowDelegate>
+        <assignedApprover>
+            <approver>
+                <name>Assignee_1__c</name>
+                <type>relatedUserField</type>
+            </approver>
+            <whenMultipleApprovers>FirstResponse</whenMultipleApprovers>
+        </assignedApprover>
+        <entryCriteria>
+            <criteriaItems>
+                <field>New_Part_Creation_Form__c.Assignee_1__c</field>
+                <operation>notEqual</operation>
+            </criteriaItems>
+            <criteriaItems>
+                <field>New_Part_Creation_Form__c.No_of_PI_YE_Assignes__c</field>
+                <operation>equals</operation>
+                <value>1</value>
+            </criteriaItems>
+        </entryCriteria>
+        <label>Reticle At GF</label>
+        <name>Reticle_At_GF</name>
+        <rejectBehavior>
+            <type>RejectRequest</type>
+        </rejectBehavior>
+    </approvalStep>
+    <emailTemplate>GLOBALFOUNDRIES/NPC_Mail_to_Originator_FE_CSR_CE_CE_Systems_after_Approval</emailTemplate>
+    <enableMobileDeviceAccess>false</enableMobileDeviceAccess>
+    <entryCriteria>
+        <formula>AND( 
+NOT(AND( 
+OR(ISPICKVAL(BASE_Device__r.Fab__c, &apos;FAB 1&apos;) 
+, ISPICKVAL(BASE_Device__r.Fab__c, &apos;FAB 8&apos;)) 
+, ISPICKVAL(Tapeout_Required__c, &apos;Yes&apos;) 
+) 
+) 
+,
+AND((ISPICKVAL(PI_YE_Approval_Status__c, &apos;Status 1&apos;)),(ISPICKVAL(Is_reticle_available__c, &apos;Yes,at GF&apos;)))
+, 
+AND( 
+ISPICKVAL(Reason_for_New_Part__c, &apos;Device Reactivation&apos;),
+OR(ISPICKVAL(NPC_Form_Status__c, &apos;In Execution&apos;),
+ISPICKVAL(NPC_Form_Status__c, &apos;Executed&apos;))) 
+)</formula>
+    </entryCriteria>
+    <finalApprovalActions>
+        <action>
+            <name>NPC_Form_Approval_Status_Accepted</name>
+            <type>FieldUpdate</type>
+        </action>
+        <action>
+            <name>PI_YE_Field_Update_2</name>
+            <type>FieldUpdate</type>
+        </action>
+        <action>
+            <name>Set_NPC_Form_Status_to_Executed</name>
+            <type>FieldUpdate</type>
+        </action>
+    </finalApprovalActions>
+    <finalApprovalRecordLock>true</finalApprovalRecordLock>
+    <finalRejectionActions>
+        <action>
+            <name>NPC_Form_Approval_Status_Rejected</name>
+            <type>FieldUpdate</type>
+        </action>
+        <action>
+            <name>Set_NPC_Rec_Type_to_StatusRejected</name>
+            <type>FieldUpdate</type>
+        </action>
+        <action>
+            <name>Set_NPC_Status_to_Pending_Resubmission</name>
+            <type>FieldUpdate</type>
+        </action>
+        <action>
+            <name>Update_Send_Reject_Email_Flag</name>
+            <type>FieldUpdate</type>
+        </action>
+        <action>
+            <name>Update_STF_Activation_Steps4</name>
+            <type>FieldUpdate</type>
+        </action>
+    </finalRejectionActions>
+    <finalRejectionRecordLock>false</finalRejectionRecordLock>
+    <initialSubmissionActions>
+        <action>
+            <name>NPC_Form_Approval_Status_Pending</name>
+            <type>FieldUpdate</type>
+        </action>
+        <action>
+            <name>Set_NPC_Form_Status_to_In_Execution</name>
+            <type>FieldUpdate</type>
+        </action>
+    </initialSubmissionActions>
+    <label>NPC Form PI/YE Update Yes at GF</label>
+    <recallActions>
+        <action>
+            <name>NPC_Form_Approval_Status_Recalled</name>
+            <type>FieldUpdate</type>
+        </action>
+        <action>
+            <name>Set_NPCStatus_to_Pending_Resubmission</name>
+            <type>FieldUpdate</type>
+        </action>
+        <action>
+            <name>Update_Send_Recall_Email_Flag</name>
+            <type>FieldUpdate</type>
+        </action>
+    </recallActions>
+    <recordEditability>AdminOnly</recordEditability>
+    <showApprovalHistory>false</showApprovalHistory>
+</ApprovalProcess>

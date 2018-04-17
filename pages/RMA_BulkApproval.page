@@ -1,0 +1,157 @@
+<!--
+* Company       :   Cognizant Technologies PTE Ltd.
+* Description   :   Custom View to approve the multiple RMAs for Customer Quality Validation.
+* History       :   
+
+        Initials        Date          Description
+-----------------------------------------------------------------------------------------
+        Nikhil Jain    04-Jul-16      Created the Visualforce Page
+        Pradosh Samal  07-Jul-17      Changes for intorducing fab ALTIS 
+-->
+
+<apex:page controller="RMA_BulkApprovalController" showChat="false" cache="true" sidebar="false" tabStyle="RMA__c" id="rmaBulkApproval">
+    
+    <style>
+        .ct{
+        text-align:center;
+        }
+    </style>
+    
+    <apex:form id="TheForm" >
+        <apex:sectionHeader title="" subtitle="Bulk Customer Quality Validation"/>
+        <apex:pageMessages id="pageMessageId" escape="false"></apex:pageMessages>
+        <c:loadingPanel ></c:loadingPanel>
+        
+        <apex:pageBlock mode="detail" id="pageblock1" >
+            <apex:pageMessage severity="error" strength="1" summary="No records found !" rendered="{!RMAWrapperRecords.size<1}"/>
+            <apex:pageBlockButtons location="top">
+                <apex:commandButton value="Save and Approve" action="{!SaveAndApprove}" rerender="pageMessageId" 
+                        status="LoadingStatusSpinner" rendered="{!RMAWrapperRecords.size>0}"/>
+                <apex:commandButton value="Cancel" action="{!Cancel}"/>
+            </apex:pageBlockButtons>
+            <apex:pageBlockTable value="{!RMAWrapperRecords}" var="wrap" border="2" frame="box" rendered="{!RMAWrapperRecords.size>0}">
+                <apex:column headerValue="Select" headerClass="ct">
+                    <apex:inputCheckbox value="{!wrap.isSelected}"/>
+                </apex:column>
+                <apex:column value="{!wrap.rmaRec.Name}" headerClass="ct"/>
+                <apex:column value="{!wrap.rmaRec.Fab__c}" headerClass="ct"/>
+                <apex:column value="{!wrap.rmaRec.RMA_By__c}" style="text-align:center;" headerClass="ct"/>
+                <apex:column value="{!wrap.rmaRec.RMA_Category__c}" headerClass="ct"/>
+                <apex:column style="text-align:center;" headerClass="ct">
+                    <apex:facet name="header">Product<br/>Type</apex:facet>
+                    <apex:outputField value="{!wrap.rmaRec.Business_Category__c}"/>
+                </apex:column>
+                <apex:column style="text-align:center;" headerClass="ct">
+                    <apex:facet name="header">Return Reason<br/>Code</apex:facet>
+                    <apex:outputField value="{!wrap.rmaRec.ReasonCode__c}"/>
+                </apex:column>
+                <apex:column style="text-align:center;" headerClass="ct">
+                    <apex:facet name="header">Total Wafers/Die<br/>(CSR Submission)</apex:facet>
+                    <apex:outputField value="{!wrap.rmaRec.Total_Wafers__c}"/>
+                </apex:column>
+                <apex:column value="{!wrap.rmaRec.Workflow_Stage__c}" headerClass="ct"/>
+                <apex:column style="text-align:center;" headerClass="ct">
+                    <apex:facet name="header">Count<br/>(Line Item)</apex:facet>
+                    <apex:outputField value="{!wrap.rmaRec.Count_Line_Item__c}"/>
+                </apex:column>
+                <apex:column value="{!wrap.rmaRec.Disposition_of_Wafers__c}" headerClass="ct"/>
+                <apex:column headerValue="Disposition by Quality" headerClass="ct">
+                    <apex:inputField value="{!wrap.rmaRec.Disposition_by_Quality__c}"/>
+                </apex:column>
+                <apex:column headerValue="Action" headerClass="ct">
+                    <input type="button" id="button1" onclick="toggleContacts('tbl-{!wrap.rmaRec.id}');" value="Show/Hide Line Items" class="btn" />
+                </apex:column>
+                
+                <apex:column breakBefore="true"/>
+                <apex:column colspan="11">
+                    <apex:outputPanel styleClass="tbl-{!wrap.rmaRec.id}" style="display:none;">
+                    <apex:pageBlockSection title="Line Item Information" showheader="true" collapsible="false" columns="1">
+                        <apex:pageBlockTable value="{!wrap.rmaRec.RMA_Return_Invoices__r}" var="ramRIrec">
+                            <apex:column >
+                                <apex:facet name="header">Invoice #</apex:facet>
+                                <apex:outputField value="{!ramRIrec.Invoice_Number__c}"/>                  
+                            </apex:column>
+                            <apex:column >
+                                <apex:facet name="header">Invoice Date</apex:facet>
+                                <apex:outputField value="{!ramRIrec.Invoice_Date__c}"/>              
+                            </apex:column>
+                            <apex:column >
+                                <apex:facet name="header">Lot #</apex:facet>
+                                <apex:outputField value="{!ramRIrec.Lot_Number__c}"/>     
+                            </apex:column>
+                            <apex:column >
+                                <apex:facet name="header">Device</apex:facet>
+                                <apex:outputField value="{!ramRIrec.Device__c}"/>              
+                            </apex:column>
+                            <apex:column rendered="{!wrap.rmaRec.RMA_By__c != 'Module' && (wrap.rmaRec.Fab__c != 'FAB 9' && wrap.rmaRec.Fab__c != 'FAB 10' && wrap.rmaRec.Fab__c != 'ALTIS')}">
+                                <apex:facet name="header">Wafer Id<br/>(CSR Submission)</apex:facet>
+                                <apex:outputField value="{!ramRIrec.Wafer_Id_CSR_Submission__c}" />
+                            </apex:column>
+                            <apex:column rendered="{!wrap.rmaRec.RMA_By__c != 'Module' && (wrap.rmaRec.Fab__c == 'FAB 9' || wrap.rmaRec.Fab__c == 'FAB 10' || wrap.rmaRec.Fab__c == 'ALTIS')}">
+                                <apex:facet name="header">Wafer Id<br/>(CSR Submission)</apex:facet>
+                                <apex:outputField value="{!ramRIrec.Wafer_Id_Fab_9_10_CSR_Submission__c}" />
+                            </apex:column>
+                            <apex:column rendered="{!wrap.rmaRec.RMA_By__c == 'Wafer'}">
+                                <apex:facet name="header">Quantity<br/>(CSR Submission)</apex:facet>
+                                <apex:outputField value="{!ramRIrec.Wafer_Quantity__c}"/>                 
+                            </apex:column>
+                            <apex:column rendered="{!wrap.rmaRec.RMA_By__c == 'Module'}">
+                                <apex:facet name="header">Module Quantity<br/>(CSR Submission)</apex:facet>
+                                <apex:outputField value="{!ramRIrec.Module_Quantity__c}"/>                 
+                            </apex:column>
+                            <apex:column >
+                                <apex:facet name="header">Scrap Limit</apex:facet>
+                                <apex:outputField value="{!ramRIrec.Scrap_Limit__c}"/>                                                      
+                            </apex:column>
+                            <apex:column >
+                                <apex:facet name="header">Wafer Yield</apex:facet>
+                                <apex:outputField value="{!ramRIrec.Wafer_Yield__c}"/>
+                            </apex:column>
+                            <apex:column rendered="{!wrap.rmaRec.RMA_By__c == 'Die'}">
+                                <apex:facet name="header">GDPW</apex:facet>
+                                <apex:outputField value="{!ramRIrec.GDPW__c}"/>
+                            </apex:column>
+                            <apex:column rendered="{!wrap.rmaRec.RMA_By__c == 'Die'}">
+                                <apex:facet name="header">Die Quantity</apex:facet>
+                                <apex:outputField value="{!ramRIrec.Die_Quantity__c}"/>
+                            </apex:column>
+                            <apex:column rendered="{!wrap.rmaRec.RMA_By__c == 'Die'}">
+                                <apex:facet name="header">Die Selling<br/>Price</apex:facet>
+                                <apex:outputField value="{!ramRIrec.Die_Selling_Price__c}"/>                                                                              
+                            </apex:column>
+                        </apex:pageBlockTable>
+                    </apex:pageblockSection>
+                    </apex:outputPanel>
+                </apex:column>
+            </apex:pageBlockTable>
+            
+            <apex:panelGrid columns="8">
+                <apex:commandButton status="fetchStatus" reRender="pageblock1" value="First" action="{!first}" disabled="{!!hasPrevious}" title="First Page"/> 
+                <apex:commandButton status="fetchStatus" reRender="pageblock1" value="Previous" action="{!previous}" disabled="{!!hasPrevious}" title="Previous Page"/> 
+                <apex:commandButton status="fetchStatus" reRender="pageblock1" value="Next" action="{!next}" disabled="{!!hasNext}" title="Next Page"/> 
+                <apex:commandButton status="fetchStatus" reRender="pageblock1" value="Last" action="{!last}" disabled="{!!hasNext}" title="Last Page"/> 
+                <apex:outputText >{!(pageNumber * size)+1-size}-{!IF((pageNumber * size) > noOfRecords, noOfRecords, (pageNumber * size))} of {!noOfRecords}
+                </apex:outputText>  
+                <apex:outputPanel >                      
+                    <apex:actionStatus id="fetchStatus" >
+                        <apex:facet name="start" >
+                          <img src="/img/loading.gif" />                    
+                        </apex:facet>
+                    </apex:actionStatus>
+                </apex:outputPanel> 
+            </apex:panelGrid>
+        </apex:pageBlock>
+        
+    </apex:form>
+        
+    <script>
+        function toggleContacts(className){
+            elem = document.getElementsByClassName(className)[0];
+            if(elem.style.display == 'none')
+                elem.style.display = 'block';
+            else
+                elem.style.display = 'none';
+        }
+    </script>
+    
+</apex:page>

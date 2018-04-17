@@ -1,0 +1,227 @@
+<apex:page Controller="MCMController"  showHeader="false" sidebar="false" >    
+
+    <style type="text/css">                 
+        select                  
+{
+width:50%;
+ font-size: 12px;
+color: #3c3d3e;
+padding: 10px 10px;
+line-height: 10px;
+border: 1px solid #cfd0d2;
+border-radius: 5px;
+background-color: #e8eaeb;
+box-shadow: inset 0 2px 2px rgba(0,0,0,.07);
+margin:2px 2px 2px 2px;
+} 
+
+        .custom1                    
+        {                   
+        background-color: DodgerBlue;                   
+        }                   
+        .custom3                    
+        {                   
+        font-family: 'ProximaNovaSoft-Regular','Helvetica Neue';                    
+        }                   
+        
+        .pbSubheader h3{                    
+        position: absolute;                  
+        left: 50%;                   
+        }   
+        .custom4                    
+        {     
+        text-align: right;            
+        font-size: 12px;                    
+        color: #3c3d3e;                 
+        padding: 2px 2px;                  
+        
+        
+        }   
+        
+    </style>                           
+    <script>
+    var _mySSheet = (function() {
+        var style = document.createElement("style");
+        style.appendChild(document.createTextNode(""));
+        document.head.appendChild(style);
+        return style.sheet;
+    })();
+    
+    function makeLong(objName)
+    {
+        
+        objName = objName.replace(/:/g,"_");
+        
+        _mySSheet.insertRule("#" + objName + " { width:60% }", 0);
+    }
+    
+    function AdjSize(objName,sno)
+    {
+        
+        objName = objName.replace(/:/g,"_")+sno;
+        
+        _mySSheet.insertRule("#" + objName + " { width:60% }", 0);
+    }
+    </script>
+    
+       
+    <!--  <apex:stylesheet value="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css"/>-->
+    <apex:outputPanel layout="block" styleClass="custom1">
+        &nbsp;
+    </apex:outputPanel>
+    <div class="custom3">
+         <apex:sectionHeader title="Multi-Chip Module" subtitle="{!mcmDetailObj.Device__r.name}"/>
+    </div>
+    
+    
+    <apex:form id="formID" >                    
+        
+        <apex:pageMessages ></apex:pageMessages>            
+        
+        <apex:pageBlock id="pb1" >  
+            <apex:pageBlockSection columns="2" title="MCM Test & Burn-In Services"   showHeader="false" >  
+                <apex:inputField value="{!mcmDetailObj.Fab__c}" styleClass="select"/>
+                <apex:inputField value="{!mcmDetailObj.Device__c}" styleClass="select"/>
+    <!--       </apex:pageBlockSection>    
+            <apex:pageBlockSection columns="2" title="Mcm Test Service"   showHeader="false">       -->          
+                
+                <apex:inputField value="{!mcmDetailObj.Test_Platform__c}" label="Test Platform" styleClass="select" />         
+                  <apex:inputField value="{!mcmDetailObj.Actual_Tapeout_Date_FAB_9_and_FAB_10__c}" styleClass="select"  label="Actual Tapeout Date"/>          
+                <apex:inputField value="{!mcmDetailObj.No_of_DUTS__c}" styleClass="select" />                 
+          <!--      <apex:inputField value="{!mcmDetailObj.Actual_Tapeout_Date__c}" styleClass="select" required="true"/>       -->       
+                  
+                <apex:inputField value="{!mcmDetailObj.User_Defined_Time__c}" styleClass="select" label="User Defined Time (in sec)"   /> 
+              
+                
+        <!--      </apex:pageBlockSection>
+            
+             <apex:pageBlockSection columns="2" title="MCM Burn InService"   showHeader="false">      -->           
+                
+                <apex:inputField value="{!mcmDetailObj.Burn_In_Platform__c}" label="Burn-In Platform" styleClass="select" />                 
+                <apex:inputField value="{!mcmDetailObj.Number_of_Sockets_Per_Boards__c}" styleClass="select" />                 
+              
+                
+            </apex:pageBlockSection>
+            
+            <br/>
+            <apex:actionregion >                   
+                <div style="width:55%;margin-left: auto; margin-right: auto;draggable:false;" >        
+                    <apex:pageBlockSection rendered="{!(mcmDetailObj.id!=null)}">    
+                         <apex:outputLabel >
+                            &nbsp; &nbsp; &nbsp; <b>MCM Technologies: &nbsp;
+                            <apex:commandLink action="{!gotoConfSelectionPage}" title="Click here to Add/Remove Configurations to MCM" > <font color="#cc0a1a">Add/Update</font>      </apex:commandLink></b>  
+                            <!--<apex:outputLink value="/apex/MCMConfigurationSelection?id={!deviceId}" title="MCM Technologies Selection" > <font color="#cc0a1a">Add/Update</font> <apex:param name="mcmId" value="{!mcmDetailObj.Id}"/> 
+<apex:param name="id" value="{!deviceId}"/> </apex:outputLink>-->
+                            
+                        </apex:outputLabel>
+      
+                        <apex:outputLabel >
+                            &nbsp; &nbsp; &nbsp;<b>MCM Shipment Quantity: &nbsp;
+                            <apex:outputLink value="/apex/MCMQuarterlyVolume?id={!deviceId}" title="Click here to Add/Edit MCM Shipment Quantity" > <font color="#cc0a1a">Add/Update</font></apex:outputLink></b>
+                        </apex:outputLabel>   
+                        
+                                            
+                    </apex:pageBlockSection>  
+              
+                    
+                    <apex:outputPanel id="panekID" rendered="{!(lstMcmConfDtl.size >0)}" >                   
+                            <apex:pageBlockTable value="{!lstMcmConfDtl}" var="conf" >    
+                                    <apex:column headerValue="Configuration ID">
+                                 <apex:outputLink value="/{!conf.Configuration__c}"> {!conf.configuration__r.Name}</apex:outputLink>
+                                </apex:column>
+                                    <apex:column value="{!conf.configuration__r.Process_Technology_Name__c}"/>                    
+                                    <apex:column value="{!conf.configuration__r.device__r.NAme}"/>  
+                                    <apex:column headerValue="Chips per Technology" width="2px">
+                                        <apex:outputField id="chipNo"  value="{!conf.Chip_per_Technology__c}" >
+                                              <apex:inlineEditSupport showOnEdit="update" event="onclick" />   
+                                             <script>makeLong("{!$Component.chipNo}");</script>
+                                        </apex:outputField>
+                                    </apex:column>
+                            
+                            </apex:pageBlockTable>               
+                    </apex:outputPanel>       
+            </div>                      
+                <br/>                  
+            </apex:actionregion>     
+            <apex:actionregion id="arCost">      
+                 <apex:outputPanel rendered="{!(lstUSubstrateCost.size >0)}">
+                <div style="width:55%;margin-left: auto; margin-right: auto;draggable:false;"  id="div3" >    
+                  <apex:outputLabel ><b>MCM Assembly / Substrate Cost (before Yield)</b></apex:outputLabel>
+                </div> 
+                  </apex:outputPanel>
+                  <div style="width:55%;margin-left: auto; margin-right: auto;draggable:false;height:120px;overflow:auto;"  id="div3">    
+                    
+                        <apex:outputPanel id="pID" rendered="{!(lstUSubstrateCost.size >0)}" title="MCM Assembly & Substrate Cost (before Yield)">                   
+                            <apex:pageBlockTable value="{!lstUSubstrateCost}" var="cost"  width="200" title="MCM Assembly & Substrate Cost (before Yield)" >    
+                                    <apex:column value="{!cost.Year__c}" width="50px"/>
+                                    <apex:column value="{!cost.Quarter__c}" width="50px"/>                    
+                                    <apex:column headerValue="Cost" width="15px">
+                                        <apex:outputField id="CostId"  value="{!cost.Cost__c}" >
+                                              <apex:inlineEditSupport showOnEdit="update" event="onclick" />   
+                                        
+                                            <script>makeLong("{!$Component.CostId}");</script>
+                                        </apex:outputField>
+                                    </apex:column>
+                            
+                            </apex:pageBlockTable>               
+                    </apex:outputPanel>     
+                  </div>
+            </apex:actionregion>  
+                                        <br/>
+                                           
+            <apex:actionregion >                   
+                <div style="width:95%;margin-left: auto; margin-right: auto;draggable:false;overflow:auto"  id="div2">    
+                       <apex:outputPanel id="YieldsID1" rendered="{!(qtrCount.size>0)}">         
+                                <apex:dynamicComponent componentValue="{!YieldsPageBlockTable}"  invokeAfterAction="true" id="dcomp"/>
+                      </apex:outputPanel>
+                 </div>
+            </apex:actionregion>   
+            <br/>
+           
+            <apex:actionregion id="ar1">                   
+                  <div style="width:95%;margin-left: auto; margin-right: auto;draggable:false"  id="div1">     
+                        <apex:outputPanel id="BIDuration" rendered="{!(qtrCount.size>0)}">         
+                                  <apex:dynamicComponent componentValue="{!BIDurationPageBlockTable}"  invokeAfterAction="true" id="bicomp"/>
+                        </apex:outputPanel>
+                  </div>
+            </apex:actionregion>  
+          <br/>  
+            
+                                     <!-- <apex:actionregion >                   
+                                                        <apex:pageBlockSection rendered="{!customDisplay}" >                    
+                                                            Display MCM Test Yield,Burn-In User Defined Yield and Module Assembly Yield
+                                                            </apex:pageBlockSection>
+                                                            </apex:actionregion>  -->
+                                                            </apex:pageBlock> 
+                                                            
+                                                            
+                                                            <center>
+                                                                
+                                                                <br/>
+                                                                <div class="custom1"> 
+                                                                     <apex:commandButton action="{!DisplayCostReport}" value="Cost Report"  rendered="{!(mcmDetailObj.Cost_Report__c!=null && mcmDetailObj.Cost_Report__c>0)}" />   
+                                                                    <apex:commandButton action="{!SaveMCMData}" value="Save"  />   
+                                                                    <apex:commandButton action="{!GenerateCostReport}" value="Generate/Refresh Cost Report"  rendered="{!mcmDetailObj.MCM_QUArTERLY_VOLUME__r.size>0}"/>       
+                                                                    <apex:commandButton value="Back to Device" action="{!redirectToMCMDevice}"/>  
+                                                                        
+                                                                        
+                                                                        </div>  
+                                                                    </center>     
+                                                                   
+                                                                                        
+                                                                                        
+                                                                                        <apex:repeat value="{!qtrCount}" var="qtr" >  
+                                                                                            
+                                                                                            <script>
+                                                                                            AdjSize("{!$Component.formID.pb1.table1}:0:Vol","{!qtr}");
+                                        AdjSize("{!$Component.formID.pb1.table1}:1:Vol","{!qtr}");
+                                        AdjSize("{!$Component.formID.pb1.table1}:2:Vol","{!qtr}");
+                                        AdjSize("{!$Component.formID.pb1.table2}:0:Durr","{!qtr}");
+                                        AdjSize("{!$Component.formID.pb1.table3}:0:Cost","{!qtr}");
+
+                                        </script>   
+                                    </apex:repeat> 
+                                    
+                                </apex:form>      
+                                
+                            </apex:page>

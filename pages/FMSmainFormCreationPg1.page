@@ -1,0 +1,638 @@
+<!-- Modified History-
+Inshu Misra  13-10-2016     modified the Save button action...#IM
+Abhita Bansal  06-03-2017   Added By Abhita for replacing None with Select a value
+Abhita Bansal  29-05-2017   Changed by Abhita for New UAT Issue #151
+-->
+<apex:page standardController="Form_Management_System__c" extensions="FMSmainFormEditController" action="{!init}" showHeader="true" sidebar="true">
+<!-- <apex:page showHeader="{!!isExternalUser}" sidebar="{!!isExternalUser}"/> -->
+<!--<apex:includeScript value="{!URLFOR($Resource.jquery, 'js/jquery-1.8.3.js')}"/>
+<apex:includeScript value="{!URLFOR($Resource.jquery, 'js/jquery-ui-1.9.2.custom.js')}"/>
+<apex:includeScript value="{!URLFOR($Resource.ROS_JQuery_Deafult, '/jquery-ui-1.10.3.custom/js/jquery-1.9.1.js')}"/>-->
+<c:JqueryLibrary />
+<style>  
+    .bPageBlock .requiredInput .requiredBlock{background-color: #F6FBF6;}  
+    .requiredInput .requiredBlock::before { display: block; content: "*"; font-size: 1.5em; font-weight: bold; color: #c00; margin-left: -12px; margin-top: -3px; }  
+
+    p{
+       color:brown;
+    }
+    
+    a{
+        text-decoration: none;
+    }
+</style>
+
+<script type="text/javascript">
+    $j = jQuery.noConflict(); 
+    
+    function blockPage(){ 
+        $j.blockUI({ message: '<img src="/img/loading32.gif" /><h1> Refreshing...</h1>', 
+            css: { 
+             border: 'none', 
+             padding: '15px',  
+             '-webkit-border-radius': '10px', 
+             '-moz-border-radius': '10px', 
+             opacity: .9
+            } 
+        }); 
+        return false;
+    }
+    //function to unblock the page
+    function unblockPage(){
+        $j.unblockUI();
+    }
+    
+    function showSimpleDialog(){    
+       var sd = new SimpleDialog("Test"+Dialogs.getNextId(), true);    
+       sd.setTitle("Warning");   
+       sd.createDialog();   
+       window.parent.sd = sd;   
+       var ex = sd.setContentInnerHTML("<p align='center' ><img src='/img/msg_icons/warning24.png'/> <b>Warning!</b> <br/></p><p align='center'>The data you are attempting to save is either incomplete or has errors. <br/> <br/> You can either go back and correct the errors, or proceed to save this form anyway (this will save only the fields with valid data).</p><p align='center'><br /><button class='btn' onclick='window.parent.sd.hide(); return false;'>Back to the form</button> &nbsp; &nbsp; &nbsp; &nbsp; <button class='btn' onclick='saveandExit(\"page1\"); return true;'>Save Anyway</button></p>"); 
+       sd.show();   
+       return ex;
+     } 
+
+    //Remove None from picklist **** Added By Abhita for replacing None with Select a value
+    $j(function() {        
+        $j("select.RemoveNone option[value='']").text("=== Select a Value ===");       
+    });  
+    
+    function showDialogforCancel(){
+    
+        var sd = new SimpleDialog("Test"+Dialogs.getNextId(), true);    
+        sd.createDialog(); 
+        sd.setWidth(400);               
+        window.parent.sd = sd;
+        var ex = sd.setContentInnerHTML("<img src='/img/msg_icons/warning24.png'/> <b>Warning!</b> <br/><br/>Are you sure you want to Cancel your changes?<br/> Any changes that you made to this form since the last Save will be lost. <br/><br/><p align='center'><button class='btn' onclick='cancelFormFunction(); window.parent.sd.hide(); return true;'>Confirm</button>&nbsp; &nbsp; &nbsp; &nbsp; <button class='btn' onclick='window.parent.sd.hide(); return false;'>Cancel</button></p>"); 
+        sd.show();   
+        return ex;
+    }
+    function onChangeOfFMSTech(ele){        
+        var propVar='{!prop}';      
+        if(propVar!=null && propVar.length>2){      
+            var message = 'Your configurator data will be deleted. <br/>Do you want to continue?<br/> Click <b>Ok</b> to confirm.';         
+            $j('#fmsModal').html(message).dialog({ modal: true, title: 'Warning', draggable:false, resizable:false, closeOnEscape: false, width : 500, open: function(event, ui) {      
+                $j(".ui-dialog-titlebar-close", ui.dialog | ui).hide();         
+                $j(":button:contains('Cancel')").focus();       
+            }, buttons : { "Ok" :       
+            function() { $j(this).dialog("close"); changeTechOptForOriginal();},        
+            "Cancel" : function() { ele.value = $j('[id$="fmsTechbyoldvalue"]').val(); $j(this).dialog("close"); } } });        
+        }else{      
+            changeTechnology();         
+        }       
+    }
+</script>
+
+<apex:pagemessages id="errorMsg" /> 
+
+<apex:form id="fmsForm">
+    <div id="fmsModal"></div>
+    <c:FMSNameDesc ></c:FMSNameDesc>
+    
+    <apex:actionFunction name="saveandExit" action="{!saveandExit}">
+        <apex:param assignTo="{!pageN}" name="page" value=""/>
+    </apex:actionFunction>
+    
+    <apex:actionFunction name="validateCheck" action="{!validateSave}">
+        <apex:param assignTo="{!pageN}" name="page" value=""/>
+    </apex:actionFunction>
+    
+    <apex:actionFunction name="cancelFormFunction" action="{!cancelForm}" status="blockUI"/>
+    <apex:actionStatus onstart="blockPage()" onstop="unblockPage()" id="blockUI"/>
+    
+    <apex:pageBlock title="Form Page {!pageNum}" id="pb1">
+                <p style="color:black;">
+        Enter data and select specifications to create a form customized to your needs. In order to provide best service, GLOBALFOUNDRIES requests questionnaire submission at least 4 weeks prior to final data transmission.
+
+        <br/> <br/>
+        The fields indicated with an asterisk (*) are required in order to complete this transaction; other fields are optional. 
+        If you do not want to provide us with the required information, please use the "Cancel" button on the bottom of this page, or close the window or browser session that is displaying this page. 
+        This data, at any time revocable by you, may be stored by GLOBALFOUNDRIES or an affiliate on an international server and used by GLOBALFOUNDRIES or an affiliate. </p>
+            <br/> <br/>
+        
+        <apex:pageblockSection title="General Information" columns="1" id="pbs1" collapsible="false">  
+            <apex:actionRegion >
+                <apex:outputPanel >
+                    <apex:pageBlockSection >
+                        <apex:pageblocksectionItem >
+                            <apex:outputlabel value="Product Name:"/>
+                            <apex:outputPanel >   
+                                <div class = "requiredInput">
+                                    <div class = "requiredBlock"></div>                                    
+                                    <apex:inputField value="{!formObj.ProductName__c}" />
+                                  <!--  <a href="{!FMSdocuments['FMSMainFormPage1'].FMSRefDocURL__c}" target="_blank">
+                                        <img src="/img/alohaSkin/help_orange.png" height="13" width="13" />
+                                    </a>-->
+                                     <img src="/img/alohaSkin/help_orange.png" title="{!$ObjectType.Form_Management_System__c.fields.ProductName__c.InlineHelpText}" height="13" width="13" />
+                                </div>
+                            </apex:outputPanel>
+                        </apex:pageblocksectionItem>        
+                    </apex:pageBlockSection>
+                </apex:outputPanel>
+                
+                <apex:outputPanel >
+                    <apex:pageBlockSection >
+                        <apex:pageblocksectionItem >
+                            <apex:outputlabel value="Product Revision:"/>
+                            <apex:outputPanel >   
+                                <div class = "requiredInput">
+                                    <div class = "requiredBlock"></div>
+                                    <apex:inputField value="{!formObj.ProductRevision__c}" />
+                                 <!--   <a href="{!FMSdocuments['FMSMainFormPage1'].FMSRefDocURL__c}" target="_blank">
+                                        <img src="/img/alohaSkin/help_orange.png" height="13" width="13" />
+                                    </a> -->
+                                   <img src="/img/alohaSkin/help_orange.png" title="{!$ObjectType.Form_Management_System__c.fields.ProductRevision__c.InlineHelpText}" height="13" width="13" /> 
+                                </div>
+                            </apex:outputPanel>
+                        </apex:pageblocksectionItem> 
+                    </apex:pageBlockSection>
+                </apex:outputPanel>
+                <br/>
+                <span style="color:black;">
+                Please note that the product name and revision you enter here will be used to identify your part on official notices and labels, such as for shipments and invoices.<br/> </span>
+                <br/>
+                <apex:outputPanel >
+                    <apex:pageBlockSection >
+                        <apex:pageblockSectionItem >
+                            <apex:outputLabel value="Product Application:"/>
+                            <apex:outputPanel >
+                                <apex:inputField label="Product Application:" value="{!formObj.ProductApplication__c}" /> 
+                                <img src="/img/alohaSkin/help_orange.png" title="{!$ObjectType.Form_Management_System__c.Fields.ProductApplication__c.inlineHelpText}" height="13" width="13" />
+                            </apex:outputPanel>
+                        </apex:pageblockSectionItem> 
+                    </apex:pageBlockSection>
+                </apex:outputPanel>
+                
+                <apex:outputPanel >
+                    <apex:pageBlockSection >
+                        <apex:pageblockSectionItem id="pbsi1">
+                            <apex:outputLabel value="Have you read and do you understand the Foundry Release Requirements?"/>
+                            <apex:outputPanel id="hasReleGuide">   
+                                <div class = "requiredInput">
+                                    <div class = "requiredBlock"></div>                     
+                                    <apex:selectList id="relguide" value="{!formOBj.HasReleaseGuidelines__c}" multiselect="false" size="1" >
+                                        <apex:selectOptions value="{!releGuideList}"/>
+                                    </apex:selectList>
+                                    <img src="/img/alohaSkin/help_orange.png" title="{!$ObjectType.Form_Management_System__c.Fields.HasReleaseGuidelines__c.inlineHelpText}" height="13" width="13"/>        
+                                    <apex:actionSupport event="onchange" reRender="relguide, reviewCond" status="releaseStatus"/>                      
+                                </div>  
+                                <apex:actionStatus id="releaseStatus" startText="Refreshing..." stopText="" />  
+                            </apex:outputPanel>            
+                        </apex:pageblockSectionItem> 
+                    </apex:pageBlockSection>
+                </apex:outputPanel> 
+                
+                <apex:outputPanel id="reviewCond">
+                    <apex:outputpanel rendered="{!formOBj.HasReleaseGuidelines__c == 'No'}">
+                    <p>Please download and review the document from the link below. If you still require assistance, please contact your Foundry Technical Representative. </p>
+                    <br/>
+                    </apex:outputpanel>
+                    
+                </apex:outputPanel>        
+               
+          <!--Ravindra - Libraries changes Starts
+                <apex:outputlink id="releaseReqLink" value="{!FMSdocuments['FMSMainFormReleaseRequirements'].FMSRefDocURL__c}" style="margin-left:320px;color:blue;" target="_blank">-->
+                <apex:outputlink id="releaseReqLink" value="{!FMSdocuments['Release Requirements']}" style="margin-left:320px;color:blue;" >    
+                    Link to Release Requirements</apex:outputlink> 
+        <!--Ravindra - Libraries changes Ends-->        
+                <br/>  <br/>     
+                 
+                <apex:outputPanel >
+                    <apex:pageBlockSection >
+                        <apex:pageblocksectionItem >
+                            <apex:outputLabel value="Is this product subject to the International Traffic in Arms Regulations (ITAR)?"/>
+                            <apex:outputPanel >   
+                                <div class = "requiredInput">
+                                    <div class = "requiredBlock"></div>
+                                    <apex:inputField value="{!formObj.ItarData__c}" styleClass="RemoveNone" > <!-- Added By Abhita for replacing None with Select a value-->
+                                 <!--   <a href="{!FMSdocuments['FMSMainFormPage1'].FMSRefDocURL__c}" target="_blank">
+                                        <img src="/img/alohaSkin/help_orange.png" height="13" width="13" />
+                                    </a>-->
+                                    <img src="/img/alohaSkin/help_orange.png" title="{!$ObjectType.Form_Management_System__c.fields.ItarData__c.InlineHelpText}" height="13" width="13" /> 
+                                    </apex:inputField>
+                                </div>
+                            </apex:outputPanel>
+                        </apex:pageblocksectionItem>          
+                    </apex:pageBlockSection>
+                </apex:outputPanel> 
+                
+                <apex:outputPanel >
+                    <apex:pageBlockSection >
+                        <apex:pageblockSectionItem >
+                            <apex:outputLabel value="Is this Hazardous Use (HU):"/>
+                            <apex:outputPanel >   
+                                <div class = "requiredInput">
+                                    <div class = "requiredBlock"></div>
+                                    <apex:inputField styleClass="RemoveNone" value="{!formObj.HazardousUse__c}" /> <!-- Added By Abhita for replacing None with Select a value-->
+                                    <img src="/img/alohaSkin/help_orange.png" title="{!$ObjectType.Form_Management_System__c.Fields.HazardousUse__c.inlineHelpText}" height="13" width="13"/>                  
+                                </div>
+                            </apex:outputPanel>
+                        </apex:pageblockSectionItem> 
+                    </apex:pageBlockSection>
+                </apex:outputPanel> 
+                
+                <apex:outputPanel >
+                    <apex:pageBlockSection >
+                        <apex:pageblockSectionItem rendered="{!isTFACompany}">
+                            <apex:outputLabel value="Asset Protection Code:"/>
+                            <apex:outputPanel >                                 
+                                <div class = "requiredInput">
+                                    <div class = "requiredBlock"></div>                   
+                                    <apex:inputField styleClass="RemoveNone" value="{!formObj.AssetProtectionCode__c}" /> <!-- Added By Abhita for replacing None with Select a value-->
+                                    <img src="/img/alohaSkin/help_orange.png" title="{!$ObjectType.Form_Management_System__c.Fields.AssetProtectionCode__c.inlineHelpText}" height="13" width="13"/>                  
+                                </div>
+                                
+                            </apex:outputPanel>
+                        </apex:pageblockSectionItem> 
+                    </apex:pageBlockSection>
+                </apex:outputPanel> 
+                
+                <apex:outputPanel >
+                    <apex:pageBlockSection >
+                        <apex:pageblockSectionItem rendered="{!isTFACompany}">
+                            <apex:outputLabel value="Is this product to be used in conjunction with a medical device?:"/>
+                            <apex:outputPanel >   
+                                <div class = "requiredInput">
+                                    <div class = "requiredBlock"></div>
+                                    <apex:inputField styleClass="RemoveNone" value="{!formObj.MedicalDevice__c}" /> <!-- Added By Abhita for replacing None with Select a value-->
+                                    <img src="/img/alohaSkin/help_orange.png" title="{!$ObjectType.Form_Management_System__c.Fields.MedicalDevice__c.inlineHelpText}" height="13" width="13"/><!-- Added By Abhita for new UAT Issue #216-->
+                                </div>
+                            </apex:outputPanel>
+                        </apex:pageblockSectionItem> 
+                    </apex:pageBlockSection>
+                </apex:outputPanel> 
+                
+                <apex:outputPanel >
+                    <apex:pageBlockSection >
+                        <apex:pageblockSectionItem rendered="{!isTFACompany}">
+                            <apex:outputLabel value="Is this product to be used in conjunction with a nuclear application?:"/>
+                            <apex:outputPanel >   
+                                <div class = "requiredInput">
+                                    <div class = "requiredBlock"></div>
+                                    <apex:inputField styleClass="RemoveNone" value="{!formObj.NuclearDevice__c}" /> <!-- Added By Abhita for replacing None with Select a value-->
+                                    <img src="/img/alohaSkin/help_orange.png" title="{!$ObjectType.Form_Management_System__c.Fields.NuclearDevice__c.inlineHelpText}" height="13" width="13"/><!-- Added By Abhita for new UAT Issue #216-->
+                                </div>
+                            </apex:outputPanel>
+                        </apex:pageblockSectionItem> 
+                    </apex:pageBlockSection>
+                </apex:outputPanel>  
+                <apex:outputPanel >
+                    <apex:pageBlockSection >
+                        <apex:pageblockSectionItem rendered="{!isTFACompany}">
+                            <apex:outputLabel value="Is this form for quote purposes only?:"/>
+                            <apex:outputPanel >   
+                                <div class = "requiredInput">
+                                    <div class = "requiredBlock"></div>
+                                    <apex:inputField styleClass="RemoveNone" value="{!formObj.QuoteOnly__c}" /> <!-- Added By Abhita for replacing None with Select a value-->
+                                    <apex:actionSupport event="onchange" reRender="totPage, chipEdgeId, dispChipEdgeWLCPErrorMsg" status="quoteOnlyStat" action="{!renderChipEdgeWLCP}">
+                                        <apex:param assignTo="{!fieldAPI}" name="fieldAPI" value="QuoteOnly__c"/>
+                                    </apex:actionSupport>  
+                                  <!--  <a href="{!FMSdocuments['FMSMainFormPage1'].FMSRefDocURL__c}" target="_blank">
+                                        <img src="/img/alohaSkin/help_orange.png" height="13" width="13" />
+                                    </a>-->
+                                     <img src="/img/alohaSkin/help_orange.png" title="{!$ObjectType.Form_Management_System__c.fields.QuoteOnly__c.InlineHelpText}" height="13" width="13" /> 
+                                </div>
+                                <apex:actionStatus id="quoteOnlyStat" startText="Refreshing..." stopText="" />
+                            </apex:outputPanel>
+                        </apex:pageblockSectionItem> 
+                    </apex:pageBlockSection>
+                </apex:outputPanel> 
+                
+            </apex:actionRegion>
+        </apex:pageblockSection>   
+        
+        
+        <apex:pageblockSection title="Primary Contact Information" columns="1" id="pCont" collapsible="false">  
+            <span style="color:black;">Please select the primary contact from the dropdown menu. The selected contact should be the focal point for this product release.</span>
+            <apex:actionRegion >
+                <apex:pageblockSection columns="1">
+                    <apex:pageblocksectionItem >
+                        <apex:outputLabel value="Primary Contact"/>     
+                        <apex:outputPanel >         
+                            <div class = "requiredInput">
+                                <div class = "requiredBlock"></div>
+                                <apex:selectList value="{!formObj.UserIdPrimary__c}" multiselect="false" size="1" required="true">
+                                    <apex:selectOptions value="{!primaryContactsList}"/>
+                                </apex:selectList>      
+                                <apex:actionSupport event="onchange" status="myStatus" action="{!prepopulateValues}" reRender="contDetails, pCont" id="cont" />
+                            </div>  
+                            <apex:actionStatus id="myStatus" startText="Refreshing..." stopText=""/>                            
+                        </apex:outputPanel>     
+                    </apex:pageblocksectionItem>                    
+                </apex:pageblockSection>
+                
+                <apex:pageblockSection id="contDetails" columns="1">
+                    <apex:pageblockSectionItem >
+                        <apex:outputLabel value="Name: "/>
+                        <apex:outputPanel >
+                            <apex:outputText value="{!formObj.NamePrimary__c}"/> 
+                         <!--   <a href="{!FMSdocuments['FMSMainFormPage1'].FMSRefDocURL__c}" target="_blank">
+                                <img src="/img/alohaSkin/help_orange.png" height="13" width="13" />
+                            </a>-->
+                         <img src="/img/alohaSkin/help_orange.png" title="{!$ObjectType.Form_Management_System__c.fields.NamePrimary__c.InlineHelpText}" height="13" width="13" />     
+                        </apex:outputPanel>    
+                    </apex:pageblockSectionItem>
+                    <apex:pageblockSectionItem >
+                        <apex:outputLabel value="E-Mail: " />
+                        <apex:outputPanel >
+                            <apex:outputText value="{!formObj.EmailPrimary__c}"/> 
+                         <!--   <a href="{!FMSdocuments['FMSMainFormPage1'].FMSRefDocURL__c}" target="_blank">
+                                <img src="/img/alohaSkin/help_orange.png" height="13" width="13" />
+                            </a> -->
+                             <img src="/img/alohaSkin/help_orange.png" title="{!$ObjectType.Form_Management_System__c.fields.EmailPrimary__c.InlineHelpText}" height="13" width="13" /> 
+                        </apex:outputPanel>                            
+                    </apex:pageblockSectionItem>
+                    <apex:pageblockSectionItem >
+                        <apex:outputLabel value="Phone: " />
+                        <apex:outputPanel >
+                            <apex:outputText value="{!formObj.PhonePrimary__c}"/> 
+                           <!-- <a href="{!FMSdocuments['FMSMainFormPage1'].FMSRefDocURL__c}" target="_blank">
+                                <img src="/img/alohaSkin/help_orange.png" height="13" width="13" />
+                            </a>-->
+                             <img src="/img/alohaSkin/help_orange.png" title="{!$ObjectType.Form_Management_System__c.fields.PhonePrimary__c.InlineHelpText}" height="13" width="13" /> 
+                        </apex:outputPanel>                            
+                    </apex:pageblockSectionItem>
+                    <apex:pageblockSectionItem >
+                        <apex:outputlabel value="Country: "/>
+                        <apex:outputPanel >
+                            <apex:outputText value="{!formObj.CountryPrimary__c}"/> 
+                         <!--   <a href="{!FMSdocuments['FMSMainFormPage1'].FMSRefDocURL__c}" target="_blank">
+                                <img src="/img/alohaSkin/help_orange.png" height="13" width="13" />
+                            </a>-->
+                             <img src="/img/alohaSkin/help_orange.png" title="{!$ObjectType.Form_Management_System__c.fields.CountryPrimary__c.InlineHelpText}" height="13" width="13" /> 
+                        </apex:outputPanel>
+                    </apex:pageblockSectionItem>
+                    <apex:pageblockSectionItem >
+                        <apex:outputlabel value="State/Province: "/>
+                        <apex:outputText value="{!formObj.StatePrimary__c}"/>  
+                    </apex:pageblockSectionItem>
+                </apex:pageblockSection>  
+                <apex:pageblockSection >
+                    <apex:inputField label="Role: " value="{!formObj.RolePrimary__c}"/>
+                </apex:pageblockSection>
+            </apex:actionRegion>    
+        </apex:pageblockSection>
+        
+        <apex:pageblockSection title="Additional Contact(s)" columns="1" collapsible="false">
+            <span style="color:black;">If you would like to add additional contacts for this product release, please select their names below.</span>
+            <img src="/img/alohaSkin/help_orange.png" title="Additional contacts as information for the Foundry team." height="13" width="13" />
+            <apex:outputPanel id="countofAddContId">
+                <apex:outputText > {!addContactsCount} contact(s) selected.</apex:outputText>
+            </apex:outputPanel>
+            
+            <apex:actionRegion > 
+                <apex:pageblockSection >
+                    <apex:pageblockSectionItem >
+                        <apex:outputLabel value="Additional Contacts: " />                  
+                        <apex:panelGrid columns="3" id="addContact">
+                            <apex:outputText value="Available Contact(s)" style="font-weight: bold; text-align:center;"/>
+                            <apex:outputText value="" style="font-weight: bold"/>
+                            <apex:outputText value="Selected Contact(s)" style="font-weight: bold; text-align:center;"/>
+                            <apex:selectList id="sel1" value="{!leftselected}" multiselect="true" style="width:200px" size="5">
+                                <apex:selectOptions value="{!unselectedvalues}" />
+                            </apex:selectList>                
+                            <apex:panelGroup >
+                                <br/>                                           
+                                <apex:image value="/s.gif" alt="Add" styleClass="rightArrowIcon" title="Add" >
+                                    <apex:actionSupport event="onclick" action="{!selectclick}" reRender="addContact, addContTab, countofAddContId" status="tableContStat"/>
+                                </apex:image>
+                                <br/><br/>
+                                <apex:image value="/s.gif" alt="Remove" styleClass="leftArrowIcon" title="Remove" >
+                                    <apex:actionSupport event="onclick" action="{!unselectclick}" reRender="addContact, addContTab, countofAddContId" status="tableContStat"/>
+                                </apex:image>                    
+                            </apex:panelGroup>
+                            <apex:selectList id="sel2" value="{!rightselected}" multiselect="true" style="width:200px" size="5">
+                                <apex:selectOptions value="{!SelectedValues}" />
+                            </apex:selectList>
+                            <apex:actionStatus id="tableContStat" startText="Refreshing..." stopText="" />
+                        </apex:panelGrid> 
+                    </apex:pageblockSectionItem>
+                </apex:pageblockSection>    
+                
+                <apex:outputPanel id="addContTab" >
+                    <apex:pageBlockSection >
+                    <apex:pageblockSectionItem >
+                        <apex:outputLabel ></apex:outputLabel><!-- Changed by Abhita for New UAT Issue #151-->
+                        <apex:pageblockTable value="{!addContTable}" var="addCont" style="width:700px" rendered="{!(addContTable.size > 0)}">
+                            <apex:column headerValue="Contact Name" value="{!addCont.Name}"/>
+                            <apex:column headerValue="Contact E-Mail" value="{!addCont.email}"/>
+                            <apex:column headerValue="Contact Phone" value="{!addCont.Phone}"/>{!addCont.Phone}
+                        </apex:pageblockTable>
+                    </apex:pageblockSectionItem>
+                    </apex:pageBlockSection>
+                </apex:outputPanel>
+            </apex:actionRegion>    
+        </apex:pageblockSection>
+        
+        <apex:pageBlockSection title="Form Specifications" columns="1" id="pb3" collapsible="false">
+            <apex:actionRegion >  
+                <apex:outputPanel >
+                    <apex:pageBlockSection >
+                        <apex:pageblockSectionItem id="pbsfSPec">
+                            <apex:outputLabel value="Foundry Technology: "/>
+                            <apex:outputPanel id="fTechPanel">   
+                                <div class = "requiredInput">
+                                    <div class = "requiredBlock"></div>
+                                    <apex:selectList value="{!formObj.Technology__c}" id="techSel" multiselect="false" size="1" onchange="onChangeOfFMSTech(this);">
+                                        <apex:selectOptions value="{!formTechnology}"/>
+                                    </apex:selectList>
+                                    <apex:inputHidden value="{!fmsTechbyoldvalue}" id="fmsTechbyoldvalue" /> 
+                                    <!--<apex:actionSupport event="onchange" status="releStatus" action="{!changeReleGuide}" reRender="techSel, fReleList, testService, packServ, chipInt,testLevPanel,intConBumpId, chipEdgeId, dispChipEdgeWLCPErrorMsg">-->
+                                    <apex:actionFunction action="{!changeReleGuide}" name="changeTechnology" status="releStatus" reRender="techSel, fReleList, testService, packServ, chipInt,testLevPanel,intConBumpId, chipEdgeId, dispChipEdgeWLCPErrorMsg" oncomplete="assignCPQLicense();">    
+                                        <apex:param assignTo="{!fieldAPI}" name="fieldAPI" value="Technology__c"/>
+                                    </apex:actionFunction>
+                                    <apex:actionFunction action="{!assignCPQLicense}" name="assignCPQLicense" status="releStatus" reRender="techSel, fReleList, testService, packServ, chipInt,testLevPanel,intConBumpId, chipEdgeId, dispChipEdgeWLCPErrorMsg" />
+                                    <apex:actionFunction action="{!changeTechOptForOriginal}" name="changeTechOptForOriginal" status="releStatus" reRender="techSel, fReleList, testService, packServ, chipInt,testLevPanel,intConBumpId, chipEdgeId, dispChipEdgeWLCPErrorMsg">    
+                                        <apex:param assignTo="{!fieldAPI}" name="fieldAPI" value="Technology__c"/>
+                                    </apex:actionFunction>
+                                    <img src="/img/alohaSkin/help_orange.png" title="{!$ObjectType.Form_Management_System__c.Fields.Technology__c.inlineHelpText}" height="13" width="13"/> 
+                                </div>    
+                                <apex:actionStatus id="releStatus" startText="Refreshing..." stopText="" />
+                            </apex:outputPanel>                 
+                        </apex:pageblockSectionItem>
+                    </apex:pageBlockSection>
+                </apex:outputPanel>
+                
+                <apex:outputPanel >
+                    <apex:pageBlockSection >    
+                        <apex:pageblockSectionItem >
+                            <apex:outputLabel value="Release Process: "/>
+                            <apex:outputPanel id="relProcPanel">   
+                                <div class = "requiredInput">
+                                    <div class = "requiredBlock"></div>
+                                    <apex:selectList value="{!formObj.ReleaseProcessFlow__c}" multiselect="false" size="1" id="fReleList">
+                                        <apex:selectOptions value="{!formReleaseProcess}"/>
+                                    </apex:selectList>    
+                                 <!--   <a href="{!FMSdocuments['FMSMainFormPage1'].FMSRefDocURL__c}" target="_blank">
+                                        <img src="/img/alohaSkin/help_orange.png" height="13" width="13" />
+                                    </a>-->
+                                     <img src="/img/alohaSkin/help_orange.png" title="{!$ObjectType.Form_Management_System__c.fields.ReleaseProcessFlow__c.InlineHelpText}" height="13" width="13" /> 
+                                </div>      
+                            </apex:outputPanel>                 
+                        </apex:pageblockSectionItem>
+                    </apex:pageBlockSection>
+                </apex:outputPanel>
+                
+                <apex:outputPanel >
+                    <apex:pageBlockSection >     
+                        <apex:pageblockSectionItem >
+                            <apex:outputLabel value="Test Services: "/>
+                            <apex:outputPanel >   
+                                <div class = "requiredInput">
+                                    <div class = "requiredBlock"></div>
+                                    <apex:selectList value="{!formObj.TestServices__c}" multiselect="false" size="1" id="testService">
+                                        <apex:selectOptions value="{!testServicesList}"/>
+                                    </apex:selectList>  
+                                    <apex:actionSupport event="onchange" action="{!renderingOfTestLevel}" reRender="testLevPanel,intConBumpId,totPage, chipEdgeId, dispChipEdgeWLCPErrorMsg" status="testStatus">
+                                        <apex:param assignTo="{!fieldAPI}" name="fieldAPI" value="TestServices__c"/>
+                                    </apex:actionSupport>
+                                    <img src="/img/alohaSkin/help_orange.png" title="{!$ObjectType.Form_Management_System__c.Fields.TestServices__c.inlineHelpText}" height="13" width="13"/><!-- Added By Abhita for new UAT Issue #216-->
+                                </div>      
+                                <apex:actionStatus id="testStatus" startText="Refreshing..." stopText=""/>
+                            </apex:outputPanel>                 
+                        </apex:pageblockSectionItem>
+                    </apex:pageBlockSection>
+                </apex:outputPanel>
+                
+                <apex:outputPanel >
+                    <apex:pageBlockSection >   
+                        <apex:pageblockSectionItem id="packagingSection">
+                            <apex:outputLabel value="Packaging Services: "/>
+                            <apex:outputPanel >   
+                                <div class = "requiredInput">
+                                    <div class = "requiredBlock"></div>
+                                    <apex:selectList value="{!formObj.Packaging_Services__c}" multiselect="false" size="1" id="packServ">
+                                        <apex:selectOptions value="{!packagingServList}"/>
+                                    </apex:selectList>    
+                                    <apex:actionSupport event="onchange" action="{!renderingOfIntConBumpSource}" reRender="testLevPanel,intConBumpId,packagingSection,totPage,chipEdgeId, dispChipEdgeWLCPErrorMsg" status="packageStatus">
+                                        <apex:param assignTo="{!fieldAPI}" name="fieldAPI" value="Packaging_Services__c"/>
+                                    </apex:actionSupport>
+                                    <img src="/img/alohaSkin/help_orange.png" title="{!$ObjectType.Form_Management_System__c.Fields.Packaging_Services__c.inlineHelpText}" height="13" width="13"/> 
+                                </div>     
+                                <apex:actionStatus id="packageStatus" startText="Refreshing..." stopText=""/>                           
+                            </apex:outputPanel>                 
+                        </apex:pageblockSectionItem>
+                    </apex:pageBlockSection>
+                </apex:outputPanel>
+                
+                
+                <apex:outputPanel id="testLevPanel" >
+                    <apex:pageblockSection rendered="{!dispTestLevel}">
+                        <apex:pageblockSectionItem >
+                            <apex:outputLabel value="What test levels do you desire?"/>
+                            <apex:outputPanel >   
+                                <div class = "requiredInput">
+                                    <div class = "requiredBlock"></div>
+                                    <apex:selectList value="{!formObj.TestLevels__c}" multiselect="false" size="1" id="testLev">
+                                        <apex:selectOptions value="{!testLevelList}"/>
+                                    </apex:selectList>    
+                                </div>      
+                            </apex:outputPanel>  
+                        </apex:pageblockSectionItem>
+                    </apex:pageblockSection>
+                </apex:outputPanel>
+                
+                <apex:outputPanel >
+                    <apex:pageBlockSection >                 
+                        <apex:pageblockSectionItem >
+                            <apex:outputLabel value="Chip Interconnect: "/>
+                            <apex:outputPanel >   
+                                <div class = "requiredInput">
+                                    <div class = "requiredBlock"></div>
+                                    <apex:selectList value="{!formObj.Chip_Interconnect__c}" multiselect="false" size="1" id="chipInt">
+                                        <apex:selectOptions value="{!chipInterconnectList}"/>
+                                    </apex:selectList>    
+                                    <apex:actionSupport event="onchange" action="{!renderingOfIntConBumpSource}" reRender="intConBumpId, chipEdgeId,dispChipEdgeWLCPErrorMsg" status="chipInterStatus"> 
+                                        <apex:param assignTo="{!fieldAPI}" name="fieldAPI" value="Chip_Interconnect__c"/>
+                                    </apex:actionSupport>
+                                    <img src="/img/alohaSkin/help_orange.png" title="{!$ObjectType.Form_Management_System__c.Fields.Chip_Interconnect__c.inlineHelpText}" height="13" width="13"/> 
+                                </div>     
+                                <apex:actionStatus id="chipInterStatus" startText="Refreshing..." stopText=""/>
+                            </apex:outputPanel>                 
+                        </apex:pageblockSectionItem>
+                    </apex:pageblockSection>
+                </apex:outputPanel>
+                
+                <apex:outputPanel id="intConBumpId" >
+                    <apex:pageblockSection rendered="{!dispIntConBumpServ}">
+                        <apex:pageblockSectionItem >
+                            <apex:outputLabel value="Is the Interconnect Bumping being sourced by GLOBALFOUNDRIES?"/>
+                            <apex:outputPanel >   
+                                <div class = "requiredInput">
+                                    <div class = "requiredBlock"></div>
+                                    <apex:selectList value="{!formObj.IntConBumpSource__c}" multiselect="false" size="1" id="intCon">
+                                        <apex:selectOptions value="{!IntConBumpSourceList}"/>
+                                    </apex:selectList> 
+                                    <apex:actionSupport event="onchange" action="{!renderChipEdgeWLCP}" reRender="chipEdgeId, dispChipEdgeWLCPErrorMsg" status="intConBumpStatus">  
+                                        <apex:param assignTo="{!fieldAPI}" name="fieldAPI" value="IntConBumpSource__c"/>
+                                    </apex:actionSupport>
+                                  <!--  <a href="{!FMSdocuments['FMSMainFormPage1'].FMSRefDocURL__c}" target="_blank">
+                                        <img src="/img/alohaSkin/help_orange.png" height="13" width="13" />
+                                    </a>--->
+                                    <img src="/img/alohaSkin/help_orange.png" title="{!$ObjectType.Form_Management_System__c.fields.IntConBumpSource__c.InlineHelpText}" height="13" width="13" />  
+                                </div>  
+                                <apex:actionStatus id="intConBumpStatus" startText="Refreshing..." stopText=""/>
+                            </apex:outputPanel>  
+                        </apex:pageblockSectionItem>
+                    </apex:pageblockSection>
+                </apex:outputPanel>   
+
+                <apex:outputPanel id="chipEdgeId">
+                    <apex:pageblockSection rendered="{!dispChipEdgeWLCP}">
+                        <apex:pageblockSectionItem >
+                            <apex:outputLabel value="GLOBALFOUNDRIES sourced WLCSP will be supported only if the PDK-supplied crackstop (Enhanced Crackstop) is present inside your design’s CHIPEDGE. Have you included the unmodified PDK-supplied crackstop within your design(s)? "/>
+                            <apex:outputPanel >   
+                                <div class = "requiredInput">
+                                    <div class = "requiredBlock"></div>
+                                    <apex:selectList value="{!formObj.ChipEdgeWLCSP__c}" multiselect="false" size="1" id="selchipEdgeId">
+                                        <apex:selectOptions value="{!chipEdgeWLCSPList}"/>
+                                    </apex:selectList> 
+                                    <apex:actionSupport event="onchange" reRender="dispChipEdgeWLCPErrorMsg" status="ChipEdgeWLCPStatus"> 
+                                        <apex:param assignTo="{!fieldAPI}" name="fieldAPI" value="ChipEdgeWLCSP__c"/>
+                                    </apex:actionSupport>
+                                    <img src="/img/alohaSkin/help_orange.png" title="{!$ObjectType.Form_Management_System__c.fields.ChipEdgeWLCSP__c.InlineHelpText}" height="13" width="13" />  
+                                </div>    
+                                <apex:actionStatus id="ChipEdgeWLCPStatus" startText="Refreshing..." stopText=""/>
+                            </apex:outputPanel>  
+                        </apex:pageblockSectionItem>
+                    </apex:pageblockSection>
+                </apex:outputPanel>
+                
+                <apex:outputPanel id="dispChipEdgeWLCPErrorMsg" >
+                    <apex:outputPanel id="dispChipEdgeWLCPPanel" rendered="{!formObj.ChipEdgeWLCSP__c == 'No' && dispChipEdgeWLCP}">
+                        <p>
+                            Before freezing this form, you must either a) remove your request for GLOBALFOUNDRIES sourced WLCSP or b) update your chip design to include the unmodified PDK-supplied crackstop structure (using the Chipguardring pcell) and then change your answer above to "Yes".
+                        </p><!--Changed By Abhita as Part of T33-->
+                    </apex:outputPanel>
+                </apex:outputPanel>
+                
+            </apex:actionRegion>                
+            <apex:pageblocksectionItem >
+                <p style="color:black;font-weight: bold;">By clicking "Save...", you agree that GLOBALFOUNDRIES may process your data in the manner indicated above and as described in our Privacy Policy. </p>
+            </apex:pageblocksectionItem>
+            <apex:pageblockSectionItem >
+                <p style="color:black;font-weight: bold;">Use Next / Previous to navigate through the form. Use 'Save' or 'Save and Exit' to permanently save your edits. </p>
+            </apex:pageblockSectionItem><!-- Added 'Save' or to the above text  - 23-Nov-2016     -- Ashwin Dash-->
+        </apex:pageBlockSection>
+        <br/> <br/>
+        
+        <apex:outputPanel id="totPage">
+            <apex:outputText >Page &nbsp;{!pageNum}  of  {!totalPageNums} &nbsp; </apex:outputText>
+            <apex:commandlink value="Next" action="{!next}" style="color:blue;">
+                <apex:param assignTo="{!pageN}" name="page" value="page1"/>
+            </apex:commandlink>
+        </apex:outputPanel>
+       
+        <apex:pageBlockButtons location="bottom">
+            <apex:commandButton action="{!validateSave}" rerender="errorMsg" onComplete="showSimpleDialog();window.scrollTo(0,0);return false;" value="Save and Exit">
+                <apex:param assignTo="{!pageN}" name="page" value="page1"/>
+            </apex:commandButton>
+            <apex:commandButton action="{!saveForm}" value="Save" id="saveForm" reRender="errorMsg" oncomplete="window.scrollTo(0,0);">
+                <apex:param assignTo="{!pageN}" name="page" value="page1"/>
+            </apex:commandButton>
+            <!--<apex:commandButton value="Cancel" immediate="true" action="{!cancelForm}" onclick="if(!confirm('Are you sure you want to Cancel your changes? Any changes that you made to this form since the last Save will be lost.')){return false;}"/>-->
+            <apex:commandButton value="Cancel" onclick="showDialogforCancel(); window.scrollTo(0,0); return false;" />
+        </apex:pageBlockButtons>
+    </apex:pageBlock>
+</apex:form>
+</apex:page>

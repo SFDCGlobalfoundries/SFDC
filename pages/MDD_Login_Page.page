@@ -1,0 +1,148 @@
+<apex:page tabStyle="Part__c" controller="MDD_LoginController" showHeader="{!IsInternalUser}" sidebar="{!IsInternalUser}" readOnly="true" cache="true" showChat="{!IsInternalUser}">
+    <style>
+    A.class1 {color:blue;}
+    A.class1:link  {text-decoration: none; color: blue;}
+    A.class1:visited {text-decoration: none; color: purple;}
+    A.class1:hover {text-decoration: underline; color: purple;}
+    .p{
+    font-size: 14px;
+    color: red;
+    }
+    ul {
+    list-style: outside disc;
+    margin-left: 1em;
+    }
+    ul li {
+        position: relative;
+        left: 1em;
+        padding-right: 1em;    
+    }​
+    </style>
+    <apex:form rendered="{!showSerach}">
+        <apex:pageMessages ></apex:pageMessages>
+        <apex:sectionHeader subtitle="Part Number Search" />
+        <!--<div style="padding-left:87%"><a href="/apex/MDD_Reach" target="_blank" class="class1">Reach    </a><a href="/apex/MDD_ChinaRohs" target="_blank" class="class1">China ROHS</a></div>
+        <hr></hr>-->
+        <div>
+            <p>The search function enables you to access material
+            declarations for the parts you purchase from GLOBALFOUNDRIES.  For your convenience,
+            there are two material declaration formats for each part - an GLOBALFOUNDRIES form
+            material declaration and an IPC 1752-2 form declaration.</p>
+            
+            <p>The data within the declarations is not part-number specific.  Rather,
+            the data applies to part-families.</p>
+            
+            <ul class="ibm-bullet-list">
+              <li><strong>Wafers</strong>:  each part-family consists of wafers that GLOBALFOUNDRIES manufactured
+            in any version of the same base process technology.  For example, wafers
+            that GLOBALFOUNDRIES manufactured in any of its CMOS9 process technologies are in
+            the same part-family.</li>
+              <li><strong>Modules</strong>:  each part-family consists of modules: (1) containing
+            chips that GLOBALFOUNDRIES manufactured in any version of the same base process
+            technology, (2) with the same package type, and (3) containing the same
+            bond and assembly materials (such as epoxies, solders, mold compounds,
+            and lids).  For example, modules containing chips that GLOBALFOUNDRIES manufactured
+            in any of its CMOS10 process technologies, with flip chip plastic ball grid
+            array packages, and containing the same bond and assembly materials, are in
+            the same part-family.</li>
+            </ul>
+            
+            <p>For modules, the data within each declaration is based on the maximum
+            chip and package size within a part-family. In addition, and also for modules,
+            the data in each declaration is based on the maximum number of each passive
+            component (i.e., capacitors and resistors) possible for a part within that
+            family, as determined by GLOBALFOUNDRIES design ground rules.</p>
+            
+            <p>You can search by GLOBALFOUNDRIES part number or your part number, and for either
+            single or multiple part numbers.  If searching by GLOBALFOUNDRIES part number, you do
+            not need to enter any "0's" at the beginning of the part number.  You can
+            limit a search to wafers or modules.  For modules, you can further
+            restrict search results by package type.</p>
+            
+            <p>Search results are limited to 100 part numbers.</p>
+            <hr></hr>
+            <h1>Part Number Search </h1>
+        </div>
+        <div style="padding-left:50px">
+        <b>Part Number(s) : </b><apex:inputText required="true" label="Part Number(s)" size="20" value="{!PartNumber}" title="Part Number(s)"/>
+        </div>
+        <div style="padding-left:50px;padding-top:10px">
+        <div style="width:10%;float:left;padding-top:5px"><b>Limit Search To:</b></div>
+        <div style="width:15%;float:left"><apex:inputCheckbox label="Wafers" value="{!isWafer}"/> Wafers </div>
+        <div style="width:15%;float:left"><apex:inputCheckbox label="Modules" value="{!isModule}"/> Modules </div>
+        </div><br></br>
+        <div><br></br>
+        <div style="padding-left:50px;padding-top:10px">
+        <b>Module Package Type : </b>
+        <apex:selectList size="1" value="{!getPackageType}" styleClass="pickCls" title="Select a package type">
+          <!--<apex:selectOptions value="{!Package}" />
+          <apex:selectOption itemDisabled="true" itemValue="Select a package type" itemLabel="Select a package type"/>-->
+          <apex:selectOption itemDisabled="true" itemLabel=" "/>
+          <apex:selectOption itemDisabled="true" itemValue="Flip Chip Ceramic" itemLabel="Flip Chip Ceramic" />
+          <apex:selectOption itemValue="CBGA" itemLabel="CBGA" />
+          <apex:selectOption itemValue="CCGA" itemLabel="CCGA" />
+          <apex:selectOption itemValue="CLGA" itemLabel="CLGA" />
+          <apex:selectOption itemDisabled="true" itemValue="Flip Chip Organic" itemLabel="Flip Chip Organic" />
+          <apex:selectOption itemValue="FC PBGA" itemLabel="FC PBGA" />
+          <apex:selectOption itemValue="FC PLGA" itemLabel="FC PLGA" />
+          <apex:selectOption itemValue="FCPBGA HP" itemLabel="FCPBGA HP" />
+        </apex:selectList></div>
+        </div>
+        <br></br>
+        
+        <apex:commandButton action="{!search}" value="Search" />
+        <div>
+            <p><em>Ask questions or submit comments about material declarations to
+            GLOBALFOUNDRIES Chemical Management Program Manager:</em></p>
+            <ul>
+            <li>{!$Label.contactEmail}</li>
+            </ul>
+        </div>
+    </apex:form>
+    <apex:form rendered="{!showSerachResult}">
+        <apex:sectionHeader subtitle="Search Result Summary" title=""/><br></br>
+        <!--<div style="padding-left:87%"><a href="/apex/MDD_Reach" target="_blank" class="class1">Reach    </a><a href="/apex/MDD_ChinaRohs" target="_blank" class="class1">China ROHS</a></div>
+        <hr></hr>-->
+        <div style="font-size:1.166em;"><h1>Summary Part Number Report </h1></div><br></br>
+        <div>
+            <div style="width:48%;float:left;">
+            <b>Search Strings:</b>{!PartNumber}
+            </div>
+            <div>
+            <b>Results Limited To:</b><apex:outputText value="{!if(isWafer == true,"Wafer","Module")}" rendered="{!if(((isWafer == true && isModule == false) || (isWafer == false && isModule == true)),true,false)}"/>
+                                <apex:outputText value="Wafer,Module" rendered="{!if(isWafer == true && isModule == true,true,false)}"/>
+            </div><br></br>
+            <div style="width:48%;float:left;">
+            <b>Package Type:</b>{!getPackageType}
+            </div><br></br><br></br>
+            <a href="#" onclick="history.go(-1)" class="class1"><apex:image id="d1" value="{!$Resource.MDD_DeclarationBack}" width="15" height="13" alt="back" /> Modify Search</a><br></br>
+            <p>By clicking a part number in the table, you import the GLOBALFOUNDRIES form material
+            declaration for that part into a table for your review, and you also create
+            a link through which you can view and download the IPC-1752-2 form material
+            declaration as an XML file.</p>
+            <p>For certain modules there may be multiple part family information available
+            for an individual module part number. The multiple part family information is provided
+            because the module is built at multiple bond and assembly locations, and each
+            location uses different bond and assembly materials (such as epoxies, mold
+            compounds, solders, and lids) for the build of this module part number thereby
+            leading to multiple part family information. For complete material content
+            declaration information please click and download all available part family
+            options provided for each module part number.</p>
+        </div>
+        <apex:pageBlock >
+            <apex:pageBlockTable value="{!lstPart}" var="p" rendered="{!lstPart.size!=0}">
+                <apex:column headerValue="Part Number">
+                 <a href="{!gfView}/apex/MDD_Part_Info?partId={!p.Id}" >{!p.Part_Number__c}</a>
+                </apex:column>
+                <apex:column headerValue="Part Family">
+                    <label>{!p.MDPart_Family__c}</label>
+                </apex:column>
+                <apex:column headerValue="Part Type" value="{!p.Part_Type__c}"></apex:column>
+                <apex:column headerValue="Last Updated" value="{!p.LastModifiedDate}"></apex:column>
+            </apex:pageBlockTable>
+            <apex:outputPanel rendered="{!lstPart.size==0}">
+                <p class="p">The search found no part numbers matching your search criteria.</p>
+            </apex:outputPanel>
+        </apex:pageBlock>
+    </apex:form>
+</apex:page>

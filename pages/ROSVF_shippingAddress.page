@@ -1,0 +1,451 @@
+<apex:page controller="ROS_ControllerSearchReticleGFForm" action="{!ShipaddressAccountId}" tabStyle="ROS__tab" showheader="{!IF((UserType!= 'Customer'), True, False)}" sidebar="false">
+    <apex:includeScript value="{!URLFOR($Resource.ROS_JQuery_Deafult, '/jquery-ui-1.10.3.custom/js/jquery-1.9.1.js')}"/>
+    <apex:includeScript value="{!URLFOR($Resource.ROS_JQuery_Deafult, '/jquery-ui-1.10.3.custom/js/jquery-ui-1.10.3.custom.js')}"/>
+    <apex:stylesheet value="{!URLFOR($Resource.ROS_JQuery_Deafult, '/jquery-ui-1.10.3.custom/css/smoothness/jquery-ui-1.10.3.custom.css')}"/>
+    <apex:stylesheet value="{!$Resource.jquerystyle19}"/>
+    <script>
+        //Page unable to access js from static resource
+        function closeDialog(){
+            $( "#ipDialog" ).dialog( "close" );
+        }
+        function ShowMap(){
+    
+        $("#ipDialog").dialog({
+            height:"auto",
+            width:700,      
+            modal: true,
+            position: ['Top', 'center'],
+            autoOpen: false,  
+            resizable: true,
+            closeOnEscape: true, 
+            draggable : true,
+            title: "Assign Shipping Address",
+            show: {
+             effect: "blind",
+             duration: 1000
+            },
+            hide: {
+             effect: "explode",
+             duration: 1000
+            },
+        });
+        $( "#ipDialog" ).dialog( "open" );
+        return false;     
+        }
+    
+        function myFunc(a,obj){
+        document.getElementById(obj).value = a;
+        }
+    
+        function myFunc2(obj){
+        var selectedoptions = document.getElementsByName('{!$Component.form4:selectaddress1:sectionInstructions:SIpbsi2:selectRadioSIInfo3}');
+        for(i=0;i<selectedoptions.length;i++){
+            if(selectedoptions[i].checked){
+                document.getElementById(obj).value = selectedoptions[i].value;
+            }
+        }
+        myFunc2SI(document.getElementById(obj).value);
+        }
+        function myFunc3(){
+        var si = document.getElementById('{!$Component.form4:selectaddress1:sectionInstructions:SIpbsi3:displaySIInfo:displaySIpbs:SIoutput}').innerHTML;
+    
+        $('.fieldToHide').hide();
+        $("#SIinput").val(si);
+        $('.fieldToShow').show();
+        }
+    
+        function checkAll(cb,cbid){
+        var inputElem = document.getElementsByTagName("input");                    
+        for(var i=0; i<inputElem.length; i++)
+        {            
+             if(inputElem[i].id.indexOf(cbid)!=-1){                                       
+                inputElem[i].checked = cb.checked;
+            }
+        }
+        }
+    
+        function assignsplinst() { 
+        callclass(
+            $("#SIinput").val()                    
+        );
+    
+        }
+        
+        function editform(){
+            if($(".outputstmt1").text() != ''){
+                $(".inputstmt1").val($(".outputstmt1").text());
+            }
+            if($(".outputstmt5").text() != ''){
+                $(".inputstmt5").val($(".outputstmt5").text());
+            }
+            if($(".outputstmt6").text() != ''){
+                $(".inputstmt6").val($(".outputstmt6").text());
+            }
+            if($(".outputstmt7").text() != ''){
+                $(".inputstmt7").val($(".outputstmt7").text());
+            }
+            if($(".outputstmt8").text() != ''){
+                $(".inputstmt8").val($(".outputstmt8").text());
+            }
+            if($(".outputstmt9").text() != ''){
+                $(".inputstmt9").val($(".outputstmt9").text());
+            }
+            if($(".outputstmt10").text() != ''){
+                $(".inputstmt10").val($(".outputstmt10").text());
+            }
+            if($(".outputstmt11").text() != ''){
+                $(".inputstmt11").val($(".outputstmt11").text());
+            }
+        }
+    
+        function saveform() {
+        savestmt(
+            $(".inputstmt1").val(),
+            $(".inputstmt5").val(),
+            $(".inputstmt6").val(),
+            $(".inputstmt7").val(),
+            $(".inputstmt8").val(),
+            $(".inputstmt9").val(),
+            $(".inputstmt10").val(),
+            $(".inputstmt11").val()
+        );
+        }
+        
+        callParent = function(selectedmails,unselectedmails) {
+            var existingIds = $(".eucitstyle1").val();
+            if(existingIds.trim() == ''){
+                $(".eucitstyle1").val(selectedmails);
+            } else {
+                var checkString = existingIds.split(';');
+                var toput = '';
+                for (var i = 0; i < checkString.length; i++) { 
+                    if(unselectedmails.toLowerCase().indexOf(checkString[i].toLowerCase()) === -1 && selectedmails.toLowerCase().indexOf(checkString[i].toLowerCase()) === -1){
+                        if(toput == ''){
+                            toput = checkString[i];
+                        } else {
+                            toput += ';' + checkString[i];
+                        }
+                    }
+                }
+                if(toput == ''){
+                    $(".eucitstyle1").val(selectedmails);
+                } else {
+                    $(".eucitstyle1").val(selectedmails + ';' + toput);
+                }
+            }
+            refresheucCon();
+        }
+        
+        function openContactlookup(){
+            var emails = $('.eucitstyle1').val();
+            window.open('/apex/ROSVF_eucConLookup?accid={!accId}&eucEmailId='+emails,'_blank', 'toolbar=yes, scrollbars=yes, resizable=yes, top=250, left=400, width=600, height=350');
+        }
+        
+        function checkresponse(){
+            var response = document.getElementsByName('{!$Component.form1:eucsr1}');
+            var count = 0;
+            for(i=0;i<response.length;i++){
+                if(response[i].checked){
+                    count++;
+                }
+            }
+            if(count > 0){
+                refreshques();
+            } else {
+                alert('Please select at least one option');
+            }
+        }
+    </script>
+        
+    <c:LoadingStatusSpinner />
+    
+    <apex:form id="form1" style="font-size:{!IF((UserType!= 'Customer'),'','75%')};">        
+        <!-- START Selected Reticles Display --> 
+        <apex:pageBlock id="Reticles" title="Selected Reticles" >            
+            <apex:PageMessages id="returnmessages" />
+            <apex:pageBlockButtons id="returnButtons" location="bottom">
+                <apex:commandbutton value="Assign Address" onclick="methodOneInJavascript();ShowMap();return false;" disabled="{!IsAllReturnSubmitted}" />
+                <apex:commandButton value="Submit" status="LoadingStatusSpinner" action="{!ShippingAddressInsert}" disabled="{!IsAllReturnSubmitted}" rerender="Reticles"/>
+                <apex:commandbutton value="Clear Address" status="LoadingStatusSpinner" action="{!CleanAddress}" disabled="{!IsAllReturnSubmitted}" rerender="selectedReticles"/>
+                <apex:commandbutton value="Back to Search" status="LoadingStatusSpinner" action="{!CancelShippingAddress}"/>
+            </apex:pageBlockButtons>            
+            <apex:outputPanel id="selectedReticles">
+                <apex:pageBlockTable id="sReticles" Value="{!SelReturnReticles}" var="ret">
+                    <apex:column >
+                        <apex:facet name="header">
+                            <apex:inputCheckbox value="{!Allselected}" onclick="checkAll(this,'checkedone')"></apex:inputCheckbox>
+                        </apex:facet>
+                        <apex:inputCheckbox value="{!ret.IsChecked}" id="checkedone" disabled="{!ret.IsInserted}"/>
+                    </apex:column>
+                    <apex:column value="{!ret.eachSelectedreticlewrapper.Name}"  width="220px"/>
+                    <apex:column value="{!ret.eachSelectedreticlewrapper.FabStr__c}"/>
+                    <apex:column value="{!ret.eachSelectedreticlewrapper.Reticle_workflow_Status__c}" />
+                    <apex:column value="{!ret.eachSelectedreticlewrapper.Day_Inactive_Formula__c}"/>
+                    <apex:column value="{!ret.eachSelectedreticlewrapper.GlobalFoundries_Device_ID__c}"/>
+                    <apex:column value="{!ret.eachSelectedreticlewrapper.ROS_Status__c}"/>
+                    <apex:column value="{!ret.eachSelectedreticlewrapper.Shipping_Address__c}"/>
+                    <apex:column >
+                        <apex:facet name="header">Forwarder<br/>Name</apex:facet>
+                        {!ret.eachSelectedreticlewrapper.Forwarder_Name__c}
+                    </apex:column>
+                    <apex:column >
+                        <apex:facet name="header">FW Account<br/>Number</apex:facet>
+                        {!ret.eachSelectedreticlewrapper.Account_Number__c}
+                    </apex:column>
+                    <apex:column value="{!ret.eachSelectedreticlewrapper.Contact_Name__c}"/>
+                    <apex:column >
+                        <apex:facet name="header">Contact <br/>Phone No.</apex:facet>
+                        {!ret.eachSelectedreticlewrapper.Contact_Phone_Number__c}
+                    </apex:column>
+                </apex:pageBlockTable>
+            </apex:outputPanel>            
+        </apex:pageBlock>
+        <!-- END Selected Reticles Display -->
+        <!--<apex:actionFunction action="{!addressProcess}" name="methodOneInJavascript" status="LoadingStatusSpinner"  rerender="selectaddress1" />-->
+        <apex:actionFunction action="{!nullifyAddress}" name="methodOneInJavascript" status="LoadingStatusSpinner"  rerender="selectaddress1,selectaddress,selectFwdInfo,add,addFwdInfo"/>
+        
+        <!-- DBiswal 11182015 -->
+        <apex:outputpanel id="eucpanel1" styleClass="popupBackground" rendered="{!OR(displayeucPopup,displayeucQues)}"/>
+        <apex:outputpanel id="eucpanel1_1" styleClass="bodystyle">
+            <apex:outputPanel layout="block" styleClass="customPopup2" rendered="{!displayeucMsg}">
+                <apex:PageMessages id="eucMessages"/>
+            </apex:outputPanel>
+        </apex:outputPanel>
+        <apex:outputpanel id="eucpanel2" styleClass="bodystyle">
+            <apex:outputPanel id="eucpanel3_1" layout="block" styleClass="customPopup1" rendered="{!displayeucQues}">
+                <center>
+                <br/>
+                <h1>Whether reticles are to be returned to Singapore or outside of Singapore?</h1>
+                <apex:selectRadio id="eucsr1" value="{!shippingArea}">
+                    <apex:selectOptions id="eucso1" value="{!Areas}"/>
+                </apex:selectRadio>
+                <div style="text-align : center;">
+                    <apex:commandButton id="euccb1_1" value="Confirm" onclick="checkresponse();" reRender="eucpanel3,eucpanel2,form1,eucforminc,eucpanel1_1" status="LoadingStatusSpinner"/>
+                </div></center>              
+            </apex:outputpanel>
+            
+            <apex:outputPanel id="eucpanel3" layout="block" styleClass="customPopup1" rendered="{!AND(displayeucPopup,NOT(displayeucQues))}">
+                <h1>Notify Customer</h1><br/><br/>
+                <apex:outputLabel id="eucol2" value="Select Contacts : " for="eucit1"/>
+                <apex:inputText styleClass="eucitstyle1" id="eucit1" value="{!eucEmailId}" title="Email Id" style="width:30%" rendered="{!displayeucPopup}" onkeyup="refreshbtn();" onchange="refreshbtn();"/>&nbsp;
+                <apex:image value="{!$Resource.contact_lookup_icon}" onclick="openContactlookup();" style="cursor:pointer;vertical-align: middle;" />
+                <br/><br/>
+                <div style="text-align : center;">
+                    <apex:commandButton id="euccb1" value="Edit Form" action="{!editeucForm}" onclick="editform();" reRender="eucpanel3,eucforminc,eucpanel1_1"/>&nbsp;
+                    <apex:commandButton id="euccb2" value="Save form" onclick="saveform();return false;" status="LoadingStatusSpinner" disabled="{!NOT(isediteuc)}"/>
+                    <apex:commandButton id="euccb3" value="Reset/Cancel" action="{!reseteucform}" reRender="eucpanel3,eucforminc,eucpanel1_1"/>
+                    <apex:commandButton id="euccb4" value="Send Email" onclick="return validateEmailAdd();" disabled="{!IF(eucEmailId!='',FALSE,TRUE)}" reRender="form1,eucpanel1,eucpanel2,eucforminc,eucpanel1_1"/>&nbsp;
+                </div>                
+            </apex:outputpanel>            
+        </apex:outputpanel>
+        <apex:include id="eucforminc" pageName="ROSVF_EUCForm" rendered="{!AND(displayeucPopup,NOT(displayeucQues))}"/>
+        <apex:actionFunction action="{!saveeucForm}" name="savestmt" reRender="eucpanel3,eucforminc,eucpanel1_1">
+            <apex:param name="saveenduserstmt1" value=""/>
+            <apex:param name="saveenduserstmt5" value=""/>
+            <apex:param name="saveenduserstmt6" value=""/>
+            <apex:param name="saveenduserstmt7" value=""/>
+            <apex:param name="saveenduserstmt8" value=""/>
+            <apex:param name="saveenduserstmt9" value=""/>
+            <apex:param name="saveenduserstmt10" value=""/>
+            <apex:param name="saveenduserstmt11" value=""/>
+            
+        </apex:actionFunction>
+        <apex:actionFunction name="refreshbtn" reRender="euccb4"/>
+        <apex:actionFunction name="refresheucCon" rerender="eucpanel2"/>
+        <apex:actionFunction name="sendemail" action="{!sendeucMail}"/>
+        <apex:actionFunction name="refreshques" action="{!refresheucForm}"/>
+        <!-- DBiswal 11182015 -->
+        
+    </apex:form>
+    
+    <div id="ipDialog" style="display:none;font-size:{!IF((UserType!= 'Customer'),'','75%')};">
+
+        <apex:form id="form4">
+            <apex:inputHidden value="{!selectedAddress1}" id="hiddenTxt"/>
+            <apex:inputHidden value="{!selectedFwdInfo1}" id="hiddenTxt2"/>
+            <apex:inputHidden value="{!Isnewaddress}" id="hiddenisaddress"/>
+            <apex:inputHidden value="{!selectedsplinst}" id="hiddenTxt3"/>
+            
+            <apex:pageBlock id="selectaddress1">                
+                
+                <apex:pageBlockButtons location="bottom" id="AssignButtonBlock">
+                    <apex:actionStatus id="disablebtn">
+                        <apex:facet name="stop">     
+                            <apex:commandButton id="new" value="Assign" onclick="ShippingAddressAssign();closeDialog();return false;" status="disablebtn" disabled="{!if(OR(selectedAddress1 = 'Other',selectedAddress1 =null,selectedFwdInfo1 = null,selectedFwdInfo1='Other',selectedsplinst = null,AND(splInst=null,selectedsplinst='Yes')),true,false)}"/>
+                        </apex:facet>                                 
+                        <apex:facet name="start">
+                            <apex:commandButton status="disablebtn" value="Processing..." disabled="true" />
+                        </apex:facet>
+                    </apex:actionStatus>
+                </apex:pageBlockButtons>
+                <apex:pageMessages id="addressmessages"/>
+                
+                <!-- START Shipping Address Information -->
+                <apex:pageBlockSection columns="1" title="Select Shipping Address" collapsible="false"> 
+                    <apex:pageBlockTable value="{!shipAddress}" var="address1" width="100%" columns="5" id="btnAssign">
+                        <apex:column headerValue="Select" width="12px">
+                            <input type="radio" name="selectRadio" id="radio" onclick="myFunc('{!address1.id}','{!$Component.hiddenTxt}'),myFunc1('{!address1.id}','')"></input>
+                        </apex:column>
+                        <apex:column value="{!address1.Company_Name__c}"/> <!--Modified by Sunil for case # 34809-->
+                        <apex:column headerValue="Address">
+                            {!address1.Address1__c}<br></br>{!address1.Address2__c}
+                        </apex:column>
+                        <apex:column value="{!address1.Shipping_Country__c}"/>
+                        <apex:column value="{!address1.Shipping_State__c}"/>
+                        <apex:column value="{!address1.zip_code__c}"/>
+                    </apex:pageBlockTable>
+                    <apex:pageBlockSectionItem dataStyle="margin-right:22px;">
+                        <apex:outputPanel >
+                            <input type="radio" name="selectRadio" id="radio"  onclick="myFunc('Other','{!$Component.hiddenTxt}'),myFunc1('Other')" style="margin-left:10px;">
+                                <apex:outputLabel style="margin-left:20px;">Add New Address</apex:outputLabel>
+                            </input>
+                        </apex:outputPanel>
+                    </apex:pageBlockSectionItem>
+                </apex:pageBlockSection>
+                <!-- END Shipping Address Information -->
+                
+                <!-- START Forwarder Information --->
+                <apex:outputPanel id="FWDPanel">
+                    <apex:pageBlockSection id="sectionForwarder" columns="1" title="Select Forwarder Information" collapsible="false" rendered="{!if(OR(selectedAddress1='Other',selectedAddress1=null),false,true)}"> 
+                        
+                        <apex:pageBlockTable id="btnAssign2" value="{!MapfwdInformations}" var="fwdInfo" width="100%" columns="5">
+                            <apex:column headerValue="Select" width="12px">
+                                <input type="radio" name="selectRadioFwdInfo" id="radioFwdInfo" onclick="myFunc('{!fwdInfo}','{!$Component.hiddenTxt2}'),myFunc1Fwd('{!fwdInfo}')"></input>
+                            </apex:column>
+                            <apex:column headerValue="Forwarder Name" value="{!MapfwdInformations[fwdInfo].Forwarder_Name__c}" />
+                            <apex:column headerValue="Account No." value="{!MapfwdInformations[fwdInfo].Account_No__c}"/>
+                            <apex:column headerValue="Contact Name" value="{!MapfwdInformations[fwdInfo].Contact_Name__c}"/>
+                            <apex:column headerValue="Contact Phone No." value="{!MapfwdInformations[fwdInfo].Contact_Phone_No__c}"/>
+                        </apex:pageBlockTable>
+                        <apex:pageBlockSectionItem dataStyle="margin-right:22px;">
+                            <apex:outputPanel >
+                                <input type="radio" name="selectRadioFwdInfo" id="radioFwdInfo"  onclick="myFunc('Other','{!$Component.hiddenTxt2}'),myFunc1Fwd('Other')" style="margin-left:10px;">
+                                    <apex:outputLabel style="margin-left:20px;">Add New Forwarder Information</apex:outputLabel>
+                                </input>
+                            </apex:outputPanel>
+                        </apex:pageBlockSectionItem>
+                    </apex:pageBlockSection>
+                </apex:outputPanel>
+                <!-- END Forwarder Information -->
+                
+                <!-- DBiswal 07102015 START Special Instructions --->
+                <apex:outputPanel id="SIPanel">
+                    <apex:pageBlockSection id="sectionInstructions" columns="1" title="Special Shipping Instructions (if any)" collapsible="false" rendered="{!if(OR(selectedFwdInfo1='Other',selectedFwdInfo1=null),false,true)}">                        
+                        <apex:pageBlockSectionItem dataStyle="margin-right:22px;" id="SIpbsi2">
+                            <apex:outputPanel >
+                                <apex:outputLabel style="margin-left:5px;">Would you like to add any special shipping instructions?</apex:outputLabel>
+                                <br/>
+                                <apex:selectRadio id="selectRadioSIInfo3" value="{!splinstforsubmit}" onchange="myFunc2('{!$Component.hiddenTxt3}')">
+                                    <apex:selectOptions value="{!radioOptions}"/>
+                                </apex:selectRadio>
+                            </apex:outputPanel>
+                        </apex:pageBlockSectionItem>
+                        <apex:outputPanel styleClass="fieldToHide">
+                        <apex:pageblockSectionItem dataStyle="margin-right:22px;" id="SIpbsi3">
+                            <apex:pageBlock id="displaySIInfo" mode="inlineEdit" rendered="{!if(AND(selectedsplinst = 'Yes',splinst != null),true,false)}">
+                                <apex:pageblockSection title="Special Instruction" id="displaySIpbs" collapsible="false">
+                                    <apex:outputText id="SIoutput" value="{!splInst}"/>
+                                    <apex:commandLink id="clSI" action="{!deletesplinst}" oncomplete="myFunc3()" reRender="new,SIpbsi3,addressmessages,addSIInfo" status="LoadingStatusSpinner" style="float:right;">
+                                        <apex:image id="myImage1" value="/img/icon/custom51_100/pencil24.png" width="20" height="20"/>
+                                    </apex:commandLink>
+                                </apex:pageBlockSection>
+                            </apex:pageBlock>
+                        </apex:pageblockSectionItem>
+                        </apex:outputPanel>
+                    </apex:pageBlockSection>
+                </apex:outputPanel>
+                <!-- END Special Instructions -->
+                
+            </apex:pageBlock>
+            
+            <!-- START Action functions -->
+            <apex:actionFunction name="myFunc1" reRender="add,addFwdInfo,new,sectionForwarder,FWDPanel,SIPanel,sectionInstructions,addSIInfo" immediate="true" status="LoadingStatusSpinner">
+                <apex:param name="selectedAddress1" assignTo="{!selectedAddress1}" value=""/>
+                <apex:param name="selectedFwdInfo1" assignTo="{!selectedFwdInfo1}" value=""/>
+            </apex:actionFunction>
+            
+            <apex:actionFunction name="myFunc1Fwd" reRender="addFwdInfo,new,SIPanel,sectionInstructions,addSIInfo" immediate="true" status="LoadingStatusSpinner">
+                <apex:param name="selectedFwdInfo1" assignTo="{!selectedFwdInfo1}" value=""/>
+            </apex:actionFunction>
+            
+            <apex:actionFunction name="myFunc2SI" reRender="new,addSIInfo,sectionInstructions,addressmessages" immediate="true" status="LoadingStatusSpinner">
+                <apex:param name="selectedSIInfo" assignTo="{!selectedsplinst}" value=""/>
+            </apex:actionFunction>
+            
+            <apex:actionFunction name="ShippingAddressAssign" action="{!ShippingAddressAssign}" status="LoadingStatusSpinner" rerender="Reticles,selectaddress1,addressmessages" />
+            <!-- END Action functions -->
+            
+            <apex:outputPanel id="add" rendered="true">
+                <apex:pageBlock id="selectaddress" mode="edit" rendered="{!if(selectedaddress1 = 'Other',true,false)}">
+                    <apex:pageBlockButtons location="bottom">
+                        <apex:commandButton value="Save" action="{!ShippingAddressSave}" reRender="selectaddress1,add,btnAssign" status="LoadingStatusSpinner"/>
+                    </apex:pageBlockButtons>
+                    <apex:pageblockSection title="Address information" id="enteraddress">
+                        <apex:inputField value="{!NewAddress.Company_Name__c}" required="true"/>
+                        <apex:inputField value="{!NewAddress.Address1__c}" required="true"/>
+                        <apex:inputField value="{!NewAddress.Address2__c}"/>
+                        <apex:inputField value="{!NewAddress.Shipping_Country__c}" required="true"/>
+                        <apex:inputField value="{!NewAddress.Shipping_State__c}" />
+                        <apex:inputField value="{!NewAddress.zip_code__c}" required="true"/>
+                    </apex:pageBlockSection>
+                </apex:pageBlock> 
+            </apex:outputpanel>            
+            
+            <apex:outputPanel id="addFwdInfo" rendered="true">
+                <apex:pageBlock id="selectFwdInfo" mode="edit" rendered="{!if(selectedFwdInfo1 = 'Other',true,false)}">
+                    <apex:pageBlockButtons location="bottom">
+                        <apex:commandButton value="Save" action="{!FwdInfoSave}" reRender="btnAssign2,addFwdInfo,sectionForwarder,FWDPanel,addressmessages,SIPanel" status="LoadingStatusSpinner"/>
+                    </apex:pageBlockButtons>
+                    <apex:pageblockSection title="Forwarder Information" id="enterFwdInfo">
+                        <apex:inputField required="true" value="{!NewFwdInfo.Forwarder_Name__c}" />
+                        <apex:inputField required="true" value="{!NewFwdInfo.Account_No__c}"/>
+                        <apex:inputField required="true" value="{!NewFwdInfo.Contact_Name__c}"/>
+                        <apex:inputField required="true" value="{!NewFwdInfo.Contact_Phone_No__c}"/>
+                        
+                    </apex:pageBlockSection>
+                </apex:pageBlock> 
+            </apex:outputpanel>
+            
+            <!-- DBiswal 07102015 -->
+            <apex:outputPanel id="addSIInfo" rendered="true" styleClass="fieldToShow">
+                <apex:pageBlock id="selectSIInfo" mode="edit" rendered="{!if(AND(selectedsplinst = 'Yes',splinst=null),true,false)}">
+                <apex:actionFunction action="{!storesplinst}" name="callclass" reRender="new,addressmessages,sectionInstructions,addSIInfo" status="LoadingStatusSpinner">
+                    <apex:param name="SIinput" value=""/>
+                </apex:actionFunction>
+                    <apex:pageBlockButtons location="bottom">
+                        <apex:commandButton value="Save" onclick="assignsplinst();return false;" status="LoadingStatusSpinner"/>
+                    </apex:pageBlockButtons>
+                    <apex:pageblockSection title="Special Instruction" id="enterSIInfo">     
+                        <textarea name="SIinputtextarea" id="SIinput" cols="55" rows="10" style="margin-left:10px;"/>                  
+                    </apex:pageBlockSection>
+                </apex:pageBlock> 
+            </apex:outputpanel>
+            <!-- DBiswal 07102015 -->    
+        </apex:form> 
+    </div>
+    <script>
+        //Page unable to access below js from static resource
+        function validateEmailAdd(){
+            var validEmailAddress = true;
+            var toAddress = $('.eucitstyle1').val();
+            
+            if(toAddress.trim() == ''){
+                alert('Please fill in atleast one Address');
+                return false;
+            }
+            
+            var lstToAddresses = toAddress.split(";");
+            var lenToAdd = lstToAddresses.length;
+            for(var i = 0; i < lenToAdd; i++) {
+                var re = /^(([^<>()[\]\\.,;:\s@\"]+(\.[^<>()[\]\\.,;:\s@\"]+)*)|(\".+\"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
+                if(!re.test(lstToAddresses[i].trim())){
+                    alert('Please correct the Email Address: '+lstToAddresses[i]);
+                    return false;
+                }
+            }
+            
+            sendemail();
+            return true;
+        }
+    </script>
+</apex:page>

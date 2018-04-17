@@ -1,0 +1,1 @@
+trigger GFSAccountHistoryTrigger on Account (before update,after update) {if(trigger.isBefore){gfsz.GFSSetFieldHistoryUpdate.preRequisite(trigger.oldMap,trigger.NewMap);}if(trigger.isAfter){gfsz.GFSSetFieldHistoryUpdate.updateHistoryObject(trigger.oldMap,trigger.NewMap);}}

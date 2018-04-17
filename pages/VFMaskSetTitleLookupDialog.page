@@ -1,0 +1,94 @@
+<apex:page showHeader="false" sideBar="false" standardStylesheets="false" readOnly="true" controller="ClsMaskSetTitleLookupDialog">
+<apex:stylesheet value="{!URLFOR($Resource.Swift_MRS,'css/style.css')}"/>
+<style>
+    .s-btn {
+        width:35px!important;
+    }
+</style>
+<apex:form >
+<div class="popupMainContainer">
+  <h3 class="bold-font lookupHeader">Lookup Mask Set Title</h3>
+  <div class="searchField">
+      <label class="bold-font">Mask Set Title: </label>
+      <apex:inputText value="{!searchString}"/>
+      <input id="searchBtn" type="submit" class="s-btn" value="Go"/>
+  </div>  
+    <div class="resultSection">
+      <h5 id="resHeader" class="bold-font">Search Results</h5>
+      <div class="clear"></div>
+      <apex:outputPanel id="resultsPanel">
+      <table class="data-table" style="width:100%">
+                        <thead>
+                            <tr>
+                                <th style="width:75%"><span>Mask Set Title</span></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <apex:variable var="counter" value="{!1}"/>
+                            <apex:repeat value="{!listDisplayedMSTs}" var="m">
+                                <apex:variable var="colorClass" value="{!IF(mod(counter,2)!=0,'alt-row-bgcolor','')}"/>
+                                <tr class="{!colorClass}">
+                                    <td><a href="javascript:void(0);" class="mstClass" id="{!m.Id}">{!m.Name}</a></td>
+                                </tr>
+                                <apex:variable var="counter" value="{!counter+ 1}"/>
+                            </apex:repeat>
+                        </tbody>
+                        <tfoot>
+                            <tr>
+                                <td colspan="3">
+                                    <div class="data-table-pagination">
+                                    <span class="float-left padding-top-5">{!startPageNum}-{!endPageNum} of {!totalRecords}</span>
+                                        <apex:outputLink value="javascript:void(0);" id="prevId" styleClass="previous" rendered="{!hasPrevious}"><span class="bold-font">Previous</span></apex:outputLink>                        
+                                        <apex:outputLink value="javascript:void(0);" styleClass="previous" rendered="{!NOT(hasPrevious)}">Previous</apex:outputLink>
+                                        <apex:outputLink value="javascript:void(0);" id="nextId" styleClass="next" rendered="{!hasNext}"><span class="bold-font">Next</span></apex:outputLink>                                      
+                                        <apex:outputLink value="javascript:void(0);" styleClass="next" rendered="{!NOT(hasNext)}">Next</apex:outputLink>
+                                    </div>
+                                </td>   
+                            </tr>
+                        </tfoot>
+                    </table>
+            </apex:outputPanel>
+    </div>
+  
+ </div>
+ <script type="text/javascript" src="{!URLFOR($Resource.Swift_MRS,'js/jquery.min.js')}"></script>
+ <script>
+ $(document).on("click",".mstClass",function(){
+        try {
+            var mstId = $(this).prop('id');
+            var mstName = $(this).text();
+            window.opener.sendSelectedMST(mstId,mstName); 
+            window.close();
+        } catch(e) {
+            console.log(e.name + ' : ' + e.message);
+        }
+ });
+ $(document).on("click","#searchBtn",function(){
+     disableButton('searchBtn');
+     $('#resHeader').text('Searching...');
+     $('[id$=resultsPanel]').html("");
+     search();
+     return false;
+ });
+ $(document).on("click","[id$=prevId]",function(){
+     goPrev();
+ });
+ $(document).on("click","[id$=nextId]",function(){
+     goNext();
+ });
+ function enableButton(btnId) {
+     $('#'+btnId).prop('disabled',false);
+ }
+ function disableButton(btnId) {
+     $('#'+btnId).prop('disabled',true);
+ }
+ function finishSearch() {
+     $('#resHeader').text('Search Results');
+     enableButton('searchBtn');
+ }
+ </script>
+<apex:actionFunction name="goPrev" action="{!goPrev}" reRender="resultsPanel"/>
+<apex:actionFunction name="goNext" action="{!goNext}" reRender="resultsPanel"/>
+<apex:actionFunction name="search" action="{!searchMSTs}" reRender="resultsPanel" oncomplete="finishSearch();"/>    
+</apex:form>
+</apex:page>

@@ -1,0 +1,428 @@
+<!-- 
+    Author: Anil Kumar Reddy L
+    Company: GLOBALFOUNDRIES
+    Project: FMS 2.0
+    Description: Page used to View the DDR Form.
+    Change History: 
+    Date               Name                    Comments
+    14/02/2017         Anirban Roy             Added redirect button to FMS Search page
+    -->
+<apex:page standardController="Form_Management_System__c" extensions="FMSDDRFormPage_Ext" showHeader="true" sidebar="true">
+    <apex:includeScript value="{!URLFOR($Resource.jquery, 'js/jquery-1.8.3.min.js')}"/>
+    <apex:includeScript value="{!URLFOR($Resource.jquery, 'js/jquery-ui-1.9.2.custom.js')}"/>
+    <apex:includeScript value="{!URLFOR($Resource.jqPlugin, '/jquery.blockUI.js')}"/>
+    <apex:stylesheet value="{!URLFOR($Resource.jquery, 'css/ui-lightness/jquery-ui-1.9.2.custom.css')}"/>
+    <style type="text/css">
+        body div{
+        font-family: Arial !important;
+        }
+    </style>
+    <style>  
+        .bPageBlock .requiredInput .requiredBlock{background-color: #F6FBF6;}  
+        .requiredInput .requiredBlock::before { display: block; content: "*"; font-size: 1.5em; font-weight: bold; color: #c00; margin-left: -12px; margin-top: -3px; }  
+        p{
+        color:brown;
+        }
+        a{
+            text-decoration: none;
+        }
+        .message1 {
+            display:none;
+        }
+        .error1 {
+            display:none;
+        }
+    </style>
+    <script>
+        function launchPrintWindow(formObjId){
+            window.open("/apex/FMSDDRFormViewPrintPDF?id="+formObjId);
+        }
+        function pickselectedVal(){
+            var e = document.getElementById("createAddOpt");
+            var str = e.options[e.selectedIndex].value;
+            console.log('Value selected - '+str);
+            if(str==' '){
+                $j('.error1').show();
+            }else{
+                $j('.error1').hide();
+                createAddendumFunction(str);
+            }
+        }
+        function showMessageDDR(){
+            $j = jQuery.noConflict();    
+            var e = document.getElementById("createAddOpt");
+            var str = e.options[e.selectedIndex].value;
+            if(str == 'RIT'){               
+                $j('.message1').show();
+            }else{
+                $j('.message1').hide();
+            }
+        }        
+    </script>
+    <script>
+        $j = jQuery.noConflict(); 
+        //function to block the whole page
+        function blockPage(){ 
+            $j.blockUI({ message: '<img src="/img/loading32.gif" /><h1> Refreshing...</h1>', 
+                css: { 
+                 border: 'none', 
+                 padding: '15px',  
+                 '-webkit-border-radius': '10px', 
+                 '-moz-border-radius': '10px', 
+                 opacity: .9
+                } 
+            }); 
+            return false;
+        }
+        //function to unblock the page
+        function unblockPage(){
+            $j.unblockUI();
+        }
+    </script>
+    <apex:outputPanel id="addendumpnl">
+        <script>
+            function showDialogforActions(actionName){      
+                var sd = new SimpleDialog("Test"+Dialogs.getNextId(), true);    
+                // sd.setTitle("Warning");   
+                sd.createDialog(); 
+                sd.setWidth(400);               
+                window.parent.sd = sd;
+                if(actionName == 'SubmitToProcess'){
+                    var strSubmit = "<img src='/img/msg_icons/warning24.png'/> <b>Warning!</b> <br/><br/>Are you sure you want to complete this form action? <br/> <br/> Submitting this form signifies your request to have your design data returned as specified. Please ensure the accuracy of your responses, as the processing will begin automatically. <br/><br/><p align='center'><button class='btn' onclick='submitFormActionFuntion(); window.parent.sd.hide(); return true;'>Continue</button>&nbsp; &nbsp; &nbsp; &nbsp; <button class='btn' onclick='window.parent.sd.hide(); return false;'>Cancel</button></p>";
+                    console.log(strSubmit);             
+                    var ex = sd.setContentInnerHTML(strSubmit); 
+                    sd.show();   
+                    return ex;
+                }
+                else if(actionName == 'FormReturned'){
+                    var strSubmit = "<img src='/img/msg_icons/warning24.png'/> <b>Warning!</b> <br/><br/>Are you sure you want to complete this form action? <br/> <br/> Return this form to the client for them to make updates. <br/><br/><p align='center'><button class='btn' onclick='window.parent.sd.hide(); formReturnActionFuntion(); return true;'>Continue</button>&nbsp; &nbsp; &nbsp; &nbsp; <button class='btn' onclick='window.parent.sd.hide(); return false;'>Cancel</button></p>";
+                    console.log(strSubmit);             
+                    var ex = sd.setContentInnerHTML(strSubmit); 
+                    sd.show();   
+                    return ex;
+                }else if(actionName == 'Cancelled'){
+                    var strSubmit = "<img src='/img/msg_icons/warning24.png'/> <b>Warning!</b> <br/><br/>Are you sure you want to complete this form action? <br/> <br/> Cancels the request to return data related to this form. <br/><br/><p align='center'><button class='btn' onclick='window.parent.sd.hide(); cancelActionFuntion(); return true;'>Continue</button>&nbsp; &nbsp; &nbsp; &nbsp; <button class='btn' onclick='window.parent.sd.hide(); return false;'>Cancel</button></p>";
+                    console.log(strSubmit);             
+                    var ex = sd.setContentInnerHTML(strSubmit); 
+                    sd.show();   
+                    return ex;
+                }else if(actionName == 'RequestAccepted'){
+                    var strSubmit = "<img src='/img/msg_icons/warning24.png'/> <b>Warning!</b> <br/><br/>Are you sure you want to complete this form action? <br/><br/>Mark the design data return request from this form as received. <br/><br/> <p align='center'><button class='btn' onclick='window.parent.sd.hide(); reqAcceptedActionFuntion(); return true;'>Continue</button>&nbsp; &nbsp; &nbsp; &nbsp; <button class='btn' onclick='window.parent.sd.hide(); return false;'>Cancel</button></p>";
+                    console.log(strSubmit);             
+                    var ex = sd.setContentInnerHTML(strSubmit); 
+                    sd.show();   
+                    return ex;
+                }
+            }
+            
+            //Start Bug489-Anil Kumar Reddy - Modified delete popup
+            function showDialogforDelete(){
+                var sd = new SimpleDialog("Test"+Dialogs.getNextId(), true);    
+                //sd.setTitle("Warning");   
+                sd.createDialog(); 
+                sd.setWidth(400);               
+                window.parent.sd = sd;
+                var ex = sd.setContentInnerHTML("<img src='/img/msg_icons/warning24.png'/> <b>Warning!</b> <br/><br/>Are you sure you want to delete this form? <br/><br/> <b>The form will no longer be retrievable once deleted.</b> <br/><br/> Note: The form delete operation may take 1-2 minutes to complete. Please do not perform any other operations during this time. We appreciate your patience. <br/><br/><p align='center'><button class='btn' onclick='DeleteFormActionFunction(); window.parent.sd.hide(); return true;'>Confirm</button>&nbsp; &nbsp; &nbsp; &nbsp; <button class='btn' onclick='window.parent.sd.hide(); return false;'>Cancel</button></p>"); 
+                sd.show();   
+                return ex;
+            }
+            //End Bug489-Anil Kumar Reddy - Modified delete popup
+        </script>
+    </apex:outputPanel>
+    
+    <apex:form id="fmsForm">
+        <apex:pagemessages id="errorMsg" />
+
+        <c:FMSNameDesc ></c:FMSNameDesc>
+        <apex:outputpanel id="hierarchy">
+            <c:FMSHierarchy formId="{!formId}" rendered="{!!showReport}"></c:FMSHierarchy>
+        </apex:outputpanel>
+        
+        <apex:actionFunction name="submitFormActionFuntion" action="{!SubmitForDesign}" status="blockUI"/>
+
+        <apex:actionFunction name="formReturnActionFuntion" action="{!FormReturned}" status="blockUI"/>
+
+        <apex:actionFunction name="cancelActionFuntion" action="{!cancelled}" status="blockUI"/>
+
+        <apex:actionFunction name="reqAcceptedActionFuntion" action="{!RequestAccepted}" status="blockUI"/>
+
+        <apex:actionFunction name="DeleteFormActionFunction" action="{!deleteForm}" status="blockUI"/>       
+
+        <apex:actionStatus onstart="blockPage()" onstop="unblockPage()" id="blockUI"/>
+        <apex:outputpanel id="pageDesc">
+            <apex:outputpanel rendered="{!!showReport}">
+                <apex:pageBlock title="Possible from Actions">
+                    <apex:outputLabel style="font-style:italic;font-size:10pt;color:black;"> 
+                        The selected form may have one or more action paths available to you based on your granted permissions and the current state of the form. Select the
+                        desired action to trigger that action, or select the Back to form select button to return to the form selection page
+                    </apex:outputLabel>
+                    <br/> <br/>
+                    <apex:outputPanel >
+                        <apex:pageBlockSection >
+                            <apex:outputField value="{!formObj.State_of_the_Form__c}" Label="Current Form State:"/>
+                        </apex:pageBlockSection>
+                        <br/>
+                        <apex:outputPanel >
+                            <html>
+                                <table class="list" style="width:1030px">
+                                    <tr class="headerRow" align="center">
+                                        <td style="font-size: 8pt;width:200px">Action</td>
+                                        <td style="font-size: 8pt;">Description</td>
+                                    </tr>                                   
+                                    
+                                    <apex:variable rendered="{!((formObj.State_of_the_Form__c == 'SubmitToProcess' || formObj.State_of_the_Form__c == 'RequestAccepted' || formObj.State_of_the_Form__c == 'Cancelled') && (!isPortalUser || isFMSAdmin))}" value="" var="v">
+                                        <tr class="datarow">
+                                            <td class="datacell">
+                                                <apex:commandLink style="width:120px;color:blue;" onclick="showDialogforActions('FormReturned'); window.scrollTo(0,0); return false;">Return form for update</apex:commandLink>
+                                            </td>
+                                            <td class="datacell">
+                                                <apex:outputLabel >
+                                                    Return this form to the client for them to make updates.
+                                                </apex:outputLabel>
+                                            </td>
+                                        </tr>
+                                    </apex:variable>
+                                    
+                                    <apex:variable rendered="{!(formObj.State_of_the_Form__c == 'FormReturned')}" value="" var="v">
+                                        <tr class="datarow">
+                                            <td class="datacell">
+                                                <apex:commandLink style="width:120px;color:blue;" onclick="showDialogforActions('Cancelled'); window.scrollTo(0,0); return false;">Cancel design return request</apex:commandLink>
+                                            </td>
+                                            <td class="datacell">
+                                                <apex:outputLabel >
+                                                    Cancels the request to return data related to this form.
+                                                </apex:outputLabel>
+                                            </td>
+                                        </tr>
+                                    </apex:variable>
+
+                                    <apex:variable rendered="{!((formObj.State_of_the_Form__c == 'SubmitToProcess' && (!isPortalUser || isFMSAdmin)) || (formObj.State_of_the_Form__c == 'FormReturned' &&  isFMSAdmin))}" value="" var="v">
+                                        <tr class="datarow">
+                                            <td class="datacell">
+                                                <apex:commandLink style="width:120px;color:blue;" onclick="showDialogforActions('RequestAccepted'); window.scrollTo(0,0); return false;">Design return request accepted</apex:commandLink>
+                                            </td>
+                                            <td class="datacell">
+                                                <apex:outputLabel >
+                                                    Mark the design data return request from this form as received.
+                                                </apex:outputLabel>
+                                            </td>
+                                        </tr>
+                                    </apex:variable>
+                                    
+                                    <apex:variable rendered="{!(formObj.State_of_the_Form__c == 'FormReturned' || formObj.State_of_the_Form__c == 'Draft')}" value="" var="v">
+                                        <tr class="datarow">
+                                            <td class="datacell">
+                                                <apex:commandLink style="width:120px;color:blue;" onclick="showDialogforActions('SubmitToProcess'); window.scrollTo(0,0); return false;">Submit for design data return process</apex:commandLink>
+                                            </td>
+                                            <td class="datacell">
+                                                <apex:outputLabel >
+                                                    Submitting this form signifies your request to have your design data returned as specified. Please ensure the accuracy of your responses, as the processing will begin automatically.
+                                                </apex:outputLabel>
+                                            </td>
+                                        </tr>
+                                    </apex:variable>
+                                    
+                                    <tr >
+                                        <td class="datacell">
+                                            <apex:commandLink style="width:120px;color:blue;" action="{!copyAsNewForm}">Copy as new form</apex:commandLink>
+                                        </td>
+                                        <td class="datacell">This feature allows you to copy the values from this existing form into a new form. The new form may be created on an updated template from the old form. It is therefore not guaranteed that 100% of the values will copy. You must still review the new form entirely before submitting.</td>
+                                    </tr>
+                                    
+                                    <tr class="datarow">
+                                        <td class="datacell">                          
+                                            <apex:commandLink target="_blank" style="width:120px;color:blue;" action="{!chngHistory}">Browse change history</apex:commandLink>
+                                        </td>
+                                        
+                                        <td class="datacell">
+                                            Browse the change history for this form.
+                                        </td>
+                                    </tr>
+                                    
+                                    <apex:variable rendered="{!!subscribeFlag}" value="" var="v">
+                                        <tr class="datarow">
+                                            <td class="datacell">
+                                                <apex:commandLink style="width:120px;color:blue;" action="{!Subscribe}">Subscribe to this form</apex:commandLink>
+                                            </td>
+                                            <td class="datacell">Subscribe to receive email notification for all events for this specific form.</td>
+                                        </tr>
+                                    </apex:variable>
+                                    
+                                    <apex:variable rendered="{!subscribeFlag}" value="" var="v">
+                                        <tr class="datarow">
+                                            <td class="datacell">
+                                                <apex:commandLink style="width:120px;color:blue;" action="{!UnSubscribe}">Unsubscribe from this form</apex:commandLink>
+                                            </td>
+                                            <td class="datacell">Remove your existing individual subscription for this form.</td>
+                                        </tr>
+                                    </apex:variable>
+                                    
+                                    <apex:variable rendered="{!(formObj.State_of_the_Form__c == 'Draft' || formObj.State_of_the_Form__c == 'FormReturned')}" value="" var="v">
+                                        <tr class="datarow">
+                                            <td class="datacell">
+                                                <apex:commandLink style="width:120px;color:blue;" action="{!SubscribeUser}">Subscribe other users to this form</apex:commandLink>
+                                            </td>
+                                            <td class="datacell"> Subscribe other users to receive email notifications for all events for this specific form.</td>
+                                        </tr>
+                                    </apex:variable>
+                                    
+                                    <apex:variable rendered="{!(formObj.State_of_the_Form__c == 'Draft' || formObj.State_of_the_Form__c == 'FormReturned')}" value="" var="v">
+                                        <tr class="datarow">
+                                            <td class="datacell">
+                                                <apex:commandLink style="width:120px;color:blue;" action="{!EditForm}">Edit</apex:commandLink>
+                                            </td>
+                                            <td class="datacell">Edit the form</td>
+                                        </tr>
+                                    </apex:variable>
+                                    
+                                    <apex:variable rendered="{!(formObj.State_of_the_Form__c == 'Draft' || formObj.State_of_the_Form__c == 'FormReturned')}" value="" var="v">
+                                        <tr class="datarow">
+                                            <td class="datacell">
+                                                <apex:commandLink style="width:120px;color:blue;" action="/apex/FMSmainFormCreation?id={!formObj.Id}&tranx=Edit&Type=DDR">Update form details</apex:commandLink>
+                                            </td>
+                                            <td class="datacell">Modify the form name and description</td>
+                                        </tr>
+                                    </apex:variable>
+                                </table>
+                            </html>
+                        </apex:outputPanel>
+                    </apex:outputPanel>
+                </apex:pageBlock>
+                <br/>  
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                <h1>View Form Data</h1>
+                
+                <apex:actionFunction name="saveandExit" action="{!saveandExit}"/>
+                
+                <apex:pageBlock title="Form Page 1" id="pb1">
+                    <h1>
+                        Foundry Design Data Return Form
+                    </h1>
+                    <p style="color:black;">
+                        Use this form to request either Post Cheese/Fill or Merged Reticle data (for the program that this addendum
+                        is associated with). GLOBALFOUNDRIES will return the design data (if available) in GDS format via the GLOBALFOUNDRIES Dropbox of the original submitter. Contact your Foundry Technical Representative if you have any questions/issues.
+                    </p> <br/>
+                    
+                    <apex:pageBlockSection columns="1" title="Product Information" collapsible="false" ><!--- Added By Abhita for Issue 500-->
+                        <apex:outputField id="parentProdName" value="{!formObj.Parent_Form_Id__r.RITProductName__c}" label="Product Name:" />
+                    </apex:pageBlockSection>
+                    
+                    <apex:actionRegion >
+                        <apex:pageBlockSection columns="1" title="Data Return Request" id="DataRtn" collapsible="false"><!--- Added By Abhita for Issue 500-->
+                            <p style="color:black;margin-left:200px;">
+                                Please download and review the Design Data Return Training Package (link
+                                below)
+                            </p>
+                            <apex:outputPanel id="dsgdataRtn">
+                                <apex:outputLink style="margin-left:320px;color:blue;" value="{!FMSdocuments['ReleaseAutomationTraining']}" id="theLink">Link To Design Data Return Training Package</apex:outputLink> <!--Needs to be verified -->
+                            </apex:outputPanel>
+                            
+                            <apex:pageblocksectionItem >
+                                <apex:outputLabel value="What type of data would you like returned?:"/>
+                                <apex:outputPanel >
+                                    <div class = "requiredInput">
+                                        <div class = "requiredBlock"></div>
+                                        <apex:outputField value="{!formObj.TypeOfData__c}" />
+                                    </div>
+                                </apex:outputPanel>
+                            </apex:pageblocksectionItem>
+                            
+                            <apex:outputPanel rendered="{!dispReturnReason}">
+                                <p>
+                                    Post Design Services (Cheese and Fill) data has already been requested via the parent RIT form. If this redundant request is not necessary, please deselect that option above. If you still need this additional data return, you may proceed, but please provide the reason below.
+                                </p>
+                                <br/>
+                            </apex:outputPanel>
+                            <apex:pageblockSection rendered="{!dispReturnReason}">
+                                <apex:pageblockSectionItem >
+                                    <apex:outputLabel value="Why are you requesting an additional return of the Post Design Service (Cheese and Fill) data?"/>
+                                    <apex:outputPanel >
+                                        <div class = "requiredInput">
+                                            <div class = "requiredBlock"></div>
+                                            <apex:outputField id="returnReason" value="{!formObj.ReturnReason__c}" />
+                                        </div>
+                                    </apex:outputPanel>
+                                </apex:pageblockSectionItem>
+                            </apex:pageblockSection>
+                            
+                            <apex:pageblockSection rendered="{!dispPostDesign}">
+                                <apex:pageblockSectionItem >
+                                    <apex:outputLabel value="For your &quot;Post Design Service&quot; request, do you need a subset of the submitted GDS?" escape="false"/><!--Added By Abhita for Issue 502-->
+                                    <apex:outputPanel >
+                                        <div class = "requiredInput">
+                                            <div class = "requiredBlock"></div>
+                                            <apex:outputField id="postDesing" value="{!formObj.IsPostDesign__c }"/>
+                                        </div>
+                                    </apex:outputPanel>
+                                </apex:pageblockSectionItem>
+                            </apex:pageblockSection>
+                            
+                            
+                            <apex:outputPanel rendered="{!typeOfdataFlag}">
+                                <apex:pageBlockSection columns="1">
+                                    <apex:pageblocksectionItem >
+                                        <p style="color:black;">
+                                            Please define the subset using the Lower Left and Upper Right Corners:
+                                        </p>
+                                        <p style="color:black;">
+                                            Lower Left Corner:
+                                        </p>
+                                    </apex:pageblocksectionItem>
+                                    
+                                    <apex:pageblockSectionItem >
+                                        <apex:outputLabel value="X coordinate LL Corner (um):"/>
+                                        <apex:outputPanel >
+                                            <div class = "requiredInput">
+                                                <div class = "requiredBlock"></div>
+                                                <apex:outputField id="coordinatefldxll" value="{!formObj.DDRLeftXCoordinate__c }"/>
+                                            </div>
+                                        </apex:outputPanel>
+                                    </apex:pageblockSectionItem>
+                                    
+                                    <apex:pageblockSectionItem >
+                                        <apex:outputLabel value="Y coordinate LL Corner (um):"/>
+                                        <apex:outputPanel >
+                                            <div class = "requiredInput">
+                                                <div class = "requiredBlock"></div>
+                                                <apex:outputField id="coordinatefldyll" value="{!formObj.DDRLeftYCoordinate__c }"/>
+                                            </div>
+                                        </apex:outputPanel>
+                                    </apex:pageblockSectionItem>
+                                    
+                                    <p style="color:black;">
+                                        Upper Right Corner:
+                                    </p>
+                                    
+                                    <apex:pageblockSectionItem >
+                                        <apex:outputLabel value="X coordinate UR Corner (um):"/>
+                                        <apex:outputPanel >
+                                            <div class = "requiredInput">
+                                                <div class = "requiredBlock"></div>
+                                                <apex:outputField id="coordinatefldxur" value="{!formObj.DDRRightXCoordinate__c }"/>
+                                            </div>
+                                        </apex:outputPanel>
+                                    </apex:pageblockSectionItem>
+                                    
+                                    <apex:pageblockSectionItem >
+                                        <apex:outputLabel value="Y coordinate UR Corner (um):"/>
+                                        <apex:outputPanel >
+                                            <div class = "requiredInput">
+                                                <div class = "requiredBlock"></div>
+                                                <apex:outputField id="coordinatefldyur" value="{!formObj.DDRRightYCoordinate__c }"/>
+                                            </div>
+                                        </apex:outputPanel>
+                                    </apex:pageblockSectionItem>
+                                </apex:pageblockSection>
+                            </apex:outputPanel>
+                        </apex:pageBlockSection>
+                    </apex:actionRegion>
+                    <apex:pageBlockButtons location="bottom">
+                        <apex:commandLink action="{!redirectToSearchPage}" value="Form Selection" styleClass="btn" style="text-decoration:none;padding:4px;" />
+                        <apex:commandLink action="{!openPDF}" target="_blank" value="Print PDF" styleClass="btn" style="text-decoration:none;padding:4px;" id="theButton"/>
+                        
+                    </apex:pageBlockButtons>
+                </apex:pageBlock>
+            </apex:outputpanel>
+        </apex:outputpanel>
+    </apex:form>
+</apex:page>

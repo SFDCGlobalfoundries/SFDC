@@ -1,0 +1,76 @@
+<apex:page standardController="Customer_Satsfaction__c" extensions="CustomerSatisfactionBarChartExtention" showHeader="false">
+    
+   <!--JQuery Code Start here to sort POST QBT Action Records---->  
+    <apex:includeScript value="//code.jquery.com/jquery-2.1.1.min.js"/>
+    <apex:includeScript value="//cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.18.3/js/jquery.tablesorter.js"/>
+    <apex:includeScript value="//cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.18.3/js/jquery.tablesorter.widgets.js"/>
+   <!-- <apex:stylesheet value="//cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.18.3/css/theme.jui.css"/> -->
+    <script>
+        $(document).ready(function(){
+            $("table").tablesorter({
+    
+            theme : 'jui', 
+    
+            headerTemplate : '{content} {icon}',
+    
+                 widgets : ['uitheme', 'zebra'],
+    
+            widgetOptions : {
+              zebra   : ["even", "odd"],
+            }
+    
+      });
+        });
+    </script>
+ <!--JQuery Code finish here ----> 
+
+    <apex:actionStatus id="pleasewait">
+        <apex:facet name="start"><img src="/img/loading.gif"/> Refreshing....</apex:facet>   
+    </apex:actionStatus>
+     <br/> <br/>
+    <apex:outputPanel layout="block" style="text-align:Center;font-size:20px;">
+        <h1>2A Report for {!CustomerName}, Quarter:{!quarter}, Year:{!ScoreYear}, Site:{!custmerSat.Site__c}</h1>
+        <br/> <br/>
+    </apex:outputPanel>
+<apex:form >
+    <apex:pageBlock >
+        <apex:messages />
+
+        <apex:pageBlockSection columns="2" rendered="{!data != Null && data.size >0}">
+            <apex:outputpanel style="margin-left:100px;"  layout="block">
+             <analytics:reportChart reportId="{!nextQBRBarChart}" filter="{!ChartFilter}"  size="medium" hideOnError="true" />
+             </apex:outputPanel>
+             <apex:outputpanel style="margin-left:100px;width:50%;"  layout="block">
+             <analytics:reportChart reportId="{!nextQBRBarChart2}" filter="{!ChartFilter}"  size="medium" hideOnError="true" />
+             </apex:outputPanel>
+             <apex:outputpanel style="margin-left:100px;width:78%;"  layout="block">
+                 <apex:outputText ><b>Focus</b></apex:outputText><br/><br/>
+                <apex:outputfield value="{!custmerSat.Focus__c}" rendered="{!data != Null && data.size >0}" label="Focus" />
+             </apex:outputpanel>
+             <apex:outputpanel style="margin-left:100px;width:65%;"  layout="block">
+                <apex:outputText ><b>High Light</b></apex:outputText><br/>
+                <apex:outputfield rendered="{!data != Null && data.size >0}" value="{!custmerSat.Highlights__c}"/>
+             </apex:outputpanel>
+             <apex:outputpanel style="margin-left:100px;width:65%;"  layout="block"> 
+                <apex:outputText ><b>Low Light</b></apex:outputText><br/> 
+                <apex:outputfield rendered="{!data != Null && data.size >0}" value="{!custmerSat.Lowlights__c}" />
+             </apex:outputpanel>
+            <!---- Prepare post QBR report --------------->
+            <apex:outputPanel rendered="{!postQBR !=null && PostQBR.size > 0}" style="margin-left:100px;width:60%;">
+                <apex:outputText ><b>2B* Post QBR Action Plan </b> </apex:outputText>  <br/><br/>
+                <apex:pageBlockTable value="{!postQBR}" var="qbr" title="2B* Post QBR Action Plan" style="margin-left:100px;width:65%;">
+                    <apex:column headerValue="Post QBR" >
+                        <apex:outputLink value="/{!qbr.Id}">{!qbr.Name}</apex:outputLink>
+                    </apex:column>
+                    <apex:column headerValue="Subject" value="{!qbr.Subject__c}"/>
+                    <apex:column headerValue="Target Completion Date" value="{!qbr.Target_Completion_Date__c}"/>
+                    <apex:column headerValue="Status in colour" value="{!qbr.Status_in_colour__c}"/>
+                </apex:pageBlockTable>
+            </apex:outputPanel>
+            <!----- post QBR report End--------------->            
+        </apex:pageBlockSection>
+        
+    </apex:pageBlock>
+        
+</apex:form>
+</apex:page>

@@ -1,0 +1,1931 @@
+<apex:page id="reservationpage" standardController="MPW_Reservation__c"
+    extensions="MPWReservationFormController" sidebar="false"
+    showHeader="true" tabStyle="MPW_Reservation__c">
+
+    <apex:stylesheet value="/sCSS/21.0/sprites/1297816277000/Theme3/default/gc/versioning.css" />
+
+    <script>
+        function setFocusOnLoad() {
+        }
+
+        function checkdrawndieSize(name) {
+            var v = parseInt(document.getElementById(name).value);
+            if (!(v >= 40 && v <= 32000)) {
+                alert('The value should be between 40 and 32000');
+                document.getElementById(name).value = '';
+                document.getElementById(name).focus();
+                return false;
+            } else {
+                return true;
+            }
+
+        }
+
+        function checkPrimDieNameRegex(name) {
+            var v = document.getElementById(name).value;
+            var regex = /[^0-9a-z]/i;
+            if (v == '') {
+                return false;
+            }
+            if (v.match(/[^0-9a-z]/i)) {
+                alert('The Prime Die Name should be alphanumeric.');
+                document.getElementById(name).value = '';
+                document.getElementById(name).focus();
+                return false;
+            } else {
+                return true;
+            }
+        }
+
+        function checkPrimeDieName(name) {
+            var v = document.getElementById(name).value;
+            if (v.includes("PRIME") || v.includes("Prime")
+                    || v.includes("prime") || v.includes("FRAME")
+                    || v.includes("Frame") || v.includes("frame")) {
+                alert('Prime Die Name cannot be Frame or Prime - Maximum length = 20 characters.');
+                document.getElementById(name).value = '';
+                document.getElementById(name).focus();
+                return false;
+            } else {
+                return true;
+            }
+        }
+
+        function checkCornerSubValues(name) {
+            var v = parseInt(document.getElementById(name).value);
+            if (v % 50 == 0) {
+                return true;
+            } else {
+                alert('Value should be in multiples of 50.');
+                document.getElementById(name).value = '0';
+                document.getElementById(name).focus();
+                return false;
+            }
+        }
+
+        function setWaferSkeletonDate(date1, date2) {
+            var waferShipDate = new Date(document.getElementById(date1).value);
+            var temp = new Date(waferShipDate);
+            temp.setMonth(waferShipDate.getMonth() + 2);
+            temp = temp.toLocaleDateString();
+            document.getElementById(date2).value = temp;
+        }
+
+        var newWin = null;
+        function openLookupPopup(name1, name2, name3) {
+            var goemetry = document.getElementById(name1).value;
+            var url = "/apex/MPWGMPLProjectNameCustomLookupVF?geo=" + goemetry
+                    + "&fname1=" + name2 + "&fname2=" + name3;
+            newWin = window
+                    .open(
+                            url,
+                            'Popup',
+                            'height=500,width=700,left=100,top=100,resizable=no,scrollbars=yes,toolbar=no,status=no');
+            if (window.focus) {
+                newWin.focus();
+            }
+            return false;
+        }
+
+        function closeLookupPopup() {
+            if (null != newWin) {
+                newWin.close();
+            }
+        }
+    </script>
+
+    <apex:sectionHeader title="GlobalShuttle Reservation Form"
+        subtitle="New Form"
+        help="https://help.salesforce.com/htviewhelpdoc?id=co_edit.htm&siteLang=en_US"
+        rendered="{!mpwResf.Id == null}" />
+    <apex:sectionHeader title="GlobalShuttle Reservation Form"
+        subtitle="Edit {!mpwResf.Name}"
+        help="https://help.salesforce.com/htviewhelpdoc?id=co_edit.htm&siteLang=en_US"
+        rendered="{!mpwResf.Id != null}" />
+    <apex:pageMessages id="errorSection" />
+
+    <apex:form id="form">
+
+        <apex:pageBlock id="block"
+            mode="{!IF(accessMode == 'Edit','edit','maindetail')}"
+            rendered="{!IF(preview == false, true, false)}">
+
+            <apex:pageBlockButtons location="both">
+                <apex:commandButton value="Edit" action="{!editPage}"
+                    rendered="{!IF(accessMode == 'View',true,false)}" />
+                <apex:commandButton value="Preview"
+                    disabled="{!IF(AND(accessMode == 'Edit',agree == true),false,true)}"
+                    action="{!gotoPreview}"
+                    rendered="{!IF(accessMode == 'Edit',true,false)}" />
+                <apex:commandButton value="Save as Draft" action="{!saveAsDraft}"
+                    disabled="{!IF(AND(accessMode == 'Edit',agree == true),false,true)}"
+                    rendered="{!IF(accessMode == 'Edit',true,false)}" />
+                <apex:commandButton value="Submit for Approval"
+                    disabled="{!IF(agree == true,false,true)}" />
+                <apex:commandButton value="Back" action="{!back}" immediate="true" />
+            </apex:pageBlockButtons>
+
+            <apex:pageblockSection id="section1" title="MPW Train Selection"
+                collapsible="false" columns="1"
+                rendered="{!IF(AND(initPoint=='device',accessMode == 'Edit'),true,false)}">
+                <apex:outputPanel layout="inline">
+                    <apex:outputLabel value="Train" styleClass="labelCol" />
+                    <apex:selectList id="trainName" size="1"
+                        value="{!mpwResf.MPW_Train_Name__c}" multiselect="false">
+                        <apex:selectOptions value="{!trainOptions}" />
+                        <apex:actionSupport event="onchange"
+                            action="{!retrieveMPWSchedule}" reRender="section2,section3" />
+                    </apex:selectList>
+                </apex:outputPanel>
+            </apex:pageblockSection>
+
+            <apex:pageBlockSection id="section1view" title="MPW Train Selection"
+                collapsible="false" columns="1"
+                rendered="{!IF(AND(initPoint=='devices',accessMode == 'View'),true,false)}">
+                <apex:outputField value="{!mpwResf.MPW_Train_Name__c}" />
+            </apex:pageBlockSection>
+
+            <apex:pageblockSection id="section2"
+                title="Reservation Form Information" collapsible="false" columns="1">
+                <apex:pageBlockSectionItem >
+                    <apex:outputLabel value="{!$ObjectType.MPW_Train_Maintenance__c.fields.Name.label}" />
+                    <apex:outputField value="{!mpwtm.Name}" />
+                </apex:pageBlockSectionItem>
+                <apex:pageBlockSectionItem >
+                    <apex:outputLabel value="{!$ObjectType.MPW_Train_Maintenance__c.fields.Reservation_Open_Date__c.label}" />
+                    <apex:outputField value="{!mpwtm.Reservation_Open_Date__c}" />
+                </apex:pageBlockSectionItem>
+                <apex:pageBlockSectionItem >
+                    <apex:outputLabel value="{!$ObjectType.MPW_Train_Maintenance__c.fields.Reservation_Close_Date__c.label}" />
+                    <apex:outputField value="{!mpwtm.Reservation_Close_Date__c}" />
+                </apex:pageBlockSectionItem>
+                <apex:pageBlockSectionItem >
+                    <apex:outputLabel value="{!$ObjectType.MPW_Train_Maintenance__c.fields.Tapeout_Date_Other_Participant__c.label}*" />
+                    <apex:outputField value="{!mpwtm.Tapeout_Date_Other_Participant__c}" />
+                </apex:pageBlockSectionItem>
+                <apex:pageBlockSectionItem >
+                    <apex:outputLabel value="{!$ObjectType.MPW_Train_Maintenance__c.fields.Customer_Tapeout_Date__c.label}*" />
+                    <apex:outputField value="{!mpwtm.Customer_Tapeout_Date__c}" />
+                </apex:pageBlockSectionItem>
+                <br />
+                <apex:outputLabel style="font-style:italic;font-size:8pt;"
+                    value="*DRC requests must be submitted at least 2 weeks before this date. Designs which are not submitted or have not passed design rules check by above date will be rejected from this MPW. Please check schedule for future MPWs." />
+                <br />
+            </apex:pageblockSection>
+
+            <apex:outputPanel id="category">
+                <apex:panelGrid rendered="{!IF(accessMode == 'Edit',true,false)}"
+                    columns="3" style="width:50%;margin-left:15px;">
+                    <apex:actionRegion >
+                        <apex:panelGroup >
+                            <apex:outputLabel styleClass="labelCol" value="Category" />
+                            <apex:selectList value="{!mpwResf.Category__c}" size="1"
+                                multiselect="false">
+                                <apex:selectOptions value="{!categoryList}" />
+                                <apex:actionSupport event="onchange" action="{!onCategoryChange}"
+                                    reRender="category,section2,section4,section5,section6,section7,section8,section9,section10,section11,section12,section13" />
+                            </apex:selectList>
+                        </apex:panelGroup>
+                    </apex:actionRegion>
+                    <apex:panelGroup rendered="{!mpwResf.Category__c != 'TD' && mpwResf.Category__c != 'Customer'}">
+                        <apex:outputLabel styleClass="labelCol" value="Sub Category" />
+                        <apex:selectList value="{!mpwResf.Sub_Category__c}" size="1"
+                            multiselect="false"
+                            rendered="{!mpwResf.Category__c != 'TD' && mpwResf.Category__c != 'FAB' && mpwResf.Category__c != 'Customer'}">
+                            <apex:selectOptions value="{!subCategory}"
+                                rendered="{!mpwResf.Category__c != 'TD' && mpwResf.Category__c != 'FAB' && mpwResf.Category__c != 'Customer'}" />
+                        </apex:selectList>
+                        <apex:outputText value="{!mpwtm.Geometry__c}"
+                            rendered="{!mpwResf.Category__c == 'FAB'}" />
+                    </apex:panelGroup>
+                    <apex:panelGroup rendered="{!mpwResf.Category__c != 'Customer'}">
+                        <apex:outputLabel styleClass="labelCol" value="Usage" />
+                        <apex:selectList value="{!mpwResf.Usage__c}" size="1"
+                            multiselect="false"
+                            rendered="{!mpwResf.Category__c != 'DE' && mpwResf.Category__c != 'IP' && mpwResf.Category__c != 'Customer'}">
+                            <apex:selectOptions value="{!Usages}" />
+                            <apex:actionSupport event="onchange" reRender="section2" />
+                        </apex:selectList>
+                        <apex:outputText value="Required"
+                            rendered="{!mpwResf.Category__c == 'DE' || mpwResf.Category__c == 'IP'}" />
+                    </apex:panelGroup>
+                    <apex:panelGroup rendered="{!mpwResf.Category__c == 'TD'}">
+                        <apex:outputLabel styleClass="labelCol" value="PA Code" />
+                        <apex:selectList value="{!mpwResf.PA_Code__c}" size="1"
+                            multiselect="false"
+                            rendered="{!mpwResf.Category__c == 'TD' && mpwResf.Usage__c == 'Required'}">
+                            <apex:selectOptions value="{!PACodes}" />
+                        </apex:selectList>
+                        <apex:outputText value="For Opportunistic Usage"
+                            rendered="{!mpwResf.Category__c == 'TD' && mpwResf.Usage__c == 'Opportunistic'}" />
+                    </apex:panelGroup>
+                </apex:panelGrid>
+            </apex:outputPanel>
+
+            <apex:panelGrid id="categoryview"
+                rendered="{!IF(accessMode == 'View',true,false)}" columns="3"
+                style="width:50%;margin-left:15px;">
+                <apex:panelGroup >
+                    <apex:outputLabel styleClass="labelCol" value="Category" />
+                    <apex:outputField value="{!mpwResf.Category__c}" />
+                </apex:panelGroup>
+                <apex:panelGroup rendered="{!mpwResf.Category__c != 'TD' && mpwResf.Category__c != 'Customer'}">
+                    <apex:outputLabel styleClass="labelCol" value="Sub Category" />
+                    <apex:outputField value="{!mpwResf.Sub_Category__c}"
+                        rendered="{!mpwResf.Category__c != 'TD'}" />
+                </apex:panelGroup>
+                <apex:panelGroup rendered="{!mpwResf.Category__c != 'Customer'}">
+                    <apex:outputLabel styleClass="labelCol" value="Usage" />
+                    <apex:outputField value="{!mpwResf.Usage__c}" />
+                </apex:panelGroup>
+                <apex:panelGroup rendered="{!mpwResf.Category__c == 'TD'}">
+                    <apex:outputLabel styleClass="labelCol" value="PA Code" />
+                    <apex:outputField value="{!mpwResf.PA_Code__c}"
+                        rendered="{!mpwResf.Category__c == 'TD'}" />
+                </apex:panelGroup>
+            </apex:panelGrid>
+
+            <apex:outputPanel id="section3">
+                <apex:pageBlockSection title="Process Information"
+                    collapsible="false">
+                    <apex:panelGrid rendered="{!IF(accessMode == 'Edit',true,false)}">
+                        <apex:panelGroup >
+                            <apex:outputText value="Process" styleClass="labelCol" />
+                            <apex:selectList value="{!mpwResf.Process_Type__c}" size="1"
+                                multiselect="false">
+                                <apex:selectOptions value="{!Processes}" />
+                                <apex:actionSupport event="onchange"
+                                    action="{!retrieveMPWTrainScheduleDetails}"
+                                    rerender="section3, errorSection" />
+                            </apex:selectList>
+                        </apex:panelGroup>
+                    </apex:panelGrid>
+                    <br/>
+                    <apex:pageblockTable value="{!MPWTrainMaintenanceDetailList}"
+                        var="s"
+                        rendered="{!IF(AND(MPWTrainMaintenanceDetailList.size > 0,accessMode == 'Edit'), true, false)}">
+                        <apex:column value="{!s.question}">
+                            <apex:facet name="header">Question</apex:facet>
+                        </apex:column>
+                        <apex:column >
+                            <apex:selectRadio value="{!s.answer}">
+                                <apex:selectOptions value="{!s.selectOption}" />
+                                <apex:actionSupport event="onchange" reRender="section3" />
+                            </apex:selectRadio>
+                            <apex:facet name="header">Answer</apex:facet>
+                            <apex:pageBlockTable value="{!s.sqwList}" var="ss"
+                                rendered="{!IF(AND(CONTAINS(s.question,'Do you need SRAM'),s.answer == 'Yes'),true,false)}"
+                                style="width: 400px">
+                                <apex:column >
+                                    <apex:inputCheckbox value="{!ss.selected}" />
+                                </apex:column>
+                                <apex:column >{!ss.name}</apex:column>
+                                <apex:column />
+                                <apex:column >SRAM Array total block size (in MB)</apex:column>
+                                <apex:column >
+                                    <apex:inputField value="{!ss.mpwSRAMQues.Answer__c}"
+                                        style="width:60px" />
+                                </apex:column>
+                            </apex:pageBlockTable>
+                        </apex:column>
+                    </apex:pageblockTable>
+                    <br/>
+                    <apex:panelGrid rendered="{!IF(accessMode == 'View',true,false)}">
+                        <apex:panelGroup >
+                            <apex:outputLabel value="Process" styleClass="labelCol" />
+                            <apex:outputField value="{!mpwResf.Process_Type__c}" />
+                        </apex:panelGroup>
+                    </apex:panelGrid>
+                    <br/>
+                    <apex:pageBlockTable value="{!mpwpiqList}" var="mpwpiq"
+                        rendered="{!IF(AND(mpwpiqList != null,accessMode='View'),true,false)}">
+                        <apex:column value="{!mpwpiq.MPW_Maintenance_Details__r.MPW_Tech_Module__r.Question__c}" />
+                        <!-- <apex:column value="{!mpwpiq.Answer__c}"> -->
+                        <apex:column >{!mpwpiq.Answer__c}
+                        <apex:pageBlockTable value="{!mpwsramquestionList}" style="width: 400px"
+                                var="mpwsram"
+                                rendered="{!IF(AND(CONTAINS(mpwpiq.MPW_Maintenance_Details__r.MPW_Tech_Module__r.Question__c,'Do you need SRAM'), mpwpiq.Answer__c == 'Yes'),true,false)}">
+                                <apex:column >{!mpwsram.MPW_SRAM_Configuration__r.Name}</apex:column>
+                                <apex:column ></apex:column>
+                                <apex:column >SRAM Array total block size (in MB)</apex:column>
+                                <apex:column >{!mpwsram.Answer__c}</apex:column>
+                            </apex:pageBlockTable>
+                        </apex:column>
+                    </apex:pageBlockTable>
+                </apex:pageBlockSection>
+            </apex:outputPanel>
+
+            <apex:outputPanel id="section4">
+                <apex:pageblockSection title="Chip Information" collapsible="false"
+                    rendered="{!IF(accessMode=='Edit',true,false)}">
+                    <apex:outputPanel layout="block">
+                        <apex:outputLabel style="font-style:italic;font-size:8pt;"> 
+                            For Wafer Delievery, backgrind is not applicable.<br />
+                            Each Chip requires a Chip identification at the left bottom corner of the die on gate only, metal 1 and top metal.
+                        </apex:outputLabel>
+                        <br />
+                        <br />
+                        <html>
+<table border="1" class="list" cellspacing="0" cellpadding="0">
+    <tr class="headerRow" align="center">
+        <td rowspan="2">Action</td>
+        <td rowspan="2" style="font-size: 8pt;">Prime Die Name</td>
+        <td colspan="2" style="font-size: 8pt">Drawn Die Size</td>
+        <apex:variable var="v" value=""
+            rendered="{!IF(AND(mpwResf.Category__c != 'FAB', mpwResf.Category__c != 'TD'),true,false)}">
+            <td colspan="2" style="font-size: 8pt">Quantity Delivery</td>
+        </apex:variable>
+        <apex:variable var="v" value=""
+            rendered="{!IF(OR(mpwResf.Category__c == 'FAB', mpwResf.Category__c == 'TD'),true,false)}">
+            <td style="font-size: 8pt">Quantity Delivery</td>
+        </apex:variable>
+        <apex:variable var="v" value=""
+            rendered="{!IF(AND(mpwtm.Geometry__c == '28nm', mpwResf.Category__c != 'FAB', mpwResf.Category__c != 'TD'), true, false)}">
+            <td rowspan="2" style="font-size: 8pt">Drawn Orientation
+                Restricted Structures</td>
+        </apex:variable>
+        <apex:variable var="v" value=""
+            rendered="{!(mpwtm.Geometry__c == '28nm' || mpwtm.Geometry__c == '14nm' || mpwtm.Geometry__c == '40nm' || mpwtm.Geometry__c == '65nm') && (mpwResf.Category__c == 'IP' || mpwResf.Category__c == 'Customer')}">
+            <td rowspan="2" style="font-size: 8pt">Metal Stack</td>
+        </apex:variable>
+        <apex:variable value="" var="v"
+            rendered="{!IF(AND(mpwResf.Category__c != 'FAB', mpwResf.Category__c != 'TD'), true, false)}">
+            <td rowspan="2" style="font-size: 8pt;">Device Type</td>
+            <td rowspan="2" style="font-size: 8pt">Corner Split</td>
+        </apex:variable>
+        <td rowspan="2" style="font-size: 8pt">GMPL Project Name</td>
+        <td rowspan="2" style="font-size: 8pt">GMPL Purpose</td>
+        <apex:variable value="" var="v"
+            rendered="{!IF(AND(mpwResf.Category__c != 'FAB', mpwResf.Category__c != 'TD'), true, false)}">
+            <td rowspan="2" style="font-size: 8pt">BackGrind</td>
+            <td rowspan="2" style="font-size: 8pt">Short Loop Wafer</td>
+            <apex:variable var="v" value=""
+                rendered="{!mpwtm.Geometry__c == '0.18um' || mpwtm.Geometry__c == '0.35um' || mpwtm.Geometry__c == '0.11/0.13um'}">
+                <td rowspan="2" style="font-size: 8pt">Sub Devices Extraction</td>
+            </apex:variable>
+            <td colspan="2" style="font-size: 8pt">Expedite</td>
+            <td rowspan="2" style="font-size: 8pt">Turnkey Services</td>
+            <td rowspan="2" style="font-size: 8pt">TurnKey Pre-Alert Form</td>
+        </apex:variable>
+    </tr>
+    <tr class="headerRow" align="center">
+        <td style="font-size: 8pt">X(um)</td>
+        <td style="font-size: 8pt">Y(um)</td>
+        <apex:variable var="v" value=""
+            rendered="{!IF(AND(mpwResf.Category__c != 'FAB', mpwResf.Category__c != 'TD'), true, false)}">
+            <td style="font-size: 8pt">In Die Form</td>
+        </apex:variable>
+        <td style="font-size: 8pt">In Wafer Form</td>
+        <apex:variable var="v" value=""
+            rendered="{!IF(AND(mpwResf.Category__c != 'FAB', mpwResf.Category__c != 'TD'), true, false)}">
+            <td style="font-size: 8pt">In Die Form</td>
+            <td style="font-size: 8pt">In Wafer Form</td>
+        </apex:variable>
+    </tr>
+    <apex:variable var="rowNum" value="{!0}" />
+    <apex:repeat value="{!PrimeDieWrapperList}" var="mpwPrimeDieWrapper">
+        <tr class="datarow">
+            <td class="datacell"><apex:commandLink value="Remove"
+                    action="{!delRowToChipInformation}" reRender="section4, section6"
+                    immediate="true" rendered="{!PrimeDieWrapperList.size > 1}">
+                    <apex:param value="{!rowNum}" name="index" />
+                </apex:commandLink> <apex:variable var="rowNum" value="{!rowNum+1}" /></td>
+            <td class="datacell"><div class="requiredInput">
+                    <div class="requiredBlock"></div>
+                    <apex:inputField id="primediename"
+                        value="{!mpwPrimeDieWrapper.mpwPrimeDie.Prime_Die_Name__c}"
+                        style="width:65px">
+                        <apex:actionSupport event="onchange" reRender="section6"
+                            onsubmit="checkPrimDieNameRegex('{!$Component.primediename}'); checkPrimeDieName('{!$Component.primediename}');" />
+                    </apex:inputField>
+                </div></td>
+            <td class="datacell"><div class="requiredInput">
+                    <div class="requiredBlock"></div>
+                    <apex:inputField value="{!mpwPrimeDieWrapper.mpwPrimeDie.Drawn_Die_Size_X_um__c}"
+                        id="xvalue" onchange="checkdrawndieSize('{!$Component.xvalue}')"
+                        style="width:60px" />
+                </div></td>
+            <td class="datacell"><div class="requiredInput">
+                    <div class="requiredBlock"></div>
+                    <apex:inputField value="{!mpwPrimeDieWrapper.mpwPrimeDie.Drawn_Die_Size_Y_um__c}"
+                        id="yvalue" style="width:60px">
+                        <apex:actionSupport event="onchange" reRender="section4"
+                            onsubmit="checkdrawndieSize('{!$Component.yvalue}')" />
+                    </apex:inputField>
+                </div></td>
+            <apex:variable value="" var="v"
+                rendered="{!IF(AND(mpwResf.Category__c != 'FAB', mpwResf.Category__c != 'TD'), true, false)}">
+                <td class="datacell"><div class="requiredInput">
+                        <div class="requiredBlock"></div>
+                        <apex:selectList value="{!mpwPrimeDieWrapper.mpwPrimeDie.Delivery_Qty_Die_Form__c}"
+                            size="1" multiselect="false" style="width:70px">
+                            <apex:selectOptions value="{!mpwPrimeDieWrapper.quantityDieFormList}" />
+                            <apex:actionSupport event="onchange" reRender="section4" />
+                        </apex:selectList>
+                    </div></td>
+            </apex:variable>
+            <td class="datacell"><apex:selectList value="{!mpwPrimeDieWrapper.mpwPrimeDie.Delivery_Qty_Wafer_Form__c}"
+                    size="1" multiselect="false" style="width:70px">
+                    <apex:selectOptions value="{!mpwPrimeDieWrapper.quantityWaferFormList}" />
+                </apex:selectList></td>
+            <apex:variable value="" var="v"
+                rendered="{!IF(AND(mpwResf.Category__c != 'FAB', mpwResf.Category__c != 'TD'), true, false)}">
+                <apex:variable var="v" value=""
+                    rendered="{!mpwtm.Geometry__c == '28nm'}">
+                    <td class="datacell"><apex:selectList value="{!mpwPrimeDieWrapper.mpwPrimeDie.Drawn_Orientation_Restricted_Structures__c}"
+                            size="1" multiselect="false" style="width:70px">
+                            <apex:selectOptions value="{!mpwPrimeDieWrapper.drawnOrientationList}" />
+                        </apex:selectList></td>
+                </apex:variable>
+                <apex:variable var="v" value=""
+                    rendered="{!(mpwtm.Geometry__c == '28nm' || mpwtm.Geometry__c == '14nm' || mpwtm.Geometry__c == '40nm' || mpwtm.Geometry__c == '65nm') && (mpwResf.Category__c == 'IP' || mpwResf.Category__c == 'Customer')}">
+                    <!-- <td class="datacell"><apex:inputField value="{!mpwPrimeDieWrapper.mpwPrimeDie.Metal_Stack__c}"
+                                                                                                                                    style="width:65px" /></td> -->
+                    <td class="datacell"><apex:selectList value="{!mpwPrimeDieWrapper.mpwPrimeDie.Metal_Stack__c}" size="1"
+                            multiselect="false" style="width:70px">
+                            <apex:selectOptions value="{!mpwPrimeDieWrapper.metalStackList}" />
+                        </apex:selectList></td>
+                </apex:variable>
+                <td class="datacell"><div class="requiredInput">
+                        <div class="requiredBlock"></div>
+                        <apex:selectList value="{!mpwPrimeDieWrapper.mpwPrimeDie.Device_Type__c}" size="1"
+                            multiselect="false" style="width:70px">
+                            <apex:selectOptions value="{!mpwPrimeDieWrapper.deviceTypeList}" />
+                        </apex:selectList>
+                    </div></td>
+                <td class="datacell"><apex:selectList value="{!mpwPrimeDieWrapper.mpwPrimeDie.Corner_Split__c}" size="1"
+                        multiselect="false" style="width:70px">
+                        <apex:selectOptions value="{!mpwPrimeDieWrapper.cornerSplitList}" />
+                        <apex:actionSupport event="onchange" reRender="section4" />
+                    </apex:selectList> <apex:variable id="subcornersplit" var="v" value=""
+                        rendered="{!IF(mpwPrimeDieWrapper.mpwPrimeDie.Corner_Split__c == 'Yes',true,false)}">
+                        <table border="1" class="list" cellspacing="0" cellpadding="0">
+                            <br />
+                            <br />
+                            <tr>
+                                <td>POR:</td>
+                                <td><apex:inputField value="{!mpwPrimeDieWrapper.mpwPrimeDie.POR__c}" id="por"
+                                        style="width:70px"
+                                        onchange="If(mpwPrimeDieWrapper.mpwPrimeDie.Delivery_Qty_Die_Form__c != '0'){checkCornerSubValues('{!$Component.por}');}" /></td>
+                            </tr>
+                            <tr>
+                                <td>FF:</td>
+                                <td><apex:inputField value="{!mpwPrimeDieWrapper.mpwPrimeDie.FF__c}" id="ff"
+                                        style="width:70px"
+                                        onchange="If(mpwPrimeDieWrapper.mpwPrimeDie.Delivery_Qty_Die_Form__c != '0'){checkCornerSubValues('{!$Component.ff}');}" /></td>
+                            </tr>
+                            <tr>
+                                <td>SS:</td>
+                                <td><apex:inputField value="{!mpwPrimeDieWrapper.mpwPrimeDie.SS__c}" id="ss"
+                                        style="width:70px"
+                                        onchange="If(mpwPrimeDieWrapper.mpwPrimeDie.Delivery_Qty_Die_Form__c != '0'){checkCornerSubValues('{!$Component.ss}');}" /></td>
+                            </tr>
+                            <tr>
+                                <td>FS:</td>
+                                <td><apex:inputField value="{!mpwPrimeDieWrapper.mpwPrimeDie.FS__c}" id="fs"
+                                        style="width:70px"
+                                        onchange="If(mpwPrimeDieWrapper.mpwPrimeDie.Delivery_Qty_Die_Form__c != '0'){checkCornerSubValues('{!$Component.fs}');}" /></td>
+                            </tr>
+                            <tr>
+                                <td>SF:</td>
+                                <td><apex:inputField value="{!mpwPrimeDieWrapper.mpwPrimeDie.SF__c}" id="sf"
+                                        style="width:70px"
+                                        onchange="If(mpwPrimeDieWrapper.mpwPrimeDie.Delivery_Qty_Die_Form__c != '0'){checkCornerSubValues('{!$Component.sf}');}" /></td>
+                            </tr>
+                        </table>
+                    </apex:variable></td>
+            </apex:variable>
+            <td class="datacell"><div class="requiredInput">
+                    <div class="requiredBlock"></div>
+                    <apex:inputText value="{!mpwPrimeDieWrapper.mpwPrimeDie.GMPL_Project_Name_Text__c}"
+                        style="width:85px" id="gmplProjectName" />
+                </div> <a href="#"
+                onclick="openLookupPopup('{!$Component.geometry}','{!$Component.gmplProjectName}','{!$Component.gmplprojectId}'); return false">
+                    <img src="/s.gif" alt="Customer Requestor Name Lookup"
+                    class="lookupIcon" onblur="this.className = 'lookupIcon';"
+                    onfocus="this.className = 'lookupIconOn';"
+                    onmouseout="this.className = 'lookupIcon';this.className = 'lookupIcon';"
+                    onmouseover="this.className = 'lookupIconOn';this.className = 'lookupIconOn';"
+                    title="GMPL Project Name Lookup" />
+            </a> <apex:inputtext value="{!mpwtm.Geometry__c}" id="geometry" /> <apex:inputtext value="{!mpwPrimeDieWrapper.mpwPrimeDie.GMPL_Project_Name_Id__c}" id="gmplprojectId" /></td>
+            <td class="datacell"><div class="requiredInput">
+                    <div class="requiredBlock"></div>
+                    <apex:inputField value="{!mpwPrimeDieWrapper.mpwPrimeDie.GMPL_Purpose__c}"
+                        style="width:70px" />
+                </div></td>
+            <apex:variable var="v" value=""
+                rendered="{!IF(AND(mpwResf.Category__c != 'FAB', mpwResf.Category__c != 'TD'), true, false)}">
+                <td class="datacell"><div class="requiredInput">
+                        <div class="requiredBlock"></div>
+                        <apex:selectList value="{!mpwPrimeDieWrapper.mpwPrimeDie.Backgrind__c}" size="1"
+                            multiselect="false" style="width:70px"
+                            rendered="{!IF(AND(mpwPrimeDieWrapper.mpwPrimeDie.Delivery_Qty_Die_Form__c != null, mpwPrimeDieWrapper.mpwPrimeDie.Delivery_Qty_Die_Form__c != '0'), true, false)}">
+                            <apex:selectOptions value="{!mpwPrimeDieWrapper.backgrindList}"
+                                rendered="{!IF(AND(mpwPrimeDieWrapper.mpwPrimeDie.Delivery_Qty_Die_Form__c != null, mpwPrimeDieWrapper.mpwPrimeDie.Delivery_Qty_Die_Form__c != '0'), true, false)}" />
+                        </apex:selectList>
+                    </div></td>
+                <td class="datacell"><apex:selectList value="{!mpwPrimeDieWrapper.mpwPrimeDie.ShortLoop_Wafer__c}"
+                        size="1" multiselect="false" style="width:70px">
+                        <apex:selectOptions value="{!mpwPrimeDieWrapper.shortLoopList}" />
+                    </apex:selectList></td>
+                <apex:variable var="v" value=""
+                    rendered="{!(mpwtm.Geometry__c == '0.18um' || mpwtm.Geometry__c == '0.35um' || mpwtm.Geometry__c == '0.11/0.13um') && mpwPrimeDieWrapper.mpwPrimeDie.Delivery_Qty_Wafer_Form__c != null && mpwPrimeDieWrapper.mpwPrimeDie.Delivery_Qty_Wafer_Form__c == '0'}">
+                    <td class="datacell"><apex:selectList value="{!mpwPrimeDieWrapper.mpwPrimeDie.Sub_Devices_Extraction__c}"
+                            size="1" multiselect="false" style="width:70px">
+                            <apex:selectOptions value="{!mpwPrimeDieWrapper.subDeviceExtractionList}" />
+                        </apex:selectList></td>
+                </apex:variable>
+                <td class="datacell"><apex:selectList value="{!mpwPrimeDieWrapper.mpwPrimeDie.Expedite_In_DIE_Form__c}"
+                        size="1" multiselect="false" style="width:70px">
+                        <apex:selectOptions value="{!mpwPrimeDieWrapper.expediteDieFormList}" />
+                    </apex:selectList></td>
+                <td class="datacell"><apex:selectList value="{!mpwPrimeDieWrapper.mpwPrimeDie.Expedite_In_WAFER_Form__c}"
+                        size="1" multiselect="false" style="width:70px">
+                        <apex:selectOptions value="{!mpwPrimeDieWrapper.expediteWaferFormList}" />
+                    </apex:selectList></td>
+                <td class="datacell"><apex:selectList value="{!mpwPrimeDieWrapper.mpwPrimeDie.Turnkey_Service__c}"
+                        size="1" multiselect="false" style="width:70px">
+                        <apex:selectOptions value="{!mpwPrimeDieWrapper.turnkeyServicesList}" />
+                        <apex:actionSupport event="onchange" reRender="section4" />
+                    </apex:selectList></td>
+                <apex:variable var="v" value=""
+                    rendered="{!IF(mpwPrimeDieWrapper.mpwPrimeDie.Turnkey_Service__c == 'Yes',true,false)}">
+                    <td class="datacell">Attachment</td>
+                </apex:variable>
+            </apex:variable>
+        </tr>
+    </apex:repeat>
+</table>
+                        </html>
+                        <br />
+                        <apex:commandButton value="Add"
+                            action="{!addRowToChipInformation}" immediate="true"
+                            reRender="section4, section6, errorSection" />
+                        <br />
+                        <br />
+                        <apex:outputLabel style="font-style:italic;font-size:8pt;"> 
+                            Note:Backgrind is compulsory in MPWs for die sawing purpose.
+                        </apex:outputLabel>
+                    </apex:outputPanel>
+                </apex:pageblockSection>
+            </apex:outputPanel>
+
+            <apex:pageblockSection id="section4view" title="Chip Information"
+                collapsible="false" rendered="{!IF(accessMode=='View',true,false)}"
+                columns="1">
+                <apex:outputPanel layout="block">
+                    <apex:outputLabel style="font-style:italic;font-size:8pt;"> 
+                        For Wafer Delievery, backgrind is not applicable.<br />
+                        Each Chip requires a Chip identification at the left bottom corner of the die on gate only, metal 1 and top metal.
+                    </apex:outputLabel>
+                    <br />
+                    <br />
+                    <html>
+<table border="1" class="list" cellspacing="0" cellpadding="0">
+    <tr class="headerRow" align="center">
+        <td rowspan="2" style="font-size: 8pt;">Prime Die Name</td>
+        <td colspan="2" style="font-size: 8pt">Drawn Die Size</td>
+        <apex:variable var="v" value=""
+            rendered="{!IF(AND(mpwResf.Category__c != 'FAB', mpwResf.Category__c != 'TD'), true, false)}">
+            <td colspan="2" style="font-size: 8pt">Quantity Delivery</td>
+        </apex:variable>
+        <apex:variable var="v" value=""
+            rendered="{!IF(OR(mpwResf.Category__c == 'FAB', mpwResf.Category__c == 'TD'), true, false)}">
+            <td style="font-size: 8pt">Quantity Delivery</td>
+        </apex:variable>
+        <apex:variable var="v" value=""
+            rendered="{!IF(AND(mpwResf.Category__c != 'FAB', mpwResf.Category__c != 'TD'), true, false)}">
+            <apex:variable var="v" value=""
+                rendered="{!mpwtm.Geometry__c == '28nm'}">
+                <td rowspan="2" style="font-size: 8pt">Drawn Orientation
+                    Restricted Structures</td>
+            </apex:variable>
+            <apex:variable var="v" value=""
+                rendered="{!(mpwtm.Geometry__c == '28nm' || mpwtm.Geometry__c == '14nm' || mpwtm.Geometry__c == '40nm' || mpwtm.Geometry__c == '65nm') && (mpwResf.Category__c == 'IP' || mpwResf.Category__c == 'Customer')}">
+                <td rowspan="2" style="font-size: 8pt">Metal Stack</td>
+            </apex:variable>
+            <td rowspan="2" style="font-size: 8pt;">Device Type</td>
+            <td rowspan="2" style="font-size: 8pt">Corner Split</td>
+            <td colspan="5" rowspan="2" style="font-size: 8pt">POR FF SS FS
+                SF<br />(multiple of 50 dies)
+            </td>
+        </apex:variable>
+        <td rowspan="2" style="font-size: 8pt">GMPL Project Name</td>
+        <td rowspan="2" style="font-size: 8pt">GMPL Purpose</td>
+        <apex:variable var="v" value=""
+            rendered="{!IF(AND(mpwResf.Category__c != 'FAB', mpwResf.Category__c != 'TD'), true, false)}">
+            <td rowspan="2" style="font-size: 8pt">BackGrind</td>
+            <td rowspan="2" style="font-size: 8pt">Short Loop Wafer</td>
+            <apex:variable var="v" value=""
+                rendered="{!mpwtm.Geometry__c == '0.18um' || mpwtm.Geometry__c == '0.35um' || mpwtm.Geometry__c == '0.11/0.13um'}">
+                <td rowspan="2" style="font-size: 8pt">Sub Devices Extraction</td>
+            </apex:variable>
+            <td colspan="2" style="font-size: 8pt">Expedite</td>
+            <td rowspan="2" style="font-size: 8pt">Turnkey Services</td>
+            <td rowspan="2" style="font-size: 8pt"><br />TurnKey Pre-Alert
+                Form</td>
+        </apex:variable>
+    </tr>
+    <tr class="headerRow" align="center">
+        <td style="font-size: 8pt">X(um)</td>
+        <td style="font-size: 8pt">Y(um)</td>
+        <apex:variable var="v" value=""
+            rendered="{!IF(AND(mpwResf.Category__c != 'FAB', mpwResf.Category__c != 'TD'), true, false)}">
+            <td style="font-size: 8pt">In Die Form</td>
+        </apex:variable>
+        <td style="font-size: 8pt">In Wafer Form</td>
+        <apex:variable var="v" value=""
+            rendered="{!IF(AND(mpwResf.Category__c != 'FAB', mpwResf.Category__c != 'TD'), true, false)}">
+            <td style="font-size: 8pt">In Die Form</td>
+            <td style="font-size: 8pt">In Wafer Form</td>
+        </apex:variable>
+    </tr>
+    <apex:repeat value="{!mpwpdList}" var="mpwpd">
+        <tr class="datarow">
+            <td class="datacell"><apex:outputField value="{!mpwpd.Prime_Die_Name__c}" style="width:65px" /></td>
+            <td class="datacell"><apex:outputField value="{!mpwpd.Drawn_Die_Size_X_um__c}" style="width:60px" /></td>
+            <td class="datacell"><apex:outputField value="{!mpwpd.Drawn_Die_Size_Y_um__c}" style="width:60px" /></td>
+            <apex:variable var="v" value=""
+                rendered="{!IF(AND(mpwResf.Category__c != 'FAB', mpwResf.Category__c != 'TD'), true, false)}">
+                <td class="datacell"><apex:outputField value="{!mpwpd.Delivery_Qty_Die_Form__c}" style="width:70px" /></td>
+            </apex:variable>
+            <td class="datacell"><apex:outputField value="{!mpwpd.Delivery_Qty_Wafer_Form__c}" style="width:70px" /></td>
+            <apex:variable var="v" value=""
+                rendered="{!IF(AND(mpwResf.Category__c != 'FAB', mpwResf.Category__c != 'TD'), true, false)}">
+                <apex:variable var="v" value=""
+                    rendered="{!mpwtm.Geometry__c == '28nm'}">
+                    <td class="datacell"><apex:outputField value="{!mpwpd.Drawn_Orientation_Restricted_Structures__c}"
+                            style="width:70px" /></td>
+                </apex:variable>
+                <apex:variable var="v" value=""
+                    rendered="{!(mpwtm.Geometry__c == '28nm' || mpwtm.Geometry__c == '14nm' || mpwtm.Geometry__c == '40nm' || mpwtm.Geometry__c == '65nm') && (mpwResf.Category__c == 'IP' || mpwResf.Category__c == 'Customer')}">
+                    <td class="datacell"><apex:outputField value="{!mpwpd.Metal_Stack__c}" style="width:70px" /></td>
+                </apex:variable>
+                <td class="datacell"><apex:outputField value="{!mpwpd.Device_Type__c}" style="width:70px" /></td>
+                <td class="datacell"><apex:outputField value="{!mpwpd.Corner_Split__c}" style="width:70px" /></td>
+                <td class="datacell">{!mpwpd.POR__c}</td>
+                <td class="datacell">{!mpwpd.FF__c}</td>
+                <td class="datacell">{!mpwpd.SS__c}</td>
+                <td class="datacell">{!mpwpd.FS__c}</td>
+                <td class="datacell">{!mpwpd.SF__c}</td>
+            </apex:variable>
+            <td class="datacell"><apex:outputField value="{!mpwpd.GMPL_Project_Name__c}" style="width:70px" /></td>
+            <td class="datacell"><apex:outputField value="{!mpwpd.GMPL_Purpose__c}" style="width:70px" /></td>
+            <apex:variable var="v" value=""
+                rendered="{!IF(AND(mpwResf.Category__c != 'FAB', mpwResf.Category__c != 'TD'), true, false)}">
+                <td class="datacell"><apex:outputField value="{!mpwpd.Backgrind__c}" style="width:70px" /></td>
+                <td class="datacell"><apex:outputField value="{!mpwpd.ShortLoop_Wafer__c}" style="width:70px" /></td>
+                <apex:variable var="v" value=""
+                    rendered="{!(mpwtm.Geometry__c == '0.18um' || mpwtm.Geometry__c == '0.35um' || mpwtm.Geometry__c == '0.11/0.13um') && mpwPrimeDieWrapper.mpwPrimeDie.Delivery_Qty_Wafer_Form__c != null && mpwPrimeDieWrapper.mpwPrimeDie.Delivery_Qty_Wafer_Form__c == '0'}">
+                    <td class="datacell"><apex:outputField value="{!mpwpd.Sub_Devices_Extraction__c}" style="width:70px" /></td>
+                </apex:variable>
+                <td class="datacell"><apex:outputField value="{!mpwpd.Expedite_In_DIE_Form__c}" style="width:60px" /></td>
+                <td class="datacell"><apex:outputField value="{!mpwpd.Expedite_In_WAFER_Form__c}" style="width:65px" /></td>
+                <td class="datacell"><apex:outputField value="{!mpwpd.Turnkey_Service__c}" style="width:70px" /></td>
+            </apex:variable>
+        </tr>
+    </apex:repeat>
+</table>
+                    </html>
+                    <br />
+                    <br />
+                    <apex:outputLabel style="font-style:italic;font-size:8pt;"> 
+                        Note:Backgrind is compulsory in MPWs for die sawing purpose.
+                    </apex:outputLabel>
+                </apex:outputPanel>
+            </apex:pageblockSection>
+
+            <apex:outputPanel id="section5">
+                <apex:pageblockSection title="Shipping Address" collapsible="false"
+                    rendered="{!IF(AND(accessMode=='Edit',mpwResf.Category__c != 'TD',mpwResf.Category__c != 'FAB'),true,false)}"
+                    columns="1">
+                    <apex:outputPanel id="section55">
+                        <apex:outputLabel style="font-style:italic;font-size:8pt;"> 
+                            Note:Ensure valid Forwarder name and Account # are provided or risk deliverable delay.
+                        </apex:outputLabel>
+                        <br />
+                        <html>
+<table cellpadding="2" cellspacing="5">
+    <tr align="center">
+        <td rowspan="2"></td>
+        <apex:variable var="v" value="" rendered="{!showAddress1}">
+            <td style="font-size: 91%; font-weight: bold;">Address 1</td>
+        </apex:variable>
+        <apex:variable var="v" value="" rendered="{!showAddress2}">
+            <td style="font-size: 91%; font-weight: bold;">Address 2</td>
+        </apex:variable>
+        <apex:variable var="v" value="" rendered="{!showAddress3}">
+            <td style="font-size: 91%; font-weight: bold;">Address 3</td>
+        </apex:variable>
+    </tr>
+    <tr align="center">
+        <apex:variable var="v" value=""
+            rendered="{!showAddress1 && (showAddress2 || showAddress3)}">
+            <td><apex:commandButton value="Delete"
+                    action="{!deleteAddress1}" reRender="section5,section6"
+                    immediate="true" /></td>
+        </apex:variable>
+        <apex:variable var="v" value="" rendered="{!showAddress2}">
+            <td><apex:commandButton value="Delete"
+                    action="{!deleteAddress2}" reRender="section5,section6"
+                    immediate="true" /></td>
+        </apex:variable>
+        <apex:variable var="v" value="" rendered="{!showAddress3}">
+            <td><apex:commandButton value="Delete"
+                    action="{!deleteAddress3}" reRender="section5,section6"
+                    immediate="true" /></td>
+        </apex:variable>
+    </tr>
+    <tr>
+        <td style="white-space: nowrap; font-size: 91%; font-weight: bold;"
+            align="left">Company Name</td>
+        <apex:variable var="v" value="" rendered="{!showAddress1}">
+            <td class="datacell" align="left"><div class="requiredInput">
+                    <div class="requiredBlock"></div>
+                    <apex:inputField value="{!mpwResf.Company_Name__c}" />
+                </div></td>
+        </apex:variable>
+        <apex:variable var="v" value="" rendered="{!showAddress2}">
+            <td class="datacell" align="left"><div class="requiredInput">
+                    <div class="requiredBlock"></div>
+                    <apex:inputField value="{!mpwResf.Company_Name2__c}" />
+                </div></td>
+        </apex:variable>
+        <apex:variable var="v" value="" rendered="{!showAddress3}">
+            <td class="datacell" align="left"><div class="requiredInput">
+                    <div class="requiredBlock"></div>
+                    <apex:inputField value="{!mpwResf.Company_Name3__c}" />
+                </div></td>
+        </apex:variable>
+    </tr>
+    <tr>
+        <td style="white-space: nowrap; font-size: 91%; font-weight: bold;"
+            align="left">Address</td>
+        <apex:variable var="v" value="" rendered="{!showAddress1}">
+            <td align="left" class="datacell"><div class="requiredInput">
+                    <div class="requiredBlock"></div>
+                    <apex:inputField value="{!mpwResf.Address__c}" />
+                </div></td>
+        </apex:variable>
+        <apex:variable var="v" value="" rendered="{!showAddress2}">
+            <td align="left" class="datacell"><div class="requiredInput">
+                    <div class="requiredBlock"></div>
+                    <apex:inputField value="{!mpwResf.Address2__c}" />
+                </div></td>
+        </apex:variable>
+        <apex:variable var="v" value="" rendered="{!showAddress3}">
+            <td align="left" class="datacell"><div class="requiredInput">
+                    <div class="requiredBlock"></div>
+                    <apex:inputField value="{!mpwResf.Address3__c}" />
+                </div></td>
+        </apex:variable>
+    </tr>
+    <tr>
+        <td style="white-space: nowrap; font-size: 91%; font-weight: bold;"
+            align="left">Postal Code</td>
+        <apex:variable var="v" value="" rendered="{!showAddress1}">
+            <td align="left" class="datacell"><div class="requiredInput">
+                    <div class="requiredBlock"></div>
+                    <apex:inputField value="{!mpwResf.Postal_Code__c}" />
+                </div></td>
+        </apex:variable>
+        <apex:variable var="v" value="" rendered="{!showAddress2}">
+            <td align="left" class="datacell"><div class="requiredInput">
+                    <div class="requiredBlock"></div>
+                    <apex:inputField value="{!mpwResf.Postal_Code2__c}" />
+                </div></td>
+        </apex:variable>
+        <apex:variable var="v" value="" rendered="{!showAddress3}">
+            <td align="left" class="datacell"><div class="requiredInput">
+                    <div class="requiredBlock"></div>
+                    <apex:inputField value="{!mpwResf.Postal_Code3__c}" />
+                </div></td>
+        </apex:variable>
+    </tr>
+    <tr>
+        <td style="white-space: nowrap; font-size: 91%; font-weight: bold;"
+            align="left">Contact Person</td>
+        <apex:variable var="v" value="" rendered="{!showAddress1}">
+            <td align="left" class="datacell"><div class="requiredInput">
+                    <div class="requiredBlock"></div>
+                    <apex:inputField value="{!mpwResf.Contact_Person__c}" />
+                </div></td>
+        </apex:variable>
+        <apex:variable var="v" value="" rendered="{!showAddress2}">
+            <td align="left" class="datacell"><div class="requiredInput">
+                    <div class="requiredBlock"></div>
+                    <apex:inputField value="{!mpwResf.Contact_Person2__c}" />
+                </div></td>
+        </apex:variable>
+        <apex:variable var="v" value="" rendered="{!showAddress3}">
+            <td align="left" class="datacell"><div class="requiredInput">
+                    <div class="requiredBlock"></div>
+                    <apex:inputField value="{!mpwResf.Contact_Person3__c}" />
+                </div></td>
+        </apex:variable>
+    </tr>
+    <tr>
+        <td style="white-space: nowrap; font-size: 91%; font-weight: bold;"
+            align="left">Fax</td>
+        <apex:variable var="v" value="" rendered="{!showAddress1}">
+            <td align="left" class="datacell"><div class="requiredInput">
+                    <div class="requiredBlock"></div>
+                    <apex:inputField value="{!mpwResf.Fax__c}" />
+                </div></td>
+        </apex:variable>
+        <apex:variable var="v" value="" rendered="{!showAddress2}">
+            <td align="left" class="datacell"><div class="requiredInput">
+                    <div class="requiredBlock"></div>
+                    <apex:inputField value="{!mpwResf.Fax2__c}" />
+                </div></td>
+        </apex:variable>
+        <apex:variable var="v" value="" rendered="{!showAddress3}">
+            <td align="left" class="datacell"><div class="requiredInput">
+                    <div class="requiredBlock"></div>
+                    <apex:inputField value="{!mpwResf.Fax3__c}" />
+                </div></td>
+        </apex:variable>
+    </tr>
+    <tr>
+        <td style="white-space: nowrap; font-size: 91%; font-weight: bold;"
+            align="left">Phone</td>
+        <apex:variable var="v" value="" rendered="{!showAddress1}">
+            <td align="left" class="datacell"><div class="requiredInput">
+                    <div class="requiredBlock"></div>
+                    <apex:inputField value="{!mpwResf.Phone__c}" />
+                </div></td>
+        </apex:variable>
+        <apex:variable var="v" value="" rendered="{!showAddress2}">
+            <td align="left" class="datacell"><div class="requiredInput">
+                    <div class="requiredBlock"></div>
+                    <apex:inputField value="{!mpwResf.Phone2__c}" />
+                </div></td>
+        </apex:variable>
+        <apex:variable var="v" value="" rendered="{!showAddress3}">
+            <td align="left" class="datacell"><div class="requiredInput">
+                    <div class="requiredBlock"></div>
+                    <apex:inputField value="{!mpwResf.Phone3__c}" />
+                </div></td>
+        </apex:variable>
+    </tr>
+    <apex:variable value="" var="v"
+        rendered="{!mpwResf.Category__c == 'Customer'}">
+        <tr>
+            <td style="white-space: nowrap; font-size: 91%; font-weight: bold;"
+                align="left">Forwarder Name</td>
+            <apex:variable var="v" value="" rendered="{!showAddress1}">
+                <td align="left" class="datacell"><div class="requiredInput">
+                        <div class="requiredBlock"></div>
+                        <apex:inputField value="{!mpwResf.Forwarder_Name1__c}" />
+                    </div></td>
+            </apex:variable>
+            <apex:variable var="v" value="" rendered="{!showAddress2}">
+                <td align="left" class="datacell"><div class="requiredInput">
+                        <div class="requiredBlock"></div>
+                        <apex:inputField value="{!mpwResf.Forwarder_Name2__c}" />
+                    </div></td>
+            </apex:variable>
+            <apex:variable var="v" value="" rendered="{!showAddress3}">
+                <td align="left" class="datacell"><div class="requiredInput">
+                        <div class="requiredBlock"></div>
+                        <apex:inputField value="{!mpwResf.Forwarder_Name3__c}" />
+                    </div></td>
+            </apex:variable>
+        </tr>
+    </apex:variable>
+    <apex:variable value="" var="v"
+        rendered="{!mpwResf.Category__c == 'Customer'}">
+        <tr>
+            <td style="white-space: nowrap; font-size: 91%; font-weight: bold;"
+                align="left">Forwarder Account#</td>
+            <apex:variable var="v" value="" rendered="{!showAddress1}">
+                <td align="left" class="datacell"><div class="requiredInput">
+                        <div class="requiredBlock"></div>
+                        <apex:inputField value="{!mpwResf.Forwarder_Account1__c}" />
+                    </div></td>
+            </apex:variable>
+            <apex:variable var="v" value="" rendered="{!showAddress2}">
+                <td align="left" class="datacell"><div class="requiredInput">
+                        <div class="requiredBlock"></div>
+                        <apex:inputField value="{!mpwResf.Forwarder_Account2__c}" />
+                    </div></td>
+            </apex:variable>
+            <apex:variable var="v" value="" rendered="{!showAddress3}">
+                <td align="left" class="datacell"><div class="requiredInput">
+                        <div class="requiredBlock"></div>
+                        <apex:inputField value="{!mpwResf.Forwarder_Account3__c}" />
+                    </div></td>
+            </apex:variable>
+        </tr>
+    </apex:variable>
+    <apex:variable value="" var="v"
+        rendered="{!mpwResf.Category__c == 'Customer'}">
+        <tr>
+            <td style="white-space: nowrap; font-size: 91%; font-weight: bold;"
+                align="left">Forwarder Account Type</td>
+            <apex:variable var="v" value="" rendered="{!showAddress1}">
+                <td align="left" class="datacell"><div class="requiredInput">
+                        <div class="requiredBlock"></div>
+                        <apex:selectList value="{!mpwResf.Forwarder_Account_Type1__c}"
+                            multiselect="false" size="1">
+                            <apex:selectOptions value="{!forwarderAccountType1}" />
+                        </apex:selectList>
+                    </div></td>
+            </apex:variable>
+            <apex:variable var="v" value="" rendered="{!showAddress2}">
+                <td align="left" class="datacell"><div class="requiredInput">
+                        <div class="requiredBlock"></div>
+                        <apex:selectList value="{!mpwResf.Forwarder_Account_Type2__c}"
+                            multiselect="false" size="1">
+                            <apex:selectOptions value="{!forwarderAccountType2}" />
+                        </apex:selectList>
+                    </div></td>
+            </apex:variable>
+            <apex:variable var="v" value="" rendered="{!showAddress3}">
+                <td align="left" class="datacell"><div class="requiredInput">
+                        <div class="requiredBlock"></div>
+                        <apex:selectList value="{!mpwResf.Forwarder_Account_Type3__c}"
+                            multiselect="false" size="1">
+                            <apex:selectOptions value="{!forwarderAccountType3}" />
+                        </apex:selectList>
+                    </div></td>
+            </apex:variable>
+        </tr>
+    </apex:variable>
+    <apex:variable value="" var="v"
+        rendered="{!mpwResf.Category__c == 'Customer'}">
+        <tr>
+            <td style="white-space: nowrap; font-size: 91%; font-weight: bold;"
+                align="left">Registered Company Name of the provided Forwarder
+                Account</td>
+            <apex:variable var="v" value="" rendered="{!showAddress1}">
+                <td align="left" class="datacell"><div class="requiredInput">
+                        <div class="requiredBlock"></div>
+                        <apex:inputField value="{!mpwResf.Registered_Company_Name1__c}" />
+                    </div></td>
+            </apex:variable>
+            <apex:variable var="v" value="" rendered="{!showAddress2}">
+                <td align="left" class="datacell"><div class="requiredInput">
+                        <div class="requiredBlock"></div>
+                        <apex:inputField value="{!mpwResf.Registered_Company_Name2__c}" />
+                    </div></td>
+            </apex:variable>
+            <apex:variable var="v" value="" rendered="{!showAddress3}">
+                <td align="left" class="datacell"><div class="requiredInput">
+                        <div class="requiredBlock"></div>
+                        <apex:inputField value="{!mpwResf.Registered_Company_Name3__c}" />
+                    </div></td>
+            </apex:variable>
+        </tr>
+    </apex:variable>
+</table>
+                        </html>
+                    </apex:outputPanel>
+                    <br />
+                    <apex:commandButton value="Add Shipping Address"
+                        reRender="section5,section6" action="{!addRowToAddress}"
+                        immediate="true"
+                        rendered="{!IF(OR(showAddress1 == false,showAddress2 == false,showAddress3 == false),true,false)}" />
+                </apex:pageblockSection>
+            </apex:outputPanel>
+
+            <apex:pageblockSection id="section5view" title="Shipping Address"
+                collapsible="false" columns="1"
+                rendered="{!IF(AND(accessMode=='View',mpwResf.Category__c != 'TD',mpwResf.Category__c != 'FAB'),true,false)}">
+                <apex:outputPanel >
+                    <apex:outputLabel style="font-style:italic;font-size:8pt;"> 
+                        Note:Ensure valid Forwarder name and Account # are provided or risk deliverable delay.
+                    </apex:outputLabel>
+                    <br />
+                    <html>
+<table cellpadding="2" cellspacing="5" width="700px">
+    <tr align="center">
+        <td></td>
+        <apex:variable var="v" value="" rendered="{!showAddress1}">
+            <td style="font-size: 91%; font-weight: bold;">Address 1</td>
+        </apex:variable>
+        <apex:variable var="v" value="" rendered="{!showAddress2}">
+            <td style="font-size: 91%; font-weight: bold;">Address 2</td>
+        </apex:variable>
+        <apex:variable var="v" value="" rendered="{!showAddress3}">
+            <td style="font-size: 91%; font-weight: bold;">Address 3</td>
+        </apex:variable>
+    </tr>
+    <tr>
+        <td style="white-space: nowrap; font-size: 91%; font-weight: bold;"
+            align="right">Company Name</td>
+        <apex:variable var="v" value="" rendered="{!showAddress1}">
+            <td class="datacell" align="center"><apex:outputField value="{!mpwResf.Company_Name__c}" /></td>
+        </apex:variable>
+        <apex:variable var="v" value="" rendered="{!showAddress2}">
+            <td class="datacell" align="center"><apex:outputField value="{!mpwResf.Company_Name2__c}" /></td>
+        </apex:variable>
+        <apex:variable var="v" value="" rendered="{!showAddress3}">
+            <td class="datacell" align="center"><apex:outputField value="{!mpwResf.Company_Name3__c}" /></td>
+        </apex:variable>
+    </tr>
+    <tr>
+        <td style="white-space: nowrap; font-size: 91%; font-weight: bold;"
+            align="right">Address</td>
+        <apex:variable var="v" value="" rendered="{!showAddress1}">
+            <td align="center" class="datacell"><apex:outputField value="{!mpwResf.Address__c}" /></td>
+        </apex:variable>
+        <apex:variable var="v" value="" rendered="{!showAddress2}">
+            <td align="center" class="datacell"><apex:outputField value="{!mpwResf.Address2__c}" /></td>
+        </apex:variable>
+        <apex:variable var="v" value="" rendered="{!showAddress3}">
+            <td align="center" class="datacell"><apex:outputField value="{!mpwResf.Address3__c}" /></td>
+        </apex:variable>
+    </tr>
+    <tr>
+        <td style="white-space: nowrap; font-size: 91%; font-weight: bold;"
+            align="right">Postal Code</td>
+        <apex:variable var="v" value="" rendered="{!showAddress1}">
+            <td align="center" class="datacell"><apex:outputField value="{!mpwResf.Postal_Code__c}" /></td>
+        </apex:variable>
+        <apex:variable var="v" value="" rendered="{!showAddress2}">
+            <td align="center" class="datacell"><apex:outputField value="{!mpwResf.Postal_Code2__c}" /></td>
+        </apex:variable>
+        <apex:variable var="v" value="" rendered="{!showAddress3}">
+            <td align="center" class="datacell"><apex:outputField value="{!mpwResf.Postal_Code3__c}" /></td>
+        </apex:variable>
+    </tr>
+    <tr>
+        <td style="white-space: nowrap; font-size: 91%; font-weight: bold;"
+            align="right">Contact Person</td>
+        <apex:variable var="v" value="" rendered="{!showAddress1}">
+            <td align="center" class="datacell"><apex:outputField value="{!mpwResf.Contact_Person__c}" /></td>
+        </apex:variable>
+        <apex:variable var="v" value="" rendered="{!showAddress2}">
+            <td align="center" class="datacell"><apex:outputField value="{!mpwResf.Contact_Person2__c}" /></td>
+        </apex:variable>
+        <apex:variable var="v" value="" rendered="{!showAddress3}">
+            <td align="center" class="datacell"><apex:outputField value="{!mpwResf.Contact_Person3__c}" /></td>
+        </apex:variable>
+    </tr>
+    <tr>
+        <td style="white-space: nowrap; font-size: 91%; font-weight: bold;"
+            align="right">Fax</td>
+        <apex:variable var="v" value="" rendered="{!showAddress1}">
+            <td align="center" class="datacell"><apex:outputField value="{!mpwResf.Fax__c}" /></td>
+        </apex:variable>
+        <apex:variable var="v" value="" rendered="{!showAddress2}">
+            <td align="center" class="datacell"><apex:outputField value="{!mpwResf.Fax2__c}" /></td>
+        </apex:variable>
+        <apex:variable var="v" value="" rendered="{!showAddress3}">
+            <td align="center" class="datacell"><apex:outputField value="{!mpwResf.Fax3__c}" /></td>
+        </apex:variable>
+    </tr>
+    <tr>
+        <td style="white-space: nowrap; font-size: 91%; font-weight: bold;"
+            align="right">Phone</td>
+        <apex:variable var="v" value="" rendered="{!showAddress1}">
+            <td align="center" class="datacell"><apex:outputField value="{!mpwResf.Phone__c}" /></td>
+        </apex:variable>
+        <apex:variable var="v" value="" rendered="{!showAddress2}">
+            <td align="center" class="datacell"><apex:outputField value="{!mpwResf.Phone2__c}" /></td>
+        </apex:variable>
+        <apex:variable var="v" value="" rendered="{!showAddress3}">
+            <td align="center" class="datacell"><apex:outputField value="{!mpwResf.Phone3__c}" /></td>
+        </apex:variable>
+    </tr>
+</table>
+                    </html>
+                </apex:outputPanel>
+            </apex:pageblockSection>
+
+            <apex:outputPanel id="section6">
+                <apex:pageblockSection title="Shipment Details" collapsible="false"
+                    rendered="{!IF(AND(accessMode=='Edit',mpwResf.Category__c != 'TD',mpwResf.Category__c != 'FAB'),true,false)}">
+                    <apex:outputPanel >
+                        <html>
+<table border="1" class="list" cellspacing="0" cellpadding="0"
+    style="width: 1260px">
+    <tr class="headerRow" align="center">
+        <td rowspan="3"><br /> <br />Prime Die Name</td>
+        <apex:variable var="v" value="" rendered="{!showAddress1}">
+            <td colspan="2">Address 1</td>
+        </apex:variable>
+        <apex:variable var="v" value="" rendered="{!showAddress2}">
+            <td colspan="2">Address 2</td>
+        </apex:variable>
+        <apex:variable var="v" value="" rendered="{!showAddress3}">
+            <td colspan="2">Address 3</td>
+        </apex:variable>
+    </tr>
+    <tr class="headerRow" align="center">
+        <apex:variable var="v" value="" rendered="{!showAddress1}">
+            <td colspan="2">Quantity Delivery</td>
+        </apex:variable>
+        <apex:variable var="v" value="" rendered="{!showAddress2}">
+            <td colspan="2">Quantity Delivery</td>
+        </apex:variable>
+        <apex:variable var="v" value="" rendered="{!showAddress3}">
+            <td colspan="2">Quantity Delivery</td>
+        </apex:variable>
+    </tr>
+    <tr class="headerRow" align="center">
+        <apex:variable var="v" value="" rendered="{!showAddress1}">
+            <td>In Die Form</td>
+            <td>In WaferForm</td>
+        </apex:variable>
+        <apex:variable var="v" value="" rendered="{!showAddress2}">
+            <td>In Die Form</td>
+            <td>In WaferForm</td>
+        </apex:variable>
+        <apex:variable var="v" value="" rendered="{!showAddress3}">
+            <td>In Die Form</td>
+            <td>In WaferForm</td>
+        </apex:variable>
+    </tr>
+    <apex:repeat value="{!mpwPrimeDieList}" var="mpwPrimeDieWrapper1">
+        <tr class="datarow">
+            <td class="datacell"><apex:outputField value="{!mpwPrimeDieWrapper1.mpwPrimeDie.Prime_Die_Name__c}" /></td>
+            <apex:variable var="v" value="" rendered="{!showAddress1}">
+                <td class="datacell"><apex:inputField value="{!mpwPrimeDieWrapper1.mpwPrimeDie.Address1_Quantity_Delivery_In_DIE_Form__c}" /></td>
+                <td class="datacell"><apex:inputField value="{!mpwPrimeDieWrapper1.mpwPrimeDie.Address1_Quantity_Delivery_In_WAFER_Form__c}" /></td>
+            </apex:variable>
+            <apex:variable var="v" value="" rendered="{!showAddress2}">
+                <td class="datacell"><apex:inputField value="{!mpwPrimeDieWrapper1.mpwPrimeDie.Address2_Quantity_Delivery_In_DIE_Form__c}" /></td>
+                <td class="datacell"><apex:inputField value="{!mpwPrimeDieWrapper1.mpwPrimeDie.Address2_Quantity_Delivery_In_WAFER_Form__c}" /></td>
+            </apex:variable>
+            <apex:variable var="v" value="" rendered="{!showAddress3}">
+                <td class="datacell"><apex:inputField value="{!mpwPrimeDieWrapper1.mpwPrimeDie.Address3_Quantity_Delivery_In_DIE_Form__c}" /></td>
+                <td class="datacell"><apex:inputField value="{!mpwPrimeDieWrapper1.mpwPrimeDie.Address3_Quantity_Delivery_In_WAFER_Form__c}" /></td>
+            </apex:variable>
+        </tr>
+    </apex:repeat>
+</table>
+                        </html>
+                    </apex:outputPanel>
+                </apex:pageblockSection>
+            </apex:outputPanel>
+
+            <apex:pageblockSection id="section6view" title="Shipment Details"
+                collapsible="false"
+                rendered="{!IF(AND(accessMode=='View',mpwResf.Category__c != 'TD',mpwResf.Category__c != 'FAB'),true,false)}">
+                <apex:outputPanel >
+                    <html>
+<table border="1" class="list" cellspacing="0" cellpadding="0"
+    style="width: 1260px">
+    <tr class="headerRow" align="center">
+        <td rowspan="3"><br /> <br />Prime Die Name</td>
+        <apex:variable var="v" value="" rendered="{!showAddress1}">
+            <td colspan="2">Address 1</td>
+        </apex:variable>
+        <apex:variable var="v" value="" rendered="{!showAddress2}">
+            <td colspan="2">Address 2</td>
+        </apex:variable>
+        <apex:variable var="v" value="" rendered="{!showAddress3}">
+            <td colspan="2">Address 3</td>
+        </apex:variable>
+    </tr>
+    <tr class="headerRow" align="center">
+        <apex:variable var="v" value="" rendered="{!showAddress1}">
+            <td colspan="2">Quantity Delivery</td>
+        </apex:variable>
+        <apex:variable var="v" value="" rendered="{!showAddress2}">
+            <td colspan="2">Quantity Delivery</td>
+        </apex:variable>
+        <apex:variable var="v" value="" rendered="{!showAddress3}">
+            <td colspan="2">Quantity Delivery</td>
+        </apex:variable>
+    </tr>
+    <tr class="headerRow" align="center">
+        <apex:variable var="v" value="" rendered="{!showAddress1}">
+            <td>In Die Form</td>
+            <td>In WaferForm</td>
+        </apex:variable>
+        <apex:variable var="v" value="" rendered="{!showAddress2}">
+            <td>In Die Form</td>
+            <td>In WaferForm</td>
+        </apex:variable>
+        <apex:variable var="v" value="" rendered="{!showAddress3}">
+            <td>In Die Form</td>
+            <td>In WaferForm</td>
+        </apex:variable>
+    </tr>
+    <apex:repeat value="{!mpwpdList}" var="mpwpd">
+        <tr class="datarow">
+            <td class="datacell"><apex:outputField value="{!mpwpd.Prime_Die_Name__c}" /></td>
+            <apex:variable var="v" value="" rendered="{!showAddress1}">
+                <td class="datacell"><apex:outputField value="{!mpwpd.Address1_Quantity_Delivery_In_DIE_Form__c}" /></td>
+                <td class="datacell"><apex:outputField value="{!mpwpd.Address1_Quantity_Delivery_In_WAFER_Form__c}" /></td>
+            </apex:variable>
+            <apex:variable var="v" value="" rendered="{!showAddress2}">
+                <td class="datacell"><apex:outputField value="{!mpwpd.Address2_Quantity_Delivery_In_DIE_Form__c}" /></td>
+                <td class="datacell"><apex:outputField value="{!mpwpd.Address2_Quantity_Delivery_In_WAFER_Form__c}" /></td>
+            </apex:variable>
+            <apex:variable var="v" value="" rendered="{!showAddress3}">
+                <td class="datacell"><apex:outputField value="{!mpwpd.Address3_Quantity_Delivery_In_DIE_Form__c}" /></td>
+                <td class="datacell"><apex:outputField value="{!mpwpd.Address3_Quantity_Delivery_In_WAFER_Form__c}" /></td>
+            </apex:variable>
+        </tr>
+    </apex:repeat>
+</table>
+                    </html>
+                </apex:outputPanel>
+            </apex:pageblockSection>
+
+            <apex:outputPanel id="section7">
+                <apex:pageBlockSection title="Shipment Information (Not for customer or requestor to fill in)"
+                    collapsible="false"
+                    rendered="{!IF(AND(accessMode=='Edit',mpwResf.Category__c != 'TD',mpwResf.Category__c != 'FAB'),true,false)}"
+                    columns="1">
+                    <apex:outputPanel >
+                        <html>
+<table border="1" class="list" cellspacing="0" cellpadding="0">
+    <tr class="headerRow" align="center">
+        <td>Prime Die Name</td>
+        <td>{!$ObjectType.MPW_Reservation__c.fields.Bare_Die_Ship_Date__c.label}</td>
+        <td>{!$ObjectType.MPW_Reservation__c.fields.Wafer_Ship_Date__c.label}</td>
+        <td>{!$ObjectType.MPW_Reservation__c.fields.Expected_Wafer_Skeleton_Return_Date__c.label}</td>
+        <td>{!$ObjectType.MPW_Reservation__c.fields.Actual_Wafer_Skeleton_Return_Date__c.label}</td>
+        <td>{!$ObjectType.MPW_Reservation__c.fields.AWB__c.label}</td>
+    </tr>
+    <tr align="center">
+        <td></td>
+        <td><apex:inputField value="{!mpwResf.Bare_Die_Ship_Date__c}" /></td>
+        <td><apex:inputField id="wafershipdate"
+                value="{!mpwResf.Wafer_Ship_Date__c}"
+                onchange="setWaferSkeletonDate('{!$Component.wafershipdate}','{!$Component.waferskeletonreturndate}');" /></td>
+        <td><apex:inputField value="{!mpwResf.Expected_Wafer_Skeleton_Return_Date__c}"
+                id="waferskeletonreturndate" /></td>
+        <td><apex:inputField value="{!mpwResf.Actual_Wafer_Skeleton_Return_Date__c}" /></td>
+        <td><apex:inputField value="{!mpwResf.AWB__c}" /></td>
+    </tr>
+</table>
+                        </html>
+                    </apex:outputPanel>
+                </apex:pageBlockSection>
+
+                <apex:pageBlockSection title="Shipment Information (Not for customer or requestor to fill in)"
+                    collapsible="false"
+                    rendered="{!IF(AND(accessMode=='View',mpwResf.Category__c != 'TD',mpwResf.Category__c != 'FAB'),true,false)}"
+                    columns="1">
+                    <apex:outputPanel >
+                        <html>
+<table border="1" class="list" cellspacing="0" cellpadding="0">
+    <tr class="headerRow" align="center">
+        <td>Prime Die Name</td>
+        <td>{!$ObjectType.MPW_Reservation__c.fields.Bare_Die_Ship_Date__c.label}</td>
+        <td>{!$ObjectType.MPW_Reservation__c.fields.Wafer_Ship_Date__c.label}</td>
+        <td>{!$ObjectType.MPW_Reservation__c.fields.Expected_Wafer_Skeleton_Return_Date__c.label}</td>
+        <td>{!$ObjectType.MPW_Reservation__c.fields.Actual_Wafer_Skeleton_Return_Date__c.label}</td>
+        <td>{!$ObjectType.MPW_Reservation__c.fields.AWB__c.label}</td>
+    </tr>
+    <tr align="center">
+        <td></td>
+        <td><apex:outputField value="{!mpwResf.Bare_Die_Ship_Date__c}" /></td>
+        <td><apex:outputField value="{!mpwResf.Wafer_Ship_Date__c}" /></td>
+        <td><apex:outputField value="{!mpwResf.Expected_Wafer_Skeleton_Return_Date__c}" /></td>
+        <td><apex:outputField value="{!mpwResf.Actual_Wafer_Skeleton_Return_Date__c}" /></td>
+        <td><apex:outputField value="{!mpwResf.AWB__c}" /></td>
+    </tr>
+</table>
+                        </html>
+                    </apex:outputPanel>
+                </apex:pageBlockSection>
+            </apex:outputPanel>
+
+            <apex:outputPanel id="section8">
+                <apex:pageBlockSection title="Customer Information"
+                    collapsible="false" columns="2"
+                    rendered="{!mpwResf.Category__c == 'Customer' && accessMode == 'Edit'}">
+                    <apex:inputField value="{!mpwResf.Customer_Name__c}" />
+                    <apex:outputField value="{!mpwResf.Customer_Company_Name__c}" />
+                    <apex:inputField value="{!mpwResf.Customer_Email__c}" />
+                    <apex:inputField value="{!mpwResf.Customer_Phone__c}" />
+                </apex:pageBlockSection>
+
+                <apex:pageBlockSection title="Customer Information"
+                    collapsible="false" columns="2"
+                    rendered="{!mpwResf.Category__c == 'Customer' && accessMode == 'View'}">
+                    <apex:outputField value="{!mpwResf.Customer_Name__c}" />
+                    <apex:outputField value="{!mpwResf.Customer_Company_Name__c}" />
+                    <apex:outputField value="{!mpwResf.Customer_Email__c}" />
+                    <apex:outputField value="{!mpwResf.Customer_Phone__c}" />
+                </apex:pageBlockSection>
+            </apex:outputPanel>
+
+            <apex:outputPanel id="section9">
+                <apex:pageBlockSection title="GLOBALFOUNDRIES Field Engineer Information"
+                    collapsible="false" columns="2"
+                    rendered="{!mpwResf.Category__c == 'Customer'}">
+                    <apex:pageBlockTable value="{!feList}" var="fe">
+                        <apex:column >
+                            <apex:outputField value="{!fe.User__c}" />
+                            <apex:facet name="header">Name</apex:facet>
+                        </apex:column>
+                        <apex:column headerValue="Email">{!fe.User_Email__c}</apex:column>
+                    </apex:pageBlockTable>
+                </apex:pageBlockSection>
+            </apex:outputPanel>
+
+            <apex:outputPanel id="section10">
+                <apex:pageBlockSection title="GLOBALFOUNDRIES Account Manager Information"
+                    collapsible="false" columns="2"
+                    rendered="{!mpwResf.Category__c == 'Customer'}">
+                    <apex:pageBlockTable value="{!amList}" var="am">
+                        <apex:column >
+                            <apex:outputField value="{!am.User__c}" />
+                            <apex:facet name="header">Name</apex:facet>
+                        </apex:column>
+                        <apex:column headerValue="Email">{!am.User_Email__c}</apex:column>
+                    </apex:pageBlockTable>
+                </apex:pageBlockSection>
+            </apex:outputPanel>
+
+            <apex:outputPanel id="section11">
+                <apex:pageBlockSection title="GLOBALFOUNDRIES Customer Rep. Sales Information"
+                    collapsible="false" columns="2"
+                    rendered="{!mpwResf.Category__c == 'Customer'}">
+                    <apex:pageBlockTable value="{!csrList}" var="csr">
+                        <apex:column >
+                            <apex:outputField value="{!csr.User__c}" />
+                            <apex:facet name="header">Name</apex:facet>
+                        </apex:column>
+                        <apex:column headerValue="Email">{!csr.User_Email__c}</apex:column>
+                    </apex:pageBlockTable>
+                </apex:pageBlockSection>
+            </apex:outputPanel>
+
+            <apex:outputPanel id="section12">
+                <apex:pageblockSection title="Requestor Information"
+                    collapsible="false" rendered="{!mpwResf.Category__c != 'Customer'}">
+                    <apex:inputfield value="{!mpwResf.Requestor_Name__c}"
+                        rendered="{!IF(accessMode=='Edit',true,false)}" />
+                    <apex:outputfield value="{!mpwResf.Requestor_Name__c}"
+                        rendered="{!IF(accessMode=='View',true,false)}" />
+                    <apex:inputfield value="{!mpwResf.Requestor_Email__c}"
+                        rendered="{!IF(accessMode=='Edit',true,false)}" />
+                    <apex:outputfield value="{!mpwResf.Requestor_Email__c}"
+                        rendered="{!IF(accessMode=='View',true,false)}" />
+                </apex:pageblockSection>
+            </apex:outputPanel>
+
+            <apex:outputPanel id="section13">
+                <apex:pageblockSection title="Supervisor Information"
+                    collapsible="false" rendered="{!mpwResf.Category__c != 'Customer'}">
+                    <apex:inputfield value="{!mpwResf.Supervisor_Name__c}"
+                        rendered="{!IF(accessMode=='Edit',true,false)}" />
+                    <apex:outputfield value="{!mpwResf.Supervisor_Name__c}"
+                        rendered="{!IF(accessMode=='View',true,false)}" />
+                    <apex:inputfield value="{!mpwResf.Supervisor_Email__c}"
+                        rendered="{!IF(accessMode=='Edit',true,false)}" />
+                    <apex:outputfield value="{!mpwResf.Supervisor_Email__c}"
+                        rendered="{!IF(accessMode=='View',true,false)}" />
+                </apex:pageblockSection>
+            </apex:outputPanel>
+
+            <br />
+            <br />
+            <apex:pageBlock id="formnotes">
+                <apex:pageBlockTable columns="1" id="formNotesList"
+                    value="{!listFormNotes}" var="n"
+                    rendered="{!IF(OR(listFormNotes.size == null,listFormNotes.size > 0), true, false)}">
+                    <apex:column value="{!n.Value__c}">
+                        <apex:facet name="header">Terms and Conditions</apex:facet>
+                    </apex:column>
+                </apex:pageBlockTable>
+            </apex:pageBlock>
+
+
+            <br />
+            <br />
+            <apex:outputPanel id="agreement"
+                rendered="{!IF(accessMode=='Edit',true,false)}">
+                <apex:inputCheckbox value="{!agree}"
+                    rendered="{!IF(accessMode == 'Edit', true, false)}">
+                    <apex:actionSupport event="onchange" />
+                </apex:inputCheckbox>
+                <apex:outputLabel value="I Agree with the terms and conditions."
+                    rendered="{!IF(accessMode == 'Edit', true, false)}" />
+                <br />
+                <apex:outputLabel style="font-style:italic;font-size:8pt;"
+                    value="Note:Please provide advance notice(atleast 4wks) for non-mainstream option before reservation dateline. Unlisted processes will be considered after consolidation of the listed process." />
+                <br />
+                <br />
+            </apex:outputPanel>
+
+            <apex:outputPanel id="agreementview"
+                rendered="{!IF(accessMode=='View',true,false)}">
+                <apex:outputLabel style="font-style:italic;font-size:8pt;"
+                    value="Note:Please provide advance notice(atleast 4wks) for non-mainstream option before reservation dateline." />
+            </apex:outputPanel>
+
+        </apex:pageBlock>
+
+        <apex:pageBlock id="previewblock" mode="detail" rendered="{!preview}">
+
+            <apex:pageblockButtons location="bottom" id="buttonset">
+                <apex:commandButton value="Submit for Approval" />
+                <apex:commandButton value="Back" action="{!exitPreview}"
+                    immediate="true" />
+            </apex:pageblockButtons>
+
+            <apex:pageBlockSection id="previewsection1"
+                title="MPW Train Selection" collapsible="false" columns="1"
+                rendered="{!IF(AND(initPoint=='devices',accessMode == 'View'),true,false)}">
+                <apex:outputField value="{!mpwResf.MPW_Train_Name__c}" />
+            </apex:pageBlockSection>
+
+            <apex:pageblockSection id="previewsection2"
+                title="Reservation Form Information" collapsible="false" columns="1">
+                <apex:pageBlockSectionItem >
+                    <apex:outputLabel value="{!$ObjectType.MPW_Train_Maintenance__c.fields.Name.label}" />
+                    <apex:outputField value="{!mpwtm.Name}" />
+                </apex:pageBlockSectionItem>
+                <apex:pageBlockSectionItem >
+                    <apex:outputLabel value="{!$ObjectType.MPW_Train_Maintenance__c.fields.Reservation_Open_Date__c.label}" />
+                    <apex:outputField value="{!mpwtm.Reservation_Open_Date__c}" />
+                </apex:pageBlockSectionItem>
+                <apex:pageBlockSectionItem >
+                    <apex:outputLabel value="{!$ObjectType.MPW_Train_Maintenance__c.fields.Reservation_Close_Date__c.label}" />
+                    <apex:outputField value="{!mpwtm.Reservation_Close_Date__c}" />
+                </apex:pageBlockSectionItem>
+                <apex:pageBlockSectionItem >
+                    <apex:outputLabel value="{!$ObjectType.MPW_Train_Maintenance__c.fields.Tapeout_Date_Other_Participant__c.label}*" />
+                    <apex:outputField value="{!mpwtm.Tapeout_Date_Other_Participant__c}" />
+                </apex:pageBlockSectionItem>
+                <apex:pageBlockSectionItem >
+                    <apex:outputLabel value="{!$ObjectType.MPW_Train_Maintenance__c.fields.Customer_Tapeout_Date__c.label}*" />
+                    <apex:outputField value="{!mpwtm.Customer_Tapeout_Date__c}" />
+                </apex:pageBlockSectionItem>
+                <br />
+                <apex:outputLabel style="font-style:italic;font-size:8pt;"
+                    value="*DRC requests must be submitted at least 2 weeks before this date. Designs which are not submitted or have not passed design rules check by above date will be rejected from this MPW. Please check schedule for future MPWs." />
+            </apex:pageblockSection>
+
+            <apex:panelGrid id="previewcategory" columns="3"
+                style="width:50%;margin-left:15px;">
+                <apex:panelGroup >
+                    <apex:outputLabel styleClass="labelCol" value="Category" />
+                    <apex:outputField value="{!mpwResf.Category__c}" />
+                </apex:panelGroup>
+                <apex:panelGroup rendered="{!mpwResf.Category__c != 'TD' && mpwResf.Category__c != 'Customer'}">
+                    <apex:outputLabel styleClass="labelCol" value="Sub Category" />
+                    <apex:outputField value="{!mpwResf.Sub_Category__c}"
+                        rendered="{!mpwResf.Category__c != 'TD' && mpwResf.Category__c != 'FAB' && mpwResf.Category__c != 'Customer'}" />
+                    <apex:outputText value="{!mpwtm.Geometry__c}"
+                        rendered="{!mpwResf.Category__c == 'FAB'}" />
+                </apex:panelGroup>
+                <apex:panelGroup rendered="{!mpwResf.Category__c != 'Customer'}">
+                    <apex:outputLabel styleClass="labelCol" value="Usage" />
+                    <apex:outputField value="{!mpwResf.Usage__c}"
+                        rendered="{!mpwResf.Category__c != 'DE' && mpwResf.Category__c != 'IP' && mpwResf.Category__c != 'Customer'}" />
+                    <apex:outputText value="Required"
+                        rendered="{!mpwResf.Category__c == 'DE' || mpwResf.Category__c == 'IP'}" />
+                </apex:panelGroup>
+                <apex:panelGroup rendered="{!mpwResf.Category__c == 'TD'}">
+                    <apex:outputLabel styleClass="labelCol" value="PA Code" />
+                    <apex:outputField value="{!mpwResf.PA_Code__c}"
+                        rendered="{!mpwResf.Category__c == 'TD' && mpwResf.Usage__c == 'Required'}" />
+                    <apex:outputText value="For Opportunistic Usage"
+                        rendered="{!mpwResf.Category__c == 'TD' && mpwResf.Usage__c == 'Opportunistic'}" />
+                </apex:panelGroup>
+            </apex:panelGrid>
+
+            <apex:pageBlockSection id="previewsection3"
+                title="Process Information" collapsible="false">
+                <apex:panelGrid >
+                    <apex:panelGroup >
+                        <apex:outputText value="Process" styleClass="labelCol" />
+                        <apex:outputField value="{!mpwResf.Process_Type__c}" />
+                    </apex:panelGroup>
+                </apex:panelGrid>
+                <br />
+                <br />
+                <apex:pageblockTable value="{!MPWTrainMaintenanceDetailList}"
+                    var="s"
+                    rendered="{!IF(AND(MPWTrainMaintenanceDetailList.size > 0,accessMode == 'Edit'), true, false)}">
+                    <apex:column value="{!s.question}">
+                        <apex:facet name="header">Question</apex:facet>
+                    </apex:column>
+                    <apex:column >{!s.answer}
+                        <apex:facet name="header">Answer</apex:facet>
+                        <apex:pageBlockTable value="{!s.sqwList}" var="ss"
+                            rendered="{!IF(AND(CONTAINS(s.question,'Do you need SRAM'),s.answer == 'Yes'),true,false)}"
+                            style="width: 380px">
+                            <apex:column rendered="{!ss.selected}">{!ss.name}</apex:column>
+                            <apex:column rendered="{!ss.selected}" />
+                            <apex:column rendered="{!ss.selected}">SRAM Array total block size (in MB)</apex:column>
+                            <apex:column rendered="{!ss.selected}">{!ss.mpwSRAMQues.Answer__c}</apex:column>
+                        </apex:pageBlockTable>
+                    </apex:column>
+                </apex:pageblockTable>
+            </apex:pageBlockSection>
+
+            <apex:pageblockSection id="previewsection4" title="Chip Information"
+                collapsible="false" columns="1">
+                <apex:outputPanel layout="block">
+                    <apex:outputLabel style="font-style:italic;font-size:8pt;"> 
+                        For Wafer Delievery, backgrind is not applicable.<br />
+                        Each Chip requires a Chip identification at the left bottom corner of the die on gate only, metal 1 and top metal.
+                    </apex:outputLabel>
+                    <br />
+                    <br />
+                    <html>
+<table border="1" class="list" cellspacing="0" cellpadding="0">
+    <tr class="headerRow" align="center">
+        <td rowspan="2" style="font-size: 8pt;">Prime Die Name</td>
+        <td colspan="2" style="font-size: 8pt">Drawn Die Size</td>
+        <apex:variable var="v" value=""
+            rendered="{!IF(AND(mpwResf.Category__c != 'FAB', mpwResf.Category__c != 'TD'), true, false)}">
+            <td colspan="2" style="font-size: 8pt">Quantity Delivery</td>
+        </apex:variable>
+        <apex:variable var="v" value=""
+            rendered="{!IF(OR(mpwResf.Category__c == 'FAB', mpwResf.Category__c == 'TD'), true, false)}">
+            <td style="font-size: 8pt">Quantity Delivery</td>
+        </apex:variable>
+        <apex:variable var="v" value=""
+            rendered="{!IF(AND(mpwResf.Category__c != 'FAB', mpwResf.Category__c != 'TD'), true, false)}">
+            <apex:variable var="v" value=""
+                rendered="{!mpwtm.Geometry__c == '28nm'}">
+                <td rowspan="2" style="font-size: 8pt">Drawn Orientation
+                    Restricted Structures</td>
+            </apex:variable>
+            <apex:variable var="v" value=""
+                rendered="{!(mpwtm.Geometry__c == '28nm' || mpwtm.Geometry__c == '14nm' || mpwtm.Geometry__c == '40nm' || mpwtm.Geometry__c == '65nm') && (mpwResf.Category__c == 'IP' || mpwResf.Category__c == 'Customer')}">
+                <td rowspan="2" style="font-size: 8pt">Metal Stack</td>
+            </apex:variable>
+            <td rowspan="2" style="font-size: 8pt;">Device Type</td>
+            <td rowspan="2" style="font-size: 8pt">Corner Split</td>
+            <td colspan="5" rowspan="2" style="font-size: 8pt">POR FF SS FS
+                SF<br />(multiple of 50 dies)
+            </td>
+        </apex:variable>
+        <td rowspan="2" style="font-size: 8pt">GMPL Project Name</td>
+        <td rowspan="2" style="font-size: 8pt">GMPL Purpose</td>
+        <apex:variable var="v" value=""
+            rendered="{!IF(AND(mpwResf.Category__c != 'FAB', mpwResf.Category__c != 'TD'), true, false)}">
+            <td rowspan="2" style="font-size: 8pt">BackGrind</td>
+            <td rowspan="2" style="font-size: 8pt">Short Loop Wafer</td>
+            <apex:variable var="v" value=""
+                rendered="{!mpwtm.Geometry__c == '0.18um' || mpwtm.Geometry__c == '0.35um' || mpwtm.Geometry__c == '0.11/0.13um'}">
+                <td rowspan="2" style="font-size: 8pt">Sub Devices Extraction</td>
+            </apex:variable>
+            <td colspan="2" style="font-size: 8pt">Expedite</td>
+            <td rowspan="2" style="font-size: 8pt">Turnkey Services</td>
+            <td rowspan="2" style="font-size: 8pt"><br />TurnKey Pre-Alert
+                Form</td>
+        </apex:variable>
+    </tr>
+    <tr class="headerRow" align="center">
+        <td style="font-size: 8pt">X(um)</td>
+        <td style="font-size: 8pt">Y(um)</td>
+        <apex:variable var="v" value=""
+            rendered="{!IF(AND(mpwResf.Category__c != 'FAB', mpwResf.Category__c != 'TD'), true, false)}">
+            <td style="font-size: 8pt">In Die Form</td>
+        </apex:variable>
+        <td style="font-size: 8pt">In Wafer Form</td>
+        <apex:variable var="v" value=""
+            rendered="{!IF(AND(mpwResf.Category__c != 'FAB', mpwResf.Category__c != 'TD'), true, false)}">
+            <td style="font-size: 8pt">In Die Form</td>
+            <td style="font-size: 8pt">In Wafer Form</td>
+        </apex:variable>
+    </tr>
+    <apex:repeat value="{!PrimeDieWrapperList}" var="mpwPrimeDieWrapper">
+        <tr class="datarow">
+            <td class="datacell">{!mpwPrimeDieWrapper.mpwPrimeDie.Prime_Die_Name__c}</td>
+            <td class="datacell">{!mpwPrimeDieWrapper.mpwPrimeDie.Drawn_Die_Size_X_um__c}</td>
+            <td class="datacell">{!mpwPrimeDieWrapper.mpwPrimeDie.Drawn_Die_Size_Y_um__c}</td>
+            <apex:variable var="v" value=""
+                rendered="{!IF(AND(mpwResf.Category__c != 'FAB', mpwResf.Category__c != 'TD'), true, false)}">
+                <td class="datacell">{!mpwPrimeDieWrapper.mpwPrimeDie.Delivery_Qty_Die_Form__c}</td>
+            </apex:variable>
+            <td class="datacell">{!mpwPrimeDieWrapper.mpwPrimeDie.Delivery_Qty_Wafer_Form__c}</td>
+            <apex:variable var="v" value=""
+                rendered="{!IF(AND(mpwResf.Category__c != 'FAB', mpwResf.Category__c != 'TD'), true, false)}">
+                <apex:variable var="v" value=""
+                    rendered="{!mpwtm.Geometry__c == '28nm'}">
+                    <td class="datacell">{!mpwPrimeDieWrapper.mpwPrimeDie.Drawn_Orientation_Restricted_Structures__c}</td>
+                </apex:variable>
+                <apex:variable var="v" value=""
+                    rendered="{!(mpwtm.Geometry__c == '28nm' || mpwtm.Geometry__c == '14nm' || mpwtm.Geometry__c == '40nm' || mpwtm.Geometry__c == '65nm') && (mpwResf.Category__c == 'IP' || mpwResf.Category__c == 'Customer')}">
+                    <td class="datacell">{!mpwPrimeDieWrapper.mpwPrimeDie.Metal_Stack__c}</td>
+                </apex:variable>
+                <td class="datacell">{!mpwPrimeDieWrapper.mpwPrimeDie.Device_Type__c}</td>
+                <td class="datacell">{!mpwPrimeDieWrapper.mpwPrimeDie.Corner_Split__c}</td>
+                <td class="datacell">{!mpwPrimeDieWrapper.mpwPrimeDie.POR__c}</td>
+                <td class="datacell">{!mpwPrimeDieWrapper.mpwPrimeDie.FF__c}</td>
+                <td class="datacell">{!mpwPrimeDieWrapper.mpwPrimeDie.SS__c}</td>
+                <td class="datacell">{!mpwPrimeDieWrapper.mpwPrimeDie.FS__c}</td>
+                <td class="datacell">{!mpwPrimeDieWrapper.mpwPrimeDie.SF__c}</td>
+            </apex:variable>
+            <!-- <td class="datacell">{!mpwPrimeDieWrapper.gmplProjectName}</td> -->
+            <td class="datacell">{!mpwPrimeDieWrapper.mpwPrimeDie.GMPL_Project_Name_Text__c}</td>
+            <td class="datacell">{!mpwPrimeDieWrapper.mpwPrimeDie.GMPL_Purpose__c}</td>
+            <apex:variable var="v" value=""
+                rendered="{!IF(AND(mpwResf.Category__c != 'FAB', mpwResf.Category__c != 'TD'), true, false)}">
+                <td class="datacell">{!mpwPrimeDieWrapper.mpwPrimeDie.Backgrind__c}</td>
+                <td class="datacell">{!mpwPrimeDieWrapper.mpwPrimeDie.ShortLoop_Wafer__c}</td>
+                <apex:variable var="v" value=""
+                    rendered="{!(mpwtm.Geometry__c == '0.18um' || mpwtm.Geometry__c == '0.35um' || mpwtm.Geometry__c == '0.11/0.13um') && mpwPrimeDieWrapper.mpwPrimeDie.Delivery_Qty_Wafer_Form__c != null && mpwPrimeDieWrapper.mpwPrimeDie.Delivery_Qty_Wafer_Form__c == '0'}">
+                    <td class="datacell">{!mpwPrimeDieWrapper.mpwPrimeDie.Sub_Devices_Extraction__c}</td>
+                </apex:variable>
+                <td class="datacell">{!mpwPrimeDieWrapper.mpwPrimeDie.Expedite_In_DIE_Form__c}</td>
+                <td class="datacell">{!mpwPrimeDieWrapper.mpwPrimeDie.Expedite_In_WAFER_Form__c}</td>
+                <td class="datacell">{!mpwPrimeDieWrapper.mpwPrimeDie.Turnkey_Service__c}</td>
+                <td class="datacell"></td>
+            </apex:variable>
+        </tr>
+    </apex:repeat>
+</table>
+                    </html>
+                    <br />
+                    <br />
+                    <apex:outputLabel style="font-style:italic;font-size:8pt;"> 
+                        Note:Backgrind is compulsory in MPWs for die sawing purpose.
+                    </apex:outputLabel>
+                </apex:outputPanel>
+            </apex:pageblockSection>
+
+            <apex:pageblockSection id="previewsection5" title="Shipping Address"
+                collapsible="false" columns="1"
+                rendered="{!IF(AND(mpwResf.Category__c != 'TD',mpwResf.Category__c != 'FAB'),true,false)}">
+                <apex:outputPanel >
+                    <apex:outputLabel style="font-style:italic;font-size:8pt;"> 
+                        Note:Ensure valid Forwarder name and Account # are provided or risk deliverable delay.
+                    </apex:outputLabel>
+                    <br />
+                    <html>
+<table cellpadding="2" cellspacing="5" width="700px">
+    <tr align="center">
+        <td></td>
+        <apex:variable var="v" value="" rendered="{!showAddress1}">
+            <td style="font-size: 91%; font-weight: bold;">Address 1</td>
+        </apex:variable>
+        <apex:variable var="v" value="" rendered="{!showAddress2}">
+            <td style="font-size: 91%; font-weight: bold;">Address 2</td>
+        </apex:variable>
+        <apex:variable var="v" value="" rendered="{!showAddress3}">
+            <td style="font-size: 91%; font-weight: bold;">Address 3</td>
+        </apex:variable>
+    </tr>
+    <tr>
+        <td style="white-space: nowrap; font-size: 91%; font-weight: bold;"
+            align="right">Company Name</td>
+        <apex:variable var="v" value="" rendered="{!showAddress1}">
+            <td class="datacell" align="center">{!mpwResf.Company_Name__c}</td>
+        </apex:variable>
+        <apex:variable var="v" value="" rendered="{!showAddress2}">
+            <td class="datacell" align="center">{!mpwResf.Company_Name2__c}</td>
+        </apex:variable>
+        <apex:variable var="v" value="" rendered="{!showAddress3}">
+            <td class="datacell" align="center">{!mpwResf.Company_Name3__c}</td>
+        </apex:variable>
+    </tr>
+    <tr>
+        <td style="white-space: nowrap; font-size: 91%; font-weight: bold;"
+            align="right">Address</td>
+        <apex:variable var="v" value="" rendered="{!showAddress1}">
+            <td align="center" class="datacell">{!mpwResf.Address__c}</td>
+        </apex:variable>
+        <apex:variable var="v" value="" rendered="{!showAddress2}">
+            <td align="center" class="datacell">{!mpwResf.Address2__c}</td>
+        </apex:variable>
+        <apex:variable var="v" value="" rendered="{!showAddress3}">
+            <td align="center" class="datacell">{!mpwResf.Address3__c}</td>
+        </apex:variable>
+    </tr>
+    <tr>
+        <td style="white-space: nowrap; font-size: 91%; font-weight: bold;"
+            align="right">Postal Code</td>
+        <apex:variable var="v" value="" rendered="{!showAddress1}">
+            <td align="center" class="datacell">{!mpwResf.Postal_Code__c}</td>
+        </apex:variable>
+        <apex:variable var="v" value="" rendered="{!showAddress2}">
+            <td align="center" class="datacell">{!mpwResf.Postal_Code2__c}</td>
+        </apex:variable>
+        <apex:variable var="v" value="" rendered="{!showAddress3}">
+            <td align="center" class="datacell">{!mpwResf.Postal_Code3__c}</td>
+        </apex:variable>
+    </tr>
+    <tr>
+        <td style="white-space: nowrap; font-size: 91%; font-weight: bold;"
+            align="right">Contact Person</td>
+        <apex:variable var="v" value="" rendered="{!showAddress1}">
+            <td align="center" class="datacell">{!mpwResf.Contact_Person__c}</td>
+        </apex:variable>
+        <apex:variable var="v" value="" rendered="{!showAddress2}">
+            <td align="center" class="datacell">{!mpwResf.Contact_Person2__c}</td>
+        </apex:variable>
+        <apex:variable var="v" value="" rendered="{!showAddress3}">
+            <td align="center" class="datacell">{!mpwResf.Contact_Person3__c}</td>
+        </apex:variable>
+    </tr>
+    <tr>
+        <td style="white-space: nowrap; font-size: 91%; font-weight: bold;"
+            align="right">Fax</td>
+        <apex:variable var="v" value="" rendered="{!showAddress1}">
+            <td align="center" class="datacell">{!mpwResf.Fax__c}</td>
+        </apex:variable>
+        <apex:variable var="v" value="" rendered="{!showAddress2}">
+            <td align="center" class="datacell">{!mpwResf.Fax2__c}</td>
+        </apex:variable>
+        <apex:variable var="v" value="" rendered="{!showAddress3}">
+            <td align="center" class="datacell">{!mpwResf.Fax3__c}</td>
+        </apex:variable>
+    </tr>
+    <tr>
+        <td style="white-space: nowrap; font-size: 91%; font-weight: bold;"
+            align="right">Phone</td>
+        <apex:variable var="v" value="" rendered="{!showAddress1}">
+            <td align="center" class="datacell">{!mpwResf.Phone__c}</td>
+        </apex:variable>
+        <apex:variable var="v" value="" rendered="{!showAddress2}">
+            <td align="center" class="datacell">{!mpwResf.Phone2__c}</td>
+        </apex:variable>
+        <apex:variable var="v" value="" rendered="{!showAddress3}">
+            <td align="center" class="datacell">{!mpwResf.Phone3__c}</td>
+        </apex:variable>
+    </tr>
+</table>
+                    </html>
+                </apex:outputPanel>
+            </apex:pageblockSection>
+
+            <apex:pageblockSection id="previewsection6" title="Shipment Details"
+                collapsible="false"
+                rendered="{!IF(AND(mpwResf.Category__c != 'TD',mpwResf.Category__c != 'FAB'),true,false)}">
+                <apex:outputPanel >
+                    <html>
+<table border="1" class="list" cellspacing="0" cellpadding="0"
+    style="width: 1260px">
+    <tr class="headerRow" align="center">
+        <td rowspan="3">Prime Die Name</td>
+        <apex:variable var="v" value="" rendered="{!showAddress1}">
+            <td colspan="2">Address 1</td>
+        </apex:variable>
+        <apex:variable var="v" value="" rendered="{!showAddress2}">
+            <td colspan="2">Address 2</td>
+        </apex:variable>
+        <apex:variable var="v" value="" rendered="{!showAddress3}">
+            <td colspan="2">Address 3</td>
+        </apex:variable>
+    </tr>
+    <tr class="headerRow" align="center">
+        <apex:variable var="v" value="" rendered="{!showAddress1}">
+            <td colspan="2">Quantity Delivery</td>
+        </apex:variable>
+        <apex:variable var="v" value="" rendered="{!showAddress2}">
+            <td colspan="2">Quantity Delivery</td>
+        </apex:variable>
+        <apex:variable var="v" value="" rendered="{!showAddress3}">
+            <td colspan="2">Quantity Delivery</td>
+        </apex:variable>
+    </tr>
+    <tr class="headerRow" align="center">
+        <apex:variable var="v" value="" rendered="{!showAddress1}">
+            <td>In Die Form</td>
+            <td>In WaferForm</td>
+        </apex:variable>
+        <apex:variable var="v" value="" rendered="{!showAddress2}">
+            <td>In Die Form</td>
+            <td>In WaferForm</td>
+        </apex:variable>
+        <apex:variable var="v" value="" rendered="{!showAddress3}">
+            <td>In Die Form</td>
+            <td>In WaferForm</td>
+        </apex:variable>
+    </tr>
+    <apex:repeat value="{!mpwPrimeDieList}" var="mpwPrimeDieWrapper1">
+        <tr class="datarow">
+            <td class="datacell">{!mpwPrimeDieWrapper1.mpwPrimeDie.Prime_Die_Name__c}</td>
+            <apex:variable var="v" value="" rendered="{!showAddress1}">
+                <td class="datacell">{!mpwPrimeDieWrapper1.mpwPrimeDie.Address1_Quantity_Delivery_In_DIE_Form__c}</td>
+                <td class="datacell">{!mpwPrimeDieWrapper1.mpwPrimeDie.Address1_Quantity_Delivery_In_WAFER_Form__c}</td>
+            </apex:variable>
+            <apex:variable var="v" value="" rendered="{!showAddress2}">
+                <td class="datacell">{!mpwPrimeDieWrapper1.mpwPrimeDie.Address2_Quantity_Delivery_In_DIE_Form__c}</td>
+                <td class="datacell">{!mpwPrimeDieWrapper1.mpwPrimeDie.Address2_Quantity_Delivery_In_WAFER_Form__c}</td>
+            </apex:variable>
+            <apex:variable var="v" value="" rendered="{!showAddress3}">
+                <td class="datacell">{!mpwPrimeDieWrapper1.mpwPrimeDie.Address3_Quantity_Delivery_In_DIE_Form__c}</td>
+                <td class="datacell">{!mpwPrimeDieWrapper1.mpwPrimeDie.Address3_Quantity_Delivery_In_WAFER_Form__c}</td>
+            </apex:variable>
+        </tr>
+    </apex:repeat>
+</table>
+                    </html>
+                </apex:outputPanel>
+            </apex:pageblockSection>
+
+            <apex:pageBlockSection id="previewsection7"
+                title="Shipment Information (Not for customer or requestor to fill in)"
+                collapsible="false"
+                rendered="{!IF(AND(mpwResf.Category__c != 'TD',mpwResf.Category__c != 'FAB'),true,false)}">
+                <apex:outputPanel >
+                    <html>
+<table border="1" class="list" cellspacing="0" cellpadding="0">
+    <tr class="headerRow" align="center">
+        <td>Prime Die Name</td>
+        <td>{!$ObjectType.MPW_Reservation__c.fields.Bare_Die_Ship_Date__c.label}</td>
+        <td>{!$ObjectType.MPW_Reservation__c.fields.Wafer_Ship_Date__c.label}</td>
+        <td>{!$ObjectType.MPW_Reservation__c.fields.Expected_Wafer_Skeleton_Return_Date__c.label}</td>
+        <td>{!$ObjectType.MPW_Reservation__c.fields.Actual_Wafer_Skeleton_Return_Date__c.label}</td>
+        <td>{!$ObjectType.MPW_Reservation__c.fields.AWB__c.label}</td>
+    </tr>
+    <tr align="center">
+        <td></td>
+        <td><apex:outputField value="{!mpwResf.Bare_Die_Ship_Date__c}" /></td>
+        <td><apex:outputField value="{!mpwResf.Wafer_Ship_Date__c}" /></td>
+        <td><apex:outputField value="{!mpwResf.Expected_Wafer_Skeleton_Return_Date__c}" /></td>
+        <td><apex:outputField value="{!mpwResf.Actual_Wafer_Skeleton_Return_Date__c}" /></td>
+        <td><apex:outputField value="{!mpwResf.AWB__c}" /></td>
+    </tr>
+</table>
+                    </html>
+                </apex:outputPanel>
+            </apex:pageBlockSection>
+
+            <apex:outputPanel id="previewsection8">
+                <apex:pageBlockSection title="Customer Information"
+                    collapsible="false" columns="2"
+                    rendered="{!mpwResf.Category__c == 'Customer'}">
+                    <apex:outputField value="{!mpwResf.Customer_Name__c}" />
+                    <apex:outputField value="{!mpwResf.Customer_Company_Name__c}" />
+                    <apex:outputField value="{!mpwResf.Customer_Email__c}" />
+                    <apex:outputField value="{!mpwResf.Customer_Phone__c}" />
+                </apex:pageBlockSection>
+            </apex:outputPanel>
+
+            <apex:outputPanel id="previewsection9">
+                <apex:pageBlockSection title="GLOBALFOUNDRIES Field Engineer Information"
+                    collapsible="false" columns="2"
+                    rendered="{!mpwResf.Category__c == 'Customer'}">
+                    <apex:pageBlockTable value="{!feList}" var="fe">
+                        <!-- <apex:column headerValue="Name">{!fe.User__r.Name}</apex:column> -->
+                        <apex:column >
+                            <apex:outputField value="{!fe.User__c}" />
+                            <apex:facet name="header">Name</apex:facet>
+                        </apex:column>
+                        <apex:column headerValue="Email">{!fe.User_Email__c}</apex:column>
+                    </apex:pageBlockTable>
+                </apex:pageBlockSection>
+            </apex:outputPanel>
+
+            <apex:outputPanel id="previewsection10">
+                <apex:pageBlockSection title="GLOBALFOUNDRIES Account Manager Information"
+                    collapsible="false" columns="2"
+                    rendered="{!mpwResf.Category__c == 'Customer'}">
+                    <apex:pageBlockTable value="{!amList}" var="am">
+                        <!-- <apex:column headerValue="Name">{!am.User__r.Name}</apex:column> -->
+                        <apex:column >
+                            <apex:outputField value="{!am.User__c}" />
+                            <apex:facet name="header">Name</apex:facet>
+                        </apex:column>
+                        <apex:column headerValue="Email">{!am.User_Email__c}</apex:column>
+                    </apex:pageBlockTable>
+                </apex:pageBlockSection>
+            </apex:outputPanel>
+
+            <apex:outputPanel id="previewsection11">
+                <apex:pageBlockSection title="GLOBALFOUNDRIES Customer Rep. Sales Information"
+                    collapsible="false" columns="2"
+                    rendered="{!mpwResf.Category__c == 'Customer'}">
+                    <apex:pageBlockTable value="{!csrList}" var="csr">
+                        <!-- <apex:column headerValue="Name">{!csr.User__r.Name}</apex:column> -->
+                        <apex:column >
+                            <apex:outputField value="{!csr.User__c}" />
+                            <apex:facet name="header">Name</apex:facet>
+                        </apex:column>
+                        <apex:column headerValue="Email">{!csr.User_Email__c}</apex:column>
+                    </apex:pageBlockTable>
+                </apex:pageBlockSection>
+            </apex:outputPanel>
+
+            <apex:pageblockSection id="previewsection12"
+                title="Requestor Information" collapsible="false"
+                rendered="{!mpwResf.Category__c != 'Customer'}">
+                <apex:outputfield value="{!mpwResf.Requestor_Name__c}" />
+                <apex:outputfield value="{!mpwResf.Requestor_Email__c}" />
+            </apex:pageblockSection>
+
+            <apex:pageblockSection id="previewsection13"
+                title="Supervisor Information" collapsible="false"
+                rendered="{!mpwResf.Category__c != 'Customer'}">
+                <apex:outputfield value="{!mpwResf.Supervisor_Name__c}" />
+                <apex:outputfield value="{!mpwResf.Supervisor_Email__c}" />
+            </apex:pageblockSection>
+
+            <apex:pageBlockSection collapsible="false" columns="1"
+                title="Form Notes">
+                <apex:pageBlockTable columns="1" id="formNotesList"
+                    value="{!listFormNotes}" var="n"
+                    rendered="{!IF(OR(listFormNotes.size == null,listFormNotes.size > 0), true, false)}">
+                    <apex:column value="{!n.Value__c}" />
+                </apex:pageBlockTable>
+            </apex:pageBlockSection>
+            <br />
+            <br />
+            <apex:outputPanel id="agreementview">
+                <apex:outputLabel style="font-style:italic;font-size:8pt;"
+                    value="Note:Please provide advance notice(atleast 4wks) for non-mainstream option before reservation dateline." />
+            </apex:outputPanel>
+
+        </apex:pageBlock>
+    </apex:form>
+
+</apex:page>

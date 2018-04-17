@@ -1,0 +1,551 @@
+<apex:page controller="ProcessReportCntrlr" cache="false" showHeader="true" sidebar="false" tabstyle="Process__c">
+    <apex:includeScript value="{!$Resource.jQuery1_10_1}"/>
+    <style>                 
+        .filterColumn {
+            width: 200px;       
+            margin-left: 2px;
+            margin-right: 2px;
+        }
+        .emptyColumnContent {
+            display: none;
+        }
+        .optionalContainer {
+            display: none;        
+            position:absolute;
+            z-index:-1;
+            top: 300px; 
+            left: 380px;                       
+            text-align:center;                            
+        }
+        .optionalColumn {
+            position: relative;             
+            background-color: #ececec; 
+            width: 480px;
+            height: 200px;   
+        }
+        .loading2 {
+            display: none;        
+        }
+        .loading {
+            display: none;        
+            position:absolute;
+            z-index:-1;
+            top: 500px; 
+            left: 600px;                       
+            text-align:center; 
+            background-color: white;
+        }       
+        .modalOverlay {
+            display: none;
+            position: fixed;
+            width: 100%;
+            height: 100%;
+            top: 0px;
+            left: 0px;
+            z-index:-1;
+            background-color: rgba(0,0,0,0.3); /* black semi-transparent */
+        }
+        .hand {
+            cursor: pointer; 
+            cursor: hand;
+        }  
+        .colDiv {
+            float: left;            
+        } 
+    </style>
+    <script>
+        $( document ).ready(function() {          
+            $('.picklistArrowRight').click(function() {
+              addSelectedColumns($('.allSelect').val());
+            });  
+            
+            $('.picklistArrowLeft').click(function() {
+              removeSelectedColumns($('.mySelect').val());
+            });                                 
+            
+            $('.geometry').change(function() {            
+                doRefreshPTname();                              
+            }); 
+                      
+            $('.showAvailableToSell').change(function() {
+                if($(this).is(":checked")){                  
+                    $('.showAvailableVal').show();    
+                } else {                                       
+                    $('.showAvailableVal').hide();    
+                }
+            });
+            
+            $('.selectedProcessDetails').data('process','');                       
+            
+            if({!showAvailableToSell}){
+                $('.showAvailableVal').show();
+            } else {
+                $('.showAvailableVal').hide(); 
+            } 
+            
+            if($('.geometry').val() == ''){
+                $('.ptname').prop('disabled', true);            
+            }                 
+        });                     
+              
+        function getSelectedOptions(){
+            var val ='';
+            $('.mySelect option').each(function(){
+                val += $(this).val() +';';                               
+            });
+            
+            if(val.lastIndexOf(';') != -1){
+                val = val.substring(0,val.lastIndexOf(';'));
+            }
+            
+            addColumns(val);
+        } 
+          
+        function addSelectedColumns(val){           
+            if(val != null){
+                removePicklistOptions('.allSelect',val);    
+                addPicklistOptions('.mySelect',val);              
+            }
+        }
+        
+        function removeSelectedColumns(val){
+            if(val != null){                   
+                removePicklistOptions('.mySelect',val);    
+                addPicklistOptions('.allSelect',val);             
+            }    
+        }
+        
+        function addPicklistOptions(name,val){
+            for(var i=0; i < val.length; i++){                    
+                var str = '<option value="' + val[i] + '">' + val[i] +'</option>';
+                $(name).append(str);
+            }
+        }
+        
+        function removePicklistOptions(name,val){
+            for(var i=0; i < val.length; i++){                  
+                $(name +' option[value="' + val[i] + '"]').remove();                   
+            }    
+        }
+        
+        function showLoading2(){
+            $('.ipvendor').prop('disabled', true); 
+            $('.searchbtn').attr('disabled', true);
+            $('.loading2').show();                          
+        }
+        
+        function stopLoading2(){  
+            $('.searchbtn').attr('disabled',false);
+            $('.loading2').hide();       
+        } 
+        
+        function showLoading(){ 
+            $('.modalOverlay').css('z-index', 2);
+            $('.modalOverlay').show();
+            $('.loading').show();                 
+            $('.loading').css('z-index', 3);
+            $('.optionalContainer').css('z-index', -1);
+            $('.optionalContainer').hide();    
+        }
+        
+        function stopLoading(){                  
+            $('.loading').css('z-index', -1);
+            hideDiv();  
+        }                       
+      
+        function hideDiv(){            
+            $('.modalOverlay').hide();
+            $('.optionalContainer').hide();
+            $('.loading').hide();            
+        }
+             
+        function showDiv(){
+            $('.modalOverlay').show();
+            $('.optionalContainer').show();
+        }
+        
+        function refreshPTname(){
+            if($('.geometry').val() == ''){                    
+                $('.ptname').prop('disabled', true);
+                $('.ptname').val('');   
+            } else {
+                $('.ptname').prop('disabled',false);                     
+            }
+        }
+                 
+        function showAddColumns(){
+            $('.modalOverlay').css('z-index', 2);         
+            $('.optionalContainer').css('z-index', 3);
+            showDiv();         
+        }
+        
+        function hideAddColumns(){
+            $('.modalOverlay').css('z-index', -1);         
+            $('.optionalContainer').css('z-index', -1);
+            hideDiv();         
+        }
+        
+        function storeSelectedProcess(elem){
+            var t = elem.id;
+            var f = t.replace(/:/g,'\\:');
+            var val = $('#'+f).closest('tr').find('.ipID').text().trim();
+            var data = $('.selectedProcessDetails').data('process');
+                      
+            if(elem.checked){                                
+                if(data.indexOf(val) == -1){
+                    if(data.length > 0){
+                        data += ';' + val;                        
+                    } else if (data.length == 0){
+                        data = val;
+                    }                    
+                }                                
+            } else {
+                if(data.indexOf(val+';') != -1){                    
+                    data = data.replace(val+';','');
+                } else if (data.indexOf(';'+val) != -1){
+                    data = data.replace(';'+val,'');
+                } else {
+                    data = data.replace(val,'');
+                }   
+            }
+            $('.selectedProcessDetails').data('process',data); 
+        }
+        
+        function generatePDF(exptype,geometry,ptname,ptnumber,pidnumber,processname,masklayer,iovoltage,family,category,gatetype,hvvoltage,corevoltage,techtype,addedcolumns){                      
+            window.open('ProcessReportExport?geometry='+ geometry +'&ptname='+ ptname +'&ptnumber='+ ptnumber +'&pidnumber='+ pidnumber +'&processname='+ processname +'&masklayer='+ masklayer +'&iovoltage='+ iovoltage +'&family='+ family +'&category='+ category +'&gatetype='+ gatetype +'&hvvoltage='+ hvvoltage +'&corevoltage='+ corevoltage +'&techtype='+ techtype +'&cols='+ addedcolumns +'&processdetails='+ $('.selectedProcessDetails').data('process') +'&generate='+ exptype);
+        }
+    </script>
+    <apex:form >
+        <apex:pageMessages />
+        <apex:outputpanel layout="block" rendered="{!NOT(hasNoAccess)}">
+        <apex:actionfunction name="sort" action="{!sort}" rerender="processList" status="loading">     
+            <apex:param name="sortfield" assignTo="{!sortField}" value=""/>
+            <apex:param name="sorttype" assignTo="{!sortType}" value=""/>            
+        </apex:actionfunction>
+        <apex:actionFunction name="doRefreshPTname" action="{!refreshPTname}" reRender="ptnameblock" status="loading2" oncomplete="refreshPTname()"/> 
+        <apex:actionfunction name="addColumns" action="{!addColumns}" rerender="processListSection" status="loading">
+            <apex:param name="addedColumns" value="" assignTo="{!addedColumns}"/>            
+        </apex:actionfunction>
+        <apex:actionStatus onstart="showLoading()" onstop="stopLoading()" id="loading"/>
+        <apex:actionStatus onstart="showLoading2()" onstop="stopLoading2()" id="loading2"/>
+        <!-- div will store picked IPs for detail viewing -->
+        <apex:outputPanel layout="block" styleclass="selectedProcessDetails"/>        
+        <apex:outputPanel layout="block" styleclass="modalOverlay"/>
+        <apex:pageBlock title="Search PTs" id="block1"> 
+            <!-- Div for loading status-->          
+            <apex:outputPanel layout="block" styleclass="loading">
+                <apex:outputText value="Loading" style="font-weight:bold;margin-right:20px;font-size:20px"/>
+                <apex:image value="/img/loading32.gif"/>
+            </apex:outputPanel>          
+            <!-- Div for optional column selection -->
+            <apex:outputPanel layout="block" styleclass="optionalContainer">
+                <apex:outputPanel layout="block" styleclass="optionalColumn">
+                    <br/>
+                    <apex:panelGrid columns="3"  style="margin: 15px 15px">                
+                        <apex:outputLabel value="Available" style="font-weight:bold"/>
+                        <apex:outputLabel value=""/>
+                        <apex:outputLabel value="Chosen" style="font-weight:bold"/>
+                        <apex:selectList value="{!dummyColumns}" multiselect="true" size="5" style="width:200px" styleClass="allSelect">
+                            <apex:selectOptions value="{!optionalColumns}"/>                    
+                        </apex:selectList>
+                        <apex:panelGrid columns="1">
+                            <apex:outputPanel layout="block"/>
+                            <apex:outputPanel layout="block"/>
+                            <apex:image value="/img/arrow2_picklist_right.gif" styleClass="picklistArrowRight" style="cursor:pointer;"/>
+                            <apex:image value="/img/arrow2_picklist_left.gif" styleClass="picklistArrowLeft" style="cursor:pointer;"/>
+                        </apex:panelGrid>
+                        <apex:selectList value="{!dummyColumns}" multiselect="true" size="5" style="width:200px" styleClass="mySelect">
+                            <apex:selectOptions value="{!AddedOptionalColumns}"/>
+                        </apex:selectList>
+                    </apex:panelGrid>                               
+                    <apex:outputLabel value="Save" styleclass="btn" onclick="getSelectedOptions()"/>
+                    <apex:outputLabel value="Cancel" styleclass="btn" onclick="hideAddColumns()"/>               
+                </apex:outputPanel>
+            </apex:outputPanel>           
+            <apex:pageBlockSection title="Mandatory filter" columns="1" collapsible="false" id="section1">
+                <apex:panelGrid columns="3" cellpadding="10px">
+                    <apex:panelgrid columns="2" cellpadding="10px">                       
+                        <apex:outputLabel value="Geometry:" style="font-weight:bold;margin-right:10px;float:left"/>                    
+                        <apex:outputPanel layout="block" styleclass="requiredInput" style="float:left">
+                            <apex:outputPanel layout="block" styleclass="requiredBlock"/>                       
+                            <apex:selectList value="{!geometry}" multiselect="false" size="1" styleClass="geometry">
+                                <apex:selectOptions value="{!geometryList}"/>
+                            </apex:selectList>                                              
+                        </apex:outputPanel>
+                    </apex:panelGrid>                                               
+                </apex:panelGrid>                                
+            </apex:pageBlockSection> 
+            <apex:pageBlockSection title="Basic Filter" collapsible="true" columns="1" id="section2">                                       
+                <apex:panelGrid columns="3" cellpadding="10px"> 
+                    <apex:panelgrid columns="2" cellpadding="10px">                                                 
+                        <apex:outputLabel value="Process Technology:" style="font-weight:bold;margin-right:10px;float:left"/>                                                                  
+                        <apex:outputPanel layout="block" id="ptnameblock">
+                            <apex:selectList value="{!ptName}" multiselect="false" size="1" styleclass="ptname" style="float:left;margin-right:10px">
+                                <apex:selectOptions value="{!ptNameList}"/>
+                            </apex:selectList>
+                            <apex:image value="/img/loading32.gif" styleClass="loading2"/>
+                        </apex:outputPanel>                                                                
+                        <apex:outputLabel value="PID Number:" style="font-weight:bold;margin-right:10px"/>
+                        <apex:outputPanel layout="block">
+                            <apex:inputText value="{!pidNumber}"/> 
+                            <br/>
+                            <apex:outputPanel layout="block" style="width:200px">
+                                <apex:outputText style="font-size:10px" value="*Search by full ID e.g PID010000 or keyword search e.g PID10."/>                            
+                            </apex:outputPanel>                                
+                        </apex:outputPanel>                                                                                        
+                    </apex:panelGrid> 
+                    
+                    <apex:panelgrid columns="2" cellpadding="10px">  
+                        <apex:outputLabel value="PT Number:" style="font-weight:bold;margin-right:10px;float:left"/>                                                                   
+                        <apex:inputText value="{!ptNumber}"/>  
+                        <apex:outputLabel value="Process Name:" style="font-weight:bold;margin-right:10px"/>
+                        <apex:outputPanel layout="block">
+                            <apex:inputText value="{!processName}"/>                     
+                            <br/>
+                            <apex:outputPanel layout="block" style="width:200px">
+                                <apex:outputText style="font-size:10px" value="*Search by full name e.g 2A324-677-57B or keyword search e.g 2A324."/>                            
+                            </apex:outputPanel>                                
+                        </apex:outputPanel>                          
+                    </apex:panelGrid> 
+                                                            
+                    <apex:panelgrid columns="2" cellpadding="10px">                                            
+                        <apex:outputLabel value="Process Family:" style="font-weight:bold;margin-right:10px;float:left"/>                                                                   
+                        <apex:inputText value="{!family}"/>  
+                        <apex:outputLabel value="Category:" style="font-weight:bold;margin-right:10px;float:left"/>                                                                   
+                        <apex:inputText value="{!category}"/> 
+                    </apex:panelGrid> 
+                                                                                                                                    
+                </apex:panelGrid>                                                         
+            </apex:pageBlockSection>    
+            <apex:pageBlockSection title="Advanced Filter"  collapsible="true" columns="1" id="section3">                                       
+                <apex:panelGrid columns="3" cellpadding="10px"> 
+                
+                    <apex:panelgrid columns="2" cellpadding="10px">                                                                                                                                                                
+                        <apex:outputLabel value="IO Voltage:" style="font-weight:bold;margin-right:10px"/>
+                        <apex:outputPanel layout="block">
+                            <apex:inputText value="{!ioVoltage}"/> 
+                            <br/>
+                            <apex:outputPanel layout="block" style="width:200px">
+                                <apex:outputText style="font-size:10px" value="*Multiple IO Voltages can be selected. Separate each value by comma."/>                            
+                            </apex:outputPanel>                                
+                        </apex:outputPanel> 
+                        <apex:outputLabel value="Mask Layer:" style="font-weight:bold;margin-right:10px;float:left"/>
+                        <apex:outputPanel layout="block">
+                            <apex:inputText value="{!masklayer}"/>      
+                            <br/>
+                            <apex:outputPanel layout="block" style="width:200px">
+                                <apex:outputText value="*Multiple mask layers can be selected. Separate each value by comma." style="font-size:10px"/>
+                            </apex:outputPanel>
+                        </apex:outputPanel>
+                        <apex:outputPanel layout="block">
+                            <apex:inputCheckbox value="{!showAvailableToSell}" style="float:left;margin-right:10px" styleClass="showAvailableToSell"/>
+                            <apex:outputLabel value="(TBO, MPW, Protoytype, or Available)" style="font-size:10px" styleClass="showAvailableVal"/>
+                        </apex:outputPanel>                                                                    
+                    </apex:panelGrid> 
+                    
+                    <apex:panelgrid columns="2" cellpadding="10px">  
+                        <apex:outputLabel value="HV Voltage:" style="font-weight:bold;margin-right:10px"/>
+                        <apex:outputPanel layout="block">
+                            <apex:inputText value="{!HVVoltage}"/> 
+                            <br/>
+                            <apex:outputPanel layout="block" style="width:200px">
+                                <apex:outputText style="font-size:10px" value="*Multiple HV Voltages can be selected. Separate each value by comma."/>                            
+                            </apex:outputPanel>                                
+                        </apex:outputPanel>  
+                        <apex:outputLabel value="Poly Gate Type:" style="font-weight:bold;margin-right:10px;float:left"/>                       
+                        <apex:inputText value="{!gateType}"/>                                                         
+                    </apex:panelGrid>
+                                                            
+                    <apex:panelgrid columns="2" cellpadding="10px">                                            
+                        <apex:outputLabel value="Core Voltage:" style="font-weight:bold;margin-right:10px"/>
+                        <apex:outputPanel layout="block">
+                            <apex:inputText value="{!coreVoltage}"/> 
+                            <br/>
+                            <apex:outputPanel layout="block" style="width:200px">
+                                <apex:outputText style="font-size:10px" value="*Multiple Core Voltages can be selected. Separate each value by comma."/>                            
+                            </apex:outputPanel>                                
+                        </apex:outputPanel>
+                        <apex:outputLabel value="Tech Type:" style="font-weight:bold;margin-right:10px"/>
+                        <apex:outputPanel layout="block">
+                            <apex:inputText value="{!techType}"/> 
+                            <br/>
+                            <apex:outputPanel layout="block" style="width:200px">
+                                <apex:outputText style="font-size:10px" value="*Multiple Tech Types can be selected. Separate each value by comma."/>                            
+                            </apex:outputPanel>                                
+                        </apex:outputPanel>
+                    </apex:panelGrid>
+                                                                                                                                     
+                </apex:panelGrid>                
+            </apex:pageBlockSection> 
+            <!-- hide advanced search by default -->
+            <script> twistSection(document.getElementById('{!$Component.block1.section3}').getElementsByTagName('img')[0]) </script>   
+            
+            <apex:outputPanel layout="block"  style="text-align:center;margin-top:10px">                                        
+                <apex:commandButton value="Search" action="{!query}" style="margin-right:10px" styleClass="searchbtn"/>
+                <apex:outputText value="Please select a Geometry" style="font-weight:bold;color:red" rendered="{!noGeometryFilterPicked}"/>
+            </apex:outputPanel>                                                              
+            <apex:pageBlockSection title="Process List" collapsible="false" rendered="{!showList}" columns="1" id="processListSection">                       
+                <apex:outputPanel layout="block" rendered="{!showList}" style="margin-top:10px;margin-bottom:25px">
+                    <apex:panelGrid columns="1" >
+                        <apex:outputText value="Geometry: {!geometry}" style="font-weight:bold;font-size:16px"/>                    
+                        <apex:outputText value="Process Technology: {!ptname}" style="font-weight:bold;font-size:16px" rendered="{!NOT(ISBLANK(ptName))}"/>
+                        <apex:outputText value="PT Number: {!ptNumber}" style="font-weight:bold;font-size:16px" rendered="{!NOT(ISBLANK(ptNumber))}"/>
+                        <apex:outputText value="Process Family: {!family}" style="font-weight:bold;font-size:16px" rendered="{!NOT(ISBLANK(family))}"/>           
+                        <apex:outputText value="Category: {!category}" style="font-weight:bold;font-size:16px" rendered="{!NOT(ISBLANK(category))}"/>           
+                        <apex:outputText value="PID Number: {!pidNumber}" style="font-weight:bold;font-size:16px" rendered="{!NOT(ISBLANK(pidNumber))}"/>
+                        <apex:outputText value="Mask Layer: {!maskLayer}" style="font-weight:bold;font-size:16px" rendered="{!NOT(ISBLANK(maskLayer))}"/>
+                        <apex:outputText value="Process Name: {!processName}" style="font-weight:bold;font-size:16px" rendered="{!NOT(ISBLANK(processName))}"/>           
+                        <apex:outputText value="IO Voltage: {!ioVoltage}" style="font-weight:bold;font-size:16px" rendered="{!NOT(ISBLANK(ioVoltage))}"/>                                   
+                        <apex:outputText value="HV Voltage: {!HVVoltage}" style="font-weight:bold;font-size:16px" rendered="{!NOT(ISBLANK(HVVoltage))}"/>           
+                        <apex:outputText value="Core Voltage: {!coreVoltage}" style="font-weight:bold;font-size:16px" rendered="{!NOT(ISBLANK(coreVoltage))}"/>           
+                        <apex:outputText value="Poly Gate Type: {!gateType}" style="font-weight:bold;font-size:16px" rendered="{!NOT(ISBLANK(gateType))}"/>           
+                        <apex:outputText value="Tech Type: {!techType}" style="font-weight:bold;font-size:16px" rendered="{!NOT(ISBLANK(techType))}"/>           
+                        <apex:outputText value="Number of Processes: {!processList.processCount}" style="font-weight:bold;font-size:16px"/>                    
+                        <apex:outputText value="Note: Only the first 350 records will be shown. Narrow down your search using the advanced filter." style="font-weight:bold;font-size:12px" rendered="{!AND(processList.processCount = 350)}"/>                    
+                    </apex:panelGrid>
+                </apex:outputPanel>
+                <apex:outputText value="No Processes for this Geometry!" rendered="{!AND(processList.processCount = 0)}"/>                         
+                <apex:outputPanel layout="block" style="text-align:center" rendered="{!AND(processList.processCount > 0)}">                  
+                    <apex:outputLabel value="Generate PDF" onclick="generatePDF('pdf',
+                                                                                '{!geometry}',
+                                                                                '{!ptname}',
+                                                                                '{!ptnumber}',
+                                                                                '{!pidnumber}',
+                                                                                '{!processname}', 
+                                                                                '{!masklayer}',
+                                                                                '{!iovoltage}',
+                                                                                '{!family}',
+                                                                                '{!category}',
+                                                                                '{!gateType}',
+                                                                                '{!hvvoltage}',
+                                                                                '{!corevoltage}',
+                                                                                '{!techtype}',
+                                                                                '{!SUBSTITUTE(addedColumns,"'",'%27')}' )" styleclass="btn"/>
+                    <apex:outputLabel value="Generate Excel" onclick="generatePDF('excel',
+                                                                                  '{!geometry}',
+                                                                                  '{!ptname}',
+                                                                                  '{!ptnumber}',
+                                                                                  '{!pidnumber}',
+                                                                                  '{!processname}',
+                                                                                  '{!masklayer}',
+                                                                                  '{!iovoltage}',
+                                                                                  '{!family}',
+                                                                                  '{!category}',
+                                                                                  '{!gateType}',
+                                                                                  '{!hvvoltage}',
+                                                                                  '{!corevoltage}',
+                                                                                  '{!techtype}',
+                                                                                  '{!SUBSTITUTE(addedColumns,"'",'%27')}' )" styleclass="btn"/>                   
+                </apex:outputPanel> 
+                <apex:outputPanel layout="block" rendered="{!AND(processList.processCount > 0)}" id="processList">
+                    <apex:outputPanel layout="block" style="margin:10px 5px">
+                        <apex:outputPanel layout="block" style="width:44%;float:left">
+                        <apex:outputText value="Page {!currPageNumber} of {!totalPages}" style="font-weight:bold;font-size:10px;margin-right:10px;float:left;line-height:20px"/>
+                        <apex:outputLabel value="More columns" styleclass="btn" onclick="showAddColumns()" style="float:left"/>
+                        </apex:outputPanel>
+                        <apex:outputPanel layout="block">
+                            <apex:commandButton value="First" action="{!first}" disabled="{!AND(currPageNumber = 1)}"  status="loading" reRender="processList" />
+                            <apex:commandButton value="Prev" action="{!previous}" disabled="{!AND(currPageNumber = 1)}" status="loading" reRender="processList" />
+                            <apex:commandButton value="Next" action="{!next}" disabled="{!AND(currPageNumber = totalPages)}" status="loading" reRender="processList" />
+                            <apex:commandButton value="Last" action="{!last}" disabled="{!AND(currPageNumber = totalPages)}" status="loading" reRender="processList" />
+                        </apex:outputPanel> 
+                    </apex:outputPanel>                                          
+                    <apex:outputPanel layout="block" style="overflow:auto;width:100%}" id="processTable">
+                        <apex:pageBlockTable value="{!currPage}" var="i" rendered="{!AND(processList.processCount > 0)}" cellpadding="5px" align="center" style="{!IF(addedColumnsCount = 0,'width:100%',IF(addedColumnsCount < 4,'width:120%','width:130%'))};table-layout:auto;font-size:10px;">                                            
+                            <apex:repeat value="{!i.fields}" var="col"> 
+                                <!-- setting header for apex:column under apex:repeat will not work -->
+                                <!-- workaround is to create another list of string for the headers -->
+                                <!-- and define it in another apex:repeat                           -->
+                                <apex:column headerValue="none" style="vertical-align:top;width:80px" rendered="{!AND(col.name = 'PID Number')}">
+                                    <apex:outputLink target="_blank" value="/{!i.processId}" styleclass="ipID">
+                                        {!col.value}
+                                    </apex:outputLink>
+                                </apex:column>  
+                                <apex:column headerValue="none" rendered="{!AND(col.name = 'Process Name')}"  style="vertical-align:top;word-wrap:break-word;width:120px">                                 
+                                    <apex:outputText value="{!col.value}"/> 
+                                </apex:column>                                
+                                <apex:column headerValue="none" rendered="{!AND(col.name = 'Poly Gate Type')}"  style="vertical-align:top;word-wrap:break-word;width:120px">
+                                    <apex:outputText value="{!col.value}"/> 
+                                </apex:column>                                        
+                                <apex:column headerValue="none" rendered="{!AND(col.name = 'Mask Layers')}"  style="vertical-align:top;word-wrap:break-word;width:250px">                                 
+                                    <apex:outputText value="{!SUBSTITUTE(col.value,',',', ')}"/> 
+                                </apex:column> 
+                                <apex:column headerValue="none" rendered="{!AND(col.name = 'Technology Features',CONTAINS(addedColumns,col.name))}"  style="vertical-align:top;word-wrap:break-word;width:150px">                                 
+                                    <apex:outputText value="{!SUBSTITUTE(SUBSTITUTE(col.value,',',', '),';','; ')}"/> 
+                                </apex:column> 
+                                <apex:column headerValue="none" rendered="{!AND(NOT(isExternalUser),col.name = 'Customer Release')}"  style="vertical-align:top;word-wrap:break-word;width:150px">                                 
+                                    <apex:outputText value="{!SUBSTITUTE(SUBSTITUTE(col.value,',',', '),';','; ')}"/> 
+                                </apex:column> 
+                                <apex:column headerValue="none" rendered="{!AND(NOT(CONTAINS('Customer Release;Technology Features;Poly Gate Type;Process Name;Mask Layers;PID Number',col.name)),OR(CONTAINS(addedColumns,col.name),NOT(col.isOptional)))}"  style="vertical-align:top;word-wrap:break-word">                                   
+                                    <apex:outputText value="{!col.value}" style=""/>                                                                                     
+                                </apex:column>                                                          
+                            </apex:repeat>
+                            
+                            <!--Define the headers here and hide the empty cells that are created -->                  
+                            <apex:repeat value="{!processList.tableColumns}" var="col">                        
+                                <apex:column styleClass="emptyColumnContent" rendered="{!AND(NOT(CONTAINS('Customer Release',col)),OR(CONTAINS(addedColumns,col),NOT(CONTAINS(processList.optionalColumnsText,col))))}">  
+                                    <apex:facet name="header">
+                                        <apex:outputPanel layout="block" onclick="sort('{!col}','{!IF(AND(sortField = col,sortType = 'asc'),'desc','asc')}');" styleclass="hand colDiv sortCol">
+                                            <apex:outputPanel layout="block" style="float:left"> 
+                                                <apex:outputText value="{!col}" rendered="{!NOT(CONTAINS('Available to Sell;Process Name;No Of Mask Layer;NO OF RETICLES;Technology Features;Core Voltages',col))}"/>
+                                                <apex:outputText rendered="{!AND(col = 'Process Name')}">
+                                                    Process ID
+                                                </apex:outputText>
+                                                <apex:outputText rendered="{!AND(col = 'Available to Sell')}"  style="vertical-align:top;word-wrap:break-word;width:120px">                                 
+                                                    PID Lifecycle
+                                                </apex:outputText>                                                   
+                                                <apex:outputText rendered="{!AND(col = 'No Of Mask Layer')}">
+                                                    No Of Mask <br/> Layer
+                                                </apex:outputText>                                                                                    
+                                                <apex:outputText rendered="{!AND(col = 'NO OF RETICLES')}">
+                                                    No Of <br/> Reticles
+                                                </apex:outputText>                                        
+                                                <apex:outputText rendered="{!AND(col = 'Technology Features')}">
+                                                    Technology <br/> Features
+                                                </apex:outputText>                                              
+                                                <apex:outputText rendered="{!AND(col = 'Core Voltages')}">
+                                                    Core <br/> Voltages
+                                                </apex:outputText>             
+                                            </apex:outputPanel>                                    
+                                            <apex:outputPanel layout="block" style="float:left">                                   
+                                                <apex:image value="/img/sort_asc_arrow.gif" rendered="{!AND(sortField = col,sortType = 'asc')}" styleClass="colDiv"/>
+                                                <apex:image value="/img/sort_desc_arrow.gif" rendered="{!AND(sortField = col,sortType = 'desc')}" styleClass="colDiv"/>                                  
+                                            </apex:outputPanel>                                    
+                                        </apex:outputPanel>
+                                    </apex:facet>          
+                                </apex:column> 
+                                <apex:column styleClass="emptyColumnContent" rendered="{!AND(AND(col = 'Customer Release',NOT(isExternalUser)),OR(CONTAINS(addedColumns,col),NOT(CONTAINS(processList.optionalColumnsText,col))))}">
+                                    <apex:facet name="header">
+                                        <apex:outputPanel layout="block" onclick="sort('{!col}','{!IF(AND(sortField = col,sortType = 'asc'),'desc','asc')}');" styleclass="hand colDiv sortCol">
+                                            <apex:outputPanel layout="block" style="float:left">                                                 
+                                                <apex:outputText value="Customer Release"/>        
+                                            </apex:outputPanel>                                    
+                                            <apex:outputPanel layout="block" style="float:left">                                   
+                                                <apex:image value="/img/sort_asc_arrow.gif" rendered="{!AND(sortField = col,sortType = 'asc')}" styleClass="colDiv"/>
+                                                <apex:image value="/img/sort_desc_arrow.gif" rendered="{!AND(sortField = col,sortType = 'desc')}" styleClass="colDiv"/>                                  
+                                            </apex:outputPanel>                                    
+                                        </apex:outputPanel>
+                                    </apex:facet>          
+                                </apex:column> 
+                            </apex:repeat>  
+                            
+                            <apex:column headerValue="View Detail" style="vertical-align:top;width:10px">
+                                <apex:inputCheckbox value="{!i.isViewDetail}" onclick="storeSelectedProcess(this)" id="selectedIPID"/>
+                            </apex:column>                                                                      
+                        </apex:pageBlockTable> 
+                    </apex:outputPanel>
+                    <apex:outputPanel layout="block"> 
+                        <apex:outputText value="Page {!currPageNumber} of {!totalPages}" style="font-weight:bold;font-size:10px;margin-left: 10px"/>
+                        <apex:outputPanel layout="block" style="text-align:center">
+                            <apex:commandButton value="First" action="{!first}" disabled="{!AND(currPageNumber = 1)}"  status="loading" reRender="processList" />
+                            <apex:commandButton value="Prev" action="{!previous}" disabled="{!AND(currPageNumber = 1)}" status="loading" reRender="processList" />
+                            <apex:commandButton value="Next" action="{!next}" disabled="{!AND(currPageNumber = totalPages)}" status="loading" reRender="processList" />
+                            <apex:commandButton value="Last" action="{!last}" disabled="{!AND(currPageNumber = totalPages)}" status="loading" reRender="processList" />
+                        </apex:outputPanel>                             
+                    </apex:outputPanel>
+                </apex:outputPanel>
+            </apex:pageBlockSection>                                             
+        </apex:pageBlock>
+        </apex:outputpanel>
+    </apex:form>  
+</apex:page>

@@ -1,0 +1,219 @@
+<!-- 
+    Author: Abhita Bansal
+    Company: GLOBALFOUNDRIES
+    Project: 
+    Description: 
+    History: 
+-->
+<apex:page standardController="Form_Management_System__c" extensions="FMSRITFormController">
+    <apex:includeScript value="{!URLFOR($Resource.jquery, 'js/jquery-1.8.3.min.js')}"/>
+    <apex:includeScript value="{!URLFOR($Resource.jquery, 'js/jquery-ui-1.9.2.custom.js')}"/>
+    <apex:includeScript value="{!URLFOR($Resource.jqPlugin, '/jquery.blockUI.js')}"/>
+    <style>
+        a{
+            text-decoration: none;
+        }
+    </style>
+    <script>
+        $j = jQuery.noConflict();        
+        //function to block the whole page
+        function blockPage(){ 
+            $j.blockUI({ message: '<img src="/img/loading32.gif" /><h1> Refreshing...</h1>', 
+                css: { 
+                 border: 'none', 
+                 padding: '15px',  
+                 '-webkit-border-radius': '10px', 
+                 '-moz-border-radius': '10px', 
+                 opacity: .9
+                } 
+            }); 
+            return false;
+        }
+        //function to unblock the page
+        function unblockPage(){
+            $j.unblockUI();
+        }
+        $j(function() {        
+            $j("select.RemoveNone option[value=]").text("=== Select a Value ===");       
+        }); 
+    </script>
+    <apex:pagemessages id="errorMsg" /> 
+    
+    <apex:form id="spForm">
+        
+        <apex:actionFunction name="nextPage1" action="{!saveandExit}">
+            <apex:param name="Param1" assignTo="{!comFileToIdList}" value="" />
+            <apex:param assignTo="{!pageN}" name="page" value=""/>
+        </apex:actionFunction>
+        
+        <apex:actionFunction name="cancelFormFunct" action="{!cancelForm}" status="blockUI"/> 
+
+        <apex:actionStatus onstart="blockPage()" onstop="unblockPage()" id="blockUI"/>
+        
+        <c:FMSNameDesc ></c:FMSNameDesc>
+        
+        <apex:pageBlock >
+            <apex:outputLabel value="Form Page 2" style="font-weight:bold;font-size:10pt;"/>
+            <br/> <br/>
+            <apex:pageBlockSection title="Drop Box Information" id="info" columns="1" collapsible="false">
+                <apex:outputField label="Are any of the files you selected a TAR, TGZ, ZIP  or other archive?" value="{!formObj.IsArchive__c}"/>
+                <br/>                   
+                <apex:outputLabel style="font-weight:bold;font-size:10pt;">Submission Details</apex:outputLabel>
+                <apex:outputLabel style="font-style:italic;font-size:10pt;"> 
+                    Please specify the file type for each of the selected files. Please note for each TAR/TGZ/ZIP/Other archive you 
+                    will have to manually enter the design file(s) within the archive. Manually entered file names must match exactly 
+                    what is in your archive. Otherwise the release automation will not be able to find your file and you will have to 
+                    correct the error. In that regard, archive files are no longer recommended since they do not allow direct selection 
+                    of design files. These fields are mandatory.
+                    <br/> <br/>                               
+                </apex:outputLabel> 
+                
+                <apex:outputPanel layout="block" id="table1" >
+                    <apex:repeat value="{!navPackWrapper}" var="p">
+                        <apex:repeat value="{!p.dropBoxFilesW}" var="mf" id="mfl">
+                             <apex:outputLabel style="font-weight:bold;font-size:10pt; text-decoration: underline;" rendered="{!mf.isSelected}"> For Dropbox file: {!mf.dropBoxFile.Drop_Box_File_Name__c}<br/> <br/></apex:outputLabel>
+                             <apex:pageBlockSection rendered="{!mf.isSelected}">
+                                <apex:pageblocksectionItem >
+                                    <apex:outputLabel style="font-weight:bold;font-size:10pt;" value="File Type:" />
+                                    <apex:outputPanel >   
+                                        <div class = "requiredInput">
+                                            <div class = "requiredBlock"></div>
+                                            <apex:inputField styleClass="RemoveNone" value="{!mf.dropBoxFile.File_Type__c}"/>
+                                            <apex:actionSupport event="onchange" rerender="designFileTable" status="tabStatus"/>
+                                        </div>
+                                        <apex:actionStatus id="tabStatus" startText="Refreshing..." stopText=""/>
+                                        <br/>
+                                    </apex:outputPanel>
+                                </apex:pageblocksectionItem>
+                             </apex:pageBlockSection> 
+                             <apex:outputPanel id="designFileTable">
+                                 <apex:outputPanel rendered="{!IF(mf.isSelected && mf.dropBoxFile.File_Type__c == 'TAR / TGZ / ZIP / Other Archive',true,false)}">
+                                     Please specify the exact design file(s) within the archive. Typos will cause an error in automation.
+                                      <br/>                       
+                                      <p style="color:brown;">
+                                           *At least one design file is required.
+                                      </p>
+                                     <table border="1" class="list" cellspacing="0" cellpadding="0" style="width:500px">
+                                         <tr class="headerRow" align="left">                                               
+                                             <td style="font-size: 8pt;width:320px">Design file name(s)</td>
+                                             <td>Action</td>
+                                         </tr>
+                                         <apex:variable var="rowNum" value="{!0}" />
+                                         <apex:repeat value="{!mf.designDropBoxFilesW}" var="dfl" id="Rec">
+                                             <tr class="datarow">
+                                                 <td class="datacell">
+                                                     <apex:inputField id="designFile" value="{!dfl.dropBoxFile.Design_File_Name__c}" style="width:120px" onchange="fileNameWithId('{!mf.dropBoxFile.Id}', this.value)"/>
+                                                 </td>
+                                                 <td class="datacell">
+                                                     <apex:commandLink value="Remove" action="{!mf.delRowToDesignFile}" reRender="designFileTable">
+                                                         <apex:param value="{!rowNum}" name="index" />
+                                                         <apex:param value="{!mf.dropBoxFile.Id}" name="fileRecordId" />
+                                                     </apex:commandLink> 
+                                                     <apex:variable var="rowNum" value="{!rowNum+1}" />
+                                                 </td>
+                                             </tr>
+                                         </apex:repeat>                                         
+                                     </table>  
+<!--                                     <apex:pageMessage summary="You can add upto 20 rows only." severity="warning" strength="1" id="rowError" rendered="{!IF(mf.showError,true,false)}" />                            -->
+                                     <apex:commandButton value="Add Design File" action="{!mf.addRowToDesignFile}" reRender="designFileTable">
+                                         <apex:param value="{!mf.dropBoxFile.Id}" name="recordId" />
+                                     </apex:commandButton> 
+                                     <br/><br/>
+                                 </apex:outputPanel>                                                    
+                             </apex:outputPanel>
+                        </apex:repeat>                   
+                    </apex:repeat>
+                </apex:outputPanel>                 
+            </apex:pageBlockSection>
+            
+            <apex:outputPanel id="saveMsg">
+                <apex:pageblocksection rendered="{!formObj.IsArchive__c == 'Yes'}" columns="1">
+                   <p style="color:black;font-weight: bold;">Use Next / Previous to navigate through the form. Use 'Save' or 'Save and Exit' to permanently save your edits.</p>
+                </apex:pageblocksection>
+                <apex:pageblocksection rendered="{!formObj.IsArchive__c != 'Yes'}" columns="1">
+                   <p style="color:black;font-weight: bold;">Use 'Save' or 'Save and Exit' to permanently save your edits.</p>
+                </apex:pageblocksection>
+            </apex:outputPanel>
+            <br/>
+            
+            <apex:commandlink value="Previous" action="{!prevPage}" style="color:blue;">
+                <apex:param assignTo="{!pageN}" name="page" value="page2"/>
+            </apex:commandlink>
+            &nbsp;
+            <apex:outputText >Page &nbsp;{!pageNum}  of  {!totalPageNums} &nbsp; </apex:outputText>
+            <apex:commandlink value="Next" action="{!nextPage}" rendered="{!(formObj.IsMultipleTopCell__c == 'Yes')}" style="color:blue;">
+                <apex:param assignTo="{!pageN}" name="page" value="page2"/>
+            </apex:commandlink>
+            
+            <apex:pageBlockButtons location="bottom">
+                <apex:commandButton action="{!validateSave}" value="Save and Exit" reRender="errorMsg" oncomplete="window.scrollTo(0,0);showSimpleDialog();" >
+                    <apex:param assignTo="{!pageN}" name="page" value="page2"/>
+                </apex:commandButton>
+                <apex:commandButton action="{!saveForm}" value="Save" id="saveForm" reRender="errorMsg" oncomplete="window.scrollTo(0,0);">
+                    <apex:param assignTo="{!pageN}" name="page" value="page2"/>
+                </apex:commandButton>
+                <apex:commandButton value="Cancel" immediate="true" onclick="showDialogforActions('Cancel'); window.scrollTo(0,0); return false;"/>
+            </apex:pageBlockButtons>
+        </apex:pageBlock>
+    </apex:form>
+    
+    <style>
+        .bPageBlock .requiredInput .requiredBlock{background-color: #F6FBF6;}  
+        .requiredInput .requiredBlock::before { display: block; content: "*"; font-size: 1.5em; font-weight: bold; color: #c00; margin-left: -8px; margin-top: -2px; }  
+        p {
+            color:black;
+        }
+        .headerrows {
+            background: #8bbec1;
+            border-width: 0 0 1px 1px;
+            border-color: #8bbec1;
+            color: #000;
+            font-size: .9em;
+            font-weight: bold;
+            padding: 5px 2px 4px 5px;
+        }  
+    </style>
+    
+    <script type="text/javascript">
+        
+        var combimeFileToIdList = '';
+        
+        function nextPage(param) {
+            nextPage1(combimeFileToIdList,param);
+        }
+        
+        function fileNameWithId(designFileId, designFileName) {
+            console.log(designFileId);
+            console.log(designFileName);
+            var combineFileToId = designFileId + ',' + designFileName;
+            if(combimeFileToIdList == '') {
+                combimeFileToIdList = combimeFileToIdList + combineFileToId;
+            } else {
+                combimeFileToIdList = combimeFileToIdList + ';' + combineFileToId;
+            }
+        }
+        
+        function showSimpleDialog(){    
+           var sd = new SimpleDialog("Test"+Dialogs.getNextId(), true);    
+           sd.setTitle("Warning");   
+           sd.createDialog();   
+           window.parent.sd = sd;   
+           var ex = sd.setContentInnerHTML("<p align='center' ><img src='/img/msg_icons/warning24.png'/> <b>Warning!</b> <br/></p><p align='center'>The data you are attempting to save is either incomplete or has errors. <br/> <br/> You can either go back and correct the errors, or proceed to save this form anyway (this will save only the fields with valid data).</p><p align='center'><br /><button class='btn' onclick='window.parent.sd.hide(); return false;'>Back to the form</button> &nbsp; &nbsp; &nbsp; &nbsp; <button class='btn' onclick='nextPage(\"page2\"); return true;'>Save Anyway</button></p>"); 
+           sd.show();   
+           return ex;
+        }        
+        function showDialogforActions(actionName){            
+            var sd = new SimpleDialog("Test"+Dialogs.getNextId(), true);    
+            sd.setTitle("Warning");   
+            sd.createDialog(); 
+            sd.setWidth(325);               
+            window.parent.sd = sd;
+            if(actionName == 'Cancel'){
+                var ex = sd.setContentInnerHTML("<img src='/img/msg_icons/warning24.png'/>&nbsp;<b>Warning!</b> <br/><br/>Are you sure you want to complete this form action? <br/> <br/> Cancels the design submission related to this form. <br/><br/><p align='center'><button class='btn' onclick='cancelFormFunct(); window.parent.sd.hide(); return true;'>Continue</button>&nbsp; &nbsp; &nbsp; &nbsp; <button class='btn' onclick='window.parent.sd.hide(); return false;'>Cancel</button></p>"); 
+                sd.show();   
+                return ex;
+            }                        
+        }
+    </script>
+    
+</apex:page>

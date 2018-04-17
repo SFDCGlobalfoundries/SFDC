@@ -1,0 +1,611 @@
+<apex:page controller="GF_DynamicQueryHandler" 
+            sidebar="false" 
+            showHeader="false" 
+            action="{!prepareGridColumn}" 
+            id="pageId"
+            docType="html-5.0">
+            
+    <c:JqueryLibrary /> 
+    
+    <style>
+            .ui-jqgrid-bdiv{
+                max-height: 260px;
+            }
+            .myBorder {
+                background-color:#f8f8f8;border-width:1px;
+                border-style:solid;
+                border-color:#CCCCCC;
+                border-radius:10px;
+            }
+            
+            .myButton {
+                background-color:#ff8930;
+                -moz-border-radius:7px;
+                -webkit-border-radius:7px;
+                border-radius:7px;
+                border:1px solid #c97e1c;
+                display:inline-block;
+                color:#ffffff;
+                font-family:Trebuchet MS;
+                font-size:11px;
+                font-weight:bold;
+            }
+            
+     </style>
+     
+      <apex:outputPanel id="dummyPanel">
+           
+         </apex:outputPanel>
+    	
+    <!--START OF FORM -->
+    <apex:form id="formId">
+    
+        <apex:actionFunction name="exportToExcel" 
+                             action="{!exportToExcel}"/>
+                             
+      <!-- Start: Commented by Hitesh for resolving access of data to Portal User.
+                                 
+           <apex:actionFunction name="exportToExcelOdata" action="{!exportToExcelReport}" oncomplete="reDirectToExport();">
+                <apex:param name="para" assignTo="{!para}" value=""/>
+            </apex:actionFunction>
+            
+            <apex:actionFunction name="reDirectToExport" action="{!reDirectToExport}" rerender="dummyPanel"/> 
+            
+      End: Commented by Hitesh for resolving access of data to Portal User. -->                    
+           
+      <!-- Start: Code added by Hitesh in place of commented code -->
+           <apex:actionFunction name="exportToExcelOdata" action="{!exportToExcelReport}"  rerender="dummyPanel" oncomplete="unBlockPage();reDirectToExport();">
+                <apex:param name="para" assignTo="{!para}" value=""/>
+            </apex:actionFunction>
+            
+            <apex:actionFunction name="reDirectToExport" action="{!reDirectToExport}" />  
+      <!-- End: Code added by Hitesh in place of commented code  --> 
+                             
+      <!--                          
+        <apex:actionFunction name="exportToExcelOdata" action="{!exportToExcelReport}" rerender="dummyPanel">
+            	<apex:param name="para" assignTo="{!para}" value=""/>
+            </apex:actionFunction>                    
+         -->                        
+        <apex:actionFunction name="redirectToConverToExcel" 
+                             action="{!redirectToConverToExcel}"/>
+        
+            <div id="innerPageBlkId" class="myBorder">
+     
+                <!--  START OF TABLE-->
+                <table width="100%" border="0" style="margin-top:3px;margin-left:1px;">
+                    <!--    START OF FIRST ROW  -->
+                    <tr> 
+                        <td colspan="2">        
+                            <apex:outputLabel value="{!$Label.GF_DQ_FAB}" 
+                                              for="fId" id="label" 
+                                              title="Clean Room"
+                                              style="padding-right:10px;font-weight:normal;font-family: Arial,Helvetica,sans-serif;font-size: 12px;color:#222">
+                            </apex:outputLabel>
+                            
+                            <apex:selectList value="{!shippingQueryObj.ShippingQuery_FAB}" 
+                                             size="1" 
+                                             id="fId" 
+                                             style="width:155px">
+                                <apex:selectOptions value="{!shippingQueryObj.fabList}"/>
+                            </apex:selectList>
+                        </td>
+                             
+                        <td colspan="2">            
+                            <apex:outputLabel value="{!$Label.GF_DQ_INVOICE_NUMBER}" 
+                                              for="invoiceNumberId" 
+                                              id="label2"
+                                              title="Invoice Number for the Shipped Product" 
+                                              style="padding-right:19px;font-weight:normal;font-family: Arial,Helvetica,sans-serif;font-size: 12px;color:#222">
+                            </apex:outputLabel>
+                            
+                            <apex:inputText value="{!shippingQueryObj.ShippingQuery_InvoiceNumber}"
+                                            id="invoiceNumberId" 
+                                            style="width:150px">
+                            </apex:inputText>
+                        </td>
+                        
+                        <td colspan="2">
+                            <apex:outputLabel value="{!$Label.GF_DQ_CUSTOMER_PART_NAME}"
+                                              for="cpName"
+                                              id="label3"
+                                              title="Item Identification as per customer definition"
+                                              style="padding-right:21px;font-weight:normal;font-family: Arial,Helvetica,sans-serif;font-size: 12px;color:#222">
+                            </apex:outputLabel>
+                            
+                            <apex:inputText value="{!shippingQueryObj.ShippingQuery_customerPartName}"
+                                            id="cpName">
+                            </apex:inputText>
+                        </td>
+                        
+                    </tr>
+                    <!-- END OF FIRST ROW  -->
+                    
+                    <!--START OF SECOND ROW -->
+                    <tr>        
+                        <td colspan="2">
+                            <apex:outputLabel value="{!$Label.GF_DQ_GEOMETRY}" 
+                                              for="gmId" id="label4"
+                                              title="Technology Node"
+                                              style="padding-right:27px;font-weight:normal;font-family: Arial,Helvetica,sans-serif;font-size: 12px;color:#222">
+                            </apex:outputLabel>
+                            
+                            <apex:selectList value="{!shippingQueryObj.ShippingQuery_geometry}"
+                                             size="1" 
+                                             id="gmId" 
+                                             style="width:155px">
+                                <apex:selectOptions value="{!shippingQueryObj.geometryList}"/>
+                            </apex:selectList>
+                        </td>
+                        
+                        <td colspan="2">         
+                            <apex:outputLabel value="{!$Label.GF_DQ_PO}"  
+                                              for="poId" 
+                                              id="label5"
+                                              title="Purchase Order" 
+                                              style="padding-right:78px;font-weight:normal;font-family: Arial,Helvetica,sans-serif;font-size: 12px;color:#222">
+                            </apex:outputLabel>
+                            
+                            <apex:inputText value="{!shippingQueryObj.ShippingQuery_PO}" 
+                                            id="poId" 
+                                            style="width:150px">
+                            </apex:inputText>
+                        </td>
+                            
+                        <td colspan="2">
+                            <apex:outputLabel value="{!$Label.GF_DQ_INTERNAL_PART_NAME}"  
+                                              for="IpId" 
+                                              id="label6" 
+                                              title="Item Identification as per Internal Manufacturing  definition"
+                                              style="padding-right:35px;font-weight:normal;font-family: Arial,Helvetica,sans-serif;font-size: 12px;color:#222">
+                            </apex:outputLabel>
+                            <apex:inputText value="{!shippingQueryObj.ShippingQuery_internalPartName}" id="IpId"></apex:inputText>
+                        </td>
+                            
+                    </tr>
+                    <!--END OF SECOND ROW   -->
+                    
+                    <!--START OF THIRD ROW  -->
+                    <tr>
+                        <td colspan="2">
+                            <apex:outputLabel value="{!$Label.GF_DQ_LOT_ID}" 
+                                              for="ltId" id="label17"
+                                              title="Lot Identification Number" 
+                                              style="padding-right:50px;font-weight:normal;font-family: Arial,Helvetica,sans-serif;font-size: 12px;color:#222">
+                            </apex:outputLabel>
+                            
+                            <apex:inputText value="{!shippingQueryObj.ShippingQuery_LotId}" 
+                                            id="ltId" 
+                                            style="width:150px">
+                            </apex:inputText>
+                        </td>
+                        
+                        <td colspan="2">
+                            <apex:outputLabel value="{!$Label.GF_DQ_ORDER_TYPE}" 
+                                              for="orderType" 
+                                              id="label8" 
+                                              title="Type of Order (Standard or Blanket)"
+                                              style="padding-right:52px;font-weight:normal;font-family: Arial,Helvetica,sans-serif;font-size: 12px;color:#222">
+                            </apex:outputLabel>
+                            
+                            <apex:selectList value="{!shippingQueryObj.ShippingQuery_orderType}"
+                                             size="1" 
+                                             id="orderType" 
+                                             style="width:155px">
+                                <apex:selectOptions value="{!shippingQueryObj.orderTypeList}"/>
+                            </apex:selectList>
+                        </td>
+                        
+                        <td colspan="2">     
+                            <apex:outputLabel value="{!$Label.GF_DQ_LOT_SHIPPED_FROM}" 
+                                              for="fromId" 
+                                              id="label10"
+                                              title="Shipping Date of the Lot" 
+                                              style="padding-right:36px;font-weight:normal;font-family: Arial,Helvetica,sans-serif;font-size: 12px;color:#222">
+                            </apex:outputLabel>
+                            
+                            <input  type="text" 
+                                    placeholder="MM/DD/YYYY" 
+                                    id="datepicker" />
+                        </td>
+                    </tr>       
+                    <!--END OF THIRD ROW -->
+                    
+                    <!-- Start OF FOURTH ROW -->
+                    <tr>
+                        <td colspan="2">
+                            <apex:outputLabel value="{!$Label.GF_DQ_RMA_SHIPMENT}" 
+                                              for="rmaId" id="label11"
+                                              title="Return Material Authentication Number" 
+                                              style="padding-right:45px;font-weight:normal;font-family: Arial,Helvetica,sans-serif;font-size: 12px;color:#222">
+                            </apex:outputLabel>
+                            
+                            <apex:inputText value="{!shippingQueryObj.ShippingQuery_RMA}" 
+                                            id="rmaId" 
+                                            style="width:150px">
+                            </apex:inputText>
+                        </td>
+                        
+                        <td colspan="2">   
+                            <apex:outputLabel value="Customer" 
+                                              for="custId" 
+                                              id="custId" 
+                                              rendered="{!IF(($Profile.Name=='GF CSR'),true,false)}"
+
+                                              style="padding-right:50px;font-weight:normal;font-family: Arial,Helvetica,sans-serif;font-size: 12px;color:#222">
+                            </apex:outputLabel>
+                            
+                             <apex:selectList value="{!custName}" 
+                                                 size="1" 
+                                                 id="cstShortNameId"
+                                                 rendered="{!IF(($Profile.Name=='GF CSR'),true,false)}"
+
+                                                 onchange="setCustomerShortName(this.value);" 
+                                                 style="width:155px">
+                                                 
+                                    <apex:selectOptions value="{!customerList}"/>
+                                    
+                             </apex:selectList>  
+                        </td>   
+                        
+                        <td colspan="2">
+                            <apex:outputLabel value="{!$Label.GF_DQ_LOT_SHIPPED_TO}" 
+                                              for="toId" 
+                                              id="label13"
+                                              title="Shipping Date of the Lot" 
+                                              style="padding-right:52px;font-weight:normal;font-family: Arial,Helvetica,sans-serif;font-size: 12px;color:#222">
+                            </apex:outputLabel>
+                            
+                            <input  type="text" 
+                                    placeholder="MM/DD/YYYY" 
+                                    id="datepicker1" />
+                        </td>
+                    </tr>
+                    
+                     <tr>
+                         <td colspan="2">
+                             <apex:inputHidden />
+                         </td>
+                         
+                         <td colspan="2">
+                             <apex:inputHidden />
+                         </td>
+                         
+                         <td colspan="2">
+                         
+                             <apex:outputLabel value="Date Range" 
+                                              for="pdfId" 
+                                              id="pdfId" 
+                                              style="padding-right:74px;font-weight:normal;font-family: Arial,Helvetica,sans-serif;font-size: 12px;color:#222">
+                            </apex:outputLabel>
+                            
+                             <apex:selectList value="{!oldDate}" 
+                                                 size="1" 
+                                                 id="previousDateId"
+                                                 onchange="return setDate(this.value);" 
+                                                 style="width:155px">
+                                                 
+                                    <apex:selectOptions value="{!PreviousDate}"/>
+                                    
+                                </apex:selectList> 
+                            
+                          </td>  
+                     </tr>
+                    
+                    <!--END OF FOURTH ROW  -->
+                </table>            
+                <!-- END OF TABLE -->
+                
+                <!--START OF PANEL GRID OF ALL BUTTON COMPONENTS -->    
+                <apex:panelGrid columns="4">
+                    <input type="button" value="{!$Label.GF_DQ_SUBMIT}" class="myButton" id="submitId" onclick="Finish();" style="margin-right:10px"/>
+                    <input type="button" value="{!$Label.GF_DQ_CLEAR}" class="myButton" id="clearId" onclick="resetAllFields('SHIPPING');" style="margin-right:10px"/>
+                    <input type="button" value="{!$Label.GF_DQ_ADVANCE}" class="myButton" id="showHideId" onclick="Advance();" style="margin-right:10px"/>
+                    <input type="button" value="{!$Label.GF_DQ_BACK}" class="myButton" id="backBtnId" onclick="Back();" style="margin-right:10px"/>
+                    <!-- input type="button" value="{!$Label.GF_DQ_EXPORT_TO_EXCEL}" class="myButton" id="expToexl" onclick="exportDataToExcel();"/-->
+                    <input type="button" value="{!$Label.GF_DQ_EXPORT_TO_EXCEL}" class="myButton" id="expToexl" onclick="validateExportToExcel('SHIPMENT');"/>
+                     
+                </apex:panelGrid>
+                <!--END OF PANEL GRID OF ALL BUTTON COMPONENTS  -->
+                
+            <div class="message errorM3" id="commonErrorId"></div>
+            <!-- HIDDEN VARIABLES -->
+             <apex:inputHidden value="{!gridParam}" id="gridInputParams"/>
+             <apex:inputHidden value="{!gridName}" id="gridName"/>
+            <!--END OF HIDDEN VARIABLES  --> 
+        </div>  
+    </apex:form><!--END OF FORM-->
+        
+    <!--START OF GRID CREATION COMPONENT-->
+        <c:GF_CommonGridOperationsComponent columnRecord="{!cNames}" colModelRecord="{!cModelNames}" id="componentId"/>    
+    <!-- END OF GRID CREATION COMPONENT -->
+    
+    <!--START OF PAGE BLOCK TABLE TO SHOW GRID DATA -->
+    <div id="outerPageBlkId" class="myBorder" style="margin-top:5px">   
+        <apex:form >
+               <table id="selectPageIndex">
+                  <tr>
+                        <td>
+                            Search: <input type="search" 
+                                           id="gridsearch" 
+                                           placeholder="Search" 
+                                           results="0" 
+                                           class="gridsearch" 
+                                           style="margin-right:285px"/> 
+                           
+                            <input type="button" 
+                                   value="|<<" 
+                                   class="myButton" 
+                                   id="fst" 
+                                   onclick="firstPage('SHIPPING_QUERY');return false;"/> 
+                            
+                            <input type="button" 
+                                   value="<" 
+                                   class="myButton" 
+                                   id="previousId" 
+                                   onclick="Previous('SHIPPING_QUERY');return false;"/>
+                            
+                            <input type="button" 
+                                   value=">" 
+                                   class="myButton" 
+                                   id="nextId" 
+                                   onclick="Next('SHIPPING_QUERY');return false;"/>
+                                
+                            <input type="button" 
+                                   value=">>|" 
+                                   class="myButton" 
+                                   id="lst" 
+                                   onclick="lastPage('SHIPPING_QUERY');return false;"/>
+                            
+                         </td>
+                          
+                         <td>  
+                              <div id ="pageIndexId" 
+                                   style="color:#ff8930;font-style:italic;font-weight:normal;padding-right:5px;font-size:90%">
+                              </div>
+                         </td>
+                         
+                         <td>
+                              <div id="selectPageIndexDivId">
+                                    <input type="text" 
+                                           id="selectedIndex" 
+                                           style="width:20px;height:15px;"/>
+                                           
+                                    <input type ="button" 
+                                           value ="GO"
+                                           class="myButton" 
+                                           onclick="selectedIdexPage();return false;" 
+                                           style="margin-left:5px"/>
+                              </div>             
+                        </td>
+                    </tr>
+               </table>
+        </apex:form>        
+        
+        <table style="margin: -5px 0px 0px 2px">
+           <tr>
+                <td>
+                    <table id="GridDataDiv" border="1"></table>
+                    <table id="GridDataDiv1" border="1"></table>
+                    <table id="GridDataDiv2" border="1"></table>
+                    <table id="GridDataDiv3" border="1"></table>
+                    <table id="GridDataDiv4" border="1"></table>
+                    <table id="GridDataDiv5" border="1"></table> 
+                    <table id="newGridDataDiv" border="1"></table>
+                </td>
+           </tr>
+        </table>
+        <div id="GridComponentDiv"></div>
+    </div>  
+    <!-- END OF PAGE BLOCK TABLE TO SHOW GRID DATA -->
+    <script>
+        var map = new HashMap();
+        var rCount;
+        
+        function unBlockPage(){
+            jQuery.unblockUI();
+        }   
+          
+          $(document).ready(function() {
+            //outerPblockId = document.getElementById("pageId:outerPageBlkId");
+            rCount = '{!recordCount}';
+            $( "#datepicker").datepicker();
+            $( "#datepicker1").datepicker();
+            outerPblockId     = document.getElementById("outerPageBlkId");
+            advanceBtnId      = document.getElementById("showHideId");
+            backBtnId         = document.getElementById("backBtnId");   
+            errorDivId        = document.getElementById("commonErrorId");
+            exportToExcelId   = document.getElementById("expToexl");
+            
+            // Follwoing variables are used for custom pagination
+            nextPageId      = document.getElementById("nextId");
+            previousPageId  = document.getElementById("previousId");
+            first           = document.getElementById("fst");
+            last            = document.getElementById("lst");
+            pageNumber      = document.getElementById("pageIndexId");
+            lastPageNumber  = document.getElementById("totalPageIndex");
+            pageIndex       = document.getElementById("selectPageIndex");
+ 
+            nextPageId.style.visibility='hidden';
+            previousPageId.style.visibility='hidden';
+            first.style.visibility='hidden';
+            last.style.visibility='hidden';
+            pageIndex.style.visibility='hidden';
+            
+            if (exportToExcelId!=null && exportToExcelId!='undefined'){
+                exportToExcelId.disabled=true;
+            }   
+            if (backBtnId!=null && backBtnId!='undefined'){
+                backBtnId.disabled=true;
+            }
+            if (advanceBtnId!=null && advanceBtnId!='undefined'){
+                advanceBtnId.disabled=true;
+            }
+            if(outerPblockId!=null && outerPblockId!='undefined'){
+                outerPblockId.style.visibility='hidden';
+            }
+            if(errorDivId!=null && errorDivId!='undefined'){
+                errorDivId.style.visibility='hidden';
+            }
+            
+            var today  = new Date();
+            var today1  = new Date();
+            var previousDate = new Date(today1.setMonth(today1.getMonth()-3));
+            fromDate = document.getElementById("datepicker").value = previousDate.getMonth()+1 +'/'+previousDate.getDate()+'/'+previousDate.getFullYear();
+            toDate  = document.getElementById("datepicker1").value = today.getMonth()+1 +'/'+today.getDate()+'/'+today.getFullYear();   
+          
+            $('.ui-jqgrid .ui-jqgrid-bdiv').css({ 'overflow-y': 'scroll' });
+            
+         });
+                        
+       /*
+        * @ Company      :- Cognizant Technology Services    
+        * @ Description :- Method calls Remote action to get dynamic query result from Data Warehouse
+        * @ Returns     :- Result (JSON String), even (status of result)
+        * @ Date        :- 16-07-2013
+        * @ Author      :- Navneet Rajput
+        */
+        var customerInitial='@@';
+        
+        function showDataInJqGrid(QTYPE,objOfQueryFlds){
+            blockPage();
+            Visualforce.remoting.timeout = 120000;
+            if (QTYPE=='PO_REPORT'){
+                //alert('DATA IS >>>>>>'+objOfQueryFlds.SO_NUMBER);
+                shippingInputParams = objOfQueryFlds.SO_NUMBER+','+objOfQueryFlds.CUST_ID;
+                map.put('GridDataDiv1',shippingInputParams);
+                Visualforce.remoting.Manager.invokeAction(
+                    '{!$RemoteAction.GF_DynamicQueryHandler.getPoReport}',
+                    objOfQueryFlds.SO_NUMBER,
+                    objOfQueryFlds.CUST_ID,
+                    objOfQueryFlds.PARAM1,
+                    objOfQueryFlds.PARAM2, 
+                    PORequestHandler
+                );
+            }else if (QTYPE=='SHIPPING_QUERY'){
+                //alert('Inside Shiping Query');
+                 setshippingQueryInputValues();
+                 var toDate4Excel = document.getElementById("datepicker1").value;
+            	 var fromDate4Excel = document.getElementById("datepicker").value;
+            
+                 shippingInputParams = ShippingQuery_geometry+','+ShippingQuery_FAB+','+ShippingQuery_internalPartName+','
+                                       +ShippingQuery_customerPartName+','+ShippingQuery_LotId+','+fromDate4Excel+','+toDate4Excel+','
+                                       +ShippingQuery_orderType+','+ShippingQuery_PO+','+ShippingQuery_InvoiceNumber+','
+                                       +ShippingQuery_RMA+','+ counter+','+customerInitial;
+                 
+                 map.put('GridDataDiv',shippingInputParams);
+                 Visualforce.remoting.Manager.invokeAction(
+                        '{!$RemoteAction.GF_DynamicQueryHandler.getShippingReport}',
+                        ShippingQuery_geometry,
+                        ShippingQuery_FAB,
+                        ShippingQuery_internalPartName,
+                        ShippingQuery_customerPartName,
+                        ShippingQuery_LotId,
+                        fromDate,
+                        toDate,
+                        ShippingQuery_orderType,
+                        ShippingQuery_PO,
+                        ShippingQuery_InvoiceNumber,
+                        ShippingQuery_RMA,
+                        counter,
+                        customerInitial,
+                        shipingRequestHandler
+                 ); 
+        
+             } else if (QTYPE=='IPN_REPORT'){
+                shippingInputParams = objOfQueryFlds.ORG_ID+','+objOfQueryFlds.DEVICE_NAME;
+                map.put('GridDataDiv2',shippingInputParams);
+                Visualforce.remoting.Manager.invokeAction(
+                    '{!$RemoteAction.GF_DynamicQueryHandler.getIPNReport}',
+                    objOfQueryFlds.ORG_ID,
+                    objOfQueryFlds.DEVICE_NAME,
+                    objOfQueryFlds.PARAM1,
+                    objOfQueryFlds.PARAM2, 
+                    IPNRequestHandler
+                );
+             } else if (QTYPE=='LOT_REPORT'){
+                shippingInputParams=objOfQueryFlds.LOT_ID+',';
+                map.put('GridDataDiv3',shippingInputParams);
+                Visualforce.remoting.Manager.invokeAction(
+                    '{!$RemoteAction.GF_DynamicQueryHandler.getLotReport}',
+                    objOfQueryFlds.LOT_ID,
+                    objOfQueryFlds.PARAM1,
+                    objOfQueryFlds.PARAM2, 
+                    LotRequestHandler
+                );
+             } else if (QTYPE=='SHIP_DATE_REPORT'){
+                shippingInputParams=objOfQueryFlds.SHIP_DATE+','+objOfQueryFlds.ORG_ID+','+objOfQueryFlds.CUSTOMER_ID;
+                map.put('GridDataDiv4',shippingInputParams);
+                Visualforce.remoting.Manager.invokeAction(
+                    '{!$RemoteAction.GF_DynamicQueryHandler.getShipDateReport}',
+                    objOfQueryFlds.SHIP_DATE,
+                    objOfQueryFlds.ORG_ID,
+                    objOfQueryFlds.CUSTOMER_ID,
+                    objOfQueryFlds.PARAM1,
+                    objOfQueryFlds.PARAM2, 
+                    shipDateRequestHandler
+                );
+             } else if (QTYPE=='WFR_ID_REPORT'){
+                shippingInputParams=objOfQueryFlds.LOT_NUM+','+objOfQueryFlds.CUST_ID;
+                map.put('GridDataDiv5',shippingInputParams);
+                Visualforce.remoting.Manager.invokeAction(
+                    '{!$RemoteAction.GF_DynamicQueryHandler.getWfrReport}',
+                    objOfQueryFlds.LOT_NUM,
+                    objOfQueryFlds.CUST_ID,
+                    objOfQueryFlds.PARAM1,
+                    objOfQueryFlds.PARAM2, 
+                    WfrRequestHandler
+                );
+             }  
+        }
+    
+    function selectedIdexPage(){
+        var indexValue = document.getElementById("selectedIndex").value;
+        if(indexValue!=null && indexValue!=''){ 
+              counter=indexValue;
+              showDataInJqGrid('SHIPPING_QUERY','');    
+        } else {
+            errorDivId.innerHTML = 'Please enter page number.';
+            errorDivId.style.visibility='visible';
+        }
+    }    
+    
+    function Finish(){
+        counter=1;
+        var fromDate = document.getElementById("datepicker1").value;
+        var toDate = document.getElementById("datepicker").value;
+        
+        var isFromDateValid = validateDate(fromDate);
+        var isToDateValid = validateDate(toDate);
+        
+        if (isFromDateValid && isToDateValid){
+            showDataInJqGrid('SHIPPING_QUERY','');
+        } else {
+            errorDivId.innerHTML = 'Please Select Valid Date'; 
+            errorDivId.style.visibility='visible';       
+        }
+    }   
+
+    function unblkUI(){
+        jQuery.unblockUI();
+    } 
+    
+    function redirectToExcel(){
+        jQuery.unblockUI();
+        redirectToConverToExcel();
+    }
+    
+    function validateDate(dt){
+        var pattern =new RegExp("^((0?[1-9]|1[012])[- /.](0?[1-9]|[12][0-9]|3[01])[- /.](19|20)?[0-9]{2})*$");
+        return pattern.test(dt);
+    }
+ 
+    function setCustomerShortName(customerShortName){
+       if (customerShortName.indexOf('ALL') > -1){   
+           customerInitial = '@@';
+       } else {
+           customerInitial = customerShortName;
+       }
+   }
+        
+   </script>
+</apex:page>

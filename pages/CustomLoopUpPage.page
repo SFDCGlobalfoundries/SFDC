@@ -1,0 +1,259 @@
+<apex:page showHeader="false" sideBar="false" tabStyle="Device__c" id="pg" controller="CustomLookupController" title="Search">
+<script>
+    function SetOpportunityData(isErr,oId,oName) {
+           if(isErr == 'true'){
+            alert('Enter Required Data Properly!');
+            return false;
+           }
+           
+            if(window.opener!= null) {
+               setValues(oId,oName);
+               window.close();
+            } 
+            
+    
+    }
+    function setValues(oId,oName){
+        top.window.opener.document.getElementById("{!bxTextBox}_lkid").value = oId;
+        top.window.opener.document.getElementById("{!bxTextBox}").value = oName ;
+    }
+</script>
+<body class="lookupTab">
+<div class="lookup">
+  <div class="bPageTitle">
+    <div class="ptBody secondaryPalette">
+      <div class="content">
+        <img title="" class="pageTitleIcon" alt="" src="/s.gif" />
+          <h1>Lookup</h1>
+      </div>
+    </div>
+  </div>
+</div>
+
+<apex:form id="frm">
+  <!-- IE 6.0 hack for single textBox -->
+  <!-- <input type="text" style="display:none" /> -->
+
+  <apex:outputPanel id="top" layout="block" style="margin:5px;padding:10px;padding-top:2px;">
+    <apex:outputLabel value="Search" style="font-weight:Bold;padding-right:10px;" for="txtSearch"/> 
+        <apex:inputText id="txtSearch" value="{!searchText}" />
+                    <span style="padding-left:5px">
+                        <apex:commandButton id="btnGo" value="Go" action="{!Search}" ></apex:commandButton>
+                        &nbsp;<apex:actionStatus startStyle="color:Red;" startText="Sorting..." stopText="" id="myStatus"/>
+                        <br/><br/>
+                        You can use "*" as a wildcard next to other characters to improve your search results. For example, "ad*" returns all records with a word in one of the searched fields that begins with "ad".
+                    </span>  
+        </apex:outputPanel>
+   <apex:actionFunction action="{!DoSort}" name="sortData" rerender="pnlAll" status="myStatus">
+       <apex:param name="sortField" assignTo="{!sortField}" value="" />
+   </apex:actionFunction>
+
+    <apex:outputPanel id="pnlAll" style="margin:10px;height:350px;overflow-Y:auto;" layout="block">
+    
+   <apex:outputPanel layout="block" style="color:#cc0000" rendered="{!excessRowsError}">
+     The search returned more than the maximum number of rows (50). Please refine your search criteria.
+   </apex:outputPanel>
+        <apex:pageBlock id="pb" rendered="{!NOT(isNew)}"> 
+            <apex:pageBlockTable value="{!processes}" var="proc" id="tblData" Rendered="{!objectType == 'REQPID'}">
+                <apex:facet name="footer">
+                    <apex:outputText value="No match found." rendered="{!IF(listSize=0,true,false)}" />
+                </apex:facet>
+                <apex:column >
+                    <apex:facet name="header">
+                        <apex:outputPanel > 
+                            <apex:outputLink value="javascript:void(0);" onclick="sortData('Name')">Process Name<img src="{!IF(sortField = 'Name', IF(isAscending = true, '/img/sort_asc_arrow.gif','/img/sort_desc_arrow.gif'),'/s.gif')}" />
+                            </apex:outputLink>
+                        </apex:outputPanel>
+                    </apex:facet>
+                    <apex:outputLink value="javascript:top.window.opener.lookupPick2('{!FormTag}','{!bxTextBox}_lkid','{!bxTextBox}','{!proc.Id}','{!proc.Name}', false)" rendered="{!NOT(ISNULL(proc.Id))}">{!proc.Name}</apex:outputLink>      
+                </apex:column>
+                <apex:column >
+                    <apex:facet name="header">
+                        <apex:outputPanel > 
+                            <apex:outputLink value="javascript:void(0);" onclick="sortData('Available_to_Sell__c')">Available to Sell<img src="{!IF(sortField = 'Available_to_Sell__c', IF(isAscending = true, '/img/sort_asc_arrow.gif','/img/sort_desc_arrow.gif'),'/s.gif')}" />
+                            </apex:outputLink>
+                        </apex:outputPanel>
+                    </apex:facet>
+                    {!proc.Available_to_Sell__c}     
+                </apex:column>
+                <apex:column >
+                    <apex:facet name="header">
+                        <apex:outputPanel > 
+                            <apex:outputLink value="javascript:void(0);" onclick="sortData('Tech_Geometry__c')">Tech Geometry<img src="{!IF(sortField = 'Tech_Geometry__c', IF(isAscending = true, '/img/sort_asc_arrow.gif','/img/sort_desc_arrow.gif'),'/s.gif')}" />
+                            </apex:outputLink>
+                        </apex:outputPanel>
+                    </apex:facet>
+                    {!proc.Tech_Geometry__c}     
+                </apex:column>
+                <apex:column >
+                    <apex:facet name="header">
+                        <apex:outputPanel > 
+                            <apex:outputLink value="javascript:void(0);" onclick="sortData('Process_Family__c')">Process Family<img src="{!IF(sortField = 'Process_Family__c', IF(isAscending = true, '/img/sort_asc_arrow.gif','/img/sort_desc_arrow.gif'),'/s.gif')}" />
+                            </apex:outputLink>
+                        </apex:outputPanel>
+                    </apex:facet>
+                    {!proc.Process_Family__c}     
+                </apex:column>
+                <apex:column >
+                    <apex:facet name="header">
+                        <apex:outputPanel > 
+                            <apex:outputLink value="javascript:void(0);" onclick="sortData('Tech_Type__c')">Tech Type<img src="{!IF(sortField = 'Tech_Type__c', IF(isAscending = true, '/img/sort_asc_arrow.gif','/img/sort_desc_arrow.gif'),'/s.gif')}" />
+                            </apex:outputLink>
+                        </apex:outputPanel>
+                    </apex:facet>
+                    {!proc.Tech_Type__c}     
+                </apex:column>
+                <apex:column >
+                    <apex:facet name="header">
+                        <apex:outputPanel > 
+                            <apex:outputLink value="javascript:void(0);" onclick="sortData('Process_Technology__c')">Process Technology<img src="{!IF(sortField = 'Process_Technology__c', IF(isAscending = true, '/img/sort_asc_arrow.gif','/img/sort_desc_arrow.gif'),'/s.gif')}" />
+                            </apex:outputLink>
+                        </apex:outputPanel>
+                    </apex:facet>
+                    {!proc.Process_Technology__c}     
+                </apex:column>
+                <apex:column >
+                    <apex:facet name="header">
+                        <apex:outputPanel > 
+                            <apex:outputLink value="javascript:void(0);" onclick="sortData('Bias_Table_Spec__c')">Bias Table Spec<img src="{!IF(sortField = 'Bias_Table_Spec__c', IF(isAscending = true, '/img/sort_asc_arrow.gif','/img/sort_desc_arrow.gif'),'/s.gif')}" />
+                            </apex:outputLink>
+                        </apex:outputPanel>
+                    </apex:facet>
+                    {!proc.Bias_Table_Spec__c}     
+                </apex:column>
+                <apex:column >
+                    <apex:facet name="header">
+                        <apex:outputPanel > 
+                            <apex:outputLink value="javascript:void(0);" onclick="sortData('Frame_Table_Spec__c  ')">Frame Table Spec<img src="{!IF(sortField = 'Frame_Table_Spec__c  ', IF(isAscending = true, '/img/sort_asc_arrow.gif','/img/sort_desc_arrow.gif'),'/s.gif')}" />
+                            </apex:outputLink>
+                        </apex:outputPanel>
+                    </apex:facet>
+                    {!proc.Frame_Table_Spec__c  }     
+                </apex:column>
+                <!--
+                <apex:column >
+                  <apex:facet name="header">
+                    <apex:outputPanel > 
+                      <apex:outputLink value="javascript:void(0);" onclick="sortData('StageName')">Stage Name<img src="{!IF(sortField = 'StageName', IF(isAscending = true, '/img/sort_asc_arrow.gif','/img/sort_desc_arrow.gif'),'/s.gif')}" />
+                      </apex:outputLink>
+                    </apex:outputPanel>
+                  </apex:facet>
+                   {!opp.StageName}     
+                </apex:column>
+                 -->
+            </apex:pageBlockTable>
+            <apex:pageBlockTable value="{!ips}" var="ip" id="iptblData" Rendered="{!objectType != 'REQPID'}">
+                <apex:facet name="footer">
+                 <apex:outputText value="No match found." rendered="{!IF(IPListSize=0,true,false)}" />
+                </apex:facet>
+                    <apex:column >
+                        <apex:facet name="header">
+                            <apex:outputPanel > 
+                                <apex:outputLink value="javascript:void(0);" onclick="sortData('Name')" >IP Design Kit<img src="{!IF(sortField = 'Name', IF(isAscending = true, '/img/sort_asc_arrow.gif','/img/sort_desc_arrow.gif'),'/s.gif')}" />
+                                </apex:outputLink>
+                            </apex:outputPanel>
+                        </apex:facet>
+                       <apex:outputLink value="javascript:top.window.opener.lookupPick2('{!FormTag}','{!bxTextBox}_lkid','{!bxTextBox}','{!ip.Id}','{!ip.Name}', false)" rendered="{!NOT(ISNULL(ip.Id))}" disabled="{!ip.Lifecycle__c = 'EOL'}">{!ip.Name}</apex:outputLink>      
+                    </apex:column>
+                    <apex:column >
+                        <apex:facet name="header">
+                            <apex:outputPanel > 
+                                <apex:outputLink value="javascript:void(0);" onclick="sortData('IP_Type__c')">IP Type<img src="{!IF(sortField = 'IP_Type__c ', IF(isAscending = true, '/img/sort_asc_arrow.gif','/img/sort_desc_arrow.gif'),'/s.gif')}" />
+                                </apex:outputLink>
+                            </apex:outputPanel>
+                        </apex:facet>
+                        {!ip.IP_Type__c}       
+                    </apex:column>
+                    <apex:column >
+                        <apex:facet name="header">
+                            <apex:outputPanel > 
+                                <apex:outputLink value="javascript:void(0);" onclick="sortData('Latest_Version__c')">Latest Version<img src="{!IF(sortField = 'Latest_Version__c', IF(isAscending = true, '/img/sort_asc_arrow.gif','/img/sort_desc_arrow.gif'),'/s.gif')}" />
+                                </apex:outputLink>
+                            </apex:outputPanel>
+                        </apex:facet>
+                        {!ip.Latest_Version__c}
+                    </apex:column>
+                    <apex:column >
+                        <apex:facet name="header">
+                            <apex:outputPanel > 
+                                <apex:outputLink value="javascript:void(0);" onclick="sortData('Lifecycle__c')" >Lifecycle<img src="{!IF(sortField = 'Lifecycle__c', IF(isAscending = true, '/img/sort_asc_arrow.gif','/img/sort_desc_arrow.gif'),'/s.gif')}" />
+                                </apex:outputLink>
+                            </apex:outputPanel>
+                        </apex:facet>
+                        {!ip.Lifecycle__c}
+                    </apex:column>
+                    
+                    <apex:column >
+                        <apex:facet name="header">
+                            <apex:outputPanel > 
+                                <apex:outputLink value="javascript:void(0);" onclick="sortData('Library_Name__c')">Library Name<img src="{!IF(sortField = 'Library_Name__c', IF(isAscending = true, '/img/sort_asc_arrow.gif','/img/sort_desc_arrow.gif'),'/s.gif')}" />
+                                </apex:outputLink>
+                            </apex:outputPanel>
+                        </apex:facet>
+                        {!ip.Library_Name__c}
+                    </apex:column>
+                    <apex:column >
+                        <apex:facet name="header">
+                            <apex:outputPanel > 
+                                <apex:outputLink value="javascript:void(0);" onclick="sortData('IP_Technology__c')">IP Technology<img src="{!IF(sortField = 'IP_Technology__c', IF(isAscending = true, '/img/sort_asc_arrow.gif','/img/sort_desc_arrow.gif'),'/s.gif')}" />
+                                </apex:outputLink>
+                            </apex:outputPanel>
+                        </apex:facet>
+                        {!ip.IP_Technology__c}
+                    </apex:column>
+                    <apex:column >
+                        <apex:facet name="header">
+                            <apex:outputPanel > 
+                                <apex:outputLink value="javascript:void(0);" onclick="sortData('IP_Type_Category__c')">IP Type Category<img src="{!IF(sortField = 'IP_Type_Category__c ', IF(isAscending = true, '/img/sort_asc_arrow.gif','/img/sort_desc_arrow.gif'),'/s.gif')}" />
+                                </apex:outputLink>
+                            </apex:outputPanel>
+                        </apex:facet>
+                        {!ip.IP_Type_Category__c}       
+                    </apex:column>
+                    <apex:column >
+                        <apex:facet name="header">
+                            <apex:outputPanel > 
+                                <apex:outputLink value="javascript:void(0);" onclick="sortData('IP_Vendor__c')">IP Vendor<img src="{!IF(sortField = 'IP_Vendor__c ', IF(isAscending = true, '/img/sort_asc_arrow.gif','/img/sort_desc_arrow.gif'),'/s.gif')}" />
+                                </apex:outputLink>
+                            </apex:outputPanel>
+                        </apex:facet>
+                        {!ip.IP_Vendor__c}       
+                    </apex:column>
+                    <apex:column >
+                        <apex:facet name="header">
+                            <apex:outputPanel > 
+                                <apex:outputLink value="javascript:void(0);" onclick="sortData('Description__c')">Description<img src="{!IF(sortField = 'Description__c', IF(isAscending = true, '/img/sort_asc_arrow.gif','/img/sort_desc_arrow.gif'),'/s.gif')}" />
+                                </apex:outputLink>
+                            </apex:outputPanel>
+                        </apex:facet>
+                        {!ip.Description__c}
+                    </apex:column>
+                    <apex:column >
+                        <apex:facet name="header">
+                            <apex:outputPanel > 
+                                <apex:outputLink value="javascript:void(0);" onclick="sortData('PH1_QA_Status__c')">PH1 QA Status<img src="{!IF(sortField = 'PH1_QA_Status__c', IF(isAscending = true, '/img/sort_asc_arrow.gif','/img/sort_desc_arrow.gif'),'/s.gif')}" />
+                                </apex:outputLink>
+                            </apex:outputPanel>
+                        </apex:facet>
+                        {!ip.PH1_QA_Status__c}
+                    </apex:column>
+                    <apex:column >
+                        <apex:facet name="header">
+                            <apex:outputPanel > 
+                                <apex:outputLink value="javascript:void(0);" onclick="sortData('Showstopper__c')">Showstopper<img src="{!IF(sortField = 'Showstopper__c', IF(isAscending = true, '/img/sort_asc_arrow.gif','/img/sort_desc_arrow.gif'),'/s.gif')}" />
+                                </apex:outputLink>
+                            </apex:outputPanel>
+                        </apex:facet>
+                        {!ip.Showstopper__c}
+                    </apex:column>
+                    
+            </apex:pageBlockTable>
+        </apex:pageBlock>
+    
+     <apex:outputPanel layout="block" style="color:#cc0000" rendered="{!excessRowsError}" >
+      The search returned more than the maximum number of rows (50). Please refine your search criteria.
+    </apex:outputPanel>
+    </apex:outputPanel>
+  </apex:form> 
+ </body> 
+</apex:page>

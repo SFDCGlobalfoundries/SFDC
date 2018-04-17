@@ -1,0 +1,371 @@
+<!-- 
+   Type Name: Related_Agreements.page
+   Author: Suvajit Majumder
+   
+    -->
+<apex:page controller="AgreementRelatedController" showchat="false" cache="false" title="Link Agreements">
+    
+
+    <apex:sectionHeader subtitle="Map Existing Agreements" title="{!objAgr.Apttus__FF_Agreement_Number__c} : {!objAgr.Name}"/>
+    <apex:form id="TheForm" rendered="{!objAgr!=null}" >
+    
+    
+    
+        
+        
+        
+        <!-- ******************************************************* -->
+        <!-- Search Criteria               -->
+        <apex:pagemessages id="msg" />
+        <apex:pageBlock mode="mainDetails" id="pageblock1" >
+            <div class="search-block">
+                <div class="rowText">
+                    <table width="100%" style="border-collapse: collapse;">
+                        <tr >
+                            <td style="width: 9%; align:left;"> 
+                                <span>Name:</span>
+                            </td>
+                            <td style="width: 25%; align:left;">
+                                <div style="display: inline-table" class="col-md-6">
+                                    <apex:inputText value="{!SearchName}" />
+                                </div>
+                            </td>
+                            <td style="width: 12%; align:left;"> 
+                                <span>Agreement Number:</span>
+                            </td>
+                            <td style="width: 25%; align:left;">
+                                <div style="display: inline-table" class="col-md-6">
+                                    <apex:inputText value="{!SearchAgrNumber}" />
+                                </div>
+                            </td>
+                            
+                             <td style="width: 9%; align:left;"> 
+                                <span>Account Name:</span>
+                            </td>
+                            <td style="width: 25%; align:left;">
+                                <div style="display: inline-table" class="col-md-6">
+                                    <apex:inputText value="{!AccountName}" />
+                                </div>
+                            </td>
+                            <td style="width: 9%; align:left;"> 
+                                <span>Owner:</span>
+                            </td>
+                            <td style="width: 25%; align:left;">
+                                <div style="display: inline-table" class="col-md-6">
+                                    <apex:inputText value="{!OwnerName}" />
+                                </div>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+            <!-- ******************************************************* -->
+            <!-- Search buttons       -->
+            <div class="process-block">
+                <apex:outputPanel id="processblockpanel">
+                    <apex:commandButton styleClass="search-block-button" value="Search" action="{!SearchAgreement}" rerender="TablePanel,msg" status="searchStatus"/>
+                    <apex:commandButton styleClass="search-block-button" value="Clear All" action="{!ClearAll}" rerender="TheForm,TablePanel" status="resetPage"/>
+                    <apex:commandButton styleClass="search-block-button" value="Close" action="{!closeEvent}"/>
+                </apex:outputPanel>
+            </div>
+        </apex:pageBlock>
+        <!-- ******************************************************* -->
+        <!-- search results table      -->
+        <apex:pageBlock id="TablePanel" >
+        
+            <apex:actionStatus id="searchLoad">
+                    <apex:facet name="start">
+                    <div class="waitingSearchDiv" id="el_loading" style="background-color: #fbfbfb;
+                       height: 100%;opacity:0.95;width:100%;"> 
+                        <div class="waitingHolder" style="top: 274.2px; width: 91px;">
+                            <img class="waitingImage" src="/img/loading32.gif" title="Loading! Please Wait..." />
+                            <span style="color: black; font-weight:bold" class="waitingDescription">Loading! Please Wait...</span>
+                        </div>
+                    </div> 
+                    </apex:facet>           
+            </apex:actionStatus>
+        
+        
+            <apex:outputPanel id="searchresultpanel" >
+            
+            
+            
+        <!-- handle selected item -->
+        <apex:actionFunction name="aSelectItem" action="{!doSelectItem}" rerender="searchresultpanel">
+            <apex:param name="contextItem" value="" assignTo="{!contextItem}"/>
+        </apex:actionFunction>
+        
+        <!-- handle deselected item -->
+        <apex:actionFunction name="aDeselectItem" action="{!doDeselectItem}" rerender="searchresultpanel">
+            <apex:param name="contextItem" value="" assignTo="{!contextItem}"/>
+        </apex:actionFunction>
+        
+        
+                    
+        
+        
+        
+        
+        
+                    <apex:outputPanel rendered="{!AgrSearchList.size>0}" >
+                    <center><apex:commandButton styleClass="search-block-button" value="Link" action="{!Link}"  /> </center>
+                    <br></br>
+                    </apex:outputPanel>
+                    
+                   
+                   
+                  
+          <apex:actionstatus id="resultload">
+            <apex:facet name="start">
+                <div class="waitingSearchDiv" id="el_loading" style="background-color: #fbfbfb;
+                       height: 100%;opacity:0.95;width:100%;"> 
+                    <div class="waitingHolder" style="top: 274.2px; width: 91px;">
+                        <img class="waitingImage" src="/img/loading32.gif" title="Loading! Please Wait..." />
+                        <span style="color: black; font-weight:bold" class="waitingDescription">Loading! Please Wait...</span>
+                    </div>
+                </div>
+            </apex:facet>
+        </apex:actionstatus>
+    
+                    
+                <apex:outputPanel layout="block" style="max-height:400px;overflow:auto;" rendered="true">
+                
+                
+                
+          
+        
+        
+        
+        
+                    <apex:pageBlockTable value="{!lstSetController}" var="a" id="TablePanel1" style="padding-top: 15px;" >
+                            
+                    
+                    
+                    
+            
+            
+            
+                    
+                        <apex:column headerValue="Action" style="width:10px" >
+               
+                            
+                        <apex:inputCheckbox value="{!a.isChecked}" id="SearchList" onchange="doCheckboxChange(this,'{!a.objAgr.Id}')"/>
+                        </apex:column>
+                        <apex:column style="width:30px" headerValue="Agreement Number">
+                            <apex:outputLink value="/{!a.objAgr.Id}" target="_blank">{!a.objAgr.Apttus__FF_Agreement_Number__c}</apex:outputlink>
+                        </apex:column>
+                        <apex:column style="width:280px" headerValue="Name">
+                            <apex:outputLink value="/{!a.objAgr.Id}" target="_blank">{!a.objAgr.Name}</apex:outputlink>
+                        </apex:column>
+                        <apex:column style="width:100px" headerValue="Account">
+                            <label>{!a.objAgr.Apttus__Account__r.Name}</label>
+                        </apex:column>
+                        <apex:column style="width:100px" rendered="{!ISPICKVAL($User.UserType,'Standard')}"  headerValue="Department Name">
+                            <label>{!a.objAgr.GF_Department_Name__c}</label>
+                        </apex:column>
+                        <apex:column style="width:100px" headerValue="Effective Date">
+                        <apex:outputText value="{0,date,MM/dd/yyyy}"> <apex:param value="{!a.objAgr.GF_Contract_Start_Date__c}" /> </apex:outputText>
+                        </apex:column>
+                        <apex:column style="width:80px" headerValue="Expiration Date">
+                        <apex:outputText value="{0,date,MM/dd/yyyy}"> <apex:param value="{!a.objAgr.GF_Contract_End_Date__c}" /> </apex:outputText>
+                        </apex:column>
+                        <apex:column style="width:80px" headerValue="Contract Type">                            
+                            <label>{!a.objAgr.CLM_Contract_Type__c}</label>
+                        </apex:column>
+                        
+                        
+                        
+                        
+                        
+                        
+                        <apex:column style="width:80px" headerValue="Status Category">
+                            <label>{!a.objAgr.Apttus__Status_Category__c} </label>
+                        </apex:column>
+                        
+                        
+                        
+                        <apex:column style="width:80px" headerValue="Contract Status">
+                            <label>{!a.objAgr.Apttus__Status__c}</label>
+                        </apex:column>
+                        
+                        
+                        <apex:column style="width:80px" headerValue="Created Date">
+                            <apex:outputText value="{0,date,MM'/'dd'/'yyyy}">
+                                <apex:param value="{!a.objAgr.CreatedDate}" />
+                            </apex:outputText>
+                        </apex:column>
+                
+                    </apex:pageBlockTable>
+                    <apex:outputPanel >
+                    
+                    
+                    <br></br>
+                    
+                    <apex:outputPanel id="nosearchresultpanel" >
+                        <apex:outputPanel layout="block" style="max-height:300px;overflow:auto;" rendered="{!AgrSearchList.size=0  && (LEN(SearchName)>0 || LEN(SearchAgrNumber)>0 || LEN(AccountName)>0 || LEN(OwnerName)>0)}">
+                            <apex:outputText style="font-weight:600" value="No records found for given criteria.Possible causes include record is not present/deleted from database or search is returning the same record as the parent or an already linked contract record."></apex:outputText>
+                            
+                        </apex:outputPanel>
+         
+                    </apex:outputPanel>
+                    
+                    <apex:outputPanel rendered="{!AgrSearchList.size>0}" >
+                        <apex:outputLabel value="[{!selectedCount} out of {!TotalCount} records selected]" />
+                    </apex:outputPanel> 
+                    <br/>
+                
+                    <apex:commandButton value="<<Previous" action="{!previous}" rendered="{!hasPrevious}" reRender="searchresultpanel" status="resultload"/>
+                    <apex:commandButton value="Next >>"    action="{!next}"     rendered="{!hasNext}"     reRender="searchresultpanel" status="resultload"/>
+                    </apex:outputPanel> 
+                    
+                    
+                    
+                    
+                
+                
+                
+                </apex:outputPanel>
+                
+                
+            
+                <!-- Search buttons       -->
+                <div class="process-block">
+                    <apex:outputPanel rendered="{!AgrSearchList.size>0}" >
+                        <apex:commandButton styleClass="search-block-button" value="Link" action="{!Link}"  />
+                    </apex:outputPanel>
+                    <apex:actionStatus id="searchStatus">
+                        <apex:facet name="start">
+                         <div class="waitingSearchDiv" id="el_loading" style="background-color: #fbfbfb;height: 100%;opacity:0.95;width:100%;"> 
+                            <div class="waitingHolder" style="top: 274.2px; width: 91px;">
+                                <img class="waitingImage" src="/img/loading32.gif" title="Loading! Please Wait..." />
+                                <span style="color: black; font-weight:bold" class="waitingDescription">Loading! Please Wait...</span>
+                                
+                            </div>
+                        </div>
+                        </apex:facet>
+                    </apex:actionStatus>
+                    
+                    <apex:actionStatus id="resetPage">
+                        <apex:facet name="start">
+                         <div class="waitingSearchDiv" id="el_loading" style="background-color: #fbfbfb;height: 100%;opacity:0.95;width:100%;"> 
+                            <div class="waitingHolder" style="top: 274.2px; width: 91px;">
+                                <img class="waitingImage" src="/img/loading32.gif" title="Loading! Please Wait..." />
+                                <span style="color: black; font-weight:bold" class="waitingDescription">Clearing! Please Wait...</span>
+                                
+                            </div>
+                        </div>
+                        </apex:facet>
+                    </apex:actionStatus>
+                    
+                </div>
+            </apex:outputPanel>
+        </apex:pageBlock>
+        
+           
+        
+        
+        
+        
+    </apex:form>
+    <script type="text/javascript">
+        function checkAll(cb,section)
+            {
+                
+                var inputElem = document.getElementsByTagName('input');                     
+                for(var i=0; i<inputElem.length; i++)
+                {                                                   
+                        if(inputElem[i].id.indexOf(section)!=-1){
+                            inputElem[i].checked = cb.checked;
+                            
+                        }               
+                }
+                
+               
+            }
+            
+            
+            
+            function doCheckboxChange(cb,itemId)
+            {
+         
+                    if(cb.checked==true)
+                    {
+                        aSelectItem(itemId);
+                    }
+                    else
+                    {
+                        aDeselectItem(itemId);
+                    }
+            
+            }
+            
+            
+            
+        
+        
+         
+    </script>
+    <style type="text/css">
+        .loading-icon {
+        background-image: url(/img/loading.gif);
+        width: 16px;
+        height: 16px;
+        } 
+        a.alpha-link {
+        font-weight: normal;
+        font-size: 91%;
+        padding: 0 4px;
+        color: #015BA7 !important;
+        } 
+        a.alpha-link+a.alpha-link {
+        border-left: 1px solid #CFCECE;
+        }
+        a.alpha-link:hover {
+        background-color: #e0f5fc !important;
+        } 
+        a.alpha-select {
+        font-weight: bold;
+        text-decoration: none;
+        background-color: #C6E1FF;
+        color: #000000 !important;
+        }
+        .casetable {
+        height: 200px;
+        overflow-y: scroll;
+        }
+        .search-block {
+        text-align: left;
+        }
+        .search-block input {
+        margin: 0px 0px 2px 0px;
+        }
+        .search-block-button {
+        min-width: 70px;
+        }
+        .search-block span{
+        font-weight: bold;
+        }
+        .rowText {
+        padding-bottom: 10px;
+        }
+        .rowPicklist1 {
+        padding-bottom: 10px;
+        }
+        .process-block {
+        text-align: center;
+        margin-top: 3px;
+        } 
+        .process-block input {
+        margin: 0px 2px;
+        }
+        .process-block-button {
+        min-width: 100px;
+        }
+        .page-buttons input {
+        min-width: 100px;
+        }
+        .page-buttonNext input {
+        min-width: 60px;
+        }       
+    </style>
+</apex:page>

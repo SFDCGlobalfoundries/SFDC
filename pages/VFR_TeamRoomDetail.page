@@ -1,0 +1,917 @@
+<!-- 
+Type Name: VFR_TeamRoomDetail.page
+Author: Global Foundries (Dinesh Suggala) 
+Created Date: 13-May-2017
+Reason: This Page is used for overriding team room view page and display the corresponding details of the team room 
+Change History:
+Author: Dinesh Suggala
+Modified Date: 18/10/2017
+Reason:Added the code to through Message on clicking  the "Add Top-Level Folder","Add Sub-Folder" and "Add Documents " button
+Author :Dinesh Suggala
+Modified Date:7/2/2018
+Reason: Removed the drag and drop functionality in folder structure,fixed updated chrome folder issue,implemented banners for cipher cloud URL and Non-CipherCloud URL
+removing the hyperlink of files in Title for all 
+ -->
+<apex:page standardController="Restricted_Team_Room__c" extensions="ClsR_TeamRoomDetail" sidebar="false">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jstree/3.2.1/themes/default/style.min.css" />
+ <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/1.12.1/jquery.min.js"></script>-->
+  <script src="https://code.jquery.com/jquery-1.12.4.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jstree/3.2.1/jstree.min.js"></script>
+  <apex:includeScript value="{!$Resource.JqueryD}"/>
+  <apex:includeScript value="{!$Resource.JqueryDatatable}"/>
+  <apex:Stylesheet value="{!$Resource.JqueryDatatableCSS}"/>
+  <link rel="stylesheet" href="//code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css"/>
+  <link rel="stylesheet" href="/resources/demos/style.css"/>
+  <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
+
+ 
+  <apex:remoteObjects >
+    <apex:remoteObjectModel jsShortHand="sfNode" name="Folder__c" fields="Id,Name">
+        <apex:remoteObjectField name="FolderL__c" jsShorthand="Parent" />
+        <apex:remoteObjectField name="Restricted_Team_Room__c" jsShorthand="Team" />
+
+    </apex:remoteObjectModel>
+    <apex:remoteObjectModel jsShortHand="jsfeed" name="FeedItem" fields="ParentId,Title">
+    </apex:remoteObjectModel>
+  </apex:remoteObjects>
+  <style>
+       .errorConsole .x-grid3-row-over, body .pbBody table.list tr.dataRow.highlight td, body .pbBody table.list tr.dataRow.highlight th {
+        background-color: #e59a0b;
+        color: white;
+        }
+    
+       .btn:hover{
+        background-image:none;
+        background-color:#e59a0b;
+        }
+       .jstree-default .jstree-clicked {
+        background: #e59a0b;
+        }
+        
+        .jstree-default>.jstree-container-ul>.jstree-node {
+        background: #EDE8E7;
+        }
+        
+        .dataTables_wrapper {
+        position: relative;
+        clear: both;
+        width: auto;
+        min-height : 500 px;
+        margin-left: 0px;
+        border-bottom: 1px solid black;
+        border-top: 1px solid black;
+        border-left: 1px solid black;
+        border-right: 1px solid black;
+        background-color: #EDE8E7;
+        zoom: 1; 
+        font-weight: bold;
+        }
+        
+        .treetable{
+        height: 400px;
+        }
+        
+        .myScrollableBlock {
+        display: block;
+        height:330px;
+        width:255px;
+        overflow:scroll;
+        }
+        
+        .WrapBlock{
+         white-space:nowrap;
+         font-weight: bold;
+        }
+        
+        .pull-left{float:left!important;}
+        .pull-right{float:right!important;}
+        
+        .custPopup{
+            background-color: white;
+            border-width: 2px;
+            border-style: solid;
+            z-index: 9999;
+            left: 50%;
+            padding:6px;
+            position: absolute;
+            /* These are the 3 css properties you will need to change so the popup 
+            displays in the center of the screen. First set the width. Then set 
+            margin-left to negative half of what the width is. You can add 
+            the height property for a fixed size pop up if you want.*/
+            width: 500px;
+            margin-left: -250px;
+            top:20%;
+        }
+        .popupBackground{
+            background-color:black;
+            opacity: 0.20;
+            filter: alpha(opacity = 20);
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            z-index: 9998;
+        }
+        
+        .popup {
+            width:100%;
+            height:100%;
+            display:none;
+            position:fixed;
+            top:0px;
+            left:0px;
+            background:rgba(0,0,0,0.75);
+           }
+        #applyfornonitar{          
+            position:fixed;
+            top:102px;
+            width:100%;
+            z-index:100;
+            text-align: center; 
+        }
+         #applyforitar{          
+            position:fixed;
+            top:100px;
+            width:100%;
+            z-index:100;
+            text-align: center; 
+            
+        }
+            
+       .activeTab {background-color: #236FBD; color:white; background-image:none}
+       .inactiveTab { background-color: lightgrey; color:black; background-image:none}
+       
+       .hideitar{display:none;}
+       .hidenonitar{display:none;}
+       
+       
+    </style>
+    
+  <script >
+
+(function() {
+      var $j = jQuery.noConflict(); 
+               
+       $j(document).ready(function() {
+            hidestmt();
+            resetTable();
+            hidebuttons();             
+            CheckITARCertification();
+            setTimeout(closewindownonciphercloud(),2000);
+            
+           
+          
+         //Implemented for searching any document or folder names
+         $j(".search-input").keyup(function() {
+           var searchString = $j(this).val();
+           console.log(searchString);
+          $j('#jstree').jstree('search', searchString);
+          });     
+         
+          $j("#jstree").jstree({
+              "plugins": ["types","themes", "contextmenu","search","html-data"],
+              "core" : {
+                  themes: {"stripes": false},
+                  check_callback : true,
+                  animation : 0,
+                  data : function (node, cb) {           
+                      loadNodes(this, node, cb);      
+                               
+                  }            
+              },
+              
+             "search": {
+             "case_insensitive": true,
+             "show_only_matches" : true
+              },
+              
+              "contextmenu" : {
+              "items" : customMenu
+              },
+              
+              
+          });
+          
+          
+          $j("#jstree").on("select_node.jstree", function (event, data){
+             SelectedNode(data.node.id); 
+            
+          });
+          
+          $j("#jstree").on('loaded.jstree', function (event,data) {
+              
+              data.instance.open_all();
+          }) ;   
+          
+          
+          
+          $j("#jstree").on("move_node.jstree", function(event, data) {
+              moveNode(data);
+          });
+          
+          $j("#jstree").on("rename_node.jstree", function(event, data) {
+              renameNode(data);
+          });         
+       
+          /*$j("#jstree").on("select_node.jstree", function(event, data) {
+              displayPath(data.node.id);
+              
+          });*/
+      });
+      
+      //Context menu items are displaying on clicking right click
+       function customMenu(node){
+               
+               var items={
+                        /* "view" : {
+                              label: "View Record",
+                              action: function(obj) {
+                                  window.open("/" + node.id);
+                              },
+                              _disabled:{!NOT(isAddDelMember)},
+                          },*/
+                          "rename" : {
+                              label: "Rename", 
+                              action: function(obj) { 
+                                  $j("#jstree").jstree(true).edit(node)
+                              },
+                              _disabled:{!NOT(isAddDelMember)},
+                          },
+                          
+                          "create" : {
+                              label: "Create Sub-Folder", 
+                              action: function() { 
+                              var href=window.location.href;
+                              if(href.indexOf('{!$Setup.GlobalFoundry_View__c.CipherCloudURLCheck__c}')==-1 ) {
+                               alert("Access the Restrcited Team Room from ITAR URL");
+                               }
+                              else{   
+                               createNode(node);
+                               }
+                              },
+                              _disabled:{!NOT(isAddDelMember)},
+                          },
+                         
+                       /*   "createsub" : {
+                              label: "Create Sibling Folder", 
+                              action: function() { 
+
+                                  createSubNode(node.id);
+                              },
+                              _disabled:true,
+                          },*/
+                          
+                         "AddDocumentstoFolder" : {
+                              label: "Add Documents to Folder",
+                              action: function(obj) {
+							  var href=window.location.href;
+                              if(href.indexOf('{!$Setup.GlobalFoundry_View__c.CipherCloudURLCheck__c}')==-1 ) {
+                               alert("Please Access  the Restrcited Team Room from CipherCloud URL");
+                               }
+                              else{ 
+                                window.open('{!blnExternalUser}'=='true' ? '/GlobalfoundryView/apex/DocumentUploadPage?id='+node.id :'/apex/DocumentUploadPage?id='+node.id,'_blank', 'scrollbars=yes,menubar=0,status=1,resizable=yes, top=250, left=350, width=820, height=210');                           
+                               }
+							  }
+                          },   
+                          "deleteitem" : {
+                              label: "Delete",
+                              action: function() {
+                                 if ( confirm("Really delete " + node.text + "?") ) {
+                                     deleteNode(node);
+                                 }
+                              },
+                              _disabled:{!NOT(isAddDelMember)},
+                                                     
+                          },
+                    }
+                    
+                  return items;  
+         }
+         
+ 
+      
+       
+      function loadNodes(tree, node, cb) {
+          var nodeId = node.id == "#" ? "" : node.id;
+         
+          var sfNode = new SObjectModel.sfNode();
+          var TeamRoomId ="{!$CurrentPage.parameters.Id}";
+          
+          sfNode.retrieve({ 
+              where: {Parent: {eq: nodeId},Team: {eq:TeamRoomId}}, 
+              limit: 100 }, 
+              function(err, records) {
+              if (err) {
+                  displayErr(err);
+              } else {
+                  var nodes = [];
+                  
+                  records.forEach(function(record) {                 
+                       nodes.push({ 
+                          id: record.get("Id"),
+                          text: record.get("Name"),
+                          children: true,                                                    
+                          
+                      });
+                    
+                  });
+                           
+                  cb.call(tree, nodes);
+                  
+              }
+          });
+        
+      }
+      
+      function moveNode(data) {
+          var parentId = data.parent == "#" ? null : data.parent;
+          
+          var sfNode = new SObjectModel.sfNode({
+              Id: data.node.id, 
+              Parent: parentId
+          });
+              
+          sfNode.update(function (err) {
+              if (err) {  
+                  displayErr(err);
+              } else {                  
+                  displayMsg(
+                      "Moved " + data.node.text + 
+                      " from /" + getPath(data.old_parent) + 
+                      " to /" + getPath(data.parent)
+                  );
+              }
+          });
+      }
+      
+      
+          
+      function renameNode(data) {
+          var sfNode = new SObjectModel.sfNode({
+              Name: data.text,
+              Id: data.node.id
+          });
+          
+          sfNode.update(function (err) {
+              if (err) {  
+                  displayErr(err);
+              } else { 
+                  displayMsg("Renamed " + data.old + " to " + data.text);
+                  displayPath(data.node.id);
+              }
+          });
+      }
+    
+      function createNode(parent) {
+          
+          var sfNode = new SObjectModel.sfNode({Name: "New Name", Parent: parent.id,Team :"{!$CurrentPage.parameters.Id}"});
+              
+          sfNode.create(function (err) {
+              if (err) {  
+                  displayErr(err);
+              } else { 
+                  var newNode = {
+                      id: sfNode.get("Id"), 
+                      text: sfNode.get("Name")
+                  };                      
+                  var tree = $j("#jstree").jstree(true);
+                  var id = tree.create_node(parent, newNode, "last", null, true);
+                  if (tree.is_closed(parent)) {
+                      tree.open_node(parent, function() {
+                          tree.deselect_all(true);
+                          tree.edit(id);
+                      });
+                  } else {
+                      tree.deselect_all(true);
+                      tree.edit(id);
+                  }
+              }
+          });                    
+      }
+      
+     /* function createSubNode(parent) {
+           var node= $j("#jstree").jstree(true).get_parent(parent) == "#" ? " ": $j("#jstree").jstree(true).get_parent(parent);
+          
+          var sfNode = new SObjectModel.sfNode({Name: "New Name",Parent:node,Team :"{!$CurrentPage.parameters.Id}" });
+          
+          sfNode.create(function (err) {
+              if (err) {  
+                  displayErr(err);
+              } else { 
+                  var newNode = {
+                      id: sfNode.get("Id"), 
+                      text: sfNode.get("Name")
+                  };                      
+                  var tree = $j("#jstree").jstree(true);
+                  var id = tree.create_node(parent, newNode, "last", null, true);
+                  if (tree.is_closed(parent)) {
+                      tree.open_node(parent, function() {
+                          tree.deselect_all(true);
+                          tree.edit(id);
+                      });
+                  } else {
+                      tree.deselect_all(true);
+                      tree.edit(id);
+                  }
+              }
+          });                    
+      }*/
+          
+      function deleteNode(node) {
+          var sfNode = new SObjectModel.sfNode();
+          sfNode.del(node.id, function(err) {
+              if (err) {
+                  displayErr(err);
+              } else {
+                  var tree = $j("#jstree").jstree(true);
+                  tree.delete_node(node);
+                  displayMsg("Deleted " + node.text);
+                  tree.refresh();
+              }
+          });
+      }
+      
+      function getPath(id) {
+          if (id == "#") {
+             return "";
+          }
+          return $j("#jstree").jstree(true).get_path({id: id}, "/");
+      }
+      
+     /* function displayPath(nodeId) {
+          $j("#path").text("Path: /" + getPath(nodeId));
+      }*/
+          
+     /* function displayMsg(msg) {
+          $j("#msg").text(msg);
+      }*/
+      
+      function displayErr(err) {
+          displayMsg("Error: " + err);
+      }
+      
+      function SelectedNode(nodeId){
+       selectednodeid=nodeId;
+       destroyTable();
+       dattachments(nodeId);
+
+      }
+      
+      
+})();
+
+         function destroyTable(){
+          $('.datatable').DataTable().destroy();
+         }
+         
+         function hidebuttons(){
+          $('input[name=attachFile]').hide();
+          $('input[name=new]').hide();
+          $('input[name=mm]').hide();
+          $('input[name=email]').hide();
+         }
+           
+         function resetTable(){                            
+                 $('.datatable').DataTable({
+                   "iDisplayLength": 10,
+                   "bLengthChange": false,
+                   "oLanguage": {
+                   "sSearch": "File Search:"
+                    },
+                   scrollY : "250px" ,  
+                  "dom": '<"pull-left"f><"pull-right"l>tip',                           
+                 });   
+                
+            } 
+         
+         //This function will be used to hide a banner based on CipherCloud and Non-CipherCloud URL   
+         function hidestmt() {           
+          var hostname=window.location.hostname;
+          if(hostname.indexOf('{!$Setup.GlobalFoundry_View__c.CipherCloudURLCheck__c}')==-1 ) {                   
+             $('#applyfornonitar').removeClass('hidenonitar');      
+                   
+           }
+           else{
+             $('#applyforitar').removeClass('hideitar');  
+           }
+          }
+          
+          //This function will be used to show the floating banner for non-cipher cloud message
+           $(window).scroll(function(e){ 
+              var $el = $('.applyfornonitar'); 
+              var isPositionFixed = ($el.css('position') == 'fixed');
+              if ($(this).scrollTop() > 200 && !isPositionFixed){ 
+                $('.applyfornonitar').css({'position': 'fixed', 'top': '0px'}); 
+              }
+              if ($(this).scrollTop() < 200 && isPositionFixed)
+              {
+                $('.applyfornonitar').css({'position': 'static', 'top': '0px'}); 
+              } 
+            });
+            
+            //This function will be used to show the floating banner for cipher cloud message
+            $(window).scroll(function(e){ 
+              var $el = $('.applyforitar'); 
+              var isPositionFixed = ($el.css('position') == 'fixed');
+              if ($(this).scrollTop() > 200 && !isPositionFixed){ 
+                $('.applyforitar').css({'position': 'fixed', 'top': '0px'}); 
+              }
+              if ($(this).scrollTop() < 200 && isPositionFixed)
+              {
+                $('.applyforitar').css({'position': 'static', 'top': '0px'}); 
+              } 
+            });
+  
+           function deleter() {
+             if(confirm('Are you sure.Do you want to Delete?')) {
+             DeleteRow();
+           }
+            return false;
+          }  
+          
+        //This function is used to check ITAR Expiry date.If it is expired then will not allow to enter.
+        function CheckITARCertification(){
+         if('{!userd}'=='true'){
+        
+         window.alert('ITAR certification  expired, please renew to access ITAR Team Room.');
+         window.close();
+         }
+        
+        }  
+        
+        function openlink(documentid){
+        window.open('/apex/VFRteamroomshowlink?id='+documentid,'_blank', 'scrollbars=yes,menubar=0,status=1,resizable=yes, top=250, left=350, width=820, height=180');                           
+        }
+        
+        //This function is used to restrict to add the top-level folder if you are accessing through non-cipherCloud URL
+        //Added by Dinesh 18/10/2017
+        function javascriptfn(){
+         var href=window.location.href;
+         if(href.indexOf('{!$Setup.GlobalFoundry_View__c.CipherCloudURLCheck__c}')==-1 ) {
+           alert("Access the Restrcited Team Room from ITAR URL");
+           
+          }
+          else{
+          callfunction();
+         
+          }
+        } 
+         
+       //This function is blocking the access if you are trying to access from non-Ciphercloud URL 
+       function closewindownonciphercloud(){
+         var hostname=window.location.hostname;
+         if(hostname.indexOf('{!$Setup.GlobalFoundry_View__c.CipherCloudURLCheck__c}')==-1 ) {
+         window.alert("In order to access the Team Room ,Please use ITAR Login URL");       
+         window.location.href='{!blnExternalUser}'=='true' ?"/GlobalfoundryView/apex/VFR_RTeamRoomHomePage":"/apex/VFR_RTeamRoomHomePage";
+         }
+         
+       }
+       
+
+  </script>  
+  
+  <script>
+  var $h =jQuery.noConflict();
+  $h( function() {
+    $h( "#tabs" ).tabs({ active:1});
+  } );
+  
+  
+  </script>  
+
+  <div id="applyfornonitar" class="hidenonitar" >
+  <font color="red" style="font-size:13px">  
+  <b>{!$Setup.ITARBannerMessages__c.NonCipherCloudMsg__c}</b></font>
+  </div>
+  <div id="applyforitar" class="hideitar" >
+  <font color="red" style="font-size:12px"> 
+   <b>{!$Setup.ITARBannerMessages__c.CipherCloudMsg__c}</b>
+  </font>
+  </div>
+  <apex:sectionHeader title="R Team Room : {!Restricted_Team_Room__c.name}"/> 
+  <div id="tabs">
+  <ul>
+    <li><a href="#tabs-1">Feed</a></li>
+    <li><a href="#tabs-2">Details</a></li>
+    </ul>
+   <div id="tabs-1">
+   <chatter:feedWithFollowers entityId="{!Restricted_Team_Room__c.Id}" showHeader="true"/> 
+   </div>
+   <div id="tabs-2">
+    <apex:form id="formdetail">
+    <apex:pageBlock mode="maindetail">
+        <apex:pageBlockButtons location="top">
+          <apex:commandButton value="Edit" action="{!edit}"/>
+          <apex:commandButton value="Delete" action="{!delete}"  rendered="{!NOT(isAdmin)}"/>
+        </apex:pageBlockButtons>
+        
+         <apex:pageBlockSection title="R Team Room Detail Information">                
+             <apex:repeat value="{!$ObjectType.Restricted_Team_Room__c.FieldSets.R_VFTeamRoomDetail_Fields}" var="f">                                
+               <apex:outputField value="{!Restricted_Team_Room__c[f]}" rendered="{!f!='OwnerId'}"/>                                                                                                                             
+             </apex:repeat> 
+               <apex:outputField value="{!Restricted_Team_Room__c.OwnerId}">
+                &nbsp;&nbsp;
+                 <apex:outputLink value="/{!Restricted_Team_Room__c.id}/a?retURL={!Restricted_Team_Room__c.id}&saveURL={!Restricted_Team_Room__c.id}" rendered="{!isOwnerorAdmin}">[Change]</apex:outputLink>
+                </apex:outputField>                                                   
+     </apex:pageBlockSection>    
+          
+     
+      
+       
+       <apex:pageBlockSection title="Documents" columns="1">
+       <apex:outputPanel >
+        <apex:pagemessages id="message"/>
+        <apex:actionFunction action="{!Displayattachments}" name="dattachments" reRender="attachtablepanel,attachtable,show" oncomplete="resetTable();"  status="LoadingStatusSpinner">
+        <apex:param name="snode" value="" assignTo="{!SNodeId}"/>
+        </apex:actionFunction>
+        <c:LoadingStatusSpinner />  
+           <table border="1" width="100%" height="100%">
+            <tr rowspan="1" style="background-color: #9D9C9D;">
+             <td>
+             <div id="msg" ></div>
+              <div id="path" ></div>
+               <div class="WrapBlock" >
+                Search Folder:<input class="search-input form-control" ></input>
+              </div>
+    
+              </td>
+              <td>
+               <apex:commandbutton value="Delete"   onclick="return deleter();" reRender="message,attachtable" rendered="{!isAddDelMember}"/>
+                <apex:actionFunction action="{!DeleteRow}" name="DeleteRow" status="LoadingStatusSpinner"  />            
+               <apex:actionSupport >
+              <apex:commandButton value="Show All Files" action="{!LoadAllFiles}"  status="LoadingStatusSpinner" onclick="destroyTable();"  oncomplete="resetTable();" reRender="attachtable,show"/>
+              </apex:actionSupport> 
+             <apex:commandButton value="Add Top-Level Folder" rerender="tstpopup"  rendered="{!isAddDelMember}" onclick="javascriptfn();"/>
+              <apex:actionfunction name="callfunction" action="{!showPopup}" rerender="tstpopup"/>      
+              <apex:outputPanel id="show" layout="inline">
+               <b><apex:outputText rendered="{!showonclick}" >ALL FILES</apex:outputText></b>
+               <b><apex:outputText rendered="{!NOT(showonclick)}">FOLDER RELATED FILES</apex:outputText></b>
+                
+              </apex:outputPanel>
+              </td>
+             </tr>
+           <tr>
+           <td width="8%" style="background: #EDE8E7;"> 
+           <div id="jstree" class="myScrollableBlock">
+            <ul></ul>
+           </div>
+           </td>
+         <td width="100%">
+         <apex:outputPanel >
+        
+          <apex:pageBlocktable value="{!listwrapper}"  styleclass="datatable" var="s" id="attachtable" style="width:780px">
+          <apex:column headerValue="Select">
+           <apex:inputcheckbox value="{!s.selected}"  styleclass="{!s.content.ContentDocument.id}_chk" id="checkbox"/>
+          </apex:column>
+          <apex:column headerValue="Action" rendered="{!NOT(blnExternalUser)}" >
+                <a download="{!s.content.contentDocument.Title}"
+                   href="/sfc/servlet.shepherd/version/download/{!s.content.contentDocument.LatestPublishedVersionId}">Download</a>
+          </apex:column> 
+          <apex:column headerValue="Action" rendered="{!blnExternalUser}">
+                <a download="{!s.content.contentDocument.Title}"
+                   href="/GlobalfoundryView/sfc/servlet.shepherd/version/download/{!s.content.contentDocument.LatestPublishedVersionId}">Download</a>
+          </apex:column>  
+          <apex:column headervalue="Title">
+          <!-- <apex:outputlink value="/{!s.content.ContentDocumentId}" target="_blank" rendered="{!isOwnerorAdmin}">{!s.content.ContentDocument.Title}</apex:outputlink>-->
+           <apex:outputtext value="{!s.content.ContentDocument.Title}"/>
+          </apex:column>
+          <apex:column headerValue="Folder Name">
+            <apex:outputtext value="{!s.folder.Name}"/>
+           </apex:column>
+           <apex:column headerValue="Type">
+            <apex:outputtext value="{!s.content.ContentDocument.FileExtension}"/>
+           </apex:column>
+           <apex:column headerValue="Created Date" >
+             <apex:outputText value="{0,date,MM'/'dd'/'yyyy hh:mm:ss a}">
+               <apex:param value="{!s.content.contentDocument.ContentModifiedDate}" /> 
+               </apex:outputText>
+            </apex:column>
+           <apex:column headerValue="CreatedBy">
+           <apex:outputtext value="{!s.content.ContentDocument.Owner.Name}"/>
+           </apex:column>
+           
+           <apex:column headerValue="External Link" >
+           <apex:actionRegion >
+              <apex:outputLink onclick="openlink('{!s.content.contentDocument.LatestPublishedVersionId}'); return false;">Document Link </apex:outputLink>      
+               </apex:actionRegion>
+            </apex:column>
+          
+          </apex:pageBlocktable>
+        
+        </apex:outputPanel>
+        </td>
+        </tr>
+        </table>
+        
+        <apex:outputPanel id="tstpopup">
+        <apex:outputPanel styleClass="popupBackground" layout="block" rendered="{!displayPopUp}"/>
+            <apex:outputPanel styleClass="custPopup" layout="block" rendered="{!displayPopUp}">
+                <apex:pageBlock title="Create Folder">
+                  <apex:pageBlockButtons location="bottom">
+                  <apex:commandButton value="save" action="{!savefolder}"/>
+                  <apex:commandButton value="cancel" action="{!closePopup}" rerender="tstpopup"/>
+                 </apex:pageBlockButtons>
+                  
+                  <apex:outputLabel >Folder Name</apex:outputLabel>
+                  <apex:inputtext value="{!folder.Name}"/>
+                 </apex:pageBlock>
+                
+            </apex:outputPanel>
+        </apex:outputPanel>
+        </apex:outputPanel>
+        </apex:pageBlockSection>
+        </apex:pageBlock>
+        
+        
+      
+             <apex:pageBlock id="MemberBlock">
+                 <apex:pageBlockButtons location="top">
+                     <apex:commandButton value="Manage Membership" rendered="{!isAddDelMember}"  onclick="goToManageMember();return false;"/>
+                      <apex:actionFunction name="goToManageMember" action="{!goToNewMember}"/>
+                 </apex:pageBlockButtons>
+                 <apex:pageBlockButtons location="bottom" rendered="{!MemberMapSize>1}">
+            
+                        <apex:outputPanel >
+                            <apex:outputText value="<<" style="color:grey;font-weight:bold" rendered="{!currentMemberPage ==1}"></apex:outputText>
+                            <apex:commandLink value="<<" status="MemberStatus" style="font-weight:bold" action="{!first}" rerender="MemberBlock" rendered="{!currentMemberPage >1}">
+                                <apex:param name="objectTonavigate" value="Member"/>                                       
+                            </apex:commandLink>
+                            &nbsp;&nbsp;&nbsp;&nbsp;
+                        </apex:outputPanel>
+                        
+                        <apex:outputPanel >
+                            <apex:outputText value="<" style="color:grey;font-weight:bold" rendered="{!currentMemberPage ==1}"></apex:outputText>
+                            <apex:commandLink value="<" status="MemberStatus" style="font-weight:bold" action="{!previous}" rerender="MemberBlock" rendered="{!currentMemberPage >1}">
+                                <apex:param name="objectTonavigate" value="Member"/>                                       
+                            </apex:commandLink>
+                           &nbsp;&nbsp;&nbsp;&nbsp;
+                        </apex:outputPanel>
+                   
+                        
+                        
+                        <apex:repeat value="{!mapObjectToLstDisplayNumber['Member']}" var="pg">
+                            <apex:outputPanel rendered="{!pg<=MemberMapSize && pg>=1}">
+                                <apex:commandLink style="color:#015ba7"  value="{!pg}" action="{!updatePageNumberDisplay}" reRender="MemberBlock" status="MemberStatus" rendered="{!pg!=currentMemberPage}">
+                                   <apex:param name="objectTonavigate" value="Member"/> 
+                                   <apex:param name="selectedPageNum" value="{!pg}"/>                                  
+                                </apex:commandLink>                       
+                                <apex:outputText value="{!pg}" rendered="{!pg==currentMemberPage }">                                                
+                                </apex:outputText>
+                                &nbsp;&nbsp;&nbsp;&nbsp;
+                            </apex:outputPanel>                        
+                         </apex:repeat>
+                        
+                        
+                        <apex:outputPanel >               
+                             <apex:outputText value=">" style="color:grey;font-weight:bold" rendered="{!currentMemberPage >=MemberMapSize}"></apex:outputText> 
+                             <apex:commandLink value=">" status="MemberStatus" style="font-weight:bold" action="{!next}" rerender="MemberBlock" rendered="{!currentMemberPage <MemberMapSize}">
+                                <apex:param name="objectTonavigate" value="Member"/>                                       
+                            </apex:commandLink>   
+                             &nbsp;&nbsp;&nbsp;&nbsp;
+                        </apex:outputPanel>
+                        
+                        <apex:outputPanel >
+                            <apex:commandLink value=">>" status="MemberStatus" style="font-weight:bold" action="{!last}" rerender="MemberBlock" rendered="{!currentMemberPage <MemberMapSize}">
+                                <apex:param name="objectTonavigate" value="Member"/>                                       
+                            </apex:commandLink> 
+                            <apex:outputText value=">>" style="color:grey;font-weight:bold" rendered="{!currentMemberPage >=MemberMapSize}"></apex:outputText> 
+                        </apex:outputPanel>
+                        
+                        <apex:outputPanel >
+                             <apex:actionStatus id="MemberStatus">
+                                <apex:facet name="start" >
+                                    <apex:image url="/img/loading32.gif" height="20px"/>                       
+                                </apex:facet>
+                            </apex:actionStatus>
+                        </apex:outputPanel>
+                         
+                     </apex:pageBlockButtons>
+                 
+                 <apex:pageBlockSection title="Members" columns="1">
+                     <apex:outputLabel rendered="{!MemberMapSize==0}">No records to display</apex:outputLabel>
+                     <apex:pageBlockTable value="{!mapPageToMemberRecords[currentMemberPage]}" var="trm" rendered="{!MemberMapSize>0}">
+                         <apex:column headerValue="Action" rendered="{!isAddDelMember}">
+                             <apex:commandLink value="Del" style="color:#015ba7" action="{!deleteMember}" reRender="MemberBlock" status="MemberDelStatus">
+                                 <apex:param name="memberId" value="{!trm.Id}"/>                                                                       
+                            </apex:commandLink>
+                            <apex:outputPanel >
+                                 <apex:actionStatus id="MemberDelStatus">
+                                    <apex:facet name="start" >
+                                        <apex:image url="/img/loading32.gif" height="20px"/>                       
+                                    </apex:facet>
+                                </apex:actionStatus>
+                            </apex:outputPanel>
+                         </apex:column>
+                         <apex:repeat value="{!$ObjectType.R_Team_Room_Member__c.FieldSets.R_VFTeamRoomDetail_Member_Fields}" var="a">           
+                             <apex:column value="{!trm[a]}" rendered="{!$ObjectType['R_Team_Room_Member__c'].fields[a].accessible}"/>                  
+                         </apex:repeat> 
+                     </apex:pageBlockTable>
+                 </apex:pageBlockSection>
+             </apex:pageBlock>         
+        
+         
+         <apex:outputPanel layout="block" style="margin-top:40px">                         
+             <apex:pageBlock id="AssociatedAccounts">
+                 <apex:pageBlockButtons location="top">
+                     <apex:commandButton id="addAccount" value="Add Account" onclick="goToAcc();return false;" rendered="{!AND(isOwnerorAdmin,NOT(AddAccount))}"/>
+                     <apex:actionFunction name="goToAcc" action="{!goToNewTRAccount}"/>
+                 </apex:pageBlockButtons>
+                  <apex:pageBlockButtons location="bottom" rendered="{!AccMapSize>1}">
+            
+                    <apex:outputPanel >
+                        <apex:outputText value="<<" style="color:grey;font-weight:bold" rendered="{!currentActPage ==1}"></apex:outputText>
+                        <apex:commandLink value="<<" status="AccountStatus" style="font-weight:bold" action="{!first}" rerender="AssociatedAccounts" rendered="{!currentActPage >1}">
+                            <apex:param name="objectTonavigate" value="Account"/>                                       
+                        </apex:commandLink>
+                        &nbsp;&nbsp;&nbsp;&nbsp;
+                    </apex:outputPanel>
+                    
+                    <apex:outputPanel >
+                        <apex:outputText value="<" style="color:grey;font-weight:bold" rendered="{!currentActPage ==1}"></apex:outputText>
+                        <apex:commandLink value="<" status="AccountStatus" style="font-weight:bold" action="{!previous}" rerender="AssociatedAccounts" rendered="{!currentActPage >1}">
+                            <apex:param name="objectTonavigate" value="Account"/>                                       
+                        </apex:commandLink>
+                       &nbsp;&nbsp;&nbsp;&nbsp;
+                    </apex:outputPanel>
+                    
+                  
+                    
+                     <apex:repeat value="{!mapObjectToLstDisplayNumber['Account']}" var="pg">
+                        <apex:outputPanel rendered="{!pg<=AccMapSize&& pg>=1}">
+                            <apex:commandLink style="color:#015ba7"  value="{!pg}" action="{!updatePageNumberDisplay}" reRender="AssociatedAccounts" status="AccountStatus" rendered="{!pg!=currentActPage}">
+                               <apex:param name="objectTonavigate" value="Account"/> 
+                               <apex:param name="selectedPageNum" value="{!pg}"/>                                  
+                            </apex:commandLink>                       
+                            <apex:outputText value="{!pg}" rendered="{!pg==currentActPage}">                                                
+                            </apex:outputText>
+                            &nbsp;&nbsp;&nbsp;&nbsp;
+                        </apex:outputPanel>                        
+                     </apex:repeat>
+                    
+                    
+                    <apex:outputPanel >               
+                         <apex:outputText value=">" style="color:grey;font-weight:bold" rendered="{!currentActPage >=AccMapSize}"></apex:outputText> 
+                         <apex:commandLink value=">" status="AccountStatus" style="font-weight:bold" action="{!next}" rerender="AssociatedAccounts" rendered="{!currentActPage <AccMapSize}">
+                            <apex:param name="objectTonavigate" value="Account"/>                                       
+                        </apex:commandLink>   
+                         &nbsp;&nbsp;&nbsp;&nbsp;
+                    </apex:outputPanel>
+                    
+                    <apex:outputPanel >
+                        <apex:commandLink value=">>" status="AccountStatus" style="font-weight:bold" action="{!last}" rerender="AssociatedAccounts" rendered="{!currentActPage <AccMapSize}">
+                            <apex:param name="objectTonavigate" value="Account"/>                                       
+                        </apex:commandLink> 
+                        <apex:outputText value=">>" style="color:grey;font-weight:bold" rendered="{!currentActPage >=AccMapSize}"></apex:outputText> 
+                    </apex:outputPanel>
+                    
+                    <apex:outputPanel >
+                         <apex:actionStatus id="AccountStatus">
+                            <apex:facet name="start" >
+                                <apex:image url="/img/loading32.gif" height="20px"/>                       
+                            </apex:facet>
+                        </apex:actionStatus>
+                    </apex:outputPanel>
+                     
+                 </apex:pageBlockButtons>
+                 
+                 <apex:pageBlockSection title="Associated Accounts" columns="1">      
+                     <apex:outputLabel rendered="{!AccMapSize==0}">No records to display</apex:outputLabel>  
+                     <apex:outputLabel style="color:red" rendered="{!accNotDelMsg!=null}">{!accNotDelMsg}</apex:outputLabel>          
+                     <apex:pageBlockTable value="{!mapPageToAccRecords[currentActPage]}" var="acc" rendered="{!AccMapSize>0}">
+                           <apex:column headerValue="Action" rendered="{!isOwnerorAdmin}">
+                                <apex:commandLink value="Edit" style="color:#015ba7" action="{!goToEditTRAccount}">
+                                      <apex:param name="accToEdit" value="{!acc.Id}"/>                                       
+                                 </apex:commandLink>
+                                 
+                                 &nbsp;|&nbsp;
+                                 <apex:commandLink value="Del" style="color:#015ba7" action="{!deleteTRAccount}" status="AccountDelStatus" reRender="AssociatedAccounts">
+                                      <apex:param name="accToDelete" value="{!acc.Id}"/> 
+                                      <apex:param name="accNameToDelete" value="{!acc.name}"/>                                           
+                                 </apex:commandLink>
+                                 <apex:outputPanel >
+                                     <apex:actionStatus id="AccountDelStatus">
+                                        <apex:facet name="start" >
+                                            <apex:image url="/img/loading32.gif" height="20px"/>                       
+                                        </apex:facet>
+                                    </apex:actionStatus>
+                                </apex:outputPanel>
+                           </apex:column>
+                           
+                          <apex:repeat value="{!$ObjectType.Account.FieldSets.R_VFTeamRoomDetail_Account_Fields}" var="a">           
+                             <apex:column headerValue="{!a.Label}" rendered="{!$ObjectType['Account'].fields[a].accessible}"> 
+                                 <apex:outputField value="{!acc[a]}"/>
+                             </apex:column>                 
+                         </apex:repeat> 
+                          <apex:column value="{!mapAccountIdToType[acc.Id]}" headerValue="Type"/>   
+                     </apex:pageBlockTable>
+                 </apex:pageBlockSection>  
+             </apex:pageBlock>                                        
+         </apex:outputPanel>
+ 
+</apex:form>       
+
+ </div>
+</div>
+      
+</apex:page>

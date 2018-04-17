@@ -1,0 +1,330 @@
+<!--
+    Author: Zymark Ambat
+    Description: This page is used for NPC Form submission.
+    History: 
+        ZAmbat      07292014    - Page creation.
+-->
+
+<apex:page id="DeviceExposeToCustomerVF" controller="DeviceExposeToCustomer" showHeader="true" sidebar="true" tabStyle="Device__c">
+    <style type="text/css">
+        .imgclass:hover {  
+            background-image: url(/img/help/helpOrbs.gif);  
+            background-repeat: no-repeat;  
+            width: 16px;  
+            height: 15px;     
+            background-position: right;  
+         
+        }  
+        
+        .imgclass {  
+            background-image: url(/img/help/helpOrbs.gif);  
+            background-repeat: no-repeat;  
+            width: 16px;  
+            height: 15px;  
+        } 
+        
+        .helpTextStyle {
+            text-decoration: none;
+            position: absolute;
+            width: 15em;
+            z-index: 12;
+            background-color: #fefdb9;
+            padding: 2px 5px;
+            border: 1px solid orange;
+            text-align: left;
+            white-space: normal;
+            font-weight: normal;
+            color: #000;
+        }
+    </style>
+    
+    <script>
+        function selectAccts(cb) {
+            var inputs = document.getElementsByTagName("input");
+            if (cb.id.indexOf("selectAllAcctsCb") > -1 ) {
+                for (var c=0; c<inputs.length; c++) {
+                    if (inputs[c].type == "checkbox" && inputs[c].id.indexOf("acctCbAcc") > -1) { 
+                        if (cb.checked) {
+                            inputs[c].checked = true;
+                        } else {
+                            inputs[c].checked = false;
+                        }
+                    }
+                }
+            } else {
+                var uncheckedCtr = 0;
+                for (var c=0; c<inputs.length; c++) {
+                    if (inputs[c].type == "checkbox" && inputs[c].id.indexOf("acctCbAcc") > -1) {
+                        if (!inputs[c].checked) {
+                            uncheckedCtr++;
+                        }
+                    }
+                }
+                
+                if (uncheckedCtr > 0) {
+                    document.getElementById("{!$Component.form1.mainBlock.acctSection.acctsTable.selectAllAcctsCb}").checked = false;   
+                } else {
+                    document.getElementById("{!$Component.form1.mainBlock.acctSection.acctsTable.selectAllAcctsCb}").checked = true;
+                }
+            }
+        }
+        
+        function selectDPAccts(dpcb) {
+            var inputs = document.getElementsByTagName("input");
+            if (dpcb.id.indexOf("selectAllDPAcctsCb") > -1 ) {
+                for (var cdp=0; cdp<inputs.length; cdp++) {
+                    if (inputs[cdp].type == "checkbox" && inputs[cdp].id.indexOf("dpacctCb") > -1) { 
+                        if (dpcb.checked) {
+                            inputs[cdp].checked = true;
+                        } else {
+                            inputs[cdp].checked = false;
+                        }
+                    }
+                }
+            } else {
+                var uncheckedCtr = 0;
+                for (var cdp=0; cdp<inputs.length; cdp++) {
+                    if (inputs[cdp].type == "checkbox" && inputs[cdp].id.indexOf("dpacctCb") > -1) {
+                        if (!inputs[cdp].checked) {
+                            uncheckedCtr++;
+                        }
+                    }
+                }
+                
+                if (uncheckedCtr > 0) {
+                    document.getElementById("{!$Component.form1.mainBlock.acctSection1.dpAcctsTable.selectAllDPAcctsCb}").checked = false;   
+                } else {
+                    document.getElementById("{!$Component.form1.mainBlock.acctSection1.dpAcctsTable.selectAllDPAcctsCb}").checked = true;
+                }
+            }
+        } 
+        
+        function selectEmail(cb, acctId, comp) {
+            var inputs = document.getElementsByTagName("input");
+            var cbName = '';
+            if (comp == 'ExportControl') {
+                cbName = 'ec';
+            } else if (comp == 'IpDeclaration') {
+                cbName = 'ip';
+            }  else if (comp == 'Cdrs') {
+                cbName = 'cd';
+            }
+            
+            if (cb.className.indexOf(cbName + "All") > -1 ) {
+                for (var c=0; c<inputs.length; c++) {
+                    if (inputs[c].type == "checkbox" && inputs[c].className.indexOf(cbName + acctId) > -1 && !inputs[c].disabled) { 
+                        if (cb.checked) {
+                            inputs[c].checked = true;
+                        } else {
+                            inputs[c].checked = false;
+                        }
+                    }
+                }
+            } else {
+                var uncheckedCtr = 0;
+                for (var c=0; c<inputs.length; c++) {
+                    if (inputs[c].type == "checkbox" && inputs[c].className.indexOf(cbName + acctId) > -1 && !inputs[c].disabled) {
+                        if (!inputs[c].checked) {
+                            uncheckedCtr++;
+                        }
+                    }
+                }
+                
+                if (uncheckedCtr > 0) {
+                    document.getElementsByClassName(cbName + "All" + acctId)[0].checked = false;  
+                } else {
+                    document.getElementsByClassName(cbName + "All" + acctId)[0].checked = true;
+                }
+            }
+        }
+        
+        function showHelpText(e, id) {
+            var ele = document.getElementById(e.id);
+            var top = 0;
+            var left = 0;
+            
+            while(ele.tagName != "BODY") {
+                top += ele.offsetTop;
+                left += ele.offsetLeft;
+                ele = ele.offsetParent;
+            }
+            
+            document.getElementById(id).style.top = (top - 125) + "px" ;
+            document.getElementById(id).style.left = left + "px";
+            document.getElementById(id).style.display = "block";
+            document.getElementById(id).style.opacity = 0.99;
+        }
+        
+        function hideHelpText(id) {
+            document.getElementById(id).style.display = "none";
+            document.getElementById(id).style.opacity = -0.2;
+        }
+        
+        var isClicked = false;
+        function disableButton(btn) {
+            if (isClicked) {
+                return false;
+            } else {
+                isClicked = true;
+                btn.className = 'btnDisabled';
+                return true;
+            }
+        }
+    </script>
+    
+    <apex:sectionHeader title="Device" subtitle="Expose Device to Customer" help="https://help.salesforce.com/htviewhelpdoc?id=co_edit.htm&siteLang=en_US" />
+    
+    <apex:form id="form1">
+        <apex:pageBlock id="mainBlock" mode="detail">
+            <apex:pageBlockButtons location="both">
+                <apex:commandButton value="Add Accounts" action="{!retrieveAllUsers}" rendered="{!showSelectAccounts}" />
+                <apex:commandButton id="exposeDeviceBtn" value="{!IF(device.Expose_Device_to_Customer__c, 'Notify Customer', 'Expose Device')}" action="{!exposeDevice}" rendered="{!showSelectUsers}" onclick="return disableButton(this);" />
+                <apex:commandButton value="Back to Accounts Selection" action="{!backToAccountsSelection}" rendered="{!showSelectUsers}" />
+                <apex:commandButton value="Cancel" action="{!cancel}" immediate="true" />
+            </apex:pageBlockButtons>
+            
+            <apex:pageMessages id="errorSection" rendered="{!showErrorMessage}" />
+            
+            <apex:pageBlockSection id="acctSection" title="Select Accounts" collapsible="false" columns="1" rendered="{!showSelectAccounts}">
+                <apex:pageBlockTable id="acctsTable" value="{!listAccounts}" var="a">
+                    <apex:column style="{!IF(a.isMainAccount, 'background-color: #e3deb8', '')}">
+                        <apex:facet name="header">
+                            <apex:inputCheckbox id="selectAllAcctsCb" value="{!selectAllAccounts}" onchange="selectAccts(this);" />
+                        </apex:facet>
+                        <apex:inputCheckbox id="acctCbAcc" value="{!a.isSelected}" onchange="selectAccts(this);" />
+                    </apex:column>
+                    <apex:column headerValue="Account Name" style="{!IF(a.isMainAccount, 'background-color: #e3deb8', '')}">
+                        <apex:outputLink value="/{!a.Id}" target="_blank">{!a.Name}</apex:outputLink>
+                    </apex:column>
+                    <apex:column headerValue="Site/Department" value="{!a.SiteDepartment}" style="{!IF(a.isMainAccount, 'background-color: #e3deb8', '')}" />
+                    <apex:column headerValue="Stage" value="{!a.Stage}" style="{!IF(a.isMainAccount, 'background-color: #e3deb8', '')}" />
+                    <apex:column headerValue="Short Name" value="{!a.ShortName}" style="{!IF(a.isMainAccount, 'background-color: #e3deb8', '')}" />
+                    <apex:column headerValue="Parent Account Name" style="{!IF(a.isMainAccount, 'background-color: #e3deb8', '')}">
+                        <apex:outputLink value="/{!a.ParentId}" target="_blank">{!a.ParentName}</apex:outputLink>
+                    </apex:column>
+                    <apex:column headerValue="Parent Account Short Name" value="{!a.ParentShortName}" style="{!IF(a.isMainAccount, 'background-color: #e3deb8', '')}" />
+                </apex:pageBlockTable>
+            </apex:pageBlockSection> 
+            <apex:pageBlockSection id="acctSection1" title="Design Partner Accounts" collapsible="false" columns="1" rendered="{!IF(showSelectAccounts==true && listDPAccounts.size!=0,true,false)}">
+                <apex:pageBlockTable id="dpAcctsTable" value="{!listDPAccounts}" var="dpAcc">
+                    <apex:column style="{!IF(dpAcc.isMainDPAccount, 'background-color: #e3deb8', '')}">
+                        <apex:facet name="header">
+                            <apex:inputCheckbox id="selectAllDPAcctsCb" value="{!selectAllDPAccounts}" onchange="selectDPAccts(this);" disabled="true" selected="true"/>
+                        </apex:facet>
+                        <apex:inputCheckbox id="dpacctCb" value="{!dpAcc.isDPSelected}" onchange="selectDPAccts(this);" disabled="true"/>
+                    </apex:column>
+                    
+                    <apex:column headerValue="Account Name" style="{!IF(dpAcc.isMainDPAccount, 'background-color: #e3deb8', '')}">
+                        <apex:outputLink value="/{!dpAcc.Id}" target="_blank">{!dpAcc.Name}</apex:outputLink>
+                    </apex:column>
+                    <apex:column headerValue="Site/Department" value="{!dpAcc.SiteDepartment}" style="{!IF(dpAcc.isMainDPAccount, 'background-color: #e3deb8', '')}" />
+                    <apex:column headerValue="Stage" value="{!dpAcc.Stage}" style="{!IF(dpAcc.isMainDPAccount, 'background-color: #e3deb8', '')}" />
+                    <apex:column headerValue="Short Name" value="{!dpAcc.ShortName}" style="{!IF(dpAcc.isMainDPAccount, 'background-color: #e3deb8', '')}" />
+                    <apex:column headerValue="Parent Account Name" style="{!IF(dpAcc.isMainDPAccount, 'background-color: #e3deb8', '')}">
+                        <apex:outputLink value="/{!dpAcc.ParentId}" target="_blank">{!dpAcc.ParentName}</apex:outputLink>
+                    </apex:column>
+                    <apex:column headerValue="Parent Account Short Name" value="{!dpAcc.ParentShortName}" style="{!IF(dpAcc.isMainDPAccount, 'background-color: #e3deb8', '')}" />
+                </apex:pageBlockTable>
+            </apex:pageBlockSection>
+            
+            <apex:pageBlockSection title="Device Detail" collapsible="true" columns="2" rendered="{!showSelectUsers}">
+                <apex:outputField value="{!device.Name}" />
+                <apex:outputField value="{!device.CRMDID__c}" />
+                
+                <apex:outputField value="{!device.Export_Control_Status__c}" />
+                <apex:outputField value="{!device.Export_Control_Form_Submitted_Date__c}" />
+                
+                <apex:outputField value="{!device.IP_Declaration_Status__c}" />
+                <apex:outputField value="{!device.IP_Declaration_Submitted_Date__c}" />
+                
+                <apex:outputField value="{!device.BX041_Status__c}" />
+                <apex:outputField value="{!device.BX041_Submission_Date__c}" />
+            </apex:pageBlockSection>
+            
+            <apex:pageBlockSection title="Selected Accounts" collapsible="true" columns="1" rendered="{!showSelectUsers}">
+                <apex:pageBlockTable value="{!listSelectedAccounts}" var="a">
+                    <apex:column headerValue="Account Name" style="{!IF(a.isMainAccount, 'background-color: #e3deb8', '')}">
+                        <apex:outputLink value="/{!a.Id}" target="_blank">{!a.Name}</apex:outputLink>
+                    </apex:column>
+                    <apex:column headerValue="Site/Department" value="{!a.SiteDepartment}" style="{!IF(a.isMainAccount, 'background-color: #e3deb8', '')}" />
+                    <apex:column headerValue="Stage" value="{!a.Stage}" style="{!IF(a.isMainAccount, 'background-color: #e3deb8', '')}" />
+                    <apex:column headerValue="Short Name" value="{!a.ShortName}" style="{!IF(a.isMainAccount, 'background-color: #e3deb8', '')}" />
+                    <apex:column headerValue="Parent Account Name" style="{!IF(a.isMainAccount, 'background-color: #e3deb8', '')}">
+                        <apex:outputLink value="/{!a.ParentId}" target="_blank">{!a.ParentName}</apex:outputLink>
+                    </apex:column>
+                    <apex:column headerValue="Parent Account Short Name" value="{!a.ParentShortName}" style="{!IF(a.isMainAccount, 'background-color: #e3deb8', '')}" />
+                </apex:pageBlockTable>
+            </apex:pageBlockSection>
+            
+            <apex:pageBlockSection title="Selected Design Partner Accounts" collapsible="true" columns="1" rendered="{!IF(showSelectUsers==true && listSelectedDPAccounts.size!=0,true,false)}">
+                <apex:pageBlockTable value="{!listSelectedDPAccounts}" var="dpAcc">
+                    <apex:column headerValue="Account Name" style="{!IF(dpAcc.isMainDPAccount, 'background-color: #e3deb8', '')}">
+                        <apex:outputLink value="/{!dpAcc.Id}" target="_blank">{!dpAcc.Name}</apex:outputLink>
+                    </apex:column>
+                    <apex:column headerValue="Site/Department" value="{!dpAcc.SiteDepartment}" style="{!IF(dpAcc.isMainDPAccount, 'background-color: #e3deb8', '')}" />
+                    <apex:column headerValue="Stage" value="{!dpAcc.Stage}" style="{!IF(dpAcc.isMainDPAccount, 'background-color: #e3deb8', '')}" />
+                    <apex:column headerValue="Short Name" value="{!dpAcc.ShortName}" style="{!IF(dpAcc.isMainDPAccount, 'background-color: #e3deb8', '')}" />
+                    <apex:column headerValue="Parent Account Name" style="{!IF(dpAcc.isMainDPAccount, 'background-color: #e3deb8', '')}">
+                        <apex:outputLink value="/{!dpAcc.ParentId}" target="_blank">{!dpAcc.ParentName}</apex:outputLink>
+                    </apex:column>
+                    <apex:column headerValue="Parent Account Short Name" value="{!dpAcc.ParentShortName}" style="{!IF(dpAcc.isMainDPAccount, 'background-color: #e3deb8', '')}" />
+                </apex:pageBlockTable>
+            </apex:pageBlockSection>
+            
+            <apex:pageBlockSection title="Select Contacts" collapsible="true" columns="1" rendered="{!showSelectUsers}">
+                <apex:pageBlock >
+                    <apex:repeat value="{!mapAccountUsers}" var="a">
+                        <apex:pageBlockSection title="{!a}" columns="1">
+                            <apex:pageBlockTable value="{!mapAccountUsers[a].listWrapperUsers}" var="u" rendered="{!IF(mapAccountUsers[a].ListSize > 0, true, false)}">
+                                <apex:column headerValue="Contact Name">
+                                    <apex:outputLink value="/{!u.ContactId}" target="_blank">{!u.Name}</apex:outputLink>
+                                </apex:column>
+                                <apex:column headerValue="Contact Email" value="{!u.Email}" />
+                                <apex:column >
+                                    <apex:facet name="header">
+                                        <apex:outputPanel layout="block">
+                                            <apex:outputLabel value="Export Control Form" />
+                                            <apex:image value="/s.gif" id="imgEC" styleClass="imgclass" onmouseover="showHelpText(this, 'divExportControlHelptext');" onmouseout="hideHelpText('divExportControlHelptext');" />
+                                            <br />
+                                            <apex:inputCheckbox styleClass="ecAll{!mapAccountUsers[a].AccountId}" value="{!mapAccountUsers[a].ExportControlSelectedAll}" onchange="selectEmail(this, '{!mapAccountUsers[a].AccountId}', 'ExportControl');" disabled="{!mapAccountUsers[a].IsExportControlSelectAllDisabled}" />
+                                        </apex:outputPanel>
+                                    </apex:facet>
+                                    <apex:inputCheckbox styleClass="ec{!u.AccountId}" value="{!u.ExportControlForm}" disabled="{!OR(NOT(u.HasExportControlFormAccess), u.EcEMailAlreadySent)}" onchange="selectEmail(this, '{!u.AccountId}', 'ExportControl');" />
+                                </apex:column>
+                                <apex:column >
+                                    <apex:facet name="header">
+                                        <apex:outputPanel layout="block">
+                                            <apex:outputLabel value="IP Declaration Form" />
+                                            <apex:image value="/s.gif" id="imgIP" styleClass="imgclass" onmouseover="showHelpText(this, 'divIpDeclarationHelptext');" onmouseout="hideHelpText('divIpDeclarationHelptext');" />
+                                            <br />
+                                            <apex:inputCheckbox styleClass="ipAll{!mapAccountUsers[a].AccountId}" value="{!mapAccountUsers[a].IpDeclarationSelectedAll}" onchange="selectEmail(this, '{!mapAccountUsers[a].AccountId}', 'IpDeclaration');" disabled="{!mapAccountUsers[a].IsIpDeclarationSelectAllDisabled}" />
+                                        </apex:outputPanel>
+                                    </apex:facet>
+                                    <apex:inputCheckbox styleClass="ip{!u.AccountId}" value="{!u.IpDeclarationForm}" disabled="{!OR(NOT(u.HasIpDeclarationFormAccess), u.IpEMailAlreadySent)}" onchange="selectEmail(this, '{!mapAccountUsers[a].AccountId}', 'IpDeclaration');" />
+                                </apex:column>
+                                <apex:column >
+                                    <apex:facet name="header">
+                                        <apex:outputPanel layout="block">
+                                            <apex:outputLabel value="CDRS" />
+                                            <br />
+                                            <apex:inputCheckbox disabled="true" styleClass="cdAll{!mapAccountUsers[a].AccountId}" value="{!mapAccountUsers[a].CdrsSelectedAll}" onchange="selectEmail(this, '{!mapAccountUsers[a].AccountId}', 'Cdrs');" />
+                                        </apex:outputPanel>
+                                    </apex:facet>
+                                    <apex:inputCheckbox disabled="true" styleClass="cd{!u.AccountId}" value="{!u.Cdrs}" onchange="selectEmail(this, '{!mapAccountUsers[a].AccountId}', 'Cdrs');" />
+                                </apex:column>
+                            </apex:pageBlockTable>
+                            <apex:outputText value="{!$Label.DeviceExposeNoContactsFound}" rendered="{!IF(mapAccountUsers[a].ListSize <= 0, true, false)}" />
+                        </apex:pageBlockSection>
+                    </apex:repeat>
+                </apex:pageBlock>
+            </apex:pageBlockSection>
+        </apex:pageBlock>
+        
+        <div id="divExportControlHelptext" class="helpTextStyle" style="display: none; opacity: -0.2;">
+            {!$Label.DeviceExposeExportControlHelptext}
+        </div>
+        <div id="divIpDeclarationHelptext" class="helpTextStyle" style="display: none; opacity: -0.2;">
+            {!$Label.DeviceIpDeclarationHelptext}
+        </div>
+    </apex:form>
+</apex:page>

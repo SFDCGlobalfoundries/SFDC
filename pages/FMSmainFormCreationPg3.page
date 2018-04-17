@@ -1,0 +1,1628 @@
+<!--
+* @ Author :- Ashwin Dash
+* @ Description :- 
+* @ Date :- 20/07/2016
+* @ Change History :- 
+*     Date             Name             Comment
+*  13-10-2016       Inshu Misra     modified the Save button action...#IM
+*  18-Oct-2016      Ashwin Dash     Added validation checks for number fields - Invalid Input check
+*  09-Nov-2016      Ashwin Dash     Modified configurator commented the other changes 
+*  22-Nov-2016      Anil Kumar Reddy L  Modified the error messages.
+*  21-Feb-2017      Anirban Roy         Modified code to remove 'None' and add 'Select a Value' option in Max Chip Power for Issue# 35
+*  24-Feb-2017      Anirban Roy        Modified for Issue# 154 to remove 'None' and add 'Select a Value'
+*  01-Mar-2017      Abhita Bansal      Modified the forcetk javascript file
+*  06-Mar-2017      Abhita Bansal      Added By Abhita for replacing None with Select a value
+*  23-May-2017      Abhita Bansal      Changed the spelling of "Choose" word for new UAT Issue #175
+*  24-May-2017      Anirban Roy        Added multiple decimal point validation for Issues #24 and #38
+*  25-May-2017      Abhita Bansal      Added the condition for new UAT Issue #180, 182
+*  29-May-2017      Abhita Bansal      Changed by Abhita for New UAT Issue #151
+*  05-Jun-2017      Abhita Bansal      Changed by ABhita for new UAT Issue #209, 238
+-->
+<apex:page standardController="Form_Management_System__c" extensions="FMSmainFormEditController" action="{!init}" showHeader="true" sidebar="true">
+<apex:includeScript value="{!URLFOR($Resource.jquery, 'js/jquery-1.8.3.min.js')}"/>
+<apex:includeScript value="{!URLFOR($Resource.jquery, 'js/jquery-ui-1.9.2.custom.js')}"/>
+<apex:includeScript value="{!URLFOR($Resource.jqPlugin, '/jquery.blockUI.js')}"/>
+
+<script src="{!$Resource.ForceTK_FMS}" />
+
+<c:JqueryLibrary />
+
+<style>  
+    .bPageBlock .requiredInput .requiredBlock{background-color: #F6FBF6;}  
+    .requiredInput .requiredBlock::before { display: block; content: "*"; font-size: 1.5em; font-weight: bold; color: #c00; margin-left: -12px; margin-top: -3px; }  
+
+    p{
+       color:brown;
+    }  
+    a{
+        text-decoration: none;
+    }
+    
+    .loadingDiv {
+         background-color: rgba(211, 211, 211, 0.75);
+         filter: alpha(opacity=75); /* IE's opacity*/
+         text-align: center;
+         width: 100%;
+         height: 100%;
+         position: fixed;
+         z-index: 300;
+         top: 0;
+         left: 0;
+    }
+     
+    .loadingHolder {
+         background-color: #FFFFCC; 
+         border: 1px solid #333333;
+         font-size: 1.2em;
+         font-weight: bold;
+         padding: 0.5em;
+         position: relative; 
+         top: 45%;
+         white-space: nowrap;
+    }
+     
+    .loadingImage { vertical-align:bottom; 
+                    height: 20px;}
+    .loadingDescription { padding:0 1.5em 0 0.5em; }
+
+    .hiddenTable {
+        display: none;
+        border-width: 0px 0px 0px 0px;
+        border-color: #000;
+        border-style: solid;
+    }
+     
+</style>
+<script type="text/javascript">
+    $j = jQuery.noConflict();
+    
+    function showSimpleDialog(){    
+       var sd = new SimpleDialog("Test"+Dialogs.getNextId(), true);    
+       sd.setTitle("Warning");   
+       sd.createDialog();   
+       window.parent.sd = sd;   
+       var ex = sd.setContentInnerHTML("<p align='center' ><img src='/img/msg_icons/warning24.png'/> <b>Warning!</b> <br/></p><p align='center'>The data you are attempting to save is either incomplete or has errors. <br/> <br/> You can either go back and correct the errors, or proceed to save this form anyway (this will save only the fields with valid data).</p><p align='center'><br /><button class='btn' onclick='window.parent.sd.hide(); return false;'>Back to the form</button> &nbsp; &nbsp; &nbsp; &nbsp; <button class='btn' onclick='saveandExit(\"page3\"); return true;'>Save Anyway</button></p>"); 
+       sd.show();   
+       return ex;
+    }   
+    
+    function showDialogforCancel(){
+    
+        var sd = new SimpleDialog("Test"+Dialogs.getNextId(), true);    
+        sd.createDialog(); 
+        sd.setWidth(400);               
+        window.parent.sd = sd;
+        var ex = sd.setContentInnerHTML("<img src='/img/msg_icons/warning24.png'/> <b>Warning!</b> <br/><br/>Are you sure you want to Cancel your changes?<br/> Any changes that you made to this form since the last Save will be lost. <br/><br/><p align='center'><button class='btn' onclick='cancelFormFunction(); window.parent.sd.hide(); return true;'>Confirm</button>&nbsp; &nbsp; &nbsp; &nbsp; <button class='btn' onclick='window.parent.sd.hide(); return false;'>Cancel</button></p>"); 
+        sd.show();   
+        return ex;
+    }
+
+    function inputLimiter(e,allow) {
+        var AllowableCharacters = '';
+    
+        if (allow == 'Letters'){AllowableCharacters=' ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';}
+        if (allow == 'Numbers'){AllowableCharacters='1234567890.';} //Added exception for decimal point InputField check -- Ashwin Dash
+        if (allow == 'NameCharacters'){AllowableCharacters=' ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz-.\'';}
+        if (allow == 'NameCharactersAndNumbers'){AllowableCharacters='1234567890 ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz-\'';}
+        if (allow == 'Currency'){AllowableCharacters='1234567890.';}
+    
+        var k = document.all?parseInt(e.keyCode): parseInt(e.which);
+        if (k!=13 && k!=8 && k!=0){
+            if ((e.ctrlKey==false) && (e.altKey==false)) {
+            return (AllowableCharacters.indexOf(String.fromCharCode(k))!=-1);
+            } else {
+            return true;
+            }
+        } else {
+            return true;
+        }
+    } 
+    //Added for blocking special characters
+    function blockSpecialChar(e){
+        var k;
+        document.all ? k = e.keyCode : k = e.which;
+        return ((k > 64 && k < 91) || (k > 96 && k < 123) || k == 8 || k == 32 || (k >= 48 && k <= 57));
+    }
+  
+    $j(document).ready(function () {  
+        $('input:radio[name=chip_Values]').each(function(){
+            var value = $(this).val();
+            if("{!formObj.StepPlanChipRotation__c}" != null && "{!formObj.StepPlanChipRotation__c}" != ''){
+                if(value == "{!formObj.StepPlanChipRotation__c}"){
+                    $(this).prop("checked",true);
+                }
+            }           
+        });      
+        $j('.dieXSizeClass').on('change',function() {
+            var v = $j(this).val().replace(/,/g,'');
+            if(v ==null || v == '' || (v.match(/^0*([0-9]d{2,2}(\.\d{4,5})|[0-9]\d{0,1}(\.\d{4,5}))$/) && parseFloat(v)>0)){
+                console.log('Matched!!..');
+                $j('.item1').text('');
+                invalidInput('false001','DieXSize__c');
+            }else{
+                console.log('Not Match!!..');
+                $j('.item1').text('Die Size X should be greater than 0,  less than 100 and have 4 OR 5 after decimal');
+                invalidInput('true001','DieXSize__c');
+            }
+        });
+        $j('.dieYSizeClass').on('change',function() {
+            var v = $j(this).val().replace(/,/g,'');
+            if(v ==null || v == '' || (v.match(/^0*([0-9]d{2,2}(\.\d{4,5})|[0-9]\d{0,1}(\.\d{4,5}))$/) && parseFloat(v)>0)){
+                console.log('Matched!!..');
+                $j('.item2').text('');
+                invalidInput('false002','DieYSize__c');
+            }else{
+                console.log('Not Match!!..');
+                $j('.item2').text('Die Size Y should be greater than 0,  less than 100 and have 4 OR 5 after decimal');
+                invalidInput('true002','DieYSize__c');
+            }
+        });
+        $j('.NumOfDesignsClass').on('change',function() {
+            var v = $j(this).val().replace(/,/g,'');            
+            if((!v.match(/^0*([1-9]\d{2,17}|[1-9]\d{0,1})$/))&& v !=null && v != ''){
+                console.log('Not Match!!..');
+                //$j('.item3').text('Please enter value greater than 0 and max 18 digits long with no decimal digits');
+                $j('.item3').text('Total number of Topcells to be submitted should be greater than 0.');
+                invalidInput('true003','NumOfDesigns__c');
+            }else if(v.match(/^0*([1-9]\d{2,17}|[1-9]\d{0,1})$/)){
+                console.log('Matched!!..');
+                $j('.item3').text('');
+                invalidInput('false003','NumOfDesigns__c');
+            }
+            else if(v ==null || v == ''){
+                console.log('Matched!!..');
+                $j('.item3').text('');
+                invalidInput('false003','NumOfDesigns__c');
+            }
+            console.log('Value = '+v);
+        });
+        $j('.NumOfBEOLDesignsClass').on('change',function() {
+            var v = $j(this).val().replace(/,/g,'');            
+            if((!v.match(/^0*([1-9]\d{2,17}|[1-9]\d{0,1})$/))&& v !=null && v != ''){
+                console.log('Not Match!!..');
+                //$j('.item4').text('Please enter value greater than 0 and max 18 digits long with no decimal digits');
+                $j('.item4').text('Number of unique Back End of Line (Metal) designs should be greater than 0.');
+                invalidInput('true004','NumOfBEOLDesigns__c');
+            }else if(v.match(/^0*([1-9]\d{2,17}|[1-9]\d{0,1})$/)){
+                console.log('Matched!!..');
+                $j('.item4').text('');
+                invalidInput('false004','NumOfBEOLDesigns__c');
+            }
+            else if(v ==null || v == ''){
+                console.log('Matched!!..');
+                $j('.item4').text('');
+                invalidInput('false004','NumOfBEOLDesigns__c');
+            }
+        });
+        $j('.NumOfFEOLDesignsClass').on('change',function() {
+            console.log($j(this).val());
+            var v = $j(this).val().replace(/,/g,'');  
+            console.log(v);          
+            if((!v.match(/^0*([0-9]\d{0,17})$/))&& v !=null && v != ''){
+                console.log('Not Match!!..');
+                //$j('.item5').text('Please enter value greater than or equal to 0 and max 18 digits long with no decimal digits');
+                $j('.item5').text('Number of unique Front End of Line (precontact) designs should be greater than or equal to 0.');
+                invalidInput('true005','NumOfFEOLDesigns__c');
+            }else if(v.match(/^0*([1-9]\d{2,17}|[1-9]\d{0,1})$/) || (Number(v) == 0)){
+                console.log('Matched!!..');
+                $j('.item5').text('');
+                invalidInput('false005','NumOfFEOLDesigns__c');
+            }
+            else if(v ==null || v == ''){
+                console.log('Matched!!..');
+                $j('.item5').text('');
+                invalidInput('false005','NumOfFEOLDesigns__c');
+            }
+        });
+        $j('.WireBondPadPitchClass').on('change',function() {
+            var v = $j(this).val().replace(/,/g,'');            
+            //if((!v.match(/^0*([1-9]\d{0,14}|[0-1]\d{0,1})(\.\d{1,3})$/)) && v != null && v != ''){
+            //Start Bug 192 - Anil Kumar Reddy - Modifing the conditional logic.
+            //if((!v.match(/^(?=.*[1-9])\d{0,15}(?:\.\d{1,7})?$/)) && v != null && v != ''){
+            console.log('v$$'+v+'***'+Number(v));
+            if(v != null && v != '' && (Number(v) == 0)){
+                console.log('Not Match!!..');
+                //$j('.item6').text('Please enter value greater than 0 and max 15 digits long and should be a decimal with max 3 digits in decimal place');
+                $j('.item6').text('Wirebond Pad Pitch should be decimal or an integer greater than 0.'); //Modified to make it integer as well as decimal
+                invalidInput('true006','WireBondPadPitch__c');
+            //}else if(v.match(/^0*([1-9]\d{0,15}|[0-1]\d{0,1})(\.\d{1,3})$/)){
+            }
+            //else if(v.match(/^(?=.*[1-9])\d{0,15}(?:\.\d{1,7)?$/)){
+            else if(v != null && v != '' && (Number(v) > 0)){
+                console.log('Matched!!..');
+                $j('.item6').text('');
+                invalidInput('false006','WireBondPadPitch__c');
+            }
+            else if(v ==null || v == ''){
+                console.log('Matched!!..');
+                $j('.item6').text('');
+                invalidInput('false006','WireBondPadPitch__c');
+            }
+        });
+        $j('.NumC4PadsClass').on('change',function() {
+            var v = $j(this).val().replace(/,/g,'');
+            console.log('Removed comma - '+v);
+            if((!v.match(/^0*([1-9]\d{2,9}|[1-9]\d{0,1})$/))&& v !=null && v != ''){
+                console.log('Not Match!!..');
+                //$j('.item7').text('Please enter value greater than 0 and max 10 digits long with no decimal digits');
+                $j('.item7').text('Total number of active and dummy pads should be integer and greater than 0.');
+                invalidInput('true007','NumC4Pads__c');
+            }else if(v.match(/^0*([1-9]\d{2,9}|[1-9]\d{0,1})$/) ){
+                console.log('Matched!!..');
+                $j('.item7').text('');
+                invalidInput('false007','NumC4Pads__c');
+            }
+            else if(v ==null || v == ''){
+                console.log('Matched!!..');
+                $j('.item7').text('');
+                invalidInput('false007','NumC4Pads__c');
+            }
+        });
+        $j('.WireBondPadClass').on('change',function() {
+            var v = $j(this).val().replace(/,/g,'');            
+            if((!v.match(/^0*([1-9]\d{2,3}|[1-9]\d{0,1})$/))&& v !=null && v != ''){
+                console.log('Not Match!!..');
+               //$j('.item8').text('Please enter value greater than 0 and max 4 digits long with no decimal digits');
+               $j('.item8').text('Value should be an Integer greater than 0.');
+                invalidInput('true008','WireBondPad__c');
+            }else if(v.match(/^0*([1-9]\d{2,3}|[1-9]\d{0,1})$/)){
+                console.log('Matched!!..');
+                $j('.item8').text('');
+                invalidInput('false008','WireBondPad__c');
+            }
+            else if(v ==null || v == ''){
+                    console.log('Matched!!..');
+                    $j('.item8').text('');
+                    invalidInput('false008','WireBondPad__c');
+            }
+        });
+    });
+    
+    //function to block the whole page
+    function blockPage(){ 
+        $j.blockUI({ message: '<img src="/img/loading32.gif" /><h1> Refreshing...</h1>', 
+            css: { 
+             border: 'none', 
+             padding: '15px',  
+             '-webkit-border-radius': '10px', 
+             '-moz-border-radius': '10px', 
+             opacity: .9
+            } 
+        }); 
+        return false;
+    }
+    //function to unblock the page
+    function unblockPage(){
+        $j.unblockUI();
+    }
+    
+    var client = new forcetk.Client();
+    client.setSessionToken('{!$Api.Session_ID}');
+    //var fmsFileName = '';
+    
+    function validateFileSize(ele){
+        var validExts = new Array(".xlsx", ".xls", ".csv",".doc",".123",".docx",".ods",".odt" );
+        var validExtsXml = new Array(".xml", ".Xml"); 
+        var fileExt = ele.value; 
+        var fileName = ele.value;   
+        var buttonid = ele.id;
+                
+        fileExt = fileExt.substring(fileExt.lastIndexOf('.'));
+        console.log(fileExt);
+        if (buttonid == 'fileRtcl' || buttonid == 'fileECCN'){
+            if(validExts.indexOf(fileExt) < 0) {
+                fmsAlert('Invalid file selected, valid files are of' + validExts.toString() + ' types.', 'Warning');
+                reloadReticalLayoutPnl();
+            } else { 
+                if(buttonid == 'fileRtcl') {
+                    filename = fileName.replace(/^.*[\\\/]/, '');
+                    uploadtochatter(filename, buttonid);
+                } else if(buttonid == 'fileECCN') {
+                    filename = fileName.replace(/^.*[\\\/]/, '');
+                    uploadECCNtochatter(filename, buttonid);
+                }
+            }
+        } else if (buttonid == 'fileXml'){
+           if(validExtsXml.indexOf(fileExt) < 0) {
+               fmsAlert('Invalid file selected, valid files are of ' + validExtsXml.toString() + ' types.', 'Warning');
+               reloadReticalLayoutPnl();
+           } else {               
+               filename = fileName.replace(/^.*[\\\/]/, '');
+               uploadtochatter(filename, buttonid);
+           }
+        }
+    }
+    
+    function uploadtochatter(filename, buttonid){
+        showLoader();
+        var file ;
+        var fileSize ;
+        //var filesToUpload = [];
+        if(buttonid == 'fileRtcl'){ 
+            file = $j("#fileRtcl")[0].files[0];
+            fileSize = $j("#fileRtcl")[0].files[0].size;
+            console.log(fileSize);
+            fileSize =fileSize/(1024);
+            //if(fileSize>1024){
+             //   fileSize =fileSize/(1024);
+            //}
+            //console.log('fileSize^^^'+fileSize);
+            if((fileSize/(1024)) >100){
+               alert('File is too large to attach'+filesize+'MB')
+            }
+            fileSize = parseInt(fileSize);                        
+        } else if (buttonid == 'fileXml'){
+            file = $j("#fileXml")[0].files[0];
+            fileSize = $j("#fileXml")[0].files[0].size;
+            console.log(fileSize);
+            fileSize =fileSize/(1024);
+            /*if(fileSize>1024){
+                fileSize =fileSize/(1024);
+            }
+            console.log('fileSize^^^'+fileSize);*/
+            if((fileSize/(1024)) >100){
+               alert('File is too large to attach'+filesize+'MB')
+            }
+            fileSize = parseInt(fileSize);
+        }
+       client.createBlob('ContentVersion', {
+                                               Origin: 'H',
+                                               PathOnClient: filename
+                                           }, 
+                                           filename, 'VersionData', file, function(response){                                                    
+                                                $j("#message").html('<b>' + filename + '</b> uploaded successfully.');
+                                                updateChatterDetails(response.id, filename);
+                                                hideLoader();
+                                           }, function(request, status, response){
+                                                $j("#message").html('<b>' + filename + '</b> failed to upload. Please try again.');
+                                                hideLoader();
+                                           });
+    }
+    
+    function uploadECCNtochatter(filename, buttonid){
+        showLoader();
+        var file ;
+        var fileSize ;
+        //var filesToUpload = [];
+        if(buttonid == 'fileECCN') {
+            file = $j("#fileECCN")[0].files[0];
+            fileSize = $j("#fileECCN")[0].files[0].size;
+            console.log(fileSize);
+            fileSize =fileSize/(1024);
+            /*if(fileSize>1024){
+                fileSize =fileSize/(1024);
+            }
+            console.log('fileSize^^^'+fileSize);*/
+            if((fileSize/(1024)) >100){
+               alert('File is too large to attach'+filesize+'MB')
+            }
+            fileSize = parseInt(fileSize);
+        } 
+        //fmsFileName = filesToUpload.name;
+        client.createBlob('ContentVersion', {
+                                               Origin: 'H',
+                                               PathOnClient: filename
+                                           }, 
+                                           filename, 'VersionData', file, function(response){                                                    
+                                                $j("#message").html('<b>' + filename + '</b> uploaded successfully.');
+                                                //console.log(response);
+                                                updateECCNChatterDetails(response.id, filename);
+                                                hideLoader();
+                                           }, function(request, status, response){
+                                                $j("#message").html('<b>' + filename + '</b> failed to upload. Please try again.');
+                                                hideLoader();
+                                           });
+    }
+   function fmsAlert(message, titleText){
+       $j('#fmsModal').html(message).dialog({
+             modal: true, 
+             title: titleText,
+             draggable:false,
+             resizable:false,
+             closeOnEscape: false
+        });
+   }
+    
+   function showLoader(){
+       document.getElementById('el_loading').style.display = 'block';
+   }
+   function hideLoader(){
+       document.getElementById('el_loading').style.display = 'none';
+   }
+  
+    /*function getLicenseDetails(){
+        Visualforce.remoting.Manager.invokeAction(
+                '{!$RemoteAction.FMSmainFormEditController.checkLicense}',                
+                function(result, event){
+                    if (result != null) {                                           
+                        alert(result);                        
+                    } 
+                    else{                                               
+                        GoToConfig();
+                    }                                  
+                }
+            );
+    }*/
+
+    var chipValues;
+    function setChipRotation(selChipRValue, status){
+        if (status.checked){
+            chipValues = selChipRValue;
+        }
+        sendRotationValues(chipValues);
+    }
+
+</script>
+<apex:outputPanel id="nonPnl">
+    <script>
+        $j = jQuery.noConflict();
+        //Remove None from picklist
+        $j(function() {        
+            $j("select.RemoveNone option[value='']").text("=== Select a Value ===");       
+        });
+
+        $j(document).ready(function () {  
+            //Added by Abhita for new UAT Issue #14
+            $j('.VerticalXClass').on('change',function() {
+                console.log($j(this).val());
+                var v = $j(this).val().replace(/,/g,'');            
+                if(v != null && v != '' && (Number(v) == 0)){
+                    console.log('Not Match!!..');
+                    $j('.itemV').text('Dicing Channel Width X should be an integer or decimal greater than 0.');
+                    invalidInput('true009','VerticalX__c');
+                }
+                else if(v != null && v != '' && (Number(v) > 0)){
+                    console.log('Matched!!..');
+                    $j('.itemV').text('');
+                    invalidInput('false009','VerticalX__c');
+                }
+                else if(v ==null || v == ''){
+                    console.log('Matched!!..');
+                    $j('.itemV').text('');
+                    invalidInput('false009','VerticalX__c');
+                }
+            });
+            //Added by Anirban for new UAT Issues #24 and #38
+            $j('.VerticalXClass').on('keyup paste',function(e) {
+                if ($j(this).val().split('.').length > 2){
+                    $j(this).val($j(this).val().split('.')[0]+'.'+$j(this).val().split('.')[1]);
+                }
+            });
+            $j('.VerticalXClass').on('blur',function(e) {
+                if ($j(this).val()=='.'){
+                    $j(this).val('');
+                }
+            });
+            //Added by Abhita for new UAT Issue #14
+            $j('.HorizontalYClass').on('change',function() {
+                var v = $j(this).val().replace(/,/g,'');            
+                if(v != null && v != '' && (Number(v) == 0)){
+                    console.log('Not Match!!..');
+                    $j('.itemH').text('Dicing Channel Width Y should be an integer or decimal greater than 0.');
+                    invalidInput('true010','HorizontalY__c');
+                }
+                else if(v != null && v != '' && (Number(v) > 0)){
+                    console.log('Matched!!..');
+                    $j('.itemH').text('');
+                    invalidInput('false010','HorizontalY__c');
+                }
+                else if(v ==null || v == ''){
+                    console.log('Matched!!..');
+                    $j('.itemH').text('');
+                    invalidInput('false010','HorizontalY__c');
+                }
+            });
+            //Added by Anirban for new UAT Issues #24 and #38
+            $j('.HorizontalYClass').on('keyup paste',function(e) {
+                if ($j(this).val().split('.').length > 2){
+                    $j(this).val($j(this).val().split('.')[0]+'.'+$j(this).val().split('.')[1]);
+                }
+            });
+            $j('.HorizontalYClass').on('blur',function(e) {
+                if ($j(this).val()=='.'){
+                    $j(this).val('');
+                }
+            });
+        });
+    </script>
+</apex:outputPanel>
+<!--END - Added JQuery for InputField check -- Ashwin Dash-->
+<apex:pagemessages id="errorMsg" /> 
+
+<apex:form id="fmsFormpg3">
+
+    <c:FMSNameDesc ></c:FMSNameDesc>
+    
+    <apex:outputPanel id="myPanel">
+        <!-- Empty panel created intentionally. Please don't remove -->
+    </apex:outputPanel>
+
+    <apex:actionFunction name="saveandExit" action="{!saveandExit}">
+        <apex:param name="page" value="" assignTo="{!pageN}"/>
+    </apex:actionFunction>
+
+    <apex:actionFunction name="sendRotationValues" action="{!chipRotationValues}" reRender="myPanel">
+        <apex:param name="chipInput" value="" assignTo="{!selChipValue}"/>
+    </apex:actionFunction>
+    <!--START - Added Function for InputField check -- Ashwin Dash-->
+    <apex:actionFunction name="invalidInput" action="{!invInput}" reRender="false"> 
+        <apex:param id="aname" name="inpVal" value="" />
+        <apex:param id="fname" name="fieldName" value=""/>
+    </apex:actionFunction>
+    
+    <!--END - Added Function for InputField check -- Ashwin Dash-->
+    
+    <apex:actionFunction name="updateChatterDetails" action="{!updateFiledetails}" reRender="uploadFile" status="blockUI">
+        <apex:param assignTo="{!uploadFileId}" name="uploadFileId" value=""/>
+        <apex:param assignTo="{!uploadFileName}" name="uploadFileName" value=""/>
+        <!--<apex:param assignTo="{!uploadFileSize}" name="uploadFileSize" value=""/>-->
+    </apex:actionFunction>
+    
+    <apex:actionFunction name="updateECCNChatterDetails" action="{!updateECCNFiledetails}" reRender="uploadFile, uploadECCNFile">
+        <apex:param assignTo="{!uploadECCNFileId}" name="uploadECCNFileId" value=""/>
+        <apex:param assignTo="{!uploadFileName}" name="uploadECCNFileName" value=""/>
+        <!--<apex:param assignTo="{!uploadFileSize}" name="uploadECCNFileSize" value=""/>-->
+    </apex:actionFunction>
+    
+    <apex:actionFunction name="reloadReticalLayoutPnl" id="reloadReticalLayoutid" reRender="uploadFile, " status="blockUI"/>
+
+    <apex:actionFunction name="cancelFormFunction" action="{!cancelForm}" status="blockUI"/>
+    <apex:actionStatus onstart="blockPage()" onstop="unblockPage()" id="blockUI"/>
+    
+    <apex:pageblock title="Form Page {!pageNum}" id="pb1">
+        <apex:pageBlockSection title="Chip Description" columns="1" collapsible="false">
+            <apex:outputPanel rendered="{!(formObj.ReleaseProcessFlow__c == 'Original Flow' && formObj.DesignSubmission__c != 'Multi-Design Reticle (>1 Topcell)')}"><!--Changed by ABhita for new UAT Issue #209-->
+                <p style="color:black;">
+                Final Chip Size is due 8 business days prior to tapeout. Please ensure the accuracy of the Final Chip Size prior to "Freezing" this FMS Main Form to avoid delays.
+                </p> 
+            </apex:outputPanel><!--Added the message for new UAT issue #188-->
+            <apex:actionRegion >
+                <!--ECCN Section --  To be added by Abhita -->
+                <!-- Commented as per FMS_16 - Start-->
+                <!--
+                <apex:outputPanel rendered="{! (isTFACompany && (formObj.DesignSubmission__c == 'Multi-Design Reticle (>1 Topcell)' 
+                                                    || formObj.DesignSubmission__c == 'Multi-Chiplet Design (one GDS, single Topcell)'))}">
+                    <p style="color:black;">
+                    Please download the ECCN Template from ICC technical library(link below), populate with codes for each project, and attach in this section of the main 
+                    questionnaire accordingly. Contact your supporting FAEif you have any questions.
+                    </p>   
+                    <br/>
+                    <!--Ravindra - Libraries changes Starts
+                    <apex:outputLink value="{!FMSdocuments['FMSMainFormECCNTemplate'].FMSRefDocURL__c}" style="color:blue;margin-left:370px; text-decoration:underline;">
+                    <apex:outputLink value="{!FMSdocuments['ECCN Template']}"  style="color:blue;margin-left:370px; text-decoration:underline;">
+                        Link to ECCN template
+                    </apex:outputLink>
+                   <!--Ravindra - Libraries changes Ends
+                    <br/> <br/>
+                    
+                    <apex:outputText style="padding-left: 22%;color:black;" value="Allowable file types are (.xls,.csv,.123,.doc,.xlsx,.docx,.ods,.odt) and Max file size: 100MB" />
+                    <br/><br/>
+                    
+                    <apex:outputPanel id="uploadECCNFile">
+                        <apex:pageblockSection >
+                            <apex:pageBlockSectionItem > 
+                                <apex:outputLabel value="ECCN Layout Information:" style="padding-left: 19%;"/>
+                                <apex:outputPanel >   
+                                   <div class = "requiredInput">
+                                        <div class = "requiredBlock"></div> 
+                                        <input type="file" id="fileECCN" title="file" onchange="validateFileSize(this)" style="display: {!IF(attWrapECCN.size == 0,'inline','none')} ;"/> 
+                                        <img src="/img/alohaSkin/help_orange.png" title="Click 'Chosse File' to select and then upload an attachment of your Import/Export file." height="13" width="13"/> <!--Changed By Abhita for UAT Issue #216           
+                                   </div>
+                                   <div id="el_loading" class="loadingDiv" style="display:none;">
+                                        <span id="loadingHolder" class="loadingHolder">
+                                        <img class="loadingImage" title="Loading..." alt="Loading..." src="/img/loading32.gif"/>
+                                        <span class="loadingDescription">Please wait...</span>
+                                        </span>
+                                   </div> 
+                               </apex:outputPanel>                                                                                                 
+                            </apex:pageBlockSectionItem>    
+                        </apex:pageblockSection>                    
+                                    
+                        <div id="message" style="padding-left: 19%;"></div>
+                        <div id="fmsModal"></div>
+                        <br/>
+                        <apex:pageBlockSection rendered="{!(attWrapECCN!=null && attWrapECCN.size!=0)}">
+                            <apex:pageBlockSectionItem dataStyle="padding-left: 19%;width: 68%;">
+                                <apex:pageBlockTable value="{!attWrapECCN}" var="attvarE" >
+                                    <apex:column headerValue="Attachment name">
+                                        <apex:outputLink id="link" value="/sfc/servlet.shepherd/version/download/{!attvarE.attId}" style="color: blue;text-decoration: underline;">{!attvarE.attName}</apex:outputLink>
+                                    </apex:column>
+                                    <apex:column headerValue="Size">
+                                        <apex:outputText value="{!attvarE.attSize}" />
+                                    </apex:column>
+                                    <apex:column headerValue="Action">
+                                        <apex:commandLink action="{!deleteAttachment}" onclick="if(!confirm('Are you sure?')) return false;" reRender="uploadECCNFile" status="dispDeletE" style="color: blue;text-decoration: underline;">Delete
+                                                <apex:param name="attidE" value="{!attvarE.ContentEDocumentId}" assignTo="{!selContentDocEId}"/>
+                                        </apex:commandLink>
+                                    </apex:column>
+                                </apex:pageBlockTable>                        
+                            </apex:pageBlockSectionItem>
+                            <apex:actionStatus id="dispDeletE" startText="Please Wait..." stopText="" style="padding-left: 50%;"/>                    
+                        </apex:pageBlockSection>
+                    </apex:outputPanel>   
+                </apex:outputPanel>
+                <!-- Commented as per FMS_16 - End-->
+                <!--ECCN Section --  To be added by Abhita -->
+                           
+                <apex:outputPanel >
+                    <apex:pageBlockSection >
+                        <apex:pageBlockSectionItem rendered="{!dispNumOfDesigns}">
+                            <apex:outputLabel value="What is the total number of Topcells that will be submitted for this program?"/>
+                            <apex:outputPanel >   
+                                <div class = "requiredInput">
+                                    <div class = "requiredBlock"></div>   
+                                    <apex:inputField onkeypress="return inputLimiter(event,'Numbers');" value="{!formObj.NumOfDesigns__c}" styleClass="NumOfDesignsClass"/> <!--Added class name for InputField check -- Ashwin Dash-->
+                                     <img src="/img/alohaSkin/help_orange.png" title="{!$ObjectType.Form_Management_System__c.fields.NumOfDesigns__c.InlineHelpText}" height="13" width="13" />  
+                                </div>    
+                                <label id="msg3" class="item3" style="color:red;"> </label>  <!-- Added label for error message -- Ashwin Dash -->
+                            </apex:outputPanel>  
+                        </apex:pageBlockSectionItem>
+                    </apex:pageBlockSection>
+                </apex:outputPanel>
+                
+                <!-- Commented by shiva - UnCommenting it and adding the rendering condition- Ashwin -->
+                <apex:outputPanel rendered="{!dispNumOfDesigns}">
+                <p> Warning: The accuracy of this field is critical to the success of the automation. The total number of Topcells entered should equal the quantity of Topcells being submitted in the attached RIT addendum.</p> 
+                </apex:outputPanel>
+                <apex:outputPanel >
+                    <apex:pageBlockSection >
+                        <apex:pageBlockSectionItem rendered="{!dispNumOfDesigns}">
+                            <apex:outputLabel value="Number of unique Front End of Line (precontact) designs:"/>
+                            <apex:outputPanel >   
+                                <div class = "requiredInput">
+                                    <div class = "requiredBlock"></div>   
+                                    <apex:inputField onkeypress="return inputLimiter(event,'Numbers');" value="{!formObj.NumOfFEOLDesigns__c}" styleClass="NumOfFEOLDesignsClass"/> <!--Added class name for InputField check -- Ashwin Dash-->
+                                    <img src="/img/alohaSkin/help_orange.png" title="{!$ObjectType.Form_Management_System__c.fields.NumOfFEOLDesigns__c.InlineHelpText}" height="13" width="13" />  
+                                </div>    
+                                <label id="msg5" class="item5" style="color:red;"> </label>  <!-- Added label for error message -- Ashwin Dash -->
+                            </apex:outputPanel>  
+                        </apex:pageBlockSectionItem>
+                    </apex:pageBlockSection>
+                </apex:outputPanel>
+                
+                <apex:outputPanel >
+                    <apex:pageBlockSection >
+                        <apex:pageBlockSectionItem rendered="{!dispNumOfDesigns}">
+                            <apex:outputLabel value="Number of unique Back End of Line (Metal) designs:"/>
+                            <apex:outputPanel >   
+                                <div class = "requiredInput">
+                                    <div class = "requiredBlock"></div>   
+                                    <apex:inputField onkeypress="return inputLimiter(event,'Numbers');" value="{!formObj.NumOfBEOLDesigns__c}" styleClass="NumOfBEOLDesignsClass"/> <!--Added class name for InputField check -- Ashwin Dash-->
+                                    <img src="/img/alohaSkin/help_orange.png" title="{!$ObjectType.Form_Management_System__c.fields.NumOfBEOLDesigns__c.InlineHelpText}" height="13" width="13" />  
+                                </div>    
+                                <label id="msg4" class="item4" style="color:red;"> </label>  <!-- Added label for error message -- Ashwin Dash -->
+                            </apex:outputPanel>  
+                        </apex:pageBlockSectionItem>
+                    </apex:pageBlockSection>
+                </apex:outputPanel>
+                
+                <apex:outputPanel >
+                    <apex:pageBlockSection >
+                        <apex:pageBlockSectionItem rendered="{!formObj.DesignSubmission__c != 'Multi-Design Reticle (>1 Topcell)' && (!(formObj.ReleaseProcessFlow__c == 'Enhanced Flow' && formObj.QuoteOnly__c != 'No')) && (!(formObj.ReleaseProcessFlow__c == 'Enhanced Flow' && isTFACompany))}">
+                            <apex:outputLabel value="Final Chip Size x (mm):"/>
+                            <apex:outputPanel >   
+                                <div class = "requiredInput">
+                                    <div class = "requiredBlock"></div>
+                                    <apex:inputField onkeypress="return inputLimiter(event,'Numbers');" value="{!formObj.DieXSize__c}" styleClass="dieXSizeClass"/>    <!--Added class name for InputField check -- Ashwin Dash-->
+                                   <!-- <a href="{!FMSdocuments['FMSMainFormPage3'].FMSRefDocURL__c}" target="_blank">
+                                        <img src="/img/alohaSkin/help_orange.png" height="13" width="13" />
+                                    </a>-->
+                                    <img src="/img/alohaSkin/help_orange.png" title="{!$ObjectType.Form_Management_System__c.fields.DieXSize__c.InlineHelpText}" height="13" width="13" />  
+                                </div>  
+                                <label id="msg1" class="item1" style="color:red;"></label>  <!-- Added label for error message -- Ashwin Dash -->
+                            </apex:outputPanel>  
+                        </apex:pageBlockSectionItem>
+                    </apex:pageBlockSection>
+                </apex:outputPanel>
+                
+                <apex:outputPanel >
+                    <apex:pageBlockSection >
+                        <apex:pageBlockSectionItem rendered="{!formObj.DesignSubmission__c != 'Multi-Design Reticle (>1 Topcell)' && (!(formObj.ReleaseProcessFlow__c == 'Enhanced Flow' && formObj.QuoteOnly__c != 'No')) && (!(formObj.ReleaseProcessFlow__c == 'Enhanced Flow' && isTFACompany))}">
+                            <apex:outputLabel value="Final Chip Size y (mm):"/>
+                            <apex:outputPanel >   
+                                <div class = "requiredInput">
+                                    <div class = "requiredBlock"></div> 
+                                    <apex:inputField onkeypress="return inputLimiter(event,'Numbers');" value="{!formObj.DieYSize__c}" styleClass="dieYSizeClass"/>   <!--Added class name for InputField check -- Ashwin Dash-->
+                                   <!-- <a href="{!FMSdocuments['FMSMainFormPage3'].FMSRefDocURL__c}" target="_blank">
+                                        <img src="/img/alohaSkin/help_orange.png" height="13" width="13" />
+                                    </a> -->
+                                     <img src="/img/alohaSkin/help_orange.png" title="{!$ObjectType.Form_Management_System__c.fields.DieYSize__c.InlineHelpText}" height="13" width="13" /> 
+                                </div>     
+                                <label id="msg2" class="item2" style="color:red;"></label>  <!-- Added label for error message -- Ashwin Dash -->
+                            </apex:outputPanel> 
+                        </apex:pageBlockSectionItem>
+                    </apex:pageBlockSection>
+                </apex:outputPanel>
+
+                <apex:outputPanel rendered="{!(formObj.DesignSubmission__c != 'Multi-Design Reticle (>1 Topcell)' && (formobj.Technology__c == 'BiMOS P6' || formobj.Technology__c == 'BMSP6C9'))}">
+                    <p>Please ensure that these chip sizes do not include the Intersil scribe. Step Plans must be built with chip sizes that do not include the scribe. Incorrectly reported chip sizes will result in delays to RTM.</p> 
+                </apex:outputPanel><!--Added by Abhita for new UAT Issue #237-->
+                
+                <apex:outputPanel >
+                    <apex:pageBlockSection >
+                        <apex:pageBlockSectionItem rendered="{!dispChamferedCorner}">
+                            <apex:outputLabel value="Chamfered Corners?"/>
+                            <apex:outputPanel >                      
+                                <apex:selectList value="{!formObj.ChamferedCorner__c}" multiselect="false" size="1" >
+                                    <apex:selectOptions value="{!ChamferedCornersList}"/>
+                                </apex:selectList> 
+                                <img src="/img/alohaSkin/help_orange.png" title="{!$ObjectType.Form_Management_System__c.fields.ChamferedCorner__c.InlineHelpText}" height="13" width="13" /> <!--Added by Abhita for new UAT Issue #216-->
+                            </apex:outputPanel>  
+                        </apex:pageBlockSectionItem>
+                    </apex:pageBlockSection>
+                </apex:outputPanel>
+                
+                <apex:outputPanel >
+                    <apex:pageBlockSection >
+                        <apex:pageBlockSectionItem rendered="{!dispMaxChipPower}">
+                            <apex:outputLabel value="Max Chip Power:"/>
+                            <apex:outputPanel >   
+                                <div class = "requiredInput">
+                                    <div class = "requiredBlock"></div>   
+                                    <apex:inputField styleClass="RemoveNone" value="{!formObj.MaxChipPower__c}"/>  
+                                </div>    
+                            </apex:outputPanel>  
+                        </apex:pageBlockSectionItem>
+                    </apex:pageBlockSection>
+                </apex:outputPanel>               
+                
+                <apex:outputPanel >
+                    <apex:pageBlockSection >
+                        <apex:pageBlockSectionItem rendered="{!dispCircuitType}">
+                            <apex:outputLabel value="Circuit Type:"/>
+                            <apex:outputPanel >   
+                                <div class = "requiredInput">
+                                    <div class = "requiredBlock"></div>   
+                                    <apex:inputField styleClass="RemoveNone" value="{!formObj.CircuitType__c}"/> <!-- Added By Abhita for replacing None with Select a value-->
+                                     <img src="/img/alohaSkin/help_orange.png" title="{!$ObjectType.Form_Management_System__c.fields.CircuitType__c.InlineHelpText}" height="13" width="13" />  
+                                </div>  
+                            </apex:outputPanel>  
+                        </apex:pageBlockSectionItem>
+                    </apex:pageBlockSection>
+                </apex:outputPanel>
+                
+                <apex:outputPanel >
+                    <apex:pageBlockSection >
+                        <apex:pageBlockSectionItem rendered="{!dispWireBondPadPitch}">
+                            <apex:outputLabel value="Wirebond Pad Pitch (microns):"/>
+                            <apex:outputPanel >   
+                                <div class = "requiredInput">
+                                    <div class = "requiredBlock"></div>   
+                                    <apex:inputField onkeypress="return inputLimiter(event,'Numbers');" value="{!formObj.WireBondPadPitch__c}" styleClass="WireBondPadPitchClass"/>   <!--Added class name for InputField check -- Ashwin Dash-->  
+                                    <img src="/img/alohaSkin/help_orange.png" title="{!$ObjectType.Form_Management_System__c.fields.WireBondPadPitch__c.InlineHelpText}" height="13" width="13" /> 
+                                </div>     
+                                <label id="msg6" class="item6" style="color:red;"></label>  <!-- Added label for error message -- Ashwin Dash -->                               
+                            </apex:outputPanel>  
+                        </apex:pageBlockSectionItem>
+                    </apex:pageBlockSection>
+                </apex:outputPanel>
+                               
+                
+                <apex:outputPanel >
+                    <apex:pageBlockSection >
+                        <apex:pageBlockSectionItem rendered="{!dispC4PadLayout}">
+                            <apex:outputLabel value="Pad/Bump Pitch:"/>
+                            <apex:outputPanel >   
+                                <div class = "requiredInput">
+                                    <div class = "requiredBlock"></div> 
+                                    <apex:selectList value="{!formObj.C4PadLayout__c}" multiselect="false" size="1" >
+                                        <apex:selectOptions value="{!C4PadLayoutList}"/>
+                                    </apex:selectList>         
+                                    <apex:actionSupport event="onchange" action="{!renderC4PadLayoutForDRC}" reRender="C4PadLayoutDRCPanel,OtherC4PadLayout" status="c4Status">
+                                        <apex:param assignTo="{!fieldAPI}" name="fieldAPI" value="C4PadLayout__c"/>
+                                    </apex:actionSupport>
+                                   <!-- <a href="{!FMSdocuments['FMSMainFormPage3'].FMSRefDocURL__c}" target="_blank">
+                                        <img src="/img/alohaSkin/help_orange.png" height="13" width="13" />
+                                    </a>-->
+                                    <img src="/img/alohaSkin/help_orange.png" title="{!$ObjectType.Form_Management_System__c.fields.C4PadLayout__c.InlineHelpText}" height="13" width="13" />  
+                                </div>   
+                                <apex:actionStatus id="c4Status" startText="Refreshing..." stopText=""/>
+                            </apex:outputPanel>  
+                        </apex:pageBlockSectionItem>
+                    </apex:pageBlockSection>
+                </apex:outputPanel>
+                
+                <apex:outputPanel id="OtherC4PadLayout">
+                    <apex:pageBlockSection >
+                        <apex:pageBlockSectionItem rendered="{!dispOtherC4PadLayout}">
+                            <apex:outputLabel value="Other (microns):"/>
+                            <apex:outputPanel >   
+                                <div class = "requiredInput">
+                                    <div class = "requiredBlock"></div>
+                                    <apex:inputField onkeypress="return blockSpecialChar(event);" value="{!formObj.OtherC4PadLayout__c}"/>
+                                   <!-- <a href="{!FMSdocuments['FMSMainFormPage3'].FMSRefDocURL__c}" target="_blank">
+                                        <img src="/img/alohaSkin/help_orange.png" height="13" width="13" />
+                                    </a>-->
+                                    <img src="/img/alohaSkin/help_orange.png" title="{!$ObjectType.Form_Management_System__c.fields.OtherC4PadLayout__c.InlineHelpText}" height="13" width="13" />  
+                                </div>   
+                            </apex:outputPanel>  
+                        </apex:pageBlockSectionItem>
+                    </apex:pageBlockSection>
+                </apex:outputPanel>
+                
+                <apex:outputPanel id="C4PadLayoutDRCPanel">
+                    <apex:pageBlockSection >
+                        <apex:pageBlockSectionItem rendered="{!dispC4PadLayoutForDRC}">
+                            <apex:outputLabel value="Pad/Bump Pitch used for DRC?"/>
+                            <apex:outputPanel >   
+                                <div class = "requiredInput">
+                                    <div class = "requiredBlock"></div> 
+                                    <apex:selectList value="{!formObj.C4PadLayoutForDRC__c}" multiselect="false" size="1" >
+                                        <apex:selectOptions value="{!C4PadLayoutForDRCList}"/>
+                                    </apex:selectList>                                
+                                   <!-- <a href="{!FMSdocuments['FMSMainFormPage3'].FMSRefDocURL__c}" target="_blank">
+                                        <img src="/img/alohaSkin/help_orange.png" height="13" width="13" />
+                                    </a> -->
+                                    <img src="/img/alohaSkin/help_orange.png" title="{!$ObjectType.Form_Management_System__c.fields.C4PadLayoutForDRC__c.InlineHelpText}" height="13" width="13" />  
+                                </div>   
+                            </apex:outputPanel>  
+                        </apex:pageBlockSectionItem>
+                    </apex:pageBlockSection>
+                </apex:outputPanel>
+                
+                <apex:outputPanel >
+                    <apex:pageBlockSection >
+                        <apex:pageBlockSectionItem rendered="{!dispNumC4Pads}">
+                            <apex:outputLabel value="Total number of active and dummy pads:"/>
+                            <apex:outputPanel >   
+                                <div class = "requiredInput">
+                                    <div class = "requiredBlock"></div>                     
+                                    <apex:inputField onkeypress="return inputLimiter(event,'Numbers');" value="{!formObj.NumC4Pads__c}" styleClass="NumC4PadsClass"/>   <!--Added class name for InputField check -- Ashwin Dash-->
+                                    <img src="/img/alohaSkin/help_orange.png" title="{!$ObjectType.Form_Management_System__c.Fields.NumC4Pads__c.inlineHelpText}" height="13" width="13"/>
+                                </div>      
+                                <label id="msg7" class="item7" style="color:red;"></label>  <!-- Added label for error message -- Ashwin Dash -->   
+                            </apex:outputPanel>  
+                        </apex:pageBlockSectionItem>
+                    </apex:pageBlockSection>
+                </apex:outputPanel>
+                
+                <apex:outputPanel >
+                    <apex:pageBlockSection >
+                        <apex:pageBlockSectionItem rendered="{!dispC4SolderMaterial}">
+                            <apex:outputLabel value="C4 Solder Material:"/>
+                            <apex:outputPanel >   
+                                <div class = "requiredInput">
+                                    <div class = "requiredBlock"></div>                     
+                                    <apex:selectList value="{!formObj.C4SolderMaterial__c}" multiselect="false" size="1" >
+                                            <apex:selectOptions value="{!C4SolderMaterialList}"/>
+                                    </apex:selectList>  
+                                    <img src="/img/alohaSkin/help_orange.png" title="{!$ObjectType.Form_Management_System__c.Fields.C4SolderMaterial__c.inlineHelpText}" height="13" width="13"/><!--Added by Abhita for new UAT Issue #216-->
+                                </div> 
+                            </apex:outputPanel>  
+                        </apex:pageBlockSectionItem>
+                    </apex:pageBlockSection>
+                </apex:outputPanel>
+                
+                <apex:outputPanel >
+                    <apex:pageBlockSection >
+                        <apex:pageBlockSectionItem rendered="{!dispC4LaminatePackage}">
+                            <apex:outputLabel value="Will you be using a laminate package?:"/>
+                            <apex:outputPanel >   
+                                <div class = "requiredInput">
+                                    <div class = "requiredBlock"></div>                     
+                                    <apex:inputField styleClass="RemoveNone"  value="{!formObj.C4LaminatePkg__c}"/> <!-- Added By Abhita for replacing None with Select a value-->
+                                    <img src="/img/alohaSkin/help_orange.png" title="{!$ObjectType.Form_Management_System__c.Fields.C4LaminatePkg__c.inlineHelpText}" height="13" width="13"/><!--Added by Abhita for new UAT Issue #216-->
+                                </div> 
+                            </apex:outputPanel>  
+                        </apex:pageBlockSectionItem>
+                    </apex:pageBlockSection>
+                </apex:outputPanel>
+                
+                <apex:outputPanel >
+                    <apex:pageBlockSection >
+                        <apex:pageBlockSectionItem rendered="{!dispWirebondLayout}">
+                            <apex:outputLabel value="Wirebond Layout:"/>
+                            <apex:outputPanel >   
+                                <div class = "requiredInput">
+                                    <div class = "requiredBlock"></div>                     
+                                    <apex:inputField styleClass="RemoveNone" value="{!formObj.WireBondLayout__c}"/> <!-- Added By Abhita for replacing None with Select a value-->
+                                    <img src="/img/alohaSkin/help_orange.png" title="{!$ObjectType.Form_Management_System__c.Fields.WireBondLayout__c.inlineHelpText}" height="13" width="13"/>
+                                </div> 
+                            </apex:outputPanel>  
+                        </apex:pageBlockSectionItem>
+                    </apex:pageBlockSection>
+                </apex:outputPanel>
+                
+                <apex:outputPanel >
+                    <apex:pageBlockSection >
+                        <apex:pageBlockSectionItem rendered="{!dispWirebondPad}">
+                            <apex:outputLabel value="Total number of active and dummy Wirebond pads?:"/>
+                            <apex:outputPanel >   
+                                <div class = "requiredInput">
+                                    <div class = "requiredBlock"></div>                     
+                                    <apex:inputField onkeypress="return inputLimiter(event,'Numbers');" value="{!formObj.WireBondPad__c}" styleClass="WireBondPadClass"/>   <!--Added class name for InputField check -- Ashwin Dash-->
+                                    <img src="/img/alohaSkin/help_orange.png" title="{!$ObjectType.Form_Management_System__c.fields.WireBondPad__c.InlineHelpText}" height="13" width="13" />                        
+                                </div>      
+                                <label id="msg8" class="item8" style="color:red;"></label>  <!-- Added label for error message -- Ashwin Dash -->   
+                            </apex:outputPanel>  
+                        </apex:pageBlockSectionItem>
+                    </apex:pageBlockSection>
+                </apex:outputPanel>
+            </apex:actionRegion>
+        </apex:pageBlockSection>   
+         
+        <!--START Step Plan Design Section --  To be added by Abhita -->
+        <apex:pageBlockSection title="Step Plan Design" columns="1" rendered="{!dispStepPlanSection}" collapsible="false">
+        <apex:outputPanel rendered="{!displayNotAvailableMsg}"> <!-- Added By Abhita for WebRDTS Integration-->
+            <p style="color:red;">Step Plan Design information is currently unavailable. If this message is displaying during a weekly planned maintenance window (Sunday 6PM-midnight EST), please return to the form at a later time. If this message is displaying at a time other than the planned maintenance window, please contact your Foundry Technical Representative for assistance.</p>   
+            <br/>
+        </apex:outputPanel>
+        
+        <apex:outputPanel rendered="{! !displayNotAvailableMsg}">
+            <p style="color:black;">For terminology definition or assistance with answering the following questions, please review the Step Plan Education Package (link below). Contact your Foundry Technical Representative if you need additional assistance. </p>   
+            <br/>
+            <apex:actionRegion >
+                <apex:outputPanel >
+                    <apex:pageBlockSection >
+                        <apex:pageBlockSectionItem >                
+                            <apex:outputLabel value="Have you read and do you understand the Step Plan Education Package?"/>
+                            <apex:outputPanel >   
+                                <div class = "requiredInput">
+                                    <div class = "requiredBlock"></div>                     
+                                    <apex:inputField styleClass="RemoveNone"  value="{!formObj.StepPlanEducation__c}"/> <!-- Added By Abhita for replacing None with Select a value-->
+                                    <apex:actionSupport event="onchange" reRender="inputMessage" status="dispMes"/>  
+                                  <!--  <a href="{!FMSdocuments['FMSMainFormPage3'].FMSRefDocURL__c}" target="_blank">
+                                            <img src="/img/alohaSkin/help_orange.png" height="13" width="13" />
+                                    </a> -->
+                                  <img src="/img/alohaSkin/help_orange.png" title="{!$ObjectType.Form_Management_System__c.fields.StepPlanEducation__c.InlineHelpText}" height="13" width="13" />                        
+                                </div> 
+                                <apex:actionStatus id="dispMes" startText="Refreshing..." stopText="" />
+                            </apex:outputPanel>  
+                        </apex:pageBlockSectionItem>
+                    </apex:pageBlockSection>
+                </apex:outputPanel>
+                
+                <apex:outputPanel id="inputMessage">
+                   <apex:outputPanel rendered="{!formObj.StepPlanEducation__c == 'No'}">
+                       <p>You have selected "No", that you have not read or do not understand the Step Plan Education Package. Please review the document at the link below. If you need further clarification, please contact your Foundry Technical Representative. </p>
+                       <br/>
+                   </apex:outputPanel>
+                </apex:outputPanel> 
+                
+                <apex:outputPanel >
+                <!--Ravindra - Libraries changes Starts
+					 <apex:outputLink style="padding-left: 22%;text-decoration: underline;color:blue;" value="{!FMSdocuments['FMSMainFormStepPlanEducationPackage'].FMSRefDocURL__c}" id="theLink" target="_blank">Link to Step Plan Education Package</apex:outputLink>-->
+                       <apex:outputLink style="padding-left: 22%;text-decoration: underline;color:blue;" value="{!URLFOR($Page.FMS_DocumentLinkPage)}?documentPage=StepPlan" id="theLink" target="_blank">Link to Step Plan Education Package</apex:outputLink>
+                <!--Ravindra - Libraries changes Ends-->    
+                </apex:outputPanel>
+                <br/> <br/>
+                
+                <apex:outputPanel >
+                    <apex:pageblocksection >
+                        <apex:pageBlockSectionItem rendered="{!dispInputMethod}" >
+                            <apex:outputLabel value="Select your step plan input Methodology:"/>
+                            <apex:outputPanel >   
+                                <div class = "requiredInput">
+                                    <div class = "requiredBlock"></div>                     
+                                    <apex:selectList value="{!formObj.InputMethod__c}" multiselect="false" size="1" id="inMeth" style="width:180%">
+                                        <apex:selectOptions value="{!inputMethodList}"/>
+                                    </apex:selectList> 
+                                    <apex:actionSupport event="onchange" action="{!changeInputMethod}" reRender="reticleMessage, uploadFile, ChipRotate, nonPnl" status="dispMesandLink">    
+                                        <apex:param assignTo="{!fieldAPI}" name="fieldAPI" value="InputMethod__c"/>
+                                    </apex:actionSupport>
+                                 <!--   <a href="{!FMSdocuments['FMSMainFormPage3'].FMSRefDocURL__c}" target="_blank">
+                                            <img src="/img/alohaSkin/help_orange.png" height="13" width="13" />
+                                    </a>-->
+                                <img src="/img/alohaSkin/help_orange.png" title="{!$ObjectType.Form_Management_System__c.fields.InputMethod__c.InlineHelpText}" height="13" width="13" />           
+                                </div> 
+                                <apex:actionStatus id="dispMesandLink" startText="Refreshing..." stopText="" />
+                            </apex:outputPanel>  
+                        </apex:pageBlockSectionItem> 
+                    </apex:pageblocksection> 
+                </apex:outputPanel>
+                
+                <apex:outputPanel id="reticleMessage">
+                   <apex:outputPanel rendered="{!formObj.InputMethod__c == 'Standard Process: Inputs via Step Plan Design FMS questions and Reticle Layout attachment' || dispStdReticle}">
+                       <p style="color:black;"><b>Please download the Reticle Layout Template using the link below. Populate the document with all requested information, rename to reflect the program name, then attach to this form. Contact your supporting PE if you have any questions.</b></p> <!--Changed by abhita for New UAT Issue #53-->
+                       <br/>
+                       
+                       <!--Ravindra - Libraries changes Starts
+                       <apex:outputLink style="padding-left: 22%;text-decoration: underline;color:blue;" value="{!FMSdocuments['FMSMainFormReticleLayoutTemplate'].FMSRefDocURL__c}" id="theLink1" target="_blank">Link to reticle layout template</apex:outputLink>-->
+                       <apex:outputLink style="padding-left: 22%;text-decoration: underline;color:blue;" value="{!URLFOR($Page.FMS_DocumentLinkPage)}?documentPage=StepPlan" id="theLink1" target="_blank">Link to reticle layout template</apex:outputLink>
+                       <!--Ravindra - Libraries changes Ends-->
+                       
+                       <br/> <br/>
+                       <apex:outputText style="padding-left: 22%;color:black;" value="Allowable file types are (.xls,.csv,.123,.doc,.xlsx,.docx,.ods,.odt) and Max file size: 100MB" />
+                       <br/><br/>  
+                   </apex:outputPanel>
+                   
+                   <apex:outputPanel rendered="{!formObj.InputMethod__c == 'Advanced Process: Inputs via XML file attachment.'}">
+                       <p>You have chosen the advanced method of providing step plan inputs via a single XML file. Please ensure your file meets the requirements outlined in the specification prior to submission.</p>
+                       <br/>
+                       <apex:outputText style="padding-left: 22%;color:black;" value="Only .xml files are allowed and Max file size: 100MB" />
+                       <br/><br/>                  
+                   </apex:outputPanel>
+                </apex:outputPanel>            
+
+                <apex:outputPanel id="uploadFile">            
+                    <apex:pageBlockSection rendered="{!formObj.InputMethod__c == 'Advanced Process: Inputs via XML file attachment.'}" > 
+                        <apex:pageBlockSectionItem > 
+                            <apex:outputLabel value="Reticle Layout XML file:" style="padding-left: 19%;"/>
+                            <apex:outputPanel >   
+                               <div class = "requiredInput">
+                                   <div class = "requiredBlock"></div> 
+                                    <input type="file" id="fileXml" title="file" onchange="validateFileSize(this)" style="display: {!IF(attWrap.size == 0,'inline','none')} ;"/> 
+                                       <img src="/img/alohaSkin/help_orange.png" title="Click 'Choose File' to select and then upload an attachment of your reticle layout XML file. The attached file must meet all requirements outlined in the XML reticle specification." height="13" width="13"/>  <!--Changed the spelling of "Choose" word for new UAT Issue #175-->        
+                               </div>
+                               <div id="el_loading" class="loadingDiv" style="display:none;">
+                                <span id="loadingHolder" class="loadingHolder">
+                                <img class="loadingImage" title="Loading..." alt="Loading..." src="/img/loading32.gif"/>
+                                <span class="loadingDescription">Please wait...</span>
+                                </span>
+                            </div> 
+                           </apex:outputPanel>                                                                                                 
+                        </apex:pageBlockSectionItem>                      
+                    </apex:pageBlockSection>
+                
+                    <div id="message" style="padding-left: 19%;"></div>
+                    <div id="fmsModal"></div>
+   
+                    <apex:pageBlockSection rendered="{!formObj.InputMethod__c == 'Standard Process: Inputs via Step Plan Design FMS questions and Reticle Layout attachment' || dispStdReticle}" > 
+                        <apex:pageBlockSectionItem > 
+                                 <apex:outputLabel value="Reticle Layout Information:" style="padding-left: 19%;"/>
+                                 <apex:outputPanel >   
+                                    <div class = "requiredInput">
+                                        <div class = "requiredBlock"></div>
+                                            <input type="file" id="fileRtcl" title="file" onchange="validateFileSize(this)" style="display: {!IF(attWrap.size == 0,'inline','none')} ;"/>                     
+                                            <img src="/img/alohaSkin/help_orange.png" title="Click 'Choose File' to select and then upload an attachment of your Reticle Layout file." height="13" width="13"/>             
+                                    </div> 
+                                    <div id="el_loading" class="loadingDiv" style="display:none;">
+                                        <span id="loadingHolder" class="loadingHolder">
+                                            <img class="loadingImage" title="Loading..." alt="Loading..." src="/img/loading32.gif"/>
+                                            <span class="loadingDescription">Please wait...</span>
+                                        </span>
+                                    </div> 
+                                </apex:outputPanel>                                                                                                 
+                        </apex:pageBlockSectionItem>      
+                    </apex:pageBlockSection>
+                
+                   <apex:pageBlockSection rendered="{!(attWrap!=null && attWrap.size!=0) && 
+                                        ((formObj.InputMethod__c == 'Standard Process: Inputs via Step Plan Design FMS questions and Reticle Layout attachment' || dispStdReticle)
+                                        || formObj.InputMethod__c == 'Advanced Process: Inputs via XML file attachment.')}">
+                       <apex:pageBlockSectionItem dataStyle="padding-left: 19%;width: 68%;">
+                           <apex:pageBlockTable value="{!attWrap}" var="attvar" >
+                               <apex:column headerValue="Attachment name">
+                                   <apex:outputLink id="link" value="/sfc/servlet.shepherd/version/download/{!attvar.attId}" style="color: blue;text-decoration: underline;">{!attvar.attName}</apex:outputLink>
+                               </apex:column>
+                               <apex:column headerValue="Size">
+                                   <apex:outputText value="{!attvar.attSize}" />
+                               </apex:column>
+                               <apex:column headerValue="Action">
+                                <apex:commandLink action="{!deleteAttachment}" onclick="if(!confirm('Are you sure?')) return false;" reRender="uploadFile" status="dispDelet" style="color: blue;text-decoration: underline;">Delete
+                                    <apex:param name="attid" value="{!attvar.ContentDocumentId}" assignTo="{!selContentDocId}"/> 
+                                    <!-- <apex:param name="attVerid" value="{!attvar.attId}" assignTo="{!selAttachId}"/> -->
+                                </apex:commandLink>
+                            </apex:column>
+                           </apex:pageBlockTable>                        
+                       </apex:pageBlockSectionItem>
+                       <apex:actionStatus id="dispDelet" startText="Please Wait..." stopText="" style="padding-left: 50%;"/>                    
+                   </apex:pageBlockSection>               
+                </apex:outputPanel>
+                <br/>
+                
+                <apex:outputPanel id="ChipRotate"> 
+                    <apex:pageBlockSection rendered="{!(formObj.DesignSubmission__c != 'Multi-Design Reticle (>1 Topcell)' && formobj.Technology__c != '32SOI' && formObj.InputMethod__c != 'Advanced Process: Inputs via XML file attachment.')}"><!-- Changed By Abhita for new UAT issue #238-->
+                        <apex:pageBlockSectionItem >
+                            <apex:outputLabel escape="false" value="Select chip design rotation. Rotation value selected is counter-clockwise with chip origin (0,0) in lower left corner.  <BR/> <BR/>
+                                                     Note: The Step Plan inputs for this technology are wafer notch RIGHT. The images depict the wafer notch DOWN which corresponds to 
+                                                     the view displayed in the published Step Plan."/>
+                            <apex:outputPanel >   
+                                <div class = "requiredInput">
+                                    <div class = "requiredBlock"></div>                     
+                                    <!--<apex:inputField styleClass="RemoveNone" value="{!formObj.StepPlanChipRotation__c}"/> <!-- Added By Abhita for replacing None with elect a value-->
+                                    <apex:variable value="{!0}" var="x"/>
+                                    <apex:pageblocktable var="chip" value="{!chipRotationList}" headerClass="hiddenTable" style="border: none;border-bottom: none">
+                                        <apex:column >
+                                            <input type="radio" value="{!chip.chipRotation}" onClick="setChipRotation('{!chip.chipRotation}', this);" name="chip_Values" id="radio_{!x}"/>
+                                        </apex:column>
+                                        <apex:column >
+                                            <apex:variable value="{!x+1}" var="x"/>
+                                            {!chip.chipRotation}
+                                        </apex:column>
+                                        <apex:column rendered="{!chip.chipRotation == 'Any - Optimize CPW'}"/>
+                                        <apex:column rendered="{!chip.chipRotation != 'Any - Optimize CPW'}">
+                                            <apex:variable var="imgVar" value="{!chip.chipRotationImage}"/> 
+                                            <apex:image url="{!URLFOR($Resource.FMS_SP_Images, imgVar)}" width="90" height="90"/> 
+                                        </apex:column>
+                                    </apex:pageblocktable>      
+                                    <!--<apex:selectRadio value="{!formObj.StepPlanChipRotation__c}" layout="pageDirection">
+                                        <apex:selectOptions value="{!chipRotationList}"/>
+                                        <!--<apex:variable var="imgVar" value="{!chip.chipRotationImage}"/>
+                                        <apex:image url="{!URLFOR($Resource.FMS_SP_Images, '/FMS_SP_Images/90_degree_rotation.png')}" width="90" height="90"/> 
+                                    </apex:selectRadio> --> 
+                                    <img src="/img/alohaSkin/help_orange.png" title="Designs submitted to GLOBALFOUNDRIES must have chip origin (0, 0) at lower left corner. Chip Design Rotation refers to the CCW rotation of the chip (GDS) and the values selected align visually with a wafer notch RIGHT." height="13" width="13"/><!--Added By Abhita for new UAT Issue #216-->  
+                                </div> 
+                            </apex:outputPanel>  
+                        </apex:pageBlockSectionItem>
+                    </apex:pageBlockSection>
+                </apex:outputPanel>
+                
+                <apex:outputPanel >
+                    <apex:pageBlockSection rendered="{!dispCrackOptions}">
+                        <apex:pageBlockSectionItem >
+                            <apex:outputLabel value="Select your Crackstop methodology:"/>
+                            <apex:outputPanel >   
+                                <div class = "requiredInput">
+                                    <div class = "requiredBlock"></div>                     
+                                    <!--<apex:inputField styleClass="RemoveNone"  value="{!formObj.CrackstopOptions__c}" style="width:175%"/> Added By Abhita for replacing None with Select a value-->
+                                    <apex:selectList value="{!formObj.CrackstopOptions__c}" multiselect="false" size="1" id="crackstop" style="width:175%">
+                                        <apex:selectOptions value="{!CrackstopOptList}"/>
+                                    </apex:selectList>    
+                                   <!-- <a href="{!FMSdocuments['FMSMainFormPage3'].FMSRefDocURL__c}" target="_blank">
+                                        <img src="/img/alohaSkin/help_orange.png" height="13" width="13" />
+                                    </a>       -->
+                                    <img src="/img/alohaSkin/help_orange.png" title="{!$ObjectType.Form_Management_System__c.fields.CrackstopOptions__c.InlineHelpText}" height="13" width="13" />               
+                                </div> 
+                            </apex:outputPanel>  
+                         </apex:pageBlockSectionItem>
+                    </apex:pageBlockSection> 
+                </apex:outputPanel>
+
+                <!--Changed by Abhita for new UAT Issues #46-->
+                <apex:outputPanel >
+                    <apex:outputPanel rendered="{!dispChannelType}">
+                        <p style="color:black;">This technology supports either Standard or Steal Primary Die (SPD) Dicing Channels. In some cases (typically dies sizes &lt;2mm per side), higher chips-per-wafer (CPW) may be achieved using SPD. Prior to submitting and freezing this form, you must ensure that your dicing vendor is able to dice your 
+                        requested channel widths. </p>  <!--Changed By Abhita for new UAT Issue #52--> 
+                        <br/>
+                    </apex:outputPanel>
+                    <apex:outputPanel rendered="{!dispDicingPref}">
+                        <p style="color:black;">This technology supports Standard Dicing Channels. Prior to submitting and freezing this form, you must ensure that your dicing vendor is able to dice your requested channel widths.</p>
+                        <br/>
+                    </apex:outputPanel>            
+                </apex:outputPanel>  
+                <br/>
+                
+                <apex:outputPanel >
+                    <apex:pageBlockSection rendered="{!dispChannelType}">
+                        <apex:pageBlockSectionItem >
+                            <apex:outputLabel value="Select your Dicing Channel type:"/>
+                            <apex:outputPanel >   
+                                <div class = "requiredInput">
+                                    <div class = "requiredBlock"></div>                     
+                                    <apex:selectList value="{!formObj.Channel_Type__c}" multiselect="false" size="1" id="inMeth" style="width:130%">
+                                        <apex:selectOptions value="{!channelTypeList}"/>
+                                    </apex:selectList>
+                                    <apex:actionSupport event="onchange" action="{!assignValues}" reRender="diceMessage, XParameter, XParameter1, YParameter, YParameter1, XYChannel, nonPnl" status="dispParamStatus">  
+                                        <apex:param assignTo="{!fieldAPI}" name="fieldAPI" value="Channel_Type__c"/>
+                                    </apex:actionSupport>
+                                  <!--  <a href="{!FMSdocuments['FMSMainFormPage3'].FMSRefDocURL__c}" target="_blank">
+                                        <img src="/img/alohaSkin/help_orange.png" height="13" width="13" />
+                                    </a> -->
+                                     <img src="/img/alohaSkin/help_orange.png" title="{!$ObjectType.Form_Management_System__c.fields.Channel_Type__c.InlineHelpText}" height="13" width="13" />                  
+                                </div> 
+                                <apex:actionStatus id="dispParamStatus" startText="Refreshing..." stopText="" /> 
+                            </apex:outputPanel>  
+                         </apex:pageBlockSectionItem>
+                    </apex:pageBlockSection>
+                </apex:outputPanel>
+            
+                <apex:outputPanel >
+                    <apex:pageBlockSection rendered="{!dispDicingPref}">
+                        <apex:pageBlockSectionItem >
+                            <apex:outputLabel value="Select your Dicing Channel preference:"/>
+                            <apex:outputPanel >   
+                                <div class = "requiredInput">
+                                    <div class = "requiredBlock"></div>                     
+                                    <apex:selectList value="{!formObj.ChannelStdOnly__c}" multiselect="false" size="1" id="inMeth">
+                                        <apex:selectOptions value="{!dicingPrefList}"/>
+                                    </apex:selectList>
+                                    <apex:actionSupport event="onchange" action="{!assignValues}" reRender="diceMessage, XParameter, XParameter1, YParameter, YParameter1, nonPnl" status="dispParamStatus">  
+                                        <apex:param assignTo="{!fieldAPI}" name="fieldAPI" value="ChannelStdOnly__c"/>
+                                    </apex:actionSupport>
+                                   <!-- <a href="{!FMSdocuments['FMSMainFormPage3'].FMSRefDocURL__c}" target="_blank">
+                                        <img src="/img/alohaSkin/help_orange.png" height="13" width="13" />
+                                    </a>  -->
+                                     <img src="/img/alohaSkin/help_orange.png" title="{!$ObjectType.Form_Management_System__c.fields.ChannelStdOnly__c.InlineHelpText}" height="13" width="13" />                 
+                                </div> 
+                                <apex:actionStatus id="dispParamStatus" startText="Refreshing..." stopText="" /> 
+                            </apex:outputPanel>  
+                         </apex:pageBlockSectionItem>
+                    </apex:pageBlockSection>
+                 </apex:outputPanel>
+
+                <apex:pageBlockSection rendered="{!(formObj.Packaging_Services__c == 'No' && contDicing)}"><!-- Added the condition for new UAT Issue #180, 182-->
+                    <apex:pageBlockSectionItem >
+                        <apex:image url="{!URLFOR($Resource.FMS_SP_Images, '/FMS_SP_Images/Design_notch_3.png')}" width="130" height="130" style="margin-left: -10px"
+                            rendered="{!formObj.DesignNotch__c == '3'}"/>
+                    </apex:pageBlockSectionItem>
+                    <apex:pageBlockSectionItem >
+                        <apex:image url="{!URLFOR($Resource.FMS_SP_Images, '/FMS_SP_Images/Design_notch_6.png')}" width="130" height="130" style="margin-left: -530px"
+                            rendered="{!formObj.DesignNotch__c == '6'}"/>
+                    </apex:pageBlockSectionItem>
+                </apex:pageBlockSection>
+            
+                <apex:outputPanel id="diceMessage">
+                    <apex:outputPanel rendered="{!((formObj.Channel_Type__c != null && formObj.Channel_Type__c != '' && (formObj.Channel_Type__c == 'Standard channels; Custom minimum width' || contains(formObj.Channel_Type__c,'Standard channels; Minimum width allowed'))) || (formObj.ChannelStdOnly__c != null && formObj.ChannelStdOnly__c != '' && (formObj.ChannelStdOnly__c == 'Custom minimum width' || contains(formObj.ChannelStdOnly__c,'Minimum width allowed'))))}">
+                        <p>These requested widths may be increased in order to accommodate required kerf content. Please ensure that you confirm the final widths are acceptable 
+                            during your Preliminary Step Plan review.</p>
+                        <br/>
+                    </apex:outputPanel>
+                    <apex:outputPanel rendered="{!((formObj.ChannelStdOnly__c == 'Fixed custom width' && formObj.ChannelStdOnly__c != null && formObj.ChannelStdOnly__c != '')
+                        || (formObj.Channel_Type__c == 'Standard channels; Fixed custom width' && formObj.Channel_Type__c != null && formObj.Channel_Type__c != '')) }">
+                        <p>Note: If required GLOBALFOUNDRIES kerf content cannot fit within the requested dicing channel widths, then the Step Plan request will be rejected
+                          and new FMS inputs will be required.</p>
+                        <br/>
+                    </apex:outputPanel>            
+                </apex:outputPanel>
+            
+                <apex:outputPanel id="XParameter">
+                    <apex:pageBlockSection rendered="{!((formObj.DesignSubmission__c != '' && formObj.DesignSubmission__c != null && formObj.Packaging_Services__c == 'No' && contDicing) && (formObj.Channel_Type__c != 'Compare Standard and SPD channels for optimal CPW' || dispDicingPref) && (NOT(contains(formObj.Channel_Type__c,'Standard channels; Minimum width allowed') || contains(formObj.Channel_Type__c,'GLOBALFOUNDRIES-sourced WLCSP; Minimum width allowed') || contains(formObj.Channel_Type__c,'SPD channels; Minimum width allowed') || contains(formObj.ChannelStdOnly__c,'Minimum width allowed'))))}">
+                        <apex:pageBlockSectionItem >
+                            <apex:outputLabel value="Specify your preferred Dicing Channel width X (um):"/>
+                            <apex:outputPanel >   
+                                <div class = "requiredInput">
+                                    <div class = "requiredBlock"></div> 
+                                    <!--Added by Abhita for new UAT Issue #14  -->                  
+                                    <apex:inputField onkeypress="return inputLimiter(event,'Numbers');" value="{!formObj.VerticalX__c}" styleClass="VerticalXClass"/>
+                                     <img src="/img/alohaSkin/help_orange.png" title="The preferred dicing channel that you input must be larger than the listed minimum widths." height="13" width="13" />                 
+                                </div>
+                                <label id="msgV" class="itemV" style="color:red;"></label>
+                            </apex:outputPanel>                             
+                        </apex:pageBlockSectionItem>                       
+                    </apex:pageBlockSection>                    
+                </apex:outputPanel>
+
+                <apex:outputPanel id="XParameter1">
+                    <apex:pageBlockSection rendered="{!(((formObj.DesignSubmission__c != '' && formObj.DesignSubmission__c != null && formObj.Packaging_Services__c == 'No' && contDicing) && (formObj.Channel_Type__c != 'Compare Standard and SPD channels for optimal CPW' || dispDicingPref)) && (contains(formObj.Channel_Type__c,'Standard channels; Minimum width allowed') || contains(formObj.Channel_Type__c,'GLOBALFOUNDRIES-sourced WLCSP; Minimum width allowed') || contains(formObj.Channel_Type__c,'SPD channels; Minimum width allowed') ||contains(formObj.ChannelStdOnly__c,'Minimum width allowed')))}">
+                        <apex:pageBlockSectionItem >
+                            <apex:outputLabel value="Specify your preferred Dicing Channel width X (um):"/>
+                            <apex:outputPanel >   
+                                <div class = "requiredInput">
+                                    <div class = "requiredBlock"></div>                     
+                                    <apex:inputText value="{!readVerticalX}" disabled="true"/>
+                                     <img src="/img/alohaSkin/help_orange.png" title="The preferred dicing channel that you input must be larger than the listed minimum widths." height="13" width="13" />                 
+                                </div>
+                            </apex:outputPanel>                             
+                        </apex:pageBlockSectionItem>
+                    </apex:pageBlockSection>
+                </apex:outputPanel>
+
+                <apex:outputPanel id="YParameter">
+                    <apex:pageBlockSection rendered="{!((formObj.DesignSubmission__c != '' && formObj.DesignSubmission__c != null && formObj.Packaging_Services__c == 'No' && contDicing) && (formObj.Channel_Type__c != 'Compare Standard and SPD channels for optimal CPW' || dispDicingPref) && (NOT(contains(formObj.Channel_Type__c,'Standard channels; Minimum width allowed') || contains(formObj.Channel_Type__c,'GLOBALFOUNDRIES-sourced WLCSP; Minimum width allowed') || contains(formObj.Channel_Type__c,'SPD channels; Minimum width allowed') || contains(formObj.ChannelStdOnly__c,'Minimum width allowed'))))}">
+                        <apex:pageBlockSectionItem >
+                            <apex:outputLabel value="Specify your preferred Dicing Channel width Y (um):"/>
+                            <apex:outputPanel >   
+                                <div class = "requiredInput">
+                                    <div class = "requiredBlock"></div> 
+                                    <!--Added by Abhita for new UAT Issue #14  -->                    
+                                    <apex:inputField onkeypress="return inputLimiter(event,'Numbers');" value="{!formObj.HorizontalY__c}" styleClass="HorizontalYClass"/>
+                                    <img src="/img/alohaSkin/help_orange.png" title="The preferred dicing channel that you input must be larger than the listed minimum widths." height="13" width="13" />                 
+                                </div>
+                                <label id="msgH" class="itemH" style="color:red;"></label>
+                            </apex:outputPanel> 
+                        </apex:pageBlockSectionItem>
+                    </apex:pageBlockSection> 
+                </apex:outputPanel>
+
+                <apex:outputPanel id="YParameter1">
+                    <apex:pageBlockSection rendered="{!(((formObj.DesignSubmission__c != '' && formObj.DesignSubmission__c != null && formObj.Packaging_Services__c == 'No' && contDicing) && (formObj.Channel_Type__c != 'Compare Standard and SPD channels for optimal CPW' || dispDicingPref)) && (contains(formObj.Channel_Type__c,'Standard channels; Minimum width allowed') || contains(formObj.Channel_Type__c,'GLOBALFOUNDRIES-sourced WLCSP; Minimum width allowed') || contains(formObj.Channel_Type__c,'SPD channels; Minimum width allowed') ||contains(formObj.ChannelStdOnly__c,'Minimum width allowed')))}">
+                        <apex:pageBlockSectionItem >
+                            <apex:outputLabel value="Specify your preferred Dicing Channel width Y (um):"/>
+                            <apex:outputPanel >   
+                                <div class = "requiredInput">
+                                    <div class = "requiredBlock"></div>                     
+                                    <apex:inputText value="{!readHorizontalY}" disabled="true"/>
+                                    <img src="/img/alohaSkin/help_orange.png" title="The preferred dicing channel that you input must be larger than the listed minimum widths." height="13" width="13" />                 
+                                </div>
+                            </apex:outputPanel>                             
+                        </apex:pageBlockSectionItem>
+                    </apex:pageBlockSection>
+                </apex:outputPanel>
+                
+                <apex:outputPanel id="XYChannel">
+                    <apex:pageBlockSection rendered="{!(formObj.Packaging_Services__c == 'No' && contDicing
+                                             && formObj.Channel_Type__c == 'Compare Standard and SPD channels for optimal CPW' && formObj.Channel_Type__c != null && formObj.Channel_Type__c != '')}">
+                        <apex:pageBlockSectionItem >
+                            <apex:outputLabel value="Specify the Dicing Channel widths (X,Y) to be used for the comparison:"/>
+                            <apex:outputPanel >   
+                                <div class = "requiredInput">
+                                    <div class = "requiredBlock"></div>                     
+                                    <apex:inputField value="{!formObj.CompareChannels__c}"/>
+                                   <!-- <a href="{!FMSdocuments['FMSMainFormPage3'].FMSRefDocURL__c}" target="_blank">
+                                        <img src="/img/alohaSkin/help_orange.png" height="13" width="13" />
+                                    </a> -->
+                                     <img src="/img/alohaSkin/help_orange.png" title="{!$ObjectType.Form_Management_System__c.fields.CompareChannels__c.InlineHelpText}" height="13" width="13" /> 
+                                </div>
+                            </apex:outputPanel>  
+                         </apex:pageBlockSectionItem>
+                    </apex:pageBlockSection>
+                </apex:outputPanel> 
+            
+                <apex:outputPanel >
+                    <apex:pageBlockSection rendered="{!(formObj.Packaging_Services__c == 'No' && contDicing)}">
+                        <apex:pageBlockSectionItem >
+                            <apex:outputLabel value="Is Enhanced Edge Field Stepping required for improved chips-per-wafer?"/>
+                            <apex:outputPanel >   
+                                <div class = "requiredInput">
+                                    <div class = "requiredBlock"></div>                     
+                                    <!--<apex:inputField styleClass="RemoveNone"  value="{!formObj.StepPlanEdgeField__c}"/> <!-- Added By Abhita for replacing None with Select a value-->
+                                    <!--Changed for T35 Point 3 Catch-Up Release by Abhita-->
+                                    <apex:selectList value="{!formObj.StepPlanEdgeField__c}" multiselect="false" size="1" id="stepEdge" disabled="{!stepEdgeReadOnly}">
+                                        <apex:selectOptions value="{!stepPlanEdgeList}"/>
+                                    </apex:selectList>
+                                 <!--   <a href="{!FMSdocuments['FMSMainFormPage3'].FMSRefDocURL__c}" target="_blank">
+                                        <img src="/img/alohaSkin/help_orange.png" height="13" width="13" />
+                                    </a> -->
+                                  <img src="/img/alohaSkin/help_orange.png" title="{!$ObjectType.Form_Management_System__c.fields.StepPlanEdgeField__c.InlineHelpText}" height="13" width="13" />    
+                                </div>
+                            </apex:outputPanel>  
+                         </apex:pageBlockSectionItem>
+                    </apex:pageBlockSection>
+                </apex:outputPanel>
+                
+                <apex:outputPanel >
+                    <apex:pageBlockSection rendered="{!dispDicingMarks}">
+                        <apex:pageBlockSectionItem >
+                            <apex:outputLabel value="Do you require dice marks placed in the GLOBALFOUNDRIES-placed DICING CHANNELS?"/>
+                            <apex:outputPanel >   
+                                <div class = "requiredInput">
+                                    <div class = "requiredBlock"></div>                     
+                                    <apex:inputField styleClass="RemoveNone"  value="{!formObj.DiceMarks__c}"/> <!-- Added By Abhita for replacing None with Select a value-->
+                                    <img src="/img/alohaSkin/help_orange.png" title="{!$ObjectType.Form_Management_System__c.fields.DiceMarks__c.InlineHelpText}" height="13" width="13" /><!--Added by Abhita for new UAT Issue #216-->
+                                </div>
+                            </apex:outputPanel>  
+                         </apex:pageBlockSectionItem>
+                    </apex:pageBlockSection>
+                </apex:outputPanel>
+                
+                <apex:outputPanel >
+                    <apex:pageblockSection >
+                        <apex:pageBlockSectionItem >
+                            <apex:outputLabel value="Do you have any custom step plan requirements not outlined above?"/>
+                            <apex:outputPanel >   
+                                <div class = "requiredInput">
+                                    <div class = "requiredBlock"></div>                     
+                                    <apex:inputField styleClass="RemoveNone"  value="{!formObj.StepPlanCustomRequirement__c}"/> <!-- Added By Abhita for replacing None with Select a value-->
+                                    <apex:actionSupport event="onchange" action="{!resetDependentFields}" reRender="reqInput" status="dispReqInput">     
+                                        <apex:param assignTo="{!fieldAPI}" name="fieldAPI" value="StepPlanCustomRequirement__c"/>
+                                    </apex:actionSupport>
+                                  <!--  <a href="{!FMSdocuments['FMSMainFormPage3'].FMSRefDocURL__c}" target="_blank">
+                                            <img src="/img/alohaSkin/help_orange.png" height="13" width="13" />
+                                    </a> -->
+                                     <img src="/img/alohaSkin/help_orange.png" title="{!$ObjectType.Form_Management_System__c.fields.StepPlanCustomRequirement__c.InlineHelpText}" height="13" width="13" />                      
+                                </div> 
+                                <apex:actionStatus id="dispReqInput" startText="Refreshing..." stopText="" />
+                            </apex:outputPanel>  
+                         </apex:pageBlockSectionItem>
+                     </apex:pageblockSection>
+                 </apex:outputPanel>
+             
+                 <apex:outputPanel id="reqInput" >
+                        <apex:pageblockSection rendered="{!formObj.StepPlanCustomRequirement__c == 'Yes'}">
+                            <apex:pageBlockSectionItem >
+                                <apex:outputLabel value="List custom requirements here:"/>
+                                <apex:outputPanel >   
+                                <div class = "requiredInput">
+                                    <div class = "requiredBlock"></div>                     
+                                    <apex:inputField value="{!formObj.StepPlanCustomRequirementInput__c}"/> 
+                                    <img src="/img/alohaSkin/help_orange.png" title="{!$ObjectType.Form_Management_System__c.fields.StepPlanCustomRequirementInput__c.InlineHelpText}" height="13" width="13" /><!--Added by Abhita for new UAT iIssue #216-->
+                                </div> 
+                                 </apex:outputPanel>   
+                            </apex:pageBlockSectionItem>
+                        </apex:pageblockSection>
+                </apex:outputPanel>
+
+                <!--Changed by Abhita for New UAT Issue #72 and #73-->
+                <apex:outputPanel rendered="{!contDicing && formObj.Packaging_Services__c == 'No'}">
+                    <p style="color:black;">All Wafer Step Plans require customer review and acceptance. This review and acceptance will be completed through a separate Step Plan 
+                                            addendum attached to this Main form. (This addendum will be generated upon your successful design data submission.) 
+                                            FMS will subsequently notify the reviewer(s) once the published Step Plan is ready for review. Please ensure that you have clearly 
+                                            communicated any/all layout requirements in the form fields above in order that the resulting Step Plan will meet your specifications. 
+                                            Please note that delayed reviews and approvals will impact Release cycle times. 
+                    </p>   
+                    <br/>
+                    <p style="color:black;">Select the names of the Step Plan reviewer(s) to receive the FMS Step Plan notifications. Please note that a single user is ultimately 
+                                            required to approve (or reject) the Preliminary Step Plan(s) within the addendum and submit the Step Plan addendum in order for the 
+                                            Release Process to continue.
+                    </p>
+            
+                    <apex:outputPanel >            
+                        <p style="color:black;"><b>Please select step plan reviewer(s) from the list below. </b>   
+                            <img src="/img/alohaSkin/help_orange.png" title="Each user selected will receive FMS notifications once the Preliminary Step Plan has been published for review. These notifications will include a direct link to the newly created Step Plan addendum and the Preliminary Step Plan (pdf)." height="13" width="13" /><!--Added by Abhita for new UAT Issue #216-->   
+                        </p>        
+                    </apex:outputPanel>
+
+                    <apex:outputPanel >
+                        <apex:actionRegion > 
+                            <apex:pageblockSection >
+                                <apex:pageBlockSectionItem >
+                                    <apex:outputLabel value="Step Plan Reviewers:"/>
+                                    <apex:outputPanel >   
+                                    <div class = "requiredInput">
+                                        <div class = "requiredBlock"></div>                     
+                                    </div> 
+                                     </apex:outputPanel>   
+                                </apex:pageBlockSectionItem>
+                            </apex:pageblockSection>
+                            
+                            <apex:pageblockSection >
+                                <apex:pageblockSectionItem >                                 
+                                    <apex:panelGrid columns="3" id="addContact" style="padding-left: 200px">
+                                        <apex:outputText value="Available Contact(s)" style="font-weight: bold; text-align:center;"/>
+                                        <apex:outputText value="" style="font-weight: bold"/>
+                                        <apex:outputText value="Selected Contact(s)" style="font-weight: bold; text-align:center;"/>
+                                        <apex:selectList id="sel1" value="{!spleftselected}" multiselect="true" style="width:200px" size="5">
+                                            <apex:selectOptions value="{!spunselectedvalues}" />
+                                        </apex:selectList>                
+                                        <apex:panelGroup >
+                                            <br/>                                           
+                                            <apex:image value="/s.gif" alt="Add" styleClass="rightArrowIcon" title="Add" >
+                                                <apex:actionSupport event="onclick" action="{!spselectclick}" reRender="addContact, addContTab" status="tableContStat"/>
+                                            </apex:image>
+                                            <br/><br/>
+                                            <apex:image value="/s.gif" alt="Remove" styleClass="leftArrowIcon" title="Remove" >
+                                                <apex:actionSupport event="onclick" action="{!spunselectclick}" reRender="addContact, addContTab" status="tableContStat"/>
+                                            </apex:image>                    
+                                        </apex:panelGroup>
+                                        <apex:selectList id="sel2" value="{!sprightselected}" multiselect="true" style="width:200px" size="5">
+                                            <apex:selectOptions value="{!spSelectedValues}" />
+                                        </apex:selectList>
+                                        <apex:actionStatus id="tableContStat" startText="Refreshing..." stopText="" />
+                                    </apex:panelGrid> 
+                                </apex:pageblockSectionItem>
+                            </apex:pageblockSection>    
+
+                            <apex:outputPanel id="addContTab" >
+                                <apex:pageBlockSection >
+                                <apex:pageblockSectionItem >
+                                    <apex:outputLabel ></apex:outputLabel><!--Changed by Abhita for New UAT Issue #151, 217-->
+                                    <apex:pageblockTable value="{!spaddContTable}" var="addCont" style="width:700px" >
+                                        <apex:column headerValue="Step Plan Reviewer's Name" value="{!addCont.spName}"/>
+                                        <apex:column headerValue="Step Plan Reviewer's Email" value="{!addCont.spemail}"/>
+                                    </apex:pageblockTable>
+                                </apex:pageblockSectionItem>
+                                </apex:pageBlockSection>
+                            </apex:outputPanel>
+                        </apex:actionRegion> 
+                    </apex:outputPanel>
+                </apex:outputPanel>   
+            </apex:actionRegion>
+        </apex:outputPanel>
+        </apex:pageBlockSection>  
+        <!--END Step Plan Design Section --  To be added by Abhita -->
+        
+        <apex:pageBlockSection title="Pin Layout" columns="1" rendered="{!dispPinOneID}" collapsible="false">
+        
+            <apex:pageBlockSectionItem rendered="{!dispPinOneID}">
+                <apex:outputLabel value="How are you identifying pin one to IBM:"/>
+                <apex:outputPanel >   
+                    <div class = "requiredInput">
+                        <div class = "requiredBlock"></div>                     
+                        <apex:inputField styleClass="RemoveNone"  value="{!formObj.PinOneID__c}"/> <!-- Added By Abhita for replacing None with Select a value-->
+                        <img src="/img/alohaSkin/help_orange.png" title="{!$ObjectType.Form_Management_System__c.Fields.PinOneID__c.inlineHelpText}" height="13" width="13"/><!--Added by Abhita for new UAT Issue #216-->
+                    </div> 
+                </apex:outputPanel>  
+            </apex:pageBlockSectionItem>
+            
+        </apex:pageBlockSection>   
+        
+        <apex:pageBlockSection title="Additional Inputs" columns="1" collapsible="false">
+            <apex:actionRegion >
+                <apex:outputPanel >
+                    <apex:pageBlockSection >
+                        <apex:pageBlockSectionItem >
+                            <apex:outputLabel value="Does your design(s) contain any IP that requires identification?"/>
+                            <apex:outputPanel >   
+                                <div class = "requiredInput">
+                                    <div class = "requiredBlock"></div>                     
+                                    <apex:inputField styleClass="RemoveNone" value="{!formObj.IpIdentification__c}"/> <!-- Added By Abhita for replacing None with Select a value-->
+                                    <img src="/img/alohaSkin/help_orange.png" title="{!$ObjectType.Form_Management_System__c.Fields.IpIdentification__c.inlineHelpText}" height="13" width="13"/>  
+                                    <apex:actionSupport event="onchange" action="{!renderdesignKitOthers}" reRender="designKitPanel" status="IpIdentifyStat">
+                                        <apex:param assignTo="{!fieldAPI}" name="fieldAPI" value="IpIdentification__c"/>
+                                    </apex:actionSupport>
+                                </div>                  
+                                <apex:actionStatus id="IpIdentifyStat" startText="Refreshing..." stopText=""/>
+                            </apex:outputPanel>                 
+                        </apex:pageBlockSectionItem>
+                    </apex:pageBlockSection>  
+                </apex:outputPanel>
+                <apex:outputPanel id="designKitPanel">
+                    <apex:pageBlockSection >
+                        <apex:pageBlockSectionItem rendered="{!dispDesignKitOthers}">
+                            <apex:outputLabel value="Please list the IP Provider Name and Library(s) contained within your design(s). Examples of providers: ARM, ASIC North, IBM, Novocell, Synopsys, etc.:"/>
+                            <apex:outputPanel >   
+                                <div class = "requiredInput">
+                                    <div class = "requiredBlock"></div>
+                                    <apex:inputField value="{!formObj.DesignKitOthers__c}"/>
+                                    <img src="/img/alohaSkin/help_orange.png" title="{!$ObjectType.Form_Management_System__c.Fields.DesignKitOthers__c.inlineHelpText}" height="13" width="13"/>
+                                </div> 
+                            </apex:outputPanel>  
+                        </apex:pageBlockSectionItem>
+                    </apex:pageBlockSection>                
+                </apex:outputPanel>  
+
+                <apex:outputPanel id="pickMapPanel">
+                    <apex:pageBlockSection >
+                        <apex:pageBlockSectionItem rendered="{!dispPickMap}">
+                            <apex:outputLabel value="Are you ordering an Untested Pick-All Wafer Map (Default Map)?:"/>
+                            <apex:outputPanel >   
+                                <div class = "requiredInput">
+                                    <div class = "requiredBlock"></div> 
+                                    <apex:inputField styleClass="RemoveNone" value="{!formObj.PickMap__c}"/> 
+                                   <!-- <a href="{!FMSdocuments['FMSMainFormPage3'].FMSRefDocURL__c}" target="_blank">
+                                        <img src="/img/alohaSkin/help_orange.png" height="13" width="13" />
+                                    </a>-->
+                                    <img src="/img/alohaSkin/help_orange.png" title="{!$ObjectType.Form_Management_System__c.fields.PickMap__c.InlineHelpText}" height="13" width="13" />  
+                                </div> 
+                            </apex:outputPanel>  
+                        </apex:pageBlockSectionItem>
+                    </apex:pageBlockSection>                
+                </apex:outputPanel>
+                
+                <apex:outputPanel >
+                    <apex:pageBlockSection >
+                        <apex:pageBlockSectionItem rendered="{!dispNeedAdditionalComments}">
+                            <apex:outputLabel value="Do you need to add any special instructions or additional information that has not been captured elsewhere in this form?"/>
+                            <apex:outputPanel >   
+                                <!--<div class = "requiredInput">
+                                    <div class = "requiredBlock"></div>-->
+                                <div>
+                                    <!--<apex:inputField styleClass="RemoveNone" value="{!formObj.NeedAdditionalComments__c}"/> <!-- Added By Abhita for replacing None with Select a value-->
+                                    <apex:selectList value="{!formObj.NeedAdditionalComments__c}" multiselect="false" size="1" id="needAdd">
+                                        <apex:selectOptions value="{!needAddCommentsList}"/>
+                                    </apex:selectList>
+                                    <apex:actionSupport event="onchange" action="{!renderadditionalComments}" reRender="addCommentPanel" status="addCommentStat">
+                                        <apex:param assignTo="{!fieldAPI}" name="fieldAPI" value="NeedAdditionalComments__c"/>
+                                    </apex:actionSupport>
+                                    <img src="/img/alohaSkin/help_orange.png" title="{!$ObjectType.Form_Management_System__c.Fields.NeedAdditionalComments__c.inlineHelpText}" height="13" width="13"/>
+                                </div>
+                                <apex:actionStatus id="addCommentStat" startText="Refreshing..." stopText=""/>
+                            </apex:outputPanel>  
+                        </apex:pageBlockSectionItem>
+                    </apex:pageBlockSection>                
+                </apex:outputPanel>
+                <apex:outputPanel id="addCommentPanel">
+                    <apex:pageBlockSection >
+                        <apex:pageBlockSectionItem rendered="{!dispadditionalComments}">
+                            <apex:outputLabel value="List additional information here:"/>
+                            <apex:outputPanel >   
+                                <div class = "requiredInput">
+                                    <div class = "requiredBlock"></div>
+                                    <apex:inputField value="{!formObj.AdditionalComments__c}"/>
+                                    <img src="/img/alohaSkin/help_orange.png" title="{!$ObjectType.Form_Management_System__c.Fields.AdditionalComments__c.inlineHelpText}" height="13" width="13"/>
+                                </div> 
+                            </apex:outputPanel>  
+                        </apex:pageBlockSectionItem>
+                    </apex:pageBlockSection>
+                </apex:outputPanel>
+            </apex:actionRegion>
+        </apex:pageBlockSection>   
+        <!-- Commented out Changed to configurator button - 20-Oct-2016 -- Ashwin Dash-->
+        <!--<apex:outputPanel rendered="{!formObj.TestServices__c == 'No' && formObj.Packaging_Services__c == 'No'}">
+            <p style="color:brown;font-size: 120%;">Click this link to go configurator for entering technical features information </p><br/>          
+            <apex:commandlink style="font-size: 100%; text-decoration:none;" styleClass="btn" value="Configurator" immediate="true" action="{!redirectConfig}" target="_blank"/>
+        </apex:outputPanel>-->
+        <br/> 
+            <p style="color:black;font-weight: bold;">Use Next / Previous to navigate through the form. Use 'Save' or 'Save and Exit' to permanently save your edits. </p>       
+        <br/><!--Added 'Save' or to the above text - 23-Nov-2016    -- Ashwin Dash -->
+        <apex:commandlink value="Previous" action="{!prev}" style="color:blue;">
+            <apex:param assignTo="{!pageN}" name="page" value="page3"/>
+        </apex:commandlink>&nbsp;
+        <apex:outputText >Page &nbsp;{!pageNum}  of  {!totalPageNums} &nbsp; </apex:outputText>
+        <apex:commandlink value="Next" action="{!next}" rendered="{!pageNum < totalPageNums}" style="color:blue;">
+            <apex:param assignTo="{!pageN}" name="page" value="page3"/>
+        </apex:commandlink>
+      
+        <!-- Added By Abhita --> <!--Changed configurator link to button only -->
+      <!--Commented by Ravindra--Start
+        <apex:commandlink value="Save and go to configurator" onClick="getLicenseDetails();return false;" target="_blank" styleClass="btn" style="color:blue;" rendered="{!AND(pageNum == totalPageNums, formObj.ReleaseProcessFlow__c == 'Original Flow')}" >
+            <apex:param assignTo="{!pageN}" name="page" value="page3"/>
+        </apex:commandlink>&nbsp;        
+        <apex:actionFunction name="GoToConfig" action="{!configPage}" oncomplete="window.scrollTo(0,0);" reRender="errorMsg" />
+        <!-- Ended Abhita Code here --> <!--Changed to Save and go to configurator from Click here to go to configurator Page for Business Issue #11  - Ashwin Dash
+       -->
+        
+        <apex:pageBlockButtons location="bottom">
+            <apex:commandButton action="{!validateSave}" value="Save and Exit" reRender="errorMsg" oncomplete="window.scrollTo(0,0);showSimpleDialog();">
+                <apex:param assignTo="{!pageN}" name="page" value="page3"/>
+            </apex:commandButton>
+            <apex:commandButton action="{!saveForm}" value="Save" id="saveForm" reRender="errorMsg" oncomplete="window.scrollTo(0,0);">
+                <apex:param assignTo="{!pageN}" name="page" value="page3"/>
+            </apex:commandButton>
+            <!--<apex:commandButton value="Cancel" immediate="true" action="{!cancelForm}" onclick="if(!confirm('Are you sure you want to Cancel your changes? Any changes that you made to this form since the last Save will be lost.')){return false;}"/>-->
+            <apex:commandButton value="Cancel" onclick="showDialogforCancel(); window.scrollTo(0,0); return false;" />
+        </apex:pageBlockButtons>
+    </apex:pageblock>
+
+</apex:form>
+</apex:page>

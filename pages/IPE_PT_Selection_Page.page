@@ -1,0 +1,222 @@
+<apex:page standardController="IP_Element__c" sidebar="false" extensions="IPE_PT_SelectionController">
+    <apex:includeScript value="{!URLFOR($Resource.sldsV17,'/sldsV17/jquery.min.js')}"/>
+    <apex:includeScript value="{!URLFOR($Resource.sldsV17,'/sldsV17/jquery.dataTables.min.js')}" />
+    <apex:includeScript value="{!URLFOR($Resource.sldsV17,'/sldsV17/dataTables.buttons.min.js')}" />
+    <apex:includeScript value="{!URLFOR($Resource.sldsV17,'/sldsV17/buttons.html5.min.js')}" />
+    <apex:includeScript value="{!URLFOR($Resource.sldsV17,'/sldsV17/buttons.print.min.js')}" />
+    <apex:includeScript value="{!URLFOR($Resource.sldsV17,'/sldsV17/datatable/media/js/dataTables.bootstrap1.js')}" />
+    <apex:stylesheet value="{!URLFOR($Resource.sldsV17,'/sldsV17/datatable/media/css/dataTables.bootstrap.css')}" />
+    
+    <apex:stylesheet value="{!URLFOR($Resource.sldsV17, '/sldsV17/styles/salesforce-lightning-design-system-vf.min.css')}" />
+    
+    <style>
+        .green{
+        border-color: #60c170 !important ;
+        background-color: #60c170 !important ;
+        }
+        .orange{
+        border-color: orange !important ;
+        background-color: orange !important ;
+        }
+        .red{
+        border-color: red !important ;
+        background-color: red !important ;
+        }
+        table.messageTable td {
+        vertical-align: top;
+        border-top: 0px solid #ddd !important;
+        }
+        table.messageTable{
+        width:auto !important;
+        }
+        .maxLength1{
+        word-break:break-all;
+        max-width:20rem;
+        white-space:initial;
+        min-width: 14rem;
+        } 
+        .maxLength2{
+        word-break:break-all;
+        max-width:12rem;
+        min-width: 6rem;
+        white-space:initial;
+        } 
+        
+    </style>
+    
+    <div class='IPE'>
+        <div class="slds-tabs--default">
+            <apex:form id="formid" styleclass="GFCPQ">
+                <apex:actionFunction name="addPT" reRender="formid" action="{!add_IP_PTMap}" id="add" oncomplete="hideOverLay();initDataTable();"/>
+                <apex:pageMessages />
+                <apex:outputpanel >
+                    <div class='GFCPQ'>
+                        <c:actionstatus ></c:actionstatus>
+                        <div class="slds-card">
+                            <div class="slds-card__header slds-grid">
+                                <header class="slds-media slds-media_center slds-has-flexi-truncate">
+                                    
+                                    <div class="slds-media__body">
+                                        <h2>
+                                            <span class="slds-text-heading_large link">PT's Under the Technology <b><apex:outputfield value=" {!IP_Element__c.Process_Technology__c}" /></b></span><br/> 
+                                        </h2>
+                                    </div>
+                                    <div class="slds-media__figure_reverse">
+                                        <h2>
+                                            <span class="slds-text-heading_small link"><apex:image value="{!$Resource.AddedImage}" height="12" width="25"/> - Add PT's <br/> <apex:image value="{!$Resource.ToAddImage}" height="12" width="25"/> - Removed/Unselected PTs</span> 
+                                        </h2>
+                                    </div>
+                                </header>
+                            </div>
+                            <div class="slds-card__body">
+                                <table class="IpePt slds-table slds-table--bordered slds-no-row-hover slds-table--cell-buffer">
+                                    <thead>
+                                        <tr class="slds-text-title_caps">
+                                            <th>Add/Remove</th>
+                                            <th scope="col">
+                                                <div class="slds-truncate" title="IPR Name">PT Number</div>
+                                            </th>
+                                            <th scope="col">
+                                                Description
+                                            </th>
+                                            <th scope="col">
+                                                Geometry
+                                            </th>
+                                            <th scope="col">
+                                                IP Geometry Tech
+                                            </th>
+                                            <th scope="col">
+                                                Life Cycle
+                                            </th>
+                                            <th scope="col">
+                                                Process Family
+                                            </th>
+                                            <th scope="col">
+                                                Tech Type
+                                            </th>
+                                            <th scope="col">
+                                                Category
+                                            </th>
+                                            <th scope="col">
+                                                Customer Release
+                                            </th>
+                                            
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <apex:repeat value="{!PTWrapperList}" id="pageBlock" var="ipe">
+                                            <tr>
+                                                <td>
+                                                    
+                                                    <label class="slds-checkbox--toggle slds-grid slds-grid--vertical-align-center">
+                                                        <apex:inputCheckbox value="{!ipe.isSelected}" onclick="return confirm('Are you sure you want to continue ?');" onchange="showOverLay();addPT();"  disabled="{!PTWrapperList.size == 1}"/>
+                                                        <span class="slds-checkbox--faux {!IF(ipe.isSelected,'green','orange')}" data-check-on="Edit" data-check-off="Off"></span>
+                                                    </label>
+                                                    
+                                                </td>
+                                                <td>
+                                                    <div class="slds-truncate" title="">
+                                                        <a href='/{!ipe.pt.Id}' target='_blank'>{!ipe.pt.PT_Number__c}</a>
+                                                    </div>
+                                                </td>
+                                                <td>
+                                                    <div class="slds-truncate1 maxLength2 link" title="">{!ipe.pt.Description__c}</div>
+                                                </td>
+                                                <td>
+                                                    <div class="slds-truncate1 maxLength2 link" title="">{!ipe.pt.Tech_Geometry__c}</div>
+                                                </td>
+                                                <td>
+                                                    <div class="slds-truncate1 maxLength2 link" title="">{!ipe.pt.IP_Geometry_Technology__c}</div>
+                                                </td>
+                                                <td>
+                                                    <div class="slds-truncate1 maxLength2 link" title="">{!ipe.pt.Lifecycle__c}</div>
+                                                </td>
+                                                <td>
+                                                    <div class="slds-truncate1 maxLength2 link" title="">{!ipe.pt.Process_Family__c}</div>
+                                                </td>
+                                                <td>
+                                                    <div class="slds-truncate1 maxLength2 link" title="">{!ipe.pt.Tech_Type__c}</div>
+                                                </td>
+                                                <td>
+                                                    <div class="slds-truncate1 maxLength2 link" title="">{!ipe.pt.Category__c}</div>
+                                                </td>
+                                                <td>
+                                                    <div class="slds-truncate1 maxLength2 link" title="">{!ipe.pt.Customer_Release__c}</div>
+                                                </td>
+                                            </tr>
+                                        </apex:repeat>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </apex:outputpanel>
+            </apex:form>
+        </div>
+    </div>
+    <script type="text/javascript" charset="utf-8">
+    /* Table initialisation */
+    function initDataTable() {
+        $('.slds-truncate a,.link a').attr('target','_blank');
+        $.extend($.fn.dataTableExt.oStdClasses, {
+            "sSortAsc": "header headerSortDown",
+            "sSortDesc": "header headerSortUp",
+            "sSortable": "header"
+        });
+        $('.IpePt').dataTable({
+            "sDom": "<'row'<'span8'l><'span8'f><'span8'B>r>t<'row'<'span8'i>>",
+            // "sDom": '<" table-navbar-header rounded-tops"ilf><"table search-results-table" t><"center"p> ',
+            "bPaginate": "false",
+            "oLanguage": {
+                "sLengthMenu": "_MENU_ records per page"
+            },
+            "iDisplayLength": 25,
+            "aLengthMenu":[[10, 25, -1], [10, 25, "All"]],
+            "aoColumnDefs": [{
+                'bSortable': false,
+                'aTargets': [0]
+            }],
+            buttons: [
+                
+            ], 
+            
+            "aaSorting": []
+        });
+        shortner();
+    }
+    function shortner(){
+        var showChar = 190;
+        var ellipsestext = "...";
+        var moretext = "more";
+        var lesstext = "less";
+        $('.more').each(function() {
+            var content = $(this).html();
+            
+            if(content.length > showChar) {
+                
+                var c = content.substr(0, showChar);
+                var h = content.substr(showChar-1, content.length - showChar);
+                
+                var html = c + '<span class="moreellipses">' + ellipsestext+ '&nbsp;</span><span class="morecontent"><span>' + h + '</span>&nbsp;&nbsp;<a href="" class="morelink">' + moretext + '</a></span>';
+                
+                $(this).html(html);
+            }
+            
+        });
+        
+        
+        
+    }
+    $(document).ready(function() {
+        initDataTable();
+        $("li").click(function(){
+            if(!$(this).hasClass('slds-active')){
+                $('div.contentsec').removeClass('slds-show').addClass('slds-hide');
+                $(this).addClass('slds-active');
+                $('#'+$(this).data('containerid')).removeClass('slds-hide').addClass('slds-show');
+            }
+        });
+        
+    });
+    </script>     
+</apex:page>

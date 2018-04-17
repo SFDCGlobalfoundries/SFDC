@@ -1,0 +1,1073 @@
+<apex:page id="pspCreate" standardController="Device__c" extensions="PSP_createExtension" tabStyle="Device__c" sidebar="false" standardStylesheets="false">
+    <apex:stylesheet value="{!$Resource.Stylesheet_PSP_Pages}"/>
+    <apex:includeScript value="{!URLFOR($Resource.ROS_JQuery_Deafult, '/jquery-ui-1.10.3.custom/js/jquery-1.9.1.js')}"/>
+    <apex:includeScript value="{!URLFOR($Resource.ROS_JQuery_Deafult, '/jquery-ui-1.10.3.custom/js/jquery-ui-1.10.3.custom.js')}"/>
+    <apex:stylesheet value="{!URLFOR($Resource.ROS_JQuery_Deafult, '/jquery-ui-1.10.3.custom/css/smoothness/jquery-ui-1.10.3.custom.css')}"/>
+    <script>
+        var j$ = jQuery.noConflict();
+        
+        j$(document).ready(function(){
+            foundrymod();
+        });
+        
+        function foundrymod(){
+            var div = document.getElementById("table2");
+            var div2 = document.getElementById("table3");
+            
+            j$(div).find('input:text').each(function() {
+                var orig = j$(this).val();
+                j$(this).val(orig.split('.')[0]);
+            });
+            
+            j$(div).find('span').each(function() {
+                var orig = j$(this).text();
+                j$(this).html(orig.split('.')[0]);
+            });
+            
+            j$(div2).find('input:text').each(function() {
+                var check = j$(this).attr('class');
+                if(check == 'tg-style-edit'){
+                    var orig = j$(this).val();
+                    j$(this).val(orig.split('.')[0]);
+                }
+            });
+            
+            j$(div2).find('span').each(function() {
+                var check = j$(this).attr('class');
+                if(check == 'tg-style-edit'){
+                    var orig = j$(this).text();
+                    j$(this).html(orig.split('.')[0]);
+                }
+            });
+        }
+        
+        //handle enter key
+        function enterfunction(e){
+            var keynum;
+            if(window.event)
+            {
+                keynum = e.keyCode;
+            }            
+            if(keynum == 13) 
+            { 
+                callrefresh();
+                return false; 
+            }
+        }
+        
+        function closeDialog(){
+            //j$(".confirmSave").dialog( "close" );
+            j$(".confirmSave").dialog("destroy").remove();
+        }
+        function showConfirm(){    
+            j$(".confirmSave").dialog({
+                height:"auto",
+                width:600,      
+                modal: true,
+                position: ['Top', 'center'],
+                autoOpen: false,  
+                resizable: true,
+                closeOnEscape: true, 
+                draggable : true,
+                title: "Please Confirm",
+                show: {
+                 effect: "fade",
+                 duration: 1000
+                },
+                hide: {
+                 effect: "explode",
+                 duration: 1000
+                },
+            });
+            j$( ".confirmSave" ).dialog( "open" );
+            return false;     
+        }
+    </script>
+    <style>
+        .ui-dialog-titlebar {
+            background:#b3daff;
+        }
+    </style>
+    <c:loadingPanel ></c:loadingPanel>
+
+    <apex:form id="theForm">
+        
+        <apex:pageMessages id="pageMessages"/>
+        <apex:pageBlock id="thePageBlock" title="PSP for Device:{!Device__c.name}">
+           
+        <apex:pageBlockButtons >
+            <apex:commandButton value="Return" action="{!Cancel}"/>
+            <apex:commandButton value="Save" action="{!SaveCustom}" oncomplete="foundrymod();return false;" status="LoadingStatusSpinner" rendered="{!AND(showTable,editAccess)}" disabled="{!previewFlag}" rerender="LoadingStatusSpinner,pageMessages,theForm,outputPanel1"/>
+            <apex:commandLink value="Export" styleClass="btn" style="text-decoration:none;padding:4px;" action="{!ExportDevicePSP}" rendered="{!showTable}" target="_blank"/>
+            <apex:commandButton value="Add Year" action="{!addNewYear}" reRender="LoadingStatusSpinner,pageMessages,theForm,outputPanel1" status="LoadingStatusSpinner" rendered="{!AND(showTable,editAccess)}"/>
+            <apex:commandButton value="Remove Year" action="{!removeYear}" reRender="LoadingStatusSpinner,pageMessages,theForm,outputPanel1" status="LoadingStatusSpinner" rendered="{!AND(showTable,editAccess)}"/>
+            <apex:commandButton value="QuarterlyView" action="{!QuarterlyView}" status="LoadingStatusSpinner" rerender="LoadingStatusSpinner,pageMessages,theForm,outputPanel1" />
+            <apex:commandButton value="{!IF(isASICFlag,'Preview/Execute 3 tasks: Copy Row 9 to 6, multiply by %, slide left/right as indicated','Preview/Execute 3 tasks: Copy Row 5 to 4, multiply by %, slide left/right as indicated')}" style="height:32px;width:230px;white-space:normal;float:right;" onclick="showConfirm(); return false;" status="LoadingStatusSpinner" rerender="LoadingStatusSpinner,pageMessages,theForm,outputPanel1"/>
+            <apex:actionFunction name="callPreview" action="{!previewPower}" oncomplete="foundrymod();return false;" status="LoadingStatusSpinner" rerender="LoadingStatusSpinner,pageMessages,theForm,outputPanel1"/>
+            <apex:actionFunction name="callReset" action="{!resetPreview}" oncomplete="foundrymod();return false;" status="LoadingStatusSpinner" rerender="LoadingStatusSpinner,pageMessages,theForm,outputPanel1"/>
+            <apex:actionFunction name="callExecute" action="{!copyOppWaferOuts}" oncomplete="foundrymod();return false;" status="LoadingStatusSpinner" rerender="LoadingStatusSpinner,pageMessages,theForm,outputPanel1"/>
+        </apex:pageBlockButtons> 
+        
+        <apex:pageBlockSection rendered="false">
+            <apex:inputHidden value="{!Device__c.Forecasted_Proto_Date__c}"/>
+            <apex:inputHidden value="{!Device__c.Duration_before_Proto_Start__c}"/>
+            <apex:inputHidden value="{!Device__c.Duration_of_Proto_Phase__c}"/>
+            <apex:inputHidden value="{!Device__c.Duration_of_PreProd_Phase__c}"/>
+            <apex:inputHidden value="{!Device__c.Product_TO_Date__c}"/>
+            <apex:inputHidden value="{!Device__c.Product_TO_Current__c}"/>
+            <apex:inputHidden value="{!Device__c.Sample_Delivery_Date__c}"/>
+            <apex:inputHidden value="{!Device__c.Forecasted_Production_Start_Date__c}"/>
+            <apex:inputHidden value="{!Device__c.Forecasted_RTP_Date__c}"/>
+            <apex:inputHidden value="{!Device__c.Opportunity_ID__c}"/>
+        </apex:pageBlockSection>
+        
+        <apex:outputPanel id="outputPanel1" rendered="{!showTable}">
+            
+            <apex:pageBlockSection rendered="{!IF(Device__c.Product_Indicator__c!='ASIC',TRUE,FALSE)}">
+                <apex:pageBlockSectionItem >
+                    1. Design Win<apex:outputField value="{!Device__c.Design_Win_Date_Formula__c}"/>
+                </apex:pageBlockSectionItem>             
+                <apex:pageBlockSectionItem >
+                    6. Respin Impact to Schedule
+                    <apex:outputPanel >
+                        <apex:outputField value="{!Device__c.Respin_Impact_to_Schedule_Current__c}"/>
+                    </apex:outputPanel>
+                </apex:pageBlockSectionItem>
+                <apex:pageBlockSectionItem >
+                    2. Product Tapeout
+                    <apex:outputPanel >
+                        <apex:outputField value="{!Device__c.Product_TO_Current__c}"/>
+                    </apex:outputPanel>
+                </apex:pageBlockSectionItem>
+                <apex:pageBlockSectionItem >                
+                    7. RTR - Functionality and Yield Learning Complete
+                    <apex:outputPanel >
+                        <apex:outputField value="{!Device__c.Risk_Wafer_Start_Current__c}"/>
+                    </apex:outputPanel>
+                </apex:pageBlockSectionItem>
+                <apex:pageBlockSectionItem >   
+                    3. Wafer First Lot Start
+                    <apex:outputPanel >
+                        <apex:outputField value="{!Device__c.Proto_Wafer_First_Lot_Start_Current__c}"/>
+                    </apex:outputPanel>
+                </apex:pageBlockSectionItem>                
+                <apex:pageBlockSectionItem >
+                    8. Direct Customer Qual Complete
+                    <apex:outputPanel >
+                        <apex:outputField value="{!Device__c.Risk_Wafer_Shipped_Current__c}"/>
+                    </apex:outputPanel>
+                </apex:pageBlockSectionItem>
+                <apex:pageBlockSectionItem >
+                    4. Proto Wafer Fab Shipped
+                    <apex:outputPanel >
+                        <apex:outputField value="{!Device__c.Proto_Wafer_Fab_Shipped_Current__c}"/>
+                    </apex:outputPanel>
+                </apex:pageBlockSectionItem>
+                <apex:pageBlockSectionItem >
+                    9. End Customer Qual Complete
+                    <apex:outputPanel >
+                        <apex:outputField value="{!Device__c.End_Customer_Qual_Complete_Current__c}"/>
+                    </apex:outputPanel>
+                </apex:pageBlockSectionItem>
+                <apex:pageBlockSectionItem >
+                    5. Assembled/Tested Part Shipped
+                    <apex:outputPanel >
+                        <apex:outputField value="{!Device__c.Assembled_Tested_Part_Shipped_Current__c}"/>
+                    </apex:outputPanel>
+                </apex:pageBlockSectionItem>
+                <apex:pageBlockSectionItem >
+                    10. Production Wafer Start
+                    <apex:outputPanel >
+                        <apex:outputField value="{!Device__c.Production_Wafer_Start_Current__c}"/>
+                    </apex:outputPanel>
+                </apex:pageBlockSectionItem>
+                <apex:inputField value="{!Device__c.Proto_DPML__c}" onkeypress="return enterfunction(event);"/>
+                <apex:inputField value="{!Device__c.Production_DPML__c}" onkeypress="return enterfunction(event);"/>
+                <apex:inputField value="{!Device__c.No_of_Mask_Layers__c}" onkeypress="return enterfunction(event);"/>
+                <apex:inputField value="{!Device__c.Deliverable_Type__c}" rendered="{!isASICFlag}" onkeypress="return enterfunction(event);"/>
+                <apex:inputField value="{!Device__c.Post_Wafer_Processing_Proto__c}" rendered="{!isASICFlag}" onkeypress="return enterfunction(event);"/>
+                <apex:inputField value="{!Device__c.Post_Wafer_Processing_Prod__c}" rendered="{!isASICFlag}" onkeypress="return enterfunction(event);"/>
+                <apex:pageBlockSectionItem >
+                    TOR value
+                    <apex:outputField value="{!Device__c.TOR_Automatic__c}"/>
+                </apex:pageBlockSectionItem>
+                <apex:inputField value="{!devicerecord.PSP_Volume_Percentage__c}" label="Modify Row 4 to be a % of Row 5" onkeypress="return enterfunction(event);"/>
+                <apex:inputField value="{!devicerecord.PSP_Slide_Schedule_to__c}" label="Slide Row 4 Schedule to" onkeypress="return enterfunction(event);"/>
+                <apex:inputField value="{!devicerecord.PSP_Slide_Schedule_by_Months__c}" label="Slide Row 4 Schedule by Months" onkeypress="return enterfunction(event);"/>
+            </apex:pageBlockSection>
+            
+            <apex:pageBlockSection rendered="{!IF(Device__c.Product_Indicator__c=='ASIC',TRUE,FALSE)}">
+                <apex:pageBlockSectionItem >
+                    1. Customer Engagement<apex:outputField value="{!Device__c.Customer_Engagement_Current__c}"/>
+                </apex:pageBlockSectionItem>             
+                <apex:pageBlockSectionItem >
+                    7. RTM e-Release A
+                    <apex:outputPanel >
+                        <apex:outputField value="{!Device__c.RTM_e_Release_A_Current__c}"/>
+                    </apex:outputPanel>
+                </apex:pageBlockSectionItem>
+                <apex:pageBlockSectionItem >
+                    2. Ready to Quote
+                    <apex:outputPanel >
+                        <apex:outputField value="{!Device__c.Ready_to_Quote_Current__c}"/>
+                    </apex:outputPanel>
+                </apex:pageBlockSectionItem>
+                <apex:pageBlockSectionItem >                
+                    8. Product Tapeout
+                    <apex:outputPanel >
+                        <apex:outputField value="{!Device__c.Product_TO_Current__c}"/>
+                    </apex:outputPanel>
+                </apex:pageBlockSectionItem>
+                <apex:pageBlockSectionItem >   
+                    3. Design Win
+                    <apex:outputPanel >
+                        <apex:outputField value="{!Device__c.Design_Win_Date_Formula__c}"/>
+                    </apex:outputPanel>
+                </apex:pageBlockSectionItem>                
+                <apex:pageBlockSectionItem >
+                    9. Proto Wafer Fab Shipped
+                    <apex:outputPanel >
+                        <apex:outputField value="{!Device__c.Proto_Wafer_Fab_Shipped_Current__c}"/>
+                    </apex:outputPanel>
+                </apex:pageBlockSectionItem>
+                <apex:pageBlockSectionItem >
+                    4. Ready for IDR
+                    <apex:outputPanel >
+                        <apex:outputField value="{!Device__c.CDS_Complete_Current__c}"/>
+                    </apex:outputPanel>
+                </apex:pageBlockSectionItem>
+                <apex:pageBlockSectionItem >
+                    10. End Customer Qual Complete
+                    <apex:outputPanel >
+                        <apex:outputField value="{!Device__c.End_Customer_Qual_Complete_Current__c}"/>
+                    </apex:outputPanel>
+                </apex:pageBlockSectionItem>
+                <apex:pageBlockSectionItem >
+                    5. 1st customer design data
+                    <apex:outputPanel >
+                        <apex:outputField value="{!Device__c.First_customer_design_data_Current__c}"/>
+                    </apex:outputPanel>
+                </apex:pageBlockSectionItem>
+                <apex:pageBlockSectionItem >
+                    11. Production Wafer Start
+                    <apex:outputPanel >
+                        <apex:outputField value="{!Device__c.Production_Wafer_Start_Current__c}"/>
+                    </apex:outputPanel>
+                </apex:pageBlockSectionItem>
+                <apex:pageBlockSectionItem >
+                    6. RTM e-Release Dt
+                    <apex:outputPanel >
+                        <apex:outputField value="{!Device__c.RTM_e_Release_Dt_Current__c}"/>
+                    </apex:outputPanel>
+                </apex:pageBlockSectionItem>
+                <apex:pageBlockSectionItem >
+                    12. Production Wafer Start (Judged)
+                    <apex:outputPanel >
+                        <apex:outputField value="{!Device__c.Production_Wafer_Start_Judged_Current__c}"/>
+                    </apex:outputPanel>
+                </apex:pageBlockSectionItem>
+                <apex:inputField value="{!Device__c.Proto_DPML__c}" onkeypress="return enterfunction(event);"/>
+                <apex:inputField value="{!Device__c.Production_DPML__c}" onkeypress="return enterfunction(event);"/>
+                <apex:inputField value="{!Device__c.No_of_Mask_Layers__c}" onkeypress="return enterfunction(event);"/>
+                <apex:inputField value="{!Device__c.Deliverable_Type__c}" rendered="{!isASICFlag}" onkeypress="return enterfunction(event);"/>
+                <apex:inputField value="{!Device__c.Post_Wafer_Processing_Proto__c}" onkeypress="return enterfunction(event);"/>
+                <apex:inputField value="{!Device__c.Post_Wafer_Processing_Prod__c}" onkeypress="return enterfunction(event);"/>
+                <apex:pageBlockSectionItem >
+                    TOR value
+                    <apex:outputField value="{!Device__c.TOR_Automatic__c}"/>
+                </apex:pageBlockSectionItem>
+                <apex:inputField value="{!devicerecord.PSP_Volume_Percentage__c}" label="{!IF(isASICFlag,'Modify Row 6 to be a % of Row 9','Modify Row 4 to be a % of Row 5')}" onkeypress="return enterfunction(event);"/>
+                <apex:inputField value="{!devicerecord.PSP_Slide_Schedule_to__c}" label="{!IF(isASICFlag,'Slide Row 6 Schedule to','Slide Row 4 Schedule to')}" onkeypress="return enterfunction(event);"/>
+                <apex:inputField value="{!devicerecord.PSP_Slide_Schedule_by_Months__c}" label="{!IF(isASICFlag,'Slide Row 6 Schedule by Months','Slide Row 4 Schedule by Months')}" onkeypress="return enterfunction(event);"/>
+            </apex:pageBlockSection>
+            
+            <br/>
+            
+            <apex:outputPanel id="forecasttable1" layout="block" style="overflow: auto; width:1275px;" rendered="{!NOT(isASICFlag)}"> 
+            <table border="1" style="border-collapse:collapse;border-color:#000000;" width="100%" id="table2">
+               <caption style="background-color:#B9B9B9;"><b>3. Production Start Plan Details (All the system calculations will occur after Saving the PSP)</b></caption>
+                <thead>
+                    <tr style="background-color:#DCDCDC;">
+                        <th colspan="2" rowspan="3"  class="tg-center" style="text-align: center;vertical-align:middle;" scope="col"><b>Phase</b></th>
+                        <apex:repeat value="{!lstYears}" var="year">
+                            <th colspan="12" class="tg-center" scope="col">{!year}</th>
+                        </apex:repeat>
+                    </tr>
+                    <tr>
+                        <apex:repeat value="{!lstYears}" var="year">
+                            <th style="background-color:#DCDCDC;" colspan="3" scope="col" class="tg-center">Q1</th>
+                            <th style="background-color:#DCDCDC;" colspan="3" scope="col" class="tg-center">Q2</th>
+                            <th style="background-color:#DCDCDC;" colspan="3" scope="col" class="tg-center">Q3</th>
+                            <th style="background-color:#DCDCDC;" colspan="3" scope="col" class="tg-center">Q4</th>
+                        </apex:repeat>
+                    </tr>
+                    <tr>
+                        <apex:repeat value="{!lstYears}" var="year">
+                            <th colspan="1" scope="col" class="tg-center">Jan</th>
+                            <th colspan="1" scope="col" class="tg-center">Feb</th>
+                            <th colspan="1" scope="col" class="tg-center">Mar</th>
+                            <th colspan="1" scope="col" class="tg-center">Apr</th>
+                            <th colspan="1" scope="col" class="tg-center">May</th>
+                            <th colspan="1" scope="col" class="tg-center">Jun</th>
+                            <th colspan="1" scope="col" class="tg-center">Jul</th>
+                            <th colspan="1" scope="col" class="tg-center">Aug</th>
+                            <th colspan="1" scope="col" class="tg-center">Sep</th>
+                            <th colspan="1" scope="col" class="tg-center">Oct</th>
+                            <th colspan="1" scope="col" class="tg-center">Nov</th>
+                            <th colspan="1" scope="col" class="tg-center">Dec</th>
+                        </apex:repeat>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr style="background-color:#ffdd99;">
+                        <th style="text-align: center;vertical-align:middle;" colspan="1" rowspan="2"><b>1. Prototype Wafer <br/>Starts</b></th>
+                        <th scope="row">Monthly TTL</th>
+                        <apex:repeat id="rep1" value="{!lstPSPprototypeWaferStarts}" var="pspProdRecord">
+                            <td style="">
+                                <apex:inputField id="td1" rendered="{!editAccess}" onkeypress="return enterfunction(event);" styleClass="tg-style" value="{!pspProdRecord.Month_1__c}"/>
+                                <apex:outputField id="td01" rendered="{!NOT(editAccess)}" styleClass="tg-style" value="{!pspProdRecord.Month_1__c}"/>
+                            </td>
+                            <td style="">
+                                <apex:inputField id="td2" rendered="{!editAccess}" onkeypress="return enterfunction(event);" styleClass="tg-style" value="{!pspProdRecord.Month_2__c}"/>
+                                <apex:outputField id="td02" rendered="{!NOT(editAccess)}" styleClass="tg-style" value="{!pspProdRecord.Month_2__c}"/>
+                            </td>
+                            <td style="">
+                                <apex:inputField id="td3" rendered="{!editAccess}" onkeypress="return enterfunction(event);" styleClass="tg-style" value="{!pspProdRecord.Month_3__c}"/>
+                                <apex:outputField id="td03" rendered="{!NOT(editAccess)}" styleClass="tg-style" value="{!pspProdRecord.Month_3__c}"/>
+                            </td>
+                            <td style="">
+                                <apex:inputField id="td4" rendered="{!editAccess}" onkeypress="return enterfunction(event);" styleClass="tg-style" value="{!pspProdRecord.Month_4__c}"/>
+                                <apex:outputField id="td04" rendered="{!NOT(editAccess)}" styleClass="tg-style" value="{!pspProdRecord.Month_4__c}"/>
+                            </td>
+                            <td style="">
+                                <apex:inputField id="td5" rendered="{!editAccess}" onkeypress="return enterfunction(event);" styleClass="tg-style" value="{!pspProdRecord.Month_5__c}"/>
+                                <apex:outputField id="td05" rendered="{!NOT(editAccess)}" styleClass="tg-style" value="{!pspProdRecord.Month_5__c}"/>
+                            </td>
+                            <td style="">
+                                <apex:inputField id="td6" rendered="{!editAccess}" onkeypress="return enterfunction(event);" styleClass="tg-style" value="{!pspProdRecord.Month_6__c}"/>
+                                <apex:outputField id="td06" rendered="{!NOT(editAccess)}" styleClass="tg-style" value="{!pspProdRecord.Month_6__c}"/>
+                            </td>
+                            <td style="">
+                                <apex:inputField id="td7" rendered="{!editAccess}" onkeypress="return enterfunction(event);" styleClass="tg-style" value="{!pspProdRecord.Month_7__c}"/>
+                                <apex:outputField id="td07" rendered="{!NOT(editAccess)}" styleClass="tg-style" value="{!pspProdRecord.Month_7__c}"/>
+                            </td>
+                            <td style="">
+                                <apex:inputField id="td8" rendered="{!editAccess}" onkeypress="return enterfunction(event);" styleClass="tg-style" value="{!pspProdRecord.Month_8__c}"/>
+                                <apex:outputField id="td08" rendered="{!NOT(editAccess)}" styleClass="tg-style" value="{!pspProdRecord.Month_8__c}"/>
+                            </td>
+                            <td style="">
+                                <apex:inputField id="td9" rendered="{!editAccess}" onkeypress="return enterfunction(event);" styleClass="tg-style" value="{!pspProdRecord.Month_9__c}"/>
+                                <apex:outputField id="td09" rendered="{!NOT(editAccess)}" styleClass="tg-style" value="{!pspProdRecord.Month_9__c}"/>
+                            </td>
+                            <td style="">
+                                <apex:inputField id="td10" rendered="{!editAccess}" onkeypress="return enterfunction(event);" styleClass="tg-style" value="{!pspProdRecord.Month_10__c}"/>
+                                <apex:outputField id="td010" rendered="{!NOT(editAccess)}" styleClass="tg-style" value="{!pspProdRecord.Month_10__c}"/>
+                            </td>
+                            <td style="">
+                                <apex:inputField id="td11" rendered="{!editAccess}" onkeypress="return enterfunction(event);" styleClass="tg-style" value="{!pspProdRecord.Month_11__c}"/>
+                                <apex:outputField id="td011" rendered="{!NOT(editAccess)}" styleClass="tg-style" value="{!pspProdRecord.Month_11__c}"/>
+                            </td>
+                            <td style="">
+                                <apex:inputField id="td12" rendered="{!editAccess}" onkeypress="return enterfunction(event);" styleClass="tg-style" value="{!pspProdRecord.Month_12__c}"/>
+                                <apex:outputField id="td012" rendered="{!NOT(editAccess)}" styleClass="tg-style" value="{!pspProdRecord.Month_12__c}"/>
+                            </td>
+                        </apex:repeat>
+                    </tr>
+                    <tr style="background-color:#ffdd99;">
+                        <th colspan="1" rowspan="1" scope="row"><b>Qtrly TTL</b></th>
+                        <apex:repeat id="rep1_1" value="{!lstPSPprototypeWaferStarts}" var="pspProdRecord">
+                            <td colspan="3" style="" class="tg-center">
+                                <apex:outputField id="td1" value="{!pspProdRecord.WaferStart_Quarter1__c}"/>
+                            </td>
+                            <td colspan="3" style="" class="tg-center">
+                                <apex:outputField id="td2" value="{!pspProdRecord.WaferStart_Quarter2__c}"/>
+                            </td>
+                            <td colspan="3" style="" class="tg-center">
+                                <apex:outputField id="td3" value="{!pspProdRecord.WaferStart_Quarter3__c}"/>
+                            </td>
+                            <td colspan="3" style="" class="tg-center">
+                                <apex:outputField id="td4" value="{!pspProdRecord.WaferStart_Quarter4__c}"/>
+                            </td>
+                        </apex:repeat>
+                    </tr>
+                    <tr style="background-color:#ffdd99;">
+                        <th style="text-align: center;vertical-align:middle;" colspan="1" rowspan="2"><b>2. Prototype Wafer <br/>Outs</b></th>
+                        <th colspan="1" rowspan="1" scope="row"><b>Monthly TTL</b></th>
+                        <apex:repeat id="rep2" value="{!lstprototypeWaferOuts}" var="pspWaferStartTotalRecord">
+                            <td class="tg-center"><apex:outputField id="td1" style="width:100%;height:100%;" value="{!pspWaferStartTotalRecord.Month_1__c}"/></td>
+                            <td class="tg-center"><apex:outputField id="td2" style="width:100%;height:100%;" value="{!pspWaferStartTotalRecord.Month_2__c}"/></td>
+                            <td class="tg-center"><apex:outputField id="td3" style="width:100%;height:100%;" value="{!pspWaferStartTotalRecord.Month_3__c}"/></td>
+                            <td class="tg-center"><apex:outputField id="td4" style="width:100%;height:100%;" value="{!pspWaferStartTotalRecord.Month_4__c}"/></td>
+                            <td class="tg-center"><apex:outputField id="td5" style="width:100%;height:100%;" value="{!pspWaferStartTotalRecord.Month_5__c}"/></td>
+                            <td class="tg-center"><apex:outputField id="td6" style="width:100%;height:100%;" value="{!pspWaferStartTotalRecord.Month_6__c}"/></td>
+                            <td class="tg-center"><apex:outputField id="td7" style="width:100%;height:100%;" value="{!pspWaferStartTotalRecord.Month_7__c}"/></td>
+                            <td class="tg-center"><apex:outputField id="td8" style="width:100%;height:100%;" value="{!pspWaferStartTotalRecord.Month_8__c}"/></td>
+                            <td class="tg-center"><apex:outputField id="td9" style="width:100%;height:100%;" value="{!pspWaferStartTotalRecord.Month_9__c}"/></td>
+                            <td class="tg-center"><apex:outputField id="td10" style="width:100%;height:100%;" value="{!pspWaferStartTotalRecord.Month_10__c}"/></td>
+                            <td class="tg-center"><apex:outputField id="td11" style="width:100%;height:100%;" value="{!pspWaferStartTotalRecord.Month_11__c}"/></td>
+                            <td class="tg-center"><apex:outputField id="td12" style="width:100%;height:100%;" value="{!pspWaferStartTotalRecord.Month_12__c}"/></td>
+                        </apex:repeat>
+                    </tr>
+                    <tr style="background-color:#ffdd99;">
+                        <th scope="row">Qtrly TTL</th>
+                        <apex:repeat id="rep2_1" value="{!lstprototypeWaferOuts}" var="pspWaferStartTotalRecord">
+                            <td class="tg-center" colspan="3"><apex:outputField id="td1" value="{!pspWaferStartTotalRecord.WaferStart_Quarter1__c}"/></td>
+                            <td class="tg-center" colspan="3"><apex:outputField id="td2" value="{!pspWaferStartTotalRecord.WaferStart_Quarter2__c}"/></td>
+                            <td class="tg-center" colspan="3"><apex:outputField id="td3" value="{!pspWaferStartTotalRecord.WaferStart_Quarter3__c}"/></td>
+                            <td class="tg-center" colspan="3"><apex:outputField id="td4" value="{!pspWaferStartTotalRecord.WaferStart_Quarter4__c}"/></td>
+                        </apex:repeat>
+                    </tr>
+                    
+                    <tr style="background-color:#dad971;">
+                        <th style="text-align: center;vertical-align:middle;" colspan="1" rowspan="2"><b>3. Production Wafer <br/>Starts</b></th>
+                        <th colspan="1" rowspan="1" scope="row"><b>Monthly TTL</b></th>
+                        <apex:repeat id="rep3" value="{!lstPSPproductionWaferStarts}" var="pspWaferOutTotalRecord">
+                            <td>
+                                <apex:inputField id="td1" rendered="{!editAccess}" onkeypress="return enterfunction(event);" styleClass="tg-style" value="{!pspWaferOutTotalRecord.Month_1__c}"/>
+                                <apex:outputField id="td01" rendered="{!NOT(editAccess)}" styleClass="tg-style" value="{!pspWaferOutTotalRecord.Month_1__c}"/>
+                            </td>
+                            <td>
+                                <apex:inputField id="td2" rendered="{!editAccess}" onkeypress="return enterfunction(event);" styleClass="tg-style" value="{!pspWaferOutTotalRecord.Month_2__c}"/>
+                                <apex:outputField id="td02" rendered="{!NOT(editAccess)}" styleClass="tg-style" value="{!pspWaferOutTotalRecord.Month_2__c}"/>
+                            </td>
+                            <td>
+                                <apex:inputField id="td3" rendered="{!editAccess}" onkeypress="return enterfunction(event);" styleClass="tg-style" value="{!pspWaferOutTotalRecord.Month_3__c}"/>
+                                <apex:outputField id="td03" rendered="{!NOT(editAccess)}"  styleClass="tg-style" value="{!pspWaferOutTotalRecord.Month_3__c}"/>
+                            </td>
+                            <td>
+                                <apex:inputField id="td4" rendered="{!editAccess}" onkeypress="return enterfunction(event);" styleClass="tg-style" value="{!pspWaferOutTotalRecord.Month_4__c}"/>
+                                <apex:outputField id="td04" rendered="{!NOT(editAccess)}" styleClass="tg-style"  value="{!pspWaferOutTotalRecord.Month_4__c}"/>
+                            </td>
+                            <td>
+                                <apex:inputField id="td5" rendered="{!editAccess}" onkeypress="return enterfunction(event);" styleClass="tg-style" value="{!pspWaferOutTotalRecord.Month_5__c}"/>
+                                <apex:outputField id="td05" rendered="{!NOT(editAccess)}" styleClass="tg-style"  value="{!pspWaferOutTotalRecord.Month_5__c}"/>
+                            </td>
+                            <td>
+                                <apex:inputField id="td6" rendered="{!editAccess}" onkeypress="return enterfunction(event);" styleClass="tg-style" value="{!pspWaferOutTotalRecord.Month_6__c}"/>
+                                <apex:outputField id="td06" rendered="{!NOT(editAccess)}" styleClass="tg-style"  value="{!pspWaferOutTotalRecord.Month_6__c}"/>
+                            </td>
+                            <td>
+                                <apex:inputField id="td7" rendered="{!editAccess}" onkeypress="return enterfunction(event);" styleClass="tg-style" value="{!pspWaferOutTotalRecord.Month_7__c}"/>
+                                <apex:outputField id="td07" rendered="{!NOT(editAccess)}" styleClass="tg-style" value="{!pspWaferOutTotalRecord.Month_7__c}"/>
+                            </td>
+                            <td>
+                                <apex:inputField id="td8" rendered="{!editAccess}" onkeypress="return enterfunction(event);" styleClass="tg-style" value="{!pspWaferOutTotalRecord.Month_8__c}"/>
+                                <apex:outputField id="td08" rendered="{!NOT(editAccess)}" styleClass="tg-style" value="{!pspWaferOutTotalRecord.Month_8__c}"/>
+                            </td>
+                            <td>
+                                <apex:inputField id="td9" rendered="{!editAccess}" onkeypress="return enterfunction(event);" styleClass="tg-style" value="{!pspWaferOutTotalRecord.Month_9__c}"/>
+                                <apex:outputField id="td09" rendered="{!NOT(editAccess)}" styleClass="tg-style" value="{!pspWaferOutTotalRecord.Month_9__c}"/>
+                            </td>
+                            <td>
+                                <apex:inputField id="td10" rendered="{!editAccess}" onkeypress="return enterfunction(event);" styleClass="tg-style" value="{!pspWaferOutTotalRecord.Month_10__c}"/>
+                                <apex:outputField id="td010" rendered="{!NOT(editAccess)}" styleClass="tg-style" value="{!pspWaferOutTotalRecord.Month_10__c}"/>
+                            </td>
+                            <td>
+                                <apex:inputField id="td11" rendered="{!editAccess}" onkeypress="return enterfunction(event);" styleClass="tg-style" value="{!pspWaferOutTotalRecord.Month_11__c}"/>
+                                <apex:outputField id="td011" rendered="{!NOT(editAccess)}" styleClass="tg-style" value="{!pspWaferOutTotalRecord.Month_11__c}"/>
+                            </td>
+                            <td>
+                                <apex:inputField id="td12" rendered="{!editAccess}" onkeypress="return enterfunction(event);" styleClass="tg-style" value="{!pspWaferOutTotalRecord.Month_12__c}"/>
+                                <apex:outputField id="td012" rendered="{!NOT(editAccess)}" styleClass="tg-style" value="{!pspWaferOutTotalRecord.Month_12__c}"/>
+                            </td>
+                        </apex:repeat>
+                    </tr>
+                    <tr style="background-color:#dad971;">
+                        <th scope="row">Qtrly TTL</th>
+                        <apex:repeat id="rep3_1" value="{!lstPSPproductionWaferStarts}" var="pspWaferOutTotalRecord">
+                            <td class="tg-center" colspan="3"><apex:outputField id="td1" value="{!pspWaferOutTotalRecord.WaferStart_Quarter1__c}" rendered="{!NOT(previewFlag)}"/>
+                            <apex:outputText id="td01" value="{!(pspWaferOutTotalRecord.Month_1__c+pspWaferOutTotalRecord.Month_2__c+pspWaferOutTotalRecord.Month_3__c)}" rendered="{!previewFlag}"/></td>
+                            <td class="tg-center" colspan="3"><apex:outputField id="td2" value="{!pspWaferOutTotalRecord.WaferStart_Quarter2__c}" rendered="{!NOT(previewFlag)}"/>
+                            <apex:outputText id="td02" value="{!(pspWaferOutTotalRecord.Month_4__c+pspWaferOutTotalRecord.Month_5__c+pspWaferOutTotalRecord.Month_6__c)}" rendered="{!previewFlag}"/></td>
+                            <td class="tg-center" colspan="3"><apex:outputField id="td3" value="{!pspWaferOutTotalRecord.WaferStart_Quarter3__c}" rendered="{!NOT(previewFlag)}"/>
+                            <apex:outputText id="td03" value="{!(pspWaferOutTotalRecord.Month_7__c+pspWaferOutTotalRecord.Month_8__c+pspWaferOutTotalRecord.Month_9__c)}" rendered="{!previewFlag}"/></td>
+                            <td class="tg-center" colspan="3"><apex:outputField id="td4" value="{!pspWaferOutTotalRecord.WaferStart_Quarter4__c}" rendered="{!NOT(previewFlag)}"/>
+                            <apex:outputText id="td04" value="{!(pspWaferOutTotalRecord.Month_10__c+pspWaferOutTotalRecord.Month_11__c+pspWaferOutTotalRecord.Month_12__c)}" rendered="{!previewFlag}"/></td>
+                        </apex:repeat>
+                    </tr>
+                                        
+                    <tr style="background-color:#dad971;">
+                        <th style="text-align: center;vertical-align:middle;" colspan="1" rowspan="2"><b>4. Production Wafer <br/>Outs</b></th>
+                        <th colspan="1" rowspan="1" scope="row"><b>Monthly TTL</b></th>
+                        <apex:repeat id="rep4" value="{!lstproductionWaferOuts}" var="pspWaferForecastRecord">
+                            <td class="tg-center"><apex:outputField id="td1" styleClass="tg-center" value="{!pspWaferForecastRecord.Month_1__c}"/></td>
+                            <td class="tg-center"><apex:outputField id="td2" styleClass="tg-style" value="{!pspWaferForecastRecord.Month_2__c}"/></td>
+                            <td class="tg-center"><apex:outputField id="td3" styleClass="tg-style" value="{!pspWaferForecastRecord.Month_3__c}"/></td>
+                            <td class="tg-center"><apex:outputField id="td4" styleClass="tg-style" value="{!pspWaferForecastRecord.Month_4__c}"/></td>
+                            <td class="tg-center"><apex:outputField id="td5" styleClass="tg-style" value="{!pspWaferForecastRecord.Month_5__c}"/></td>
+                            <td class="tg-center"><apex:outputField id="td6" styleClass="tg-style" value="{!pspWaferForecastRecord.Month_6__c}"/></td>
+                            <td class="tg-center"><apex:outputField id="td7" styleClass="tg-style" value="{!pspWaferForecastRecord.Month_7__c}"/></td>
+                            <td class="tg-center"><apex:outputField id="td8" styleClass="tg-style" value="{!pspWaferForecastRecord.Month_8__c}"/></td>
+                            <td class="tg-center"><apex:outputField id="td9" styleClass="tg-style" value="{!pspWaferForecastRecord.Month_9__c}"/></td>
+                            <td class="tg-center"><apex:outputField id="td10" styleClass="tg-style" value="{!pspWaferForecastRecord.Month_10__c}"/></td>
+                            <td class="tg-center"><apex:outputField id="td11" styleClass="tg-style" value="{!pspWaferForecastRecord.Month_11__c}"/></td>
+                            <td class="tg-center"><apex:outputField id="td12" styleClass="tg-style" value="{!pspWaferForecastRecord.Month_12__c}"/></td>
+                        </apex:repeat>
+                    </tr>
+                    <tr style="background-color:#dad971;">
+                        <th scope="row">Qtrly TTL</th>
+                        <apex:repeat id="rep4_1" value="{!lstproductionWaferOuts}" var="pspWaferForecastRecord">
+                            <td class="tg-center" colspan="3"><apex:outputField id="td1" value="{!pspWaferForecastRecord.WaferStart_Quarter1__c}" rendered="{!NOT(previewFlag)}"/>
+                            <apex:outputText id="td01" value="{!(pspWaferForecastRecord.Month_1__c+pspWaferForecastRecord.Month_2__c+pspWaferForecastRecord.Month_3__c)}" rendered="{!previewFlag}"/></td>
+                            <td class="tg-center" colspan="3"><apex:outputField id="td2" value="{!pspWaferForecastRecord.WaferStart_Quarter2__c}" rendered="{!NOT(previewFlag)}"/>
+                            <apex:outputText id="td02" value="{!(pspWaferForecastRecord.Month_4__c+pspWaferForecastRecord.Month_5__c+pspWaferForecastRecord.Month_6__c)}" rendered="{!previewFlag}"/></td>
+                            <td class="tg-center" colspan="3"><apex:outputField id="td3" value="{!pspWaferForecastRecord.WaferStart_Quarter3__c}" rendered="{!NOT(previewFlag)}"/>
+                            <apex:outputText id="td03" value="{!(pspWaferForecastRecord.Month_7__c+pspWaferForecastRecord.Month_8__c+pspWaferForecastRecord.Month_9__c)}" rendered="{!previewFlag}"/></td>
+                            <td class="tg-center" colspan="3"><apex:outputField id="td4" value="{!pspWaferForecastRecord.WaferStart_Quarter4__c}" rendered="{!NOT(previewFlag)}"/>
+                            <apex:outputText id="td04" value="{!(pspWaferForecastRecord.Month_10__c+pspWaferForecastRecord.Month_11__c+pspWaferForecastRecord.Month_12__c)}" rendered="{!previewFlag}"/></td>
+                        </apex:repeat>
+                    </tr>
+                                        
+                    <tr style="background-color:#b3daff;">
+                        <th style="text-align: center;vertical-align:middle;" colspan="1" rowspan="2"><b>5. Total Opportunity<br/>Wafer Outs</b></th>
+                        <th colspan="1" rowspan="1" scope="row"><b>Monthly TTL</b></th>
+                        <apex:repeat id="rep5" value="{!lstOppWaferOuts}" var="oppWaferOut">
+                            <td class="tg-center"><apex:outputText id="td1" styleClass="tg-center" value="{!oppWaferOut.month1}"/></td>
+                            <td class="tg-center"><apex:outputText id="td2" styleClass="tg-style" value="{!oppWaferOut.month2}"/></td>
+                            <td class="tg-center"><apex:outputText id="td3" styleClass="tg-style" value="{!oppWaferOut.month3}"/></td>
+                            <td class="tg-center"><apex:outputText id="td4" styleClass="tg-style" value="{!oppWaferOut.month4}"/></td>
+                            <td class="tg-center"><apex:outputText id="td5" styleClass="tg-style" value="{!oppWaferOut.month5}"/></td>
+                            <td class="tg-center"><apex:outputText id="td6" styleClass="tg-style" value="{!oppWaferOut.month6}"/></td>
+                            <td class="tg-center"><apex:outputText id="td7" styleClass="tg-style" value="{!oppWaferOut.month7}"/></td>
+                            <td class="tg-center"><apex:outputText id="td8" styleClass="tg-style" value="{!oppWaferOut.month8}"/></td>
+                            <td class="tg-center"><apex:outputText id="td9" styleClass="tg-style" value="{!oppWaferOut.month9}"/></td>
+                            <td class="tg-center"><apex:outputText id="td10" styleClass="tg-style" value="{!oppWaferOut.month10}"/></td>
+                            <td class="tg-center"><apex:outputText id="td11" styleClass="tg-style" value="{!oppWaferOut.month11}"/></td>
+                            <td class="tg-center"><apex:outputText id="td12" styleClass="tg-style" value="{!oppWaferOut.month12}"/></td>
+                        </apex:repeat>
+                    </tr>
+                    <tr style="background-color:#b3daff;">
+                        <th scope="row">Qtrly TTL</th>
+                        <apex:repeat id="rep5_1" value="{!lstOppWaferOuts}" var="oppWaferOut">
+                            <td class="tg-center" colspan="3"><apex:outputText id="td1"  value="{!oppWaferOut.quarter1}"/></td>
+                            <td class="tg-center" colspan="3"><apex:outputText id="td2" value="{!oppWaferOut.quarter2}"/></td>
+                            <td class="tg-center" colspan="3"><apex:outputText id="td3" value="{!oppWaferOut.quarter3}"/></td>
+                            <td class="tg-center" colspan="3"><apex:outputText id="td4" value="{!oppWaferOut.quarter4}"/></td>
+                        </apex:repeat>
+                    </tr>
+                    
+                    <tr style="background-color:#b3daff;">
+                        <th style="text-align: center;vertical-align:middle;" colspan="1"><b>6. Total Opportunity<br/> ASP ($)</b></th>
+                        <th scope="row">Qtrly TTL</th>
+                        <apex:repeat value="{!lstOppWaferASPs}" var="oppWaferASP">
+                            <td class="tg-center" colspan="3"><apex:outputText value="$ " rendered="{!IF(oppWaferASP.quarter1!=null,true,false)}"/><apex:outputText value="{!oppWaferASP.quarter1}"/></td>
+                            <td class="tg-center" colspan="3"><apex:outputText value="$ " rendered="{!IF(oppWaferASP.quarter2!=null,true,false)}"/><apex:outputText value="{!oppWaferASP.quarter2}"/></td>
+                            <td class="tg-center" colspan="3"><apex:outputText value="$ " rendered="{!IF(oppWaferASP.quarter3!=null,true,false)}"/><apex:outputText value="{!oppWaferASP.quarter3}"/></td>
+                            <td class="tg-center" colspan="3"><apex:outputText value="$ " rendered="{!IF(oppWaferASP.quarter4!=null,true,false)}"/><apex:outputText value="{!oppWaferASP.quarter4}"/></td>
+                        </apex:repeat>
+                    </tr>
+                    
+                </tbody>
+           </table>
+           </apex:outputPanel>
+           
+           <apex:outputPanel id="forecasttable2" layout="block" style="overflow: auto; width:1275px;" rendered="{!isASICFlag}"> 
+           <table border="1" style="border-collapse:collapse;border-color:#000000;" width="100%" id="table3">
+               <caption style="background-color:#B9B9B9;"><b>3. Production Start Plan Details (All the system calculations will occur after Saving the PSP)</b></caption>
+                <thead>
+                    <tr style="background-color:#DCDCDC;">
+                        <th colspan="2" rowspan="3"  class="tg-center" style="text-align: center;vertical-align:middle;" scope="col"><b>Phase</b></th>
+                        <apex:repeat value="{!lstYears}" var="year">
+                            <th colspan="12" class="tg-center" scope="col">{!year}</th>
+                        </apex:repeat>
+                    </tr>
+                    <tr>
+                        <apex:repeat value="{!lstYears}" var="year">
+                            <th style="background-color:#DCDCDC;" colspan="3" scope="col" class="tg-center">Q1</th>
+                            <th style="background-color:#DCDCDC;" colspan="3" scope="col" class="tg-center">Q2</th>
+                            <th style="background-color:#DCDCDC;" colspan="3" scope="col" class="tg-center">Q3</th>
+                            <th style="background-color:#DCDCDC;" colspan="3" scope="col" class="tg-center">Q4</th>
+                        </apex:repeat>
+                    </tr>
+                    <tr>
+                        <apex:repeat value="{!lstYears}" var="year">
+                            <th colspan="1" scope="col" class="tg-center">Jan</th>
+                            <th colspan="1" scope="col" class="tg-center">Feb</th>
+                            <th colspan="1" scope="col" class="tg-center">Mar</th>
+                            <th colspan="1" scope="col" class="tg-center">Apr</th>
+                            <th colspan="1" scope="col" class="tg-center">May</th>
+                            <th colspan="1" scope="col" class="tg-center">Jun</th>
+                            <th colspan="1" scope="col" class="tg-center">Jul</th>
+                            <th colspan="1" scope="col" class="tg-center">Aug</th>
+                            <th colspan="1" scope="col" class="tg-center">Sep</th>
+                            <th colspan="1" scope="col" class="tg-center">Oct</th>
+                            <th colspan="1" scope="col" class="tg-center">Nov</th>
+                            <th colspan="1" scope="col" class="tg-center">Dec</th>
+                        </apex:repeat>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr style="background-color:#ffdd99;">
+                        <th style="text-align: center;vertical-align:middle;" colspan="1" rowspan="2"><b>1. Prototype {!delType}<br/>Starts</b></th>
+                        <th scope="row">Monthly TTL</th>
+                        <apex:repeat value="{!lstPSPprototypeWaferStarts}" var="pspProdRecord">
+                            <td>
+                                <apex:inputField rendered="{!editAccess}" onkeypress="return enterfunction(event);" styleClass="tg-style-edit" value="{!pspProdRecord.Month_1__c}"/>
+                                <apex:outputText rendered="{!NOT(editAccess)}" styleClass="tg-style-edit" value="{!pspProdRecord.Month_1__c}"/>
+                            </td>
+                            <td>
+                                <apex:inputField rendered="{!editAccess}" onkeypress="return enterfunction(event);" styleClass="tg-style-edit" value="{!pspProdRecord.Month_2__c}"/>
+                                <apex:outputText rendered="{!NOT(editAccess)}" styleClass="tg-style-edit" value="{!pspProdRecord.Month_2__c}"/>
+                            </td>
+                            <td>
+                                <apex:inputField rendered="{!editAccess}" onkeypress="return enterfunction(event);" styleClass="tg-style-edit" value="{!pspProdRecord.Month_3__c}"/>
+                                <apex:outputText rendered="{!NOT(editAccess)}" styleClass="tg-style-edit" value="{!pspProdRecord.Month_3__c}"/>
+                            </td>
+                            <td>
+                                <apex:inputField rendered="{!editAccess}" onkeypress="return enterfunction(event);" styleClass="tg-style-edit" value="{!pspProdRecord.Month_4__c}"/>
+                                <apex:outputText rendered="{!NOT(editAccess)}" styleClass="tg-style-edit" value="{!pspProdRecord.Month_4__c}"/>
+                            </td>
+                            <td>
+                                <apex:inputField rendered="{!editAccess}" onkeypress="return enterfunction(event);" styleClass="tg-style-edit" value="{!pspProdRecord.Month_5__c}"/>
+                                <apex:outputText rendered="{!NOT(editAccess)}" styleClass="tg-style-edit" value="{!pspProdRecord.Month_5__c}"/>
+                            </td>
+                            <td>
+                                <apex:inputField rendered="{!editAccess}" onkeypress="return enterfunction(event);" styleClass="tg-style-edit" value="{!pspProdRecord.Month_6__c}"/>
+                                <apex:outputText rendered="{!NOT(editAccess)}" styleClass="tg-style-edit" value="{!pspProdRecord.Month_6__c}"/>
+                            </td>
+                            <td>
+                                <apex:inputField rendered="{!editAccess}" onkeypress="return enterfunction(event);" styleClass="tg-style-edit" value="{!pspProdRecord.Month_7__c}"/>
+                                <apex:outputText rendered="{!NOT(editAccess)}" styleClass="tg-style-edit" value="{!pspProdRecord.Month_7__c}"/>
+                            </td>
+                            <td>
+                                <apex:inputField rendered="{!editAccess}" onkeypress="return enterfunction(event);" styleClass="tg-style-edit" value="{!pspProdRecord.Month_8__c}"/>
+                                <apex:outputText rendered="{!NOT(editAccess)}" styleClass="tg-style-edit" value="{!pspProdRecord.Month_8__c}"/>
+                            </td>
+                            <td>
+                                <apex:inputField rendered="{!editAccess}" onkeypress="return enterfunction(event);" styleClass="tg-style-edit" value="{!pspProdRecord.Month_9__c}"/>
+                                <apex:outputText rendered="{!NOT(editAccess)}" styleClass="tg-style-edit" value="{!pspProdRecord.Month_9__c}"/>
+                            </td>
+                            <td>
+                                <apex:inputField rendered="{!editAccess}" onkeypress="return enterfunction(event);" styleClass="tg-style-edit" value="{!pspProdRecord.Month_10__c}"/>
+                                <apex:outputText rendered="{!NOT(editAccess)}" styleClass="tg-style-edit" value="{!pspProdRecord.Month_10__c}"/>
+                            </td>
+                            <td>
+                                <apex:inputField rendered="{!editAccess}" onkeypress="return enterfunction(event);" styleClass="tg-style-edit" value="{!pspProdRecord.Month_11__c}"/>
+                                <apex:outputText rendered="{!NOT(editAccess)}" styleClass="tg-style-edit" value="{!pspProdRecord.Month_11__c}"/>
+                            </td>
+                            <td>
+                                <apex:inputField rendered="{!editAccess}" onkeypress="return enterfunction(event);" styleClass="tg-style-edit" value="{!pspProdRecord.Month_12__c}"/>
+                                <apex:outputText rendered="{!NOT(editAccess)}" styleClass="tg-style-edit" value="{!pspProdRecord.Month_12__c}"/>
+                            </td>
+                        </apex:repeat>
+                    </tr>
+                    <tr style="background-color:#ffdd99;">
+                        <th colspan="1" rowspan="1" scope="row"><b>Qtrly TTL</b></th>
+                        <apex:repeat value="{!lstPSPprototypeWaferStarts}" var="pspProdRecord">
+                            <td colspan="3" style="" class="tg-center">
+                                <apex:outputText styleClass="tg-style-edit" value="{!pspProdRecord.WaferStart_Quarter1__c}"/>
+                            </td>
+                            <td colspan="3" style="" class="tg-center">
+                                <apex:outputText styleClass="tg-style-edit" value="{!pspProdRecord.WaferStart_Quarter2__c}"/>
+                            </td>
+                            <td colspan="3" style="" class="tg-center">
+                                <apex:outputText styleClass="tg-style-edit" value="{!pspProdRecord.WaferStart_Quarter3__c}"/>
+                            </td>
+                            <td colspan="3" style="" class="tg-center">
+                                <apex:outputText styleClass="tg-style-edit" value="{!pspProdRecord.WaferStart_Quarter4__c}"/>
+                            </td>
+                        </apex:repeat>
+                    </tr>
+                    <tr style="background-color:#ffdd99;">
+                        <th style="text-align: center;vertical-align:middle;" colspan="1" rowspan="2"><b>2. Prototype {!delType} <br/>Outs</b></th>
+                        <th colspan="1" rowspan="1" scope="row"><b>Monthly TTL</b></th>
+                        <apex:repeat value="{!lstprototypeWaferOuts}" var="pspWaferStartTotalRecord">
+                            <td class="tg-center"><apex:outputText styleClass="tg-style-edit" value="{!pspWaferStartTotalRecord.Month_1__c}"/></td>
+                            <td class="tg-center"><apex:outputText styleClass="tg-style-edit" value="{!pspWaferStartTotalRecord.Month_2__c}"/></td>
+                            <td class="tg-center"><apex:outputText styleClass="tg-style-edit" value="{!pspWaferStartTotalRecord.Month_3__c}"/></td>
+                            <td class="tg-center"><apex:outputText styleClass="tg-style-edit" value="{!pspWaferStartTotalRecord.Month_4__c}"/></td>
+                            <td class="tg-center"><apex:outputText styleClass="tg-style-edit" value="{!pspWaferStartTotalRecord.Month_5__c}"/></td>
+                            <td class="tg-center"><apex:outputText styleClass="tg-style-edit" value="{!pspWaferStartTotalRecord.Month_6__c}"/></td>
+                            <td class="tg-center"><apex:outputText styleClass="tg-style-edit" value="{!pspWaferStartTotalRecord.Month_7__c}"/></td>
+                            <td class="tg-center"><apex:outputText styleClass="tg-style-edit" value="{!pspWaferStartTotalRecord.Month_8__c}"/></td>
+                            <td class="tg-center"><apex:outputText styleClass="tg-style-edit" value="{!pspWaferStartTotalRecord.Month_9__c}"/></td>
+                            <td class="tg-center"><apex:outputText styleClass="tg-style-edit" value="{!pspWaferStartTotalRecord.Month_10__c}"/></td>
+                            <td class="tg-center"><apex:outputText styleClass="tg-style-edit" value="{!pspWaferStartTotalRecord.Month_11__c}"/></td>
+                            <td class="tg-center"><apex:outputText styleClass="tg-style-edit" value="{!pspWaferStartTotalRecord.Month_12__c}"/></td>
+                        </apex:repeat>
+                    </tr>
+                    <tr style="background-color:#ffdd99;">
+                        <th scope="row">Qtrly TTL</th>
+                        <apex:repeat value="{!lstprototypeWaferOuts}" var="pspWaferStartTotalRecord">
+                            <td class="tg-center" colspan="3"><apex:outputText styleClass="tg-style-edit" value="{!pspWaferStartTotalRecord.WaferStart_Quarter1__c}"/></td>
+                            <td class="tg-center" colspan="3"><apex:outputText styleClass="tg-style-edit" value="{!pspWaferStartTotalRecord.WaferStart_Quarter2__c}"/></td>
+                            <td class="tg-center" colspan="3"><apex:outputText styleClass="tg-style-edit" value="{!pspWaferStartTotalRecord.WaferStart_Quarter3__c}"/></td>
+                            <td class="tg-center" colspan="3"><apex:outputText styleClass="tg-style-edit" value="{!pspWaferStartTotalRecord.WaferStart_Quarter4__c}"/></td>
+                        </apex:repeat>
+                    </tr>
+                    
+                    <tr style="background-color:#ffdd99;">
+                        <th style="text-align: center;vertical-align:middle;" colspan="1" rowspan="2"><b>3. Prototype {!delType}<br/>ASP</b></th>
+                        <th scope="row">Monthly TTL</th>
+                        <apex:repeat value="{!lstPSPProtoASPRecords}" var="pspProtoASPRecord">
+                            <td>
+                                <apex:inputField rendered="{!editASPAccess}" onkeypress="return enterfunction(event);" styleClass="tg-style" value="{!pspProtoASPRecord.Month_1__c}"/>
+                                <apex:outputField rendered="{!NOT(editASPAccess)}" styleClass="tg-style" value="{!pspProtoASPRecord.Month_1__c}"/>
+                            </td>
+                            <td>
+                                <apex:inputField rendered="{!editASPAccess}" onkeypress="return enterfunction(event);" styleClass="tg-style" value="{!pspProtoASPRecord.Month_2__c}"/>
+                                <apex:outputField rendered="{!NOT(editASPAccess)}" styleClass="tg-style" value="{!pspProtoASPRecord.Month_2__c}"/>
+                            </td>
+                            <td>
+                                <apex:inputField rendered="{!editASPAccess}" onkeypress="return enterfunction(event);" styleClass="tg-style" value="{!pspProtoASPRecord.Month_3__c}"/>
+                                <apex:outputField rendered="{!NOT(editASPAccess)}" styleClass="tg-style" value="{!pspProtoASPRecord.Month_3__c}"/>
+                            </td>
+                            <td>
+                                <apex:inputField rendered="{!editASPAccess}" onkeypress="return enterfunction(event);" styleClass="tg-style" value="{!pspProtoASPRecord.Month_4__c}"/>
+                                <apex:outputField rendered="{!NOT(editASPAccess)}" styleClass="tg-style" value="{!pspProtoASPRecord.Month_4__c}"/>
+                            </td>
+                            <td>
+                                <apex:inputField rendered="{!editASPAccess}" onkeypress="return enterfunction(event);" styleClass="tg-style" value="{!pspProtoASPRecord.Month_5__c}"/>
+                                <apex:outputField rendered="{!NOT(editASPAccess)}" styleClass="tg-style" value="{!pspProtoASPRecord.Month_5__c}"/>
+                            </td>
+                            <td>
+                                <apex:inputField rendered="{!editASPAccess}" onkeypress="return enterfunction(event);" styleClass="tg-style" value="{!pspProtoASPRecord.Month_6__c}"/>
+                                <apex:outputField rendered="{!NOT(editASPAccess)}" styleClass="tg-style" value="{!pspProtoASPRecord.Month_6__c}"/>
+                            </td>
+                            <td>
+                                <apex:inputField rendered="{!editASPAccess}" onkeypress="return enterfunction(event);" styleClass="tg-style" value="{!pspProtoASPRecord.Month_7__c}"/>
+                                <apex:outputField rendered="{!NOT(editASPAccess)}" styleClass="tg-style" value="{!pspProtoASPRecord.Month_7__c}"/>
+                            </td>
+                            <td>
+                                <apex:inputField rendered="{!editASPAccess}" onkeypress="return enterfunction(event);" styleClass="tg-style" value="{!pspProtoASPRecord.Month_8__c}"/>
+                                <apex:outputField rendered="{!NOT(editASPAccess)}" styleClass="tg-style" value="{!pspProtoASPRecord.Month_8__c}"/>
+                            </td>
+                            <td>
+                                <apex:inputField rendered="{!editASPAccess}" onkeypress="return enterfunction(event);" styleClass="tg-style" value="{!pspProtoASPRecord.Month_9__c}"/>
+                                <apex:outputField rendered="{!NOT(editASPAccess)}" styleClass="tg-style" value="{!pspProtoASPRecord.Month_9__c}"/>
+                            </td>
+                            <td>
+                                <apex:inputField rendered="{!editASPAccess}" onkeypress="return enterfunction(event);" styleClass="tg-style" value="{!pspProtoASPRecord.Month_10__c}"/>
+                                <apex:outputField rendered="{!NOT(editASPAccess)}" styleClass="tg-style" value="{!pspProtoASPRecord.Month_10__c}"/>
+                            </td>
+                            <td>
+                                <apex:inputField rendered="{!editASPAccess}" onkeypress="return enterfunction(event);" styleClass="tg-style" value="{!pspProtoASPRecord.Month_11__c}"/>
+                                <apex:outputField rendered="{!NOT(editASPAccess)}" styleClass="tg-style" value="{!pspProtoASPRecord.Month_11__c}"/>
+                            </td>
+                            <td>
+                                <apex:inputField rendered="{!editASPAccess}" onkeypress="return enterfunction(event);" styleClass="tg-style" value="{!pspProtoASPRecord.Month_12__c}"/>
+                                <apex:outputField rendered="{!NOT(editASPAccess)}" styleClass="tg-style" value="{!pspProtoASPRecord.Month_12__c}"/>
+                            </td>
+                        </apex:repeat>
+                    </tr>
+                    <tr style="background-color:#ffdd99;">
+                        <th colspan="1" rowspan="1" scope="row"><b>Qtrly TTL</b></th>
+                        <apex:repeat value="{!lstPSPProtoASPRecords}" var="pspProtoASPRecord">
+                            <td colspan="3" style="" class="tg-center">
+                                <apex:outputField value="{!pspProtoASPRecord.WaferStart_Quarter1__c}"/>
+                            </td>
+                            <td colspan="3" style="" class="tg-center">
+                                <apex:outputField value="{!pspProtoASPRecord.WaferStart_Quarter2__c}"/>
+                            </td>
+                            <td colspan="3" style="" class="tg-center">
+                                <apex:outputField value="{!pspProtoASPRecord.WaferStart_Quarter3__c}"/>
+                            </td>
+                            <td colspan="3" style="" class="tg-center">
+                                <apex:outputField value="{!pspProtoASPRecord.WaferStart_Quarter4__c}"/>
+                            </td>
+                        </apex:repeat>
+                    </tr>
+                    
+                    <tr style="background-color:#ffdd99;">
+                        <th style="text-align: center;vertical-align:middle;" colspan="1" rowspan="2"><b>4. Prototype {!delType}<br/>Revenue</b></th>
+                        <th colspan="1" rowspan="1" scope="row"><b>Monthly TTL</b></th>
+                        <apex:repeat value="{!lstPSPProtoRevRecords}" var="pspProtoRevRecord">
+                            <td class="tg-center"><apex:outputText styleClass="tg-style" value="{!pspProtoRevRecord.month1}"/></td>
+                            <td class="tg-center"><apex:outputText styleClass="tg-style" value="{!pspProtoRevRecord.month2}"/></td>
+                            <td class="tg-center"><apex:outputText styleClass="tg-style" value="{!pspProtoRevRecord.month3}"/></td>
+                            <td class="tg-center"><apex:outputText styleClass="tg-style" value="{!pspProtoRevRecord.month4}"/></td>
+                            <td class="tg-center"><apex:outputText styleClass="tg-style" value="{!pspProtoRevRecord.month5}"/></td>
+                            <td class="tg-center"><apex:outputText styleClass="tg-style" value="{!pspProtoRevRecord.month6}"/></td>
+                            <td class="tg-center"><apex:outputText styleClass="tg-style" value="{!pspProtoRevRecord.month7}"/></td>
+                            <td class="tg-center"><apex:outputText styleClass="tg-style" value="{!pspProtoRevRecord.month8}"/></td>
+                            <td class="tg-center"><apex:outputText styleClass="tg-style" value="{!pspProtoRevRecord.month9}"/></td>
+                            <td class="tg-center"><apex:outputText styleClass="tg-style" value="{!pspProtoRevRecord.month10}"/></td>
+                            <td class="tg-center"><apex:outputText styleClass="tg-style" value="{!pspProtoRevRecord.month11}"/></td>
+                            <td class="tg-center"><apex:outputText styleClass="tg-style" value="{!pspProtoRevRecord.month12}"/></td>
+                        </apex:repeat>
+                    </tr>
+                    <tr style="background-color:#ffdd99;">
+                        <th scope="row">Qtrly TTL</th>
+                        <apex:repeat value="{!lstPSPProtoRevRecords}" var="pspProtoRevRecord">
+                            <td class="tg-center" colspan="3"><apex:outputText value="{!pspProtoRevRecord.quarter1}"/></td>
+                            <td class="tg-center" colspan="3"><apex:outputText value="{!pspProtoRevRecord.quarter2}"/></td>
+                            <td class="tg-center" colspan="3"><apex:outputText value="{!pspProtoRevRecord.quarter3}"/></td>
+                            <td class="tg-center" colspan="3"><apex:outputText value="{!pspProtoRevRecord.quarter4}"/></td>
+                        </apex:repeat>
+                    </tr>
+                    
+                    <tr style="background-color:#dad971;">
+                        <th style="text-align: center;vertical-align:middle;" colspan="1" rowspan="2"><b>5. Production {!delType} <br/>Starts</b></th>
+                        <th colspan="1" rowspan="1" scope="row"><b>Monthly TTL</b></th>
+                        <apex:repeat value="{!lstPSPproductionWaferStarts}" var="pspWaferOutTotalRecord">
+                            <td>
+                                <apex:inputField rendered="{!editAccess}" onkeypress="return enterfunction(event);" styleClass="tg-style-edit" value="{!pspWaferOutTotalRecord.Month_1__c}"/>
+                                <apex:outputText rendered="{!NOT(editAccess)}" styleClass="tg-style-edit" value="{!pspWaferOutTotalRecord.Month_1__c}"/>
+                            </td>
+                            <td>
+                                <apex:inputField rendered="{!editAccess}" onkeypress="return enterfunction(event);" styleClass="tg-style-edit" value="{!pspWaferOutTotalRecord.Month_2__c}"/>
+                                <apex:outputText rendered="{!NOT(editAccess)}" styleClass="tg-style-edit" value="{!pspWaferOutTotalRecord.Month_2__c}"/>
+                            </td>
+                            <td>
+                                <apex:inputField rendered="{!editAccess}" onkeypress="return enterfunction(event);" styleClass="tg-style-edit" value="{!pspWaferOutTotalRecord.Month_3__c}"/>
+                                <apex:outputText rendered="{!NOT(editAccess)}"  styleClass="tg-style-edit" value="{!pspWaferOutTotalRecord.Month_3__c}"/>
+                            </td>
+                            <td>
+                                <apex:inputField rendered="{!editAccess}" onkeypress="return enterfunction(event);" styleClass="tg-style-edit" value="{!pspWaferOutTotalRecord.Month_4__c}"/>
+                                <apex:outputText rendered="{!NOT(editAccess)}" styleClass="tg-style-edit"  value="{!pspWaferOutTotalRecord.Month_4__c}"/>
+                            </td>
+                            <td>
+                                <apex:inputField rendered="{!editAccess}" onkeypress="return enterfunction(event);" styleClass="tg-style-edit" value="{!pspWaferOutTotalRecord.Month_5__c}"/>
+                                <apex:outputText rendered="{!NOT(editAccess)}" styleClass="tg-style-edit"  value="{!pspWaferOutTotalRecord.Month_5__c}"/>
+                            </td>
+                            <td>
+                                <apex:inputField rendered="{!editAccess}" onkeypress="return enterfunction(event);" styleClass="tg-style-edit" value="{!pspWaferOutTotalRecord.Month_6__c}"/>
+                                <apex:outputText rendered="{!NOT(editAccess)}" styleClass="tg-style-edit"  value="{!pspWaferOutTotalRecord.Month_6__c}"/>
+                            </td>
+                            <td>
+                                <apex:inputField rendered="{!editAccess}" onkeypress="return enterfunction(event);" styleClass="tg-style-edit" value="{!pspWaferOutTotalRecord.Month_7__c}"/>
+                                <apex:outputText rendered="{!NOT(editAccess)}" styleClass="tg-style-edit" value="{!pspWaferOutTotalRecord.Month_7__c}"/>
+                            </td>
+                            <td>
+                                <apex:inputField rendered="{!editAccess}" onkeypress="return enterfunction(event);" styleClass="tg-style-edit" value="{!pspWaferOutTotalRecord.Month_8__c}"/>
+                                <apex:outputText rendered="{!NOT(editAccess)}" styleClass="tg-style-edit" value="{!pspWaferOutTotalRecord.Month_8__c}"/>
+                            </td>
+                            <td>
+                                <apex:inputField rendered="{!editAccess}" onkeypress="return enterfunction(event);" styleClass="tg-style-edit" value="{!pspWaferOutTotalRecord.Month_9__c}"/>
+                                <apex:outputText rendered="{!NOT(editAccess)}" styleClass="tg-style-edit" value="{!pspWaferOutTotalRecord.Month_9__c}"/>
+                            </td>
+                            <td>
+                                <apex:inputField rendered="{!editAccess}" onkeypress="return enterfunction(event);" styleClass="tg-style-edit" value="{!pspWaferOutTotalRecord.Month_10__c}"/>
+                                <apex:outputText rendered="{!NOT(editAccess)}" styleClass="tg-style-edit" value="{!pspWaferOutTotalRecord.Month_10__c}"/>
+                            </td>
+                            <td>
+                                <apex:inputField rendered="{!editAccess}" onkeypress="return enterfunction(event);" styleClass="tg-style-edit" value="{!pspWaferOutTotalRecord.Month_11__c}"/>
+                                <apex:outputText rendered="{!NOT(editAccess)}" styleClass="tg-style-edit" value="{!pspWaferOutTotalRecord.Month_11__c}"/>
+                            </td>
+                            <td>
+                                <apex:inputField rendered="{!editAccess}" onkeypress="return enterfunction(event);" styleClass="tg-style-edit" value="{!pspWaferOutTotalRecord.Month_12__c}"/>
+                                <apex:outputText rendered="{!NOT(editAccess)}" styleClass="tg-style-edit" value="{!pspWaferOutTotalRecord.Month_12__c}"/>
+                            </td>
+                        </apex:repeat>
+                    </tr>
+                    <tr style="background-color:#dad971;">
+                        <th scope="row">Qtrly TTL</th>
+                        <apex:repeat value="{!lstPSPproductionWaferStarts}" var="pspWaferOutTotalRecord">
+                            <td class="tg-center" colspan="3"><apex:outputText styleClass="tg-style-edit" value="{!pspWaferOutTotalRecord.WaferStart_Quarter1__c}" rendered="{!NOT(previewFlag)}"/>
+                            <apex:outputText styleClass="tg-style-edit" value="{!(pspWaferOutTotalRecord.Month_1__c+pspWaferOutTotalRecord.Month_2__c+pspWaferOutTotalRecord.Month_3__c)}" rendered="{!previewFlag}"/></td>
+                            <td class="tg-center" colspan="3"><apex:outputText styleClass="tg-style-edit" value="{!pspWaferOutTotalRecord.WaferStart_Quarter2__c}" rendered="{!NOT(previewFlag)}"/>
+                            <apex:outputText styleClass="tg-style-edit" value="{!(pspWaferOutTotalRecord.Month_4__c+pspWaferOutTotalRecord.Month_5__c+pspWaferOutTotalRecord.Month_6__c)}" rendered="{!previewFlag}"/></td>
+                            <td class="tg-center" colspan="3"><apex:outputText styleClass="tg-style-edit" value="{!pspWaferOutTotalRecord.WaferStart_Quarter3__c}" rendered="{!NOT(previewFlag)}"/>
+                            <apex:outputText styleClass="tg-style-edit" value="{!(pspWaferOutTotalRecord.Month_7__c+pspWaferOutTotalRecord.Month_8__c+pspWaferOutTotalRecord.Month_9__c)}" rendered="{!previewFlag}"/></td>
+                            <td class="tg-center" colspan="3"><apex:outputText styleClass="tg-style-edit" value="{!pspWaferOutTotalRecord.WaferStart_Quarter4__c}" rendered="{!NOT(previewFlag)}"/>
+                            <apex:outputText styleClass="tg-style-edit" value="{!(pspWaferOutTotalRecord.Month_10__c+pspWaferOutTotalRecord.Month_11__c+pspWaferOutTotalRecord.Month_12__c)}" rendered="{!previewFlag}"/></td>
+                        </apex:repeat>
+                    </tr>
+                                        
+                    <tr style="background-color:#dad971;">
+                        <th style="text-align: center;vertical-align:middle;" colspan="1" rowspan="2"><b>6. Production {!delType} <br/>Outs</b></th>
+                        <th colspan="1" rowspan="1" scope="row"><b>Monthly TTL</b></th>
+                        <apex:repeat value="{!lstproductionWaferOuts}" var="pspWaferForecastRecord">
+                            <td class="tg-center"><apex:outputText styleClass="tg-style-edit" value="{!pspWaferForecastRecord.Month_1__c}"/></td>
+                            <td class="tg-center"><apex:outputText styleClass="tg-style-edit" value="{!pspWaferForecastRecord.Month_2__c}"/></td>
+                            <td class="tg-center"><apex:outputText styleClass="tg-style-edit" value="{!pspWaferForecastRecord.Month_3__c}"/></td>
+                            <td class="tg-center"><apex:outputText styleClass="tg-style-edit" value="{!pspWaferForecastRecord.Month_4__c}"/></td>
+                            <td class="tg-center"><apex:outputText styleClass="tg-style-edit" value="{!pspWaferForecastRecord.Month_5__c}"/></td>
+                            <td class="tg-center"><apex:outputText styleClass="tg-style-edit" value="{!pspWaferForecastRecord.Month_6__c}"/></td>
+                            <td class="tg-center"><apex:outputText styleClass="tg-style-edit" value="{!pspWaferForecastRecord.Month_7__c}"/></td>
+                            <td class="tg-center"><apex:outputText styleClass="tg-style-edit" value="{!pspWaferForecastRecord.Month_8__c}"/></td>
+                            <td class="tg-center"><apex:outputText styleClass="tg-style-edit" value="{!pspWaferForecastRecord.Month_9__c}"/></td>
+                            <td class="tg-center"><apex:outputText styleClass="tg-style-edit" value="{!pspWaferForecastRecord.Month_10__c}"/></td>
+                            <td class="tg-center"><apex:outputText styleClass="tg-style-edit" value="{!pspWaferForecastRecord.Month_11__c}"/></td>
+                            <td class="tg-center"><apex:outputText styleClass="tg-style-edit" value="{!pspWaferForecastRecord.Month_12__c}"/></td>
+                        </apex:repeat>
+                    </tr>
+                    <tr style="background-color:#dad971;">
+                        <th scope="row">Qtrly TTL</th>
+                        <apex:repeat value="{!lstproductionWaferOuts}" var="pspWaferForecastRecord">
+                            <td class="tg-center" colspan="3"><apex:outputText styleClass="tg-style-edit" value="{!pspWaferForecastRecord.WaferStart_Quarter1__c}" rendered="{!NOT(previewFlag)}"/>
+                            <apex:outputText styleClass="tg-style-edit" value="{!(pspWaferForecastRecord.Month_1__c+pspWaferForecastRecord.Month_2__c+pspWaferForecastRecord.Month_3__c)}" rendered="{!previewFlag}"/></td>
+                            <td class="tg-center" colspan="3"><apex:outputText styleClass="tg-style-edit" value="{!pspWaferForecastRecord.WaferStart_Quarter2__c}" rendered="{!NOT(previewFlag)}"/>
+                            <apex:outputText styleClass="tg-style-edit" value="{!(pspWaferForecastRecord.Month_4__c+pspWaferForecastRecord.Month_5__c+pspWaferForecastRecord.Month_6__c)}" rendered="{!previewFlag}"/></td>
+                            <td class="tg-center" colspan="3"><apex:outputText styleClass="tg-style-edit" value="{!pspWaferForecastRecord.WaferStart_Quarter3__c}" rendered="{!NOT(previewFlag)}"/>
+                            <apex:outputText styleClass="tg-style-edit" value="{!(pspWaferForecastRecord.Month_7__c+pspWaferForecastRecord.Month_8__c+pspWaferForecastRecord.Month_9__c)}" rendered="{!previewFlag}"/></td>
+                            <td class="tg-center" colspan="3"><apex:outputText styleClass="tg-style-edit" value="{!pspWaferForecastRecord.WaferStart_Quarter4__c}" rendered="{!NOT(previewFlag)}"/>
+                            <apex:outputText styleClass="tg-style-edit" value="{!(pspWaferForecastRecord.Month_10__c+pspWaferForecastRecord.Month_11__c+pspWaferForecastRecord.Month_12__c)}" rendered="{!previewFlag}"/></td>
+                        </apex:repeat>
+                    </tr>
+                    
+                    <tr style="background-color:#dad971;">
+                        <th style="text-align: center;vertical-align:middle;" colspan="1" rowspan="2"><b>7. Production {!delType}<br/>ASP</b></th>
+                        <th scope="row">Monthly TTL</th>
+                        <apex:repeat value="{!lstPSPProdASPRecords}" var="pspProdASPRecord">
+                            <td style="">
+                                <apex:inputField rendered="{!editASPAccess}" onkeypress="return enterfunction(event);" styleClass="tg-style" value="{!pspProdASPRecord.Month_1__c}"/>
+                                <apex:outputField rendered="{!NOT(editASPAccess)}" styleClass="tg-style" value="{!pspProdASPRecord.Month_1__c}"/>
+                            </td>
+                            <td style="">
+                                <apex:inputField rendered="{!editASPAccess}" onkeypress="return enterfunction(event);" styleClass="tg-style" value="{!pspProdASPRecord.Month_2__c}"/>
+                                <apex:outputField rendered="{!NOT(editASPAccess)}" styleClass="tg-style" value="{!pspProdASPRecord.Month_2__c}"/>
+                            </td>
+                            <td style="">
+                                <apex:inputField rendered="{!editASPAccess}" onkeypress="return enterfunction(event);" styleClass="tg-style" value="{!pspProdASPRecord.Month_3__c}"/>
+                                <apex:outputField rendered="{!NOT(editASPAccess)}" styleClass="tg-style" value="{!pspProdASPRecord.Month_3__c}"/>
+                            </td>
+                            <td style="">
+                                <apex:inputField rendered="{!editASPAccess}" onkeypress="return enterfunction(event);" styleClass="tg-style" value="{!pspProdASPRecord.Month_4__c}"/>
+                                <apex:outputField rendered="{!NOT(editASPAccess)}" styleClass="tg-style" value="{!pspProdASPRecord.Month_4__c}"/>
+                            </td>
+                            <td style="">
+                                <apex:inputField rendered="{!editASPAccess}" onkeypress="return enterfunction(event);" styleClass="tg-style" value="{!pspProdASPRecord.Month_5__c}"/>
+                                <apex:outputField rendered="{!NOT(editASPAccess)}" styleClass="tg-style" value="{!pspProdASPRecord.Month_5__c}"/>
+                            </td>
+                            <td style="">
+                                <apex:inputField rendered="{!editASPAccess}" onkeypress="return enterfunction(event);" styleClass="tg-style" value="{!pspProdASPRecord.Month_6__c}"/>
+                                <apex:outputField rendered="{!NOT(editASPAccess)}" styleClass="tg-style" value="{!pspProdASPRecord.Month_6__c}"/>
+                            </td>
+                            <td style="">
+                                <apex:inputField rendered="{!editASPAccess}" onkeypress="return enterfunction(event);" styleClass="tg-style" value="{!pspProdASPRecord.Month_7__c}"/>
+                                <apex:outputField rendered="{!NOT(editASPAccess)}" styleClass="tg-style" value="{!pspProdASPRecord.Month_7__c}"/>
+                            </td>
+                            <td style="">
+                                <apex:inputField rendered="{!editASPAccess}" onkeypress="return enterfunction(event);" styleClass="tg-style" value="{!pspProdASPRecord.Month_8__c}"/>
+                                <apex:outputField rendered="{!NOT(editASPAccess)}" styleClass="tg-style" value="{!pspProdASPRecord.Month_8__c}"/>
+                            </td>
+                            <td style="">
+                                <apex:inputField rendered="{!editASPAccess}" onkeypress="return enterfunction(event);" styleClass="tg-style" value="{!pspProdASPRecord.Month_9__c}"/>
+                                <apex:outputField rendered="{!NOT(editASPAccess)}" styleClass="tg-style" value="{!pspProdASPRecord.Month_9__c}"/>
+                            </td>
+                            <td style="">
+                                <apex:inputField rendered="{!editASPAccess}" onkeypress="return enterfunction(event);" styleClass="tg-style" value="{!pspProdASPRecord.Month_10__c}"/>
+                                <apex:outputField rendered="{!NOT(editASPAccess)}" styleClass="tg-style" value="{!pspProdASPRecord.Month_10__c}"/>
+                            </td>
+                            <td style="">
+                                <apex:inputField rendered="{!editASPAccess}" onkeypress="return enterfunction(event);" styleClass="tg-style" value="{!pspProdASPRecord.Month_11__c}"/>
+                                <apex:outputField rendered="{!NOT(editASPAccess)}" styleClass="tg-style" value="{!pspProdASPRecord.Month_11__c}"/>
+                            </td>
+                            <td style="">
+                                <apex:inputField rendered="{!editASPAccess}" onkeypress="return enterfunction(event);" styleClass="tg-style" value="{!pspProdASPRecord.Month_12__c}"/>
+                                <apex:outputField rendered="{!NOT(editASPAccess)}" styleClass="tg-style" value="{!pspProdASPRecord.Month_12__c}"/>
+                            </td>
+                        </apex:repeat>
+                    </tr>
+                    <tr style="background-color:#dad971;">
+                        <th colspan="1" rowspan="1" scope="row"><b>Qtrly TTL</b></th>
+                        <apex:repeat value="{!lstPSPProdASPRecords}" var="pspProdASPRecord">
+                            <td colspan="3" style="" class="tg-center">
+                                <apex:outputField value="{!pspProdASPRecord.WaferStart_Quarter1__c}"/>
+                            </td>
+                            <td colspan="3" style="" class="tg-center">
+                                <apex:outputField value="{!pspProdASPRecord.WaferStart_Quarter2__c}"/>
+                            </td>
+                            <td colspan="3" style="" class="tg-center">
+                                <apex:outputField value="{!pspProdASPRecord.WaferStart_Quarter3__c}"/>
+                            </td>
+                            <td colspan="3" style="" class="tg-center">
+                                <apex:outputField value="{!pspProdASPRecord.WaferStart_Quarter4__c}"/>
+                            </td>
+                        </apex:repeat>
+                    </tr>
+                    
+                    <tr style="background-color:#dad971;">
+                        <th style="text-align: center;vertical-align:middle;" colspan="1" rowspan="2"><b>8. Production {!delType}<br/>Revenue</b></th>
+                        <th colspan="1" rowspan="1" scope="row"><b>Monthly TTL</b></th>
+                        <apex:repeat value="{!lstPSPProdRevRecords}" var="pspProdRevRecord">
+                            <td class="tg-center"><apex:outputText styleClass="tg-center" value="{!pspProdRevRecord.month1}"/></td>
+                            <td class="tg-center"><apex:outputText styleClass="tg-style" value="{!pspProdRevRecord.month2}"/></td>
+                            <td class="tg-center"><apex:outputText styleClass="tg-style" value="{!pspProdRevRecord.month3}"/></td>
+                            <td class="tg-center"><apex:outputText styleClass="tg-style" value="{!pspProdRevRecord.month4}"/></td>
+                            <td class="tg-center"><apex:outputText styleClass="tg-style" value="{!pspProdRevRecord.month5}"/></td>
+                            <td class="tg-center"><apex:outputText styleClass="tg-style" value="{!pspProdRevRecord.month6}"/></td>
+                            <td class="tg-center"><apex:outputText styleClass="tg-style" value="{!pspProdRevRecord.month7}"/></td>
+                            <td class="tg-center"><apex:outputText styleClass="tg-style" value="{!pspProdRevRecord.month8}"/></td>
+                            <td class="tg-center"><apex:outputText styleClass="tg-style" value="{!pspProdRevRecord.month9}"/></td>
+                            <td class="tg-center"><apex:outputText styleClass="tg-style" value="{!pspProdRevRecord.month10}"/></td>
+                            <td class="tg-center"><apex:outputText styleClass="tg-style" value="{!pspProdRevRecord.month11}"/></td>
+                            <td class="tg-center"><apex:outputText styleClass="tg-style" value="{!pspProdRevRecord.month12}"/></td>
+                        </apex:repeat>
+                    </tr>
+                    <tr style="background-color:#dad971;">
+                        <th scope="row">Qtrly TTL</th>
+                        <apex:repeat value="{!lstPSPProdRevRecords}" var="pspProdRevRecord">
+                            <td class="tg-center" colspan="3"><apex:outputText value="{!pspProdRevRecord.quarter1}"/></td>
+                            <td class="tg-center" colspan="3"><apex:outputText value="{!pspProdRevRecord.quarter2}"/></td>
+                            <td class="tg-center" colspan="3"><apex:outputText value="{!pspProdRevRecord.quarter3}"/></td>
+                            <td class="tg-center" colspan="3"><apex:outputText value="{!pspProdRevRecord.quarter4}"/></td>
+                        </apex:repeat>
+                    </tr>
+                                        
+                    <tr style="background-color:#b3daff;">
+                        <th style="text-align: center;vertical-align:middle;" colspan="1" rowspan="2"><b>9. Total Opportunity<br/>{!delType} Outs</b></th>
+                        <th colspan="1" rowspan="1" scope="row"><b>Monthly TTL</b></th>
+                        <apex:repeat value="{!lstOppWaferOuts}" var="oppWaferOut">
+                            <td class="tg-center"><apex:outputText styleClass="tg-style-edit" value="{!oppWaferOut.month1}"/></td>
+                            <td class="tg-center"><apex:outputText styleClass="tg-style-edit" value="{!oppWaferOut.month2}"/></td>
+                            <td class="tg-center"><apex:outputText styleClass="tg-style-edit" value="{!oppWaferOut.month3}"/></td>
+                            <td class="tg-center"><apex:outputText styleClass="tg-style-edit" value="{!oppWaferOut.month4}"/></td>
+                            <td class="tg-center"><apex:outputText styleClass="tg-style-edit" value="{!oppWaferOut.month5}"/></td>
+                            <td class="tg-center"><apex:outputText styleClass="tg-style-edit" value="{!oppWaferOut.month6}"/></td>
+                            <td class="tg-center"><apex:outputText styleClass="tg-style-edit" value="{!oppWaferOut.month7}"/></td>
+                            <td class="tg-center"><apex:outputText styleClass="tg-style-edit" value="{!oppWaferOut.month8}"/></td>
+                            <td class="tg-center"><apex:outputText styleClass="tg-style-edit" value="{!oppWaferOut.month9}"/></td>
+                            <td class="tg-center"><apex:outputText styleClass="tg-style-edit" value="{!oppWaferOut.month10}"/></td>
+                            <td class="tg-center"><apex:outputText styleClass="tg-style-edit" value="{!oppWaferOut.month11}"/></td>
+                            <td class="tg-center"><apex:outputText styleClass="tg-style-edit" value="{!oppWaferOut.month12}"/></td>
+                        </apex:repeat>
+                    </tr>
+                    <tr style="background-color:#b3daff;">
+                        <th scope="row">Qtrly TTL</th>
+                        <apex:repeat value="{!lstOppWaferOuts}" var="oppWaferOut">
+                            <td class="tg-center" colspan="3"><apex:outputText styleClass="tg-style-edit" value="{!oppWaferOut.quarter1}"/></td>
+                            <td class="tg-center" colspan="3"><apex:outputText styleClass="tg-style-edit" value="{!oppWaferOut.quarter2}"/></td>
+                            <td class="tg-center" colspan="3"><apex:outputText styleClass="tg-style-edit" value="{!oppWaferOut.quarter3}"/></td>
+                            <td class="tg-center" colspan="3"><apex:outputText styleClass="tg-style-edit" value="{!oppWaferOut.quarter4}"/></td>
+                        </apex:repeat>
+                    </tr>
+                    
+                    <tr style="background-color:#b3daff;">
+                        <th style="text-align: center;vertical-align:middle;" colspan="1"><b>10. Total Opportunity<br/> ASP ($)</b></th>
+                        <th scope="row">Qtrly TTL</th>
+                        <apex:repeat value="{!lstOppWaferASPs}" var="oppWaferASP">
+                            <td class="tg-center" colspan="3"><apex:outputText value="$ " rendered="{!IF(oppWaferASP.quarter1!=null,true,false)}"/><apex:outputText value="{!oppWaferASP.quarter1}"/></td>
+                            <td class="tg-center" colspan="3"><apex:outputText value="$ " rendered="{!IF(oppWaferASP.quarter2!=null,true,false)}"/><apex:outputText value="{!oppWaferASP.quarter2}"/></td>
+                            <td class="tg-center" colspan="3"><apex:outputText value="$ " rendered="{!IF(oppWaferASP.quarter3!=null,true,false)}"/><apex:outputText value="{!oppWaferASP.quarter3}"/></td>
+                            <td class="tg-center" colspan="3"><apex:outputText value="$ " rendered="{!IF(oppWaferASP.quarter4!=null,true,false)}"/><apex:outputText value="{!oppWaferASP.quarter4}"/></td>
+                        </apex:repeat>
+                    </tr>
+                    
+                </tbody>
+           </table>
+           </apex:outputPanel>
+            
+        </apex:outputPanel>
+        <br/>
+        <table border="1" style="border-collapse:collapse;border-color:#000000;background-color:#dad971;text-align:left;" width="100%" id="table3">
+            <tr style="font-weight:bold;border-color:#dad971;">
+                <td>**Please verify that Production Wafer Starts (Row 3) date is no sooner than:</td>
+            </tr>
+            <tr style="border-color:#dad971;">
+                <td><b>1)</b>  Milestone #7 if starting risk starts</td>
+            </tr>
+            <tr style="border-color:#dad971;">
+                <td><b>2)</b>  Milestone #10 if waiting till RTP date</td>
+            </tr>
+        </table>
+        
+        </apex:pageBlock>
+        <apex:actionFunction name="callrefresh" action="{!SaveCustom}" status="LoadingStatusSpinner"/>        
+        
+        <div class="confirmSave" style="display:none;">
+            <apex:outputPanel id="confirmSave">
+                <div title="Please Confirm your Action" style="text-align:justified;">
+                    <apex:outputtext value="{!$Label.PSP_Volumes_Confirm_Save}"/><br/><br/>
+                    <div style="text-align:center;">
+                        <apex:commandButton value="Preview" onclick="callPreview();closeDialog();return false;"/>
+                        <apex:commandButton value="Reset" onclick="callReset();closeDialog();return false;"/>
+                        <apex:commandButton value="Execute" onclick="callExecute();closeDialog();return false;" disabled="{!NOT(previewFlag)}"/>
+                    </div>
+                </div>
+            </apex:outputPanel>
+        </div>
+    </apex:form>
+        
+</apex:page>

@@ -1,0 +1,223 @@
+<!--
+Author: Shyam Ravindra Nair
+Description: Custom page will provide UI for Update CUSR Form page.
+History:
+SNair     29012015     - code creation
+-->
+<apex:page standardController="CuSR_Form__c"
+	extensions="CuSRFormExtension">
+
+	<!-- JQuery Library -->
+	<apex:includeScript value="{!URLFOR($Resource.jQueryUI_1_11_2,'jquery-ui-1.11.2/jquery-ui.js')}" />
+	<apex:includeScript value="{!URLFOR($Resource.jQueryUI_1_11_2,'jquery-ui-1.11.2/jquery-ui.min.js')}" />
+	<apex:stylesheet value="{!URLFOR($Resource.jQueryUI_1_11_2,'jquery-ui-1.11.2/jquery-ui.css')}" />
+
+	<style type="text/css">
+.customPopup {
+	background-color: white;
+	border-style: solid;
+	border-width: 2px;
+	left: 50%;
+	padding: 10px;
+	position: absolute;
+	z-index: 9999;
+	/* These are the 3 css properties you will need to tweak so the pop 
+                            up displays in the center of the screen. First set the width. Then set 
+                            margin-left to negative half of what the width is. You can also add 
+                            the height property for a fixed size pop up.*/
+	width: 500px;
+	margin-left: -250px;
+	top: 200px;
+}
+</style>
+
+	<script>
+        var $j = jQuery.noConflict();
+        
+        $j(document).ready(function(){
+        $j('[id$=contactname]').attr('disabled','true');
+        });
+        
+        function setFocusOnLoad(){} 
+        
+        function disableCustomerRequestorField(){
+            $j('[id$=contactname]').attr('disabled','true');
+        }
+        
+        var newWin = null;
+        function openLookupPopup(name1,name2,name3,name4){
+                //alert(name1+" "+name2+" "+name3+" "+name4);
+            var recordId = document.getElementById(name1).value;
+            //alert('Account Id is '+recordId);
+            var url = "/apex/CustomerRequestorLookup?rec=" +recordId+ "&fname1=" +name2+ "&fname2=" +name3+ "&fname3=" +name4;
+            newWin=window.open(url, 'Popup','height=500,width=700,left=100,top=100,resizable=no,scrollbars=yes,toolbar=no,status=no');
+            if (window.focus) 
+            {
+                newWin.focus();
+            }
+            return false;
+        }
+                
+        function closeLookupPopup()
+        {
+           if (null!=newWin)
+           {
+              newWin.close();
+           }  
+        }
+        
+    </script>
+
+
+	<apex:sectionHeader title="{!$ObjectType.CuSR_Form__c.label} Edit"
+		subtitle="{!cusrForm.Name}" rendered="{!cusrForm.Id != null}" />
+	<apex:form >
+		<apex:pageBlock >
+			<apex:pageblockButtons >
+				<apex:commandButton value="Save" action="{!saveUpdatedCUSR}" />
+				<apex:commandButton value="Cancel" action="{!cancelUpdateCUSR}"
+					immediate="true" />
+			</apex:pageblockButtons>
+			<apex:pagemessages id="initiatorerror" rendered="{!showFieldError}" />
+			<apex:pageBlockSection title="Request Details" collapsible="false"
+				columns="2">
+				<apex:outputField value="{!cusrForm.Name}" />
+				<apex:outputField value="{!cusrForm.ownerId}" />
+				<apex:outputField value="{!cusrForm.Status__c}" />
+				<apex:pageBlockSectionItem >
+					<apex:outputLabel value="{!$ObjectType.CuSR_Form__c.fields.Request_Received_Date__c.label}" />
+					<!--   <apex:actionRegion > -->
+                        <apex:outputField value="{!cusrForm.Request_Received_Date__c}" />
+                          
+                         <!--   <apex:actionSupport event="onchange"
+                                action="{!validateRequestReceivedDate}"
+                                reRender="reasonsection,receiveddatepopup" />
+                        </apex:inputField>  
+                    </apex:actionRegion> -->
+				</apex:pageBlockSectionItem>
+			</apex:pageBlockSection>
+			<apex:pageblocksection collapsible="false" id="reasonsection">
+				<apex:pageblocksectionitem rendered="{!showRaisedDateReasonField}">
+					<apex:outputLabel value="{!$ObjectType.CuSR_Form__c.fields.Reason__c.label}" />
+					<apex:pageblocksectionitem >
+						<apex:inputField value="{!cusrForm.Reason__c}" id="reason"	/>
+					</apex:pageblocksectionitem>
+				</apex:pageblocksectionitem>
+			</apex:pageblocksection>
+			<apex:pageBlockSection title="Customer Requirements"
+				collapsible="false" columns="2" id="requirements">
+				<apex:pageBlockSectionItem >
+					<apex:outputLabel value="{!$ObjectType.CuSR_Form__c.fields.Customer_Requestor__c.label}" />
+					<apex:pageBlockSectionItem >
+						<!-- case 47601 {!cusrForm.Legacy__c == false} -->
+						<apex:inputText id="contactname" value="{!customerReqName}"
+							styleClass="lblMainWidth1"
+							required="{!cusrForm.Legacy__c == false}" />
+						<a href="#"
+							onclick="openLookupPopup('{!$Component.customerRecordId}','{!$Component.contactname}','{!$Component.contactId}','{!$Component.customeremail}'); return false">
+							<img src="/s.gif" alt="Customer Requestor Name Lookup"
+							class="lookupIcon" onblur="this.className = 'lookupIcon';"
+							onfocus="this.className = 'lookupIconOn';"
+							onmouseout="this.className = 'lookupIcon';this.className = 'lookupIcon';"
+							onmouseover="this.className = 'lookupIconOn';this.className = 'lookupIconOn';"
+							title="Customer Requestor Lookup" /> </a>
+					</apex:pageBlockSectionItem>
+				</apex:pageBlockSectionItem>
+				<apex:inputField value="{!cusrForm.Customer_Requestor_Email__c}"
+					id="customeremail" required="{!customerReqName != null}" />
+				<apex:inputHidden id="contactId" value="{!customerReqId}" />
+				<apex:inputHidden id="customerRecordId" value="{!customerId}" />
+			</apex:pageBlockSection>
+
+			<apex:pageBlockSection collapsible="false" columns="2">
+				<apex:inputField value="{!cusrForm.Customer_Requestor_Lotus_Notes__c}"
+					rendered="{!cusrForm.Legacy__c}" />
+				<apex:inputField value="{!cusrForm.Customer_Requestor_Email_Lotus_Notes__c}"
+					rendered="{!cusrForm.Legacy__c}" />
+				<apex:inputField value="{!cusrForm.Notify_Customer_after_Implementation__c}"
+					required="true" />
+				<apex:inputField value="{!cusrForm.Requested_Effective_Date__c}"
+					required="true" />
+				<apex:pageBlockSectionItem >
+					<apex:outputLabel value="{!$ObjectType.CuSR_Form__c.fields.Validity_Period_of_this_Request__c.label}" />
+					<apex:actionRegion >
+						<apex:inputField value="{!cusrForm.Validity_Period_of_this_Request__c}"
+							id="validity" required="true">
+							<apex:actionSupport event="onchange"
+								reRender="validityperiodvalue" />
+						</apex:inputField>
+					</apex:actionRegion>
+				</apex:pageBlockSectionItem>
+			</apex:pageBlockSection>
+			<apex:pageBlockSection id="validityperiodvalue" collapsible="false">
+				<apex:pageblocksectionitem rendered="{!cusrForm.Validity_Period_of_this_Request__c != 'EOL'}">
+					<apex:outputLabel value="{!$ObjectType.CuSR_Form__c.fields.Validity_Period__c.label}"
+						for="validityPeriod" />
+					<apex:pageblocksectionitem >
+						<apex:inputField id="validityPeriod"
+							value="{!cusrForm.Validity_Period__c}"
+							required="{!cusrForm.Validity_Period_of_this_Request__c != 'EOL'}" />
+					</apex:pageblocksectionitem>
+				</apex:pageblocksectionitem>
+				<apex:pageBlockSectionItem rendered="{!cusrForm.Validity_Period_of_this_Request__c == 'EOL'}" />
+			</apex:pageBlockSection>
+			<apex:pageBlockSection collapsible="false">
+				<apex:inputField value="{!cusrForm.Actual_Requirement__c}"
+					required="true" />
+				<apex:inputField value="{!cusrForm.Justification_for_Request__c}"
+					required="true" />
+				<apex:inputField value="{!cusrForm.Scope_of_the_CuSR__c}"
+					id="scopeofthecusr" required="true" />
+				<apex:inputField value="{!cusrForm.If_Others__c}" id="ifothers" />
+				<apex:pageBlockSectionItem >
+					<apex:outputLabel value="{!$ObjectType.CuSR_Form__c.fields.Is_this_a_one_time_requirement__c.label}" />
+					<apex:actionRegion >
+						<apex:inputField value="{!cusrForm.Is_this_a_one_time_requirement__c}"
+							id="isthisonetimereq">
+							<apex:actionSupport event="onchange" reRender="ifnothen"
+								oncomplete="renderfunc();" />
+						</apex:inputField>
+					</apex:actionRegion>
+				</apex:pageBlockSectionItem>
+			</apex:pageBlockSection>
+
+			<apex:pageBlockSection collapsible="false" id="ifnothen">
+				<apex:pageblocksectionitem rendered="{!cusrForm.Is_this_a_one_time_requirement__c == 'No'}">
+					<apex:outputLabel value="{!$ObjectType.CuSR_Form__c.fields.If_No_then_provide_details__c.label}"
+						for="provideDetails" />
+					<apex:inputField id="provideDetails"
+						value="{!cusrForm.If_No_then_provide_details__c}"
+						required="{!cusrForm.Is_this_a_one_time_requirement__c == 'No'}" />
+				</apex:pageblocksectionitem>
+				<apex:pageBlockSectionItem rendered="{!cusrForm.Is_this_a_one_time_requirement__c != 'No'}" />
+			</apex:pageBlockSection>
+
+			<apex:pageBlockSection collapsible="false">
+				<apex:inputField value="{!cusrForm.Special_Requirement__c}"
+					required="true" />
+				<br />
+				<apex:inputField value="{!cusrForm.Customer_Specification_Name__c}"
+					required="true" />
+				<apex:inputField value="{!cusrForm.Version__c}" />
+				<apex:inputField value="{!cusrForm.Link_to_Customer_Document_Website__c}" />
+				<!-- apex:inputField value="{!cusrForm.Remark__c}" required="true" /> -->
+			</apex:pageBlockSection>
+			<apex:pageBlockSection title="Remarks for Update">
+				<apex:inputField value="{!cusrForm.Remark__c}" required="true" />
+			</apex:pageBlockSection>
+			<apex:outputPanel id="receiveddatepopup">
+				<apex:outputPanel layout="block" styleClass="customPopup"
+					style="text-align: center;" rendered="{!displayReceivedDatePopup}">
+					<apex:pagemessage strength="2" severity="error"
+						id="receiveddateerror"
+						summary="Please enter reasons why this request is created after 2 days from the Received Date from the customer." />
+					<apex:actionRegion >
+						<apex:commandButton value="Ok" action="{!closeReceivedDatePopup}"
+							rerender="receiveddatepopup" />
+					</apex:actionRegion>
+				</apex:outputPanel>
+			</apex:outputPanel>
+		</apex:pageBlock>
+	</apex:form>
+
+</apex:page>

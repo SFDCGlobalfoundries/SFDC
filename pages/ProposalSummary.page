@@ -1,0 +1,169 @@
+<!--
+    Author: Anirban Roy
+    Description: This serves as the Summary page before Finalize or GDS upload for Configuration.
+    History: 
+        ARoy    10102014    - page creation. 
+-->
+<apex:page Controller="ProposalSummary" showHeader="false" sidebar="false" action="{!init}">
+<style>
+    a {
+        text-decoration:none;
+        color:#000000;
+    }
+    a:link {
+        text-decoration:none;
+        color : black;
+    }
+    a:active {
+        text-decoration:none;
+        color : black;
+    }
+    a:visited {
+        text-decoration:none;
+        color:black;
+    }
+    a:hover, a:focus{
+        text-decoration:none;
+        cursor:default;
+        color:black;
+    }    
+</style>
+<apex:pageMessages escape="false"/>
+<apex:sectionHeader title="Configuration" subtitle="{!proposal.Name}" rendered="{!AND(NOT(ismultipleProduct),NOT(isMultiSourceTapeout))}"/>
+<apex:sectionHeader title="Configuration" subtitle="{!IF(proposal.Product_Name__c=='Not Applicable','',proposal.Product_Name__c)} {!IF(proposal.Product_Revision__c=='Not Applicable','',proposal.Product_Revision__c)}" rendered="{!AND(NOT(ismultipleProduct),isMultiSourceTapeout)}"/>
+<apex:form >
+    <apex:pageBlock mode="maindetail" id="pb1" rendered="{!NOT(ismultipleProduct)}">
+             <apex:pageBlockButtons >
+                <!--<apex:commandbutton action="{!redirectToCatalog}" value="Back To Option" />-->
+                <apex:commandbutton action="{!finalize}" value="Finalize" rendered="{!NOT(isMultiSourceTapeout) && ISNULL(proposal.FMS_Proposal__c)}"/>
+				<apex:commandbutton action="{!finalize}" value="Finalize Selection" rendered="{!NOT(isMultiSourceTapeout) && NOT(ISNULL(proposal.FMS_Proposal__c))}"/>
+                <!-- <apex:outputlink value="../apex/GDSUPLOAD" styleClass="btn" style="text-decoration:none;padding:4px;" rendered="{!isMultiSourceTapeout}">
+                    Upload GDS
+                    <apex:param value="{proposal.id}" name="id"/>
+                </apex:outputlink> -->
+                <apex:commandbutton action="{!uploadGDS}" value="GDS Information file" rendered="{!isMultiSourceTapeout}"/>
+                <br/>                
+             </apex:pageBlockButtons>             
+            <apex:pageblockSection title="Configuration Detail">
+                <apex:repeat value="{!$ObjectType.Apttus_Proposal__Proposal__c.FieldSets.SummaryPageSec1}" var="f">               
+                      <apex:outputField value="{!proposal[f]}" />                                                      
+                </apex:repeat>
+                <!-- <apex:outputText value="{!maskset}" label="Mask Set"/>-->
+            </apex:pageblockSection>
+            <!--<apex:pageblockSection title="Packaging Options">
+                <apex:repeat value="{!$ObjectType.Apttus_Config2__ProductAttributeValue__c.FieldSets.SummaryPageSec2}" var="f">               
+                      <apex:outputField value="{!prodAttVal[f]}" />                                                      
+                </apex:repeat>
+            </apex:pageblockSection>-->
+<c:CPQ_PostFabServicesReadonlyView configurationId="{!proposalId}" generatePdf="false"/>
+            <apex:pageblockSection title="Poly Orientation used for DRC Check & Final Delivery" rendered="{!NOT(isMultiSourceTapeout)}">
+                <apex:repeat value="{!$ObjectType.Apttus_Proposal__Proposal__c.FieldSets.SummaryPageSec4}" var="f">               
+                      <apex:outputField value="{!proposal[f]}" />                                                      
+                </apex:repeat>
+            </apex:pageblockSection>
+    
+    <!--<apex:repeat value="{!proposalLineItemMap}" var="key">
+        <apex:pageblockSection title="{!key}" columns="1" >
+           <apex:pageblockTable value="{!proposalLineItemMap[key]}" var="pli" rows="1000">
+               <apex:repeat value="{!proposalLineItemMap[key]}" var="pli1">
+                   <apex:column value="{!pli.Apttus_Config2__ProductOptionId__c}"/>
+                   <apex:column value="{!pli.Apttus_Config2__OptionId__c}"/>
+                   <apex:column value="{!pli.Apttus_Config2__ProductId__r.ProductCode}"/>
+                   <apex:column value="{!pli.Apttus_Config2__OptionId__r.Family}"/>
+                   <apex:column value="{!pli.Apttus_Config2__OptionId__r.ProductCode}"/>
+                   <apex:column value="{!pli.Apttus_Config2__ProductId__r.PT_Number__c}"/>
+               </apex:repeat>    
+           </apex:pageblockTable>
+       </apex:pageblockSection>
+    </apex:repeat>-->
+    <apex:pageblockSection title="IPs Listing" columns="1" rendered="{!NOT(isMultiSourceTapeout)}">
+       <apex:pageblockTable value="{!ipList}" var="ip" rows="1000" rendered="{!IF(ipList.size>0,true,false)}">
+               <apex:column >
+                    <apex:facet name="header">IPs</apex:facet>
+                    {!ip.Apttus_QPConfig__OptionId__r.Name}
+               </apex:column>
+               <apex:column >
+                    <apex:facet name="header">IP Lifecycle</apex:facet>
+                    {!ip.Apttus_QPConfig__OptionId__r.APTPS_IP_Lifecycle__c}
+               </apex:column>
+               <apex:column >
+                    <apex:facet name="header">LIBID</apex:facet>
+                    {!ip.Apttus_QPConfig__OptionId__r.ProductCode}
+               </apex:column>
+               <apex:column >
+                    <apex:facet name="header">IP Type</apex:facet>
+                    {!ip.Apttus_QPConfig__OptionId__r.APTPS_IP_Type__c}
+               </apex:column>
+               <apex:column >
+                    <apex:facet name="header">IP Vendors</apex:facet>
+                    {!ip.Apttus_QPConfig__OptionId__r.APTPS_IP_Vendors__c}
+               </apex:column>
+               <apex:column >
+                    <apex:facet name="header">Device</apex:facet>
+                    {!ip.Apttus_QPConfig__OptionId__r.IP_Device_List__c}
+               </apex:column>  
+       </apex:pageblockTable>
+    </apex:pageblockSection>
+    <apex:pageblockSection title="Device-Mask Layers" columns="1" >
+        <apex:pageblockTable value="{!deviceMap}" var="key" rows="1000" rendered="{!isDevRecPresent}">
+               <apex:column >
+                    <apex:facet name="header">Device</apex:facet>
+                    {!key}
+               </apex:column>
+               <!-- Added for Case #00049590 -->
+               <apex:column >
+                    <apex:facet name="header">Device Model Name</apex:facet>
+                    {!deviceProductCodeMap[key]}
+               </apex:column>
+               <apex:column >
+                    <apex:facet name="header">Mask Sets</apex:facet>
+                    {!deviceMap[key]}
+               </apex:column>
+        </apex:pageblockTable>
+    </apex:pageblockSection>
+    <apex:pageblockSection title="EDA tool Selection" columns="1" rendered="{!NOT(isMultiSourceTapeout)}">
+       <apex:pageblockTable value="{!addInfoList}" var="addInfo" rows="1000" rendered="{!IF(addInfoList.size>0,true,false)}">
+               <apex:column >
+                    <apex:facet name="header">EDA tool Selection</apex:facet>
+                    {!addInfo}
+               </apex:column> 
+       </apex:pageblockTable>
+    </apex:pageblockSection>      
+    <apex:pageblockSection title="Reference Flows/ White Papers" columns="1" rendered="{!NOT(isMultiSourceTapeout)}">
+        <apex:pageblockTable value="{!refList}" var="ref" rows="1000" rendered="{!IF(refList.size>0,true,false)}">
+            <apex:column >
+                <apex:facet name="header">Reference Flows/ White Papers</apex:facet>
+                    {!ref}
+                </apex:column>  
+        </apex:pageblockTable>
+    </apex:pageblockSection>
+    <!--<apex:pageBlockButtons location="bottom">
+        <br/>
+        <apex:commandbutton action="{!redirectToCatalog}" value="Back To Option" />
+        <apex:commandbutton action="{!finalize}" value="Finalize" rendered="{!NOT(isMultiSourceTapeout)}"/>
+        <apex:outputlink value="../apex/GDSUPLOAD" styleClass="btn" style="text-decoration:none;padding:4px;" rendered="{!isMultiSourceTapeout}">
+            Upload GDS
+            <apex:param value="{proposal.id}" name="id"/>
+        </apex:outputlink>
+        <apex:commandbutton action="{!uploadGDS}" value="Upload GDS" rendered="{!isMultiSourceTapeout}"/>                
+     </apex:pageBlockButtons>-->    
+    </apex:pageBlock>
+    <!--<apex:pageBlock mode="maindetail" id="pb2" rendered="{!ismultipleProduct}">
+        <apex:pageBlockButtons location="bottom">
+            <apex:commandbutton action="{!redirectToCatalog}" value="Back To Catalog Page"/>                
+         </apex:pageBlockButtons>
+    </apex:pageBlock>-->
+</apex:form>
+<script>
+    function disable() {
+      links=document.getElementsByTagName('A');
+      for(var i=0; i<links.length; i++) {
+        links[i].onfocus = links[i].blur;
+        links[i].onmouseover = links[i].onmouseout;
+        //links[i].onfocus.style.textDecoration = "none";
+        //links[i].onmouseover.style.textDecoration = "none";
+      }
+    }
+    window.onload=disable;
+</script>
+</apex:page>

@@ -1,0 +1,439 @@
+<apex:page standardController="Manual_Device__c" extensions="ManualDeviceCEReportExtension"  action="{!updateManualDevice}" sidebar="false" tabStyle="CE_Weekly__tab" readOnly="!bTeamRoom">
+
+    <!--<apex:sectionHeader title="CE Weekly Report"/>-->
+    <apex:stylesheet value="{!$Resource.CE_Weekly_CSS}"/>
+
+    <apex:pageMessages id="message"/>
+    <style>
+        .activeTab {background-color: #B5EAAA; color:white ; font-weight:bold; background-image:none; font-size:14px;}
+         .inactiveTab {font-weight:bold; background-color: lightgrey; color:black; background-image:none; font-size:14px;}
+          table { border-collapse:collapse; }
+         
+    </style>
+    <apex:form rendered="{!noError}" id="form">
+        <apex:pageBlock id="pageBlock">       
+        <center>
+        <apex:pageBlockButtons >
+           <apex:commandButton value="{!$Label.GF_CE_Save}" title="{!$Label.GF_CE_Save}" id="saveBtn" action="{!save}" rendered="{!bTeamRoom}"/>
+           <apex:commandButton value="{!$Label.GF_CE_Cancel}" title="{!$Label.GF_CE_Cancel}" rendered="{!bTeamRoom}" id="cancelBtn" action="{!returnPage}"/>
+           <apex:commandButton value="Back" title="Back" id="backBtn" action="{!backPage}" rendered="{!NOT(bTeamRoom)}"/>           
+           <apex:commandButton value="{!$Label.GF_CE_Publish}" title="{!$Label.GF_CE_Publish}" action="{!btnClickPublishToTeamRoom}" id="publishBtn" reRender="message" rendered="{!bTeamRoom}" status="publishTeamRoom"/><br/>
+       </apex:pageBlockButtons>
+       </center>
+       <!--<b><apex:actionstatus startText="Saving Report.." stopText="" id="saveReport" /></b>-->
+       <b><apex:actionstatus startText="Publishing to Team Room.." stopText="" id="publishTeamRoom" /></b>
+        <!-- Start the Tab Panel -->
+        <apex:tabPanel id="tabPanel" switchType="client" activeTabClass="activeTab" InactiveTabClass="inActiveTab">
+
+
+            <!-- Define the Tab for Production Sheet -->   
+            <apex:tab label="{!$Label.GF_CE_Production}" title="{!$Label.GF_CE_Production}" style="background-color:#F5FFFA;" name="productionTab">
+                <b><apex:actionstatus startText="Processing..." stopText="" id="productionstatus" /></b>
+                <table width="80%">
+                    <tr>
+                        <td width="10%"><apex:outputLabel value="{!$Label.GF_CE_Region}" style="font-weight:bold;"/></td>
+                        <td width="17%"><apex:outputLabel value="{!$Label.GF_CE_Customer}" style="font-weight:bold;"/></td>
+                        <td width="10%"><apex:outputLabel value="{!$Label.GF_CE_Fab}" style="font-weight:bold;"/></td>
+                        <td width="15%"><apex:outputLabel value="{!$Label.GF_CE_Device}" style="font-weight:bold;"/></td>
+                        <td width="10%"><apex:outputLabel value="{!$Label.GF_CE_Export}" style="font-weight:bold;"/></td>
+                    </tr>
+                    <tr>
+                        <td width="10%"><apex:selectList size="1" value="{!prodRegion}" id="prodregion">
+                            <apex:selectOption itemLabel="--None--" itemValue="None"></apex:selectOption>
+                            <apex:selectOption itemLabel="APJ" itemValue="APJ"></apex:selectOption>
+                            <apex:selectOption itemLabel="EUR" itemValue="EUR"></apex:selectOption>
+                            <apex:selectOption itemLabel="US" itemValue="US"></apex:selectOption>
+                            <apex:selectOption itemLabel="MULTIPLE" itemValue="MULTIPLE"></apex:selectOption>
+                            </apex:selectList></td>
+                        <td width="17%"><apex:inputText value="{!prodCustomer}" id="prodcust"/></td>
+                        <td width="10%"><apex:selectList size="1" value="{!prodFab}" id="prodfab">
+                            <apex:selectOption itemLabel="--None--" itemValue="None"></apex:selectOption>
+                            <apex:selectOption itemLabel="FAB 1" itemValue="FAB 1"></apex:selectOption>
+                            <apex:selectOption itemLabel="FAB 2" itemValue="FAB 2"></apex:selectOption>
+                            <apex:selectOption itemLabel="FAB 3" itemValue="FAB 3"></apex:selectOption>
+                            <apex:selectOption itemLabel="FAB 3E" itemValue="FAB 3E"></apex:selectOption>
+                            <apex:selectOption itemLabel="FAB 3/5" itemValue="FAB 3/5"></apex:selectOption>
+                            <apex:selectOption itemLabel="FAB 5" itemValue="FAB 5"></apex:selectOption>
+                            <apex:selectOption itemLabel="FAB 6" itemValue="FAB 6"></apex:selectOption>
+                            <apex:selectOption itemLabel="FAB 7" itemValue="FAB 7"></apex:selectOption>
+                            <apex:selectOption itemLabel="FAB 8" itemValue="FAB 8"></apex:selectOption>
+                            <apex:selectOption itemLabel="MULTIPLE" itemValue="MULTIPLE"></apex:selectOption>
+                            </apex:selectList></td>
+                        <td width="15%"><apex:inputText value="{!prodDevice}" id="proddevice"/></td>
+                        <td width="10%"><apex:selectList size="1" value="{!prodExport}" id="prodExport">
+                            <apex:selectOption itemLabel="--None--" itemValue="None"></apex:selectOption>
+                            <apex:selectOption itemLabel="Yes" itemValue="Yes"></apex:selectOption>
+                            <apex:selectOption itemLabel="No" itemValue="No"></apex:selectOption>
+                            </apex:selectList></td>
+                        <td align="left">
+                            &nbsp;<apex:commandButton value="Filter" reRender="prodPanel,productionPanelGrid,productionPanelGridtop,message" action="{!filterProduction}" status="productionstatus"/>
+                            &nbsp;<apex:commandButton value="Clear" reRender="prodPanel,productionPanelGrid,productionPanelGridtop,prodcust,prodregion,prodfab,proddevice,message" action="{!clearProductionFilters}"/></td>
+                           
+                    </tr>
+                </table><br/>
+
+                <apex:panelGrid columns="7" id="productionPanelGridtop">
+                <apex:commandButton value="|< First" action="{!firstProduction}" disabled="{!!hasPreviousProduction}" title="First Page"/>
+                <apex:commandButton value="< Previous" action="{!previousProduction}" disabled="{!!hasPreviousProduction}" title="Previous Page"/>
+                     <apex:outputText >Page {!pageNumberProduction} of {!totalPagesProduction}</apex:outputText>
+                <apex:commandButton value="Next>" action="{!nextProduction}" disabled="{!!hasNextProduction}" title="Next Page"/>
+                <apex:commandButton value="Last >|" action="{!lastProduction}" disabled="{!!hasNextProduction}" title="Last Page"/>
+            </apex:panelGrid>
+                <apex:outputPanel id="prodPanel">
+                    <table class="list" border="0" cellpadding="0" cellspacing="0">
+                        <!-- TABLE HEADER-->
+                        <thead class="headerRow">
+                            <tr>
+                            <th style="background-color:#F8F8F8; word-wrap: break-word; text-align:center;" width="2%">Mgmt Export</th>
+                            <!--<th  scope="col" colspan="1" width="5%">{!$Label.GF_CE_Publish_Report}</th>-->
+                            <th style="background-color:#F8F8F8; word-wrap: break-word; text-align:center;" width="2%">{!$Label.GF_CE_Region}</th>
+                            <th style="background-color:#F8F8F8; word-wrap: break-word; text-align:center;" width="7%">{!$Label.GF_CE_Customer}</th>
+                            <th style="background-color:#F8F8F8; word-wrap: break-word; text-align:center;" width="2%">{!$Label.GF_CE_Geo}</th>
+                            <th style="background-color:#F8F8F8; word-wrap: break-word; text-align:center;" width="2%">{!$Label.GF_CE_Tech}</th>
+                            <th style="background-color:#F8F8F8; word-wrap: break-word; text-align:center;" width="6%">{!$Label.GF_CE_Device}</th>
+                            <th style="background-color:#F8F8F8; word-wrap: break-word; text-align:center;" width="4%">{!$Label.GF_CE_Fab}</th>
+                            <th style="background-color:#F8F8F8; word-wrap: break-word; text-align:center;" width="7%">{!$Label.GF_CE_AttnTo}</th>
+                            <th style="background-color:#F8F8F8; word-wrap: break-word; text-align:center;" width="59%">{!$Label.GF_CE_Comments}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <apex:repeat value="{!T3}" var="prod" id="repeat1">
+                                <tr>
+                                    <td class="dataCell" valign="top" width="2%"><apex:inputField value="{!prod.Export__c}"/></td>
+                                    <!--<td class="dataCell" valign="top" width="5%">
+                                        <apex:outputField value="{!prod.Publish_Report__c}">
+                                            <apex:inlineEditSupport event="ondblClick"  showOnEdit="saveBtn,cancelBtn" hideOnEdit="publishBtn"/>
+                                        </apex:outputField>
+                                    </td>-->
+                                    <td class="dataCell" valign="top" width="2%"><apex:outputField value="{!prod.Region__c}"/></td>
+                                    <td class="dataCell" valign="top" width="5%"><apex:outputField value="{!prod.Account_Name__c}"/></td>
+                                    <td class="dataCell" valign="top" width="2%"><apex:outputField value="{!prod.Geometry__c}"/></td>
+                                    <td class="dataCell" valign="top" width="2%"><apex:outputField value="{!prod.Technology__c}"/></td>
+                                    <td class="dataCell" valign="top" width="6%">
+                                        <apex:outputLink value="{!URLFOR($Action.Device__c.View, prod.Device__c)}" rendered="{!If(prod.Device__c <> null,true,false)}">
+                                            <apex:outputField value="{!prod.Device_Id__c}" rendered="{!If(prod.Device__c <> null,true,false)}"/>
+                                        </apex:outputLink>
+                                        <apex:outputLink value="{!URLFOR($Action.Manual_Device__c.View, prod.id)}" rendered="{!If(AND(prod.id <> null,prod.Device__c == null),true,false)}">
+                                            <apex:outputField value="{!prod.Device_Id__c}"  rendered="{!If(AND(prod.id <> null,prod.Device__c == null),true,false)}"/>
+                                        </apex:outputLink>
+                                    </td>
+                                    <td class="dataCell" valign="top" width="4%"><apex:outputField value="{!prod.Fab__c}"/></td>
+                                    <td class="dataCell" valign="top" width="7%">
+                                        <apex:outputField value="{!prod.Attn_To__c}">
+                                            <apex:inlineEditSupport event="ondblClick"  showOnEdit="saveBtn,cancelBtn" hideOnEdit="publishBtn"/>
+                                        </apex:outputField>
+                                    </td>
+                                    <td class="dataCell" valign="top" width="59%" style="font-size:14px">
+                                        <apex:outputField value="{!prod.Project_Update__c}">
+                                            <apex:inlineEditSupport event="ondblClick"  showOnEdit="saveBtn,cancelBtn" hideOnEdit="publishBtn"/>
+                                        </apex:outputField>
+                                    </td>
+                                </tr>
+                            </apex:repeat>
+                        </tbody>
+                    </table>
+                </apex:outputPanel>
+            <apex:panelGrid columns="7" id="productionPanelGrid">
+                <apex:commandButton value="|< First" action="{!firstProduction}" disabled="{!!hasPreviousProduction}" title="First Page"/>
+                <apex:commandButton value="< Previous" action="{!previousProduction}" disabled="{!!hasPreviousProduction}" title="Previous Page"/>
+                     <apex:outputText >Page {!pageNumberProduction} of {!totalPagesProduction}</apex:outputText>
+                <apex:commandButton value="Next>" action="{!nextProduction}" disabled="{!!hasNextProduction}" title="Next Page"/>
+                <apex:commandButton value="Last >|" action="{!lastProduction}" disabled="{!!hasNextProduction}" title="Last Page"/>
+            </apex:panelGrid>
+            <apex:outputText style="font-style:italic" value="Set Page Size"/>
+                <apex:selectList size="1" value="{!recordsize}" id="recordsize">
+                            <apex:selectOption itemLabel="10" itemValue="10"></apex:selectOption>
+                            <apex:selectOption itemLabel="20" itemValue="20"></apex:selectOption>
+                            <apex:selectOption itemLabel="30" itemValue="30"></apex:selectOption>
+                            <apex:selectOption itemLabel="40" itemValue="40"></apex:selectOption>
+                             <apex:actionSupport event="onchange" action="{!refreshpagesize}" rerender="productionPanelGridtop,prodPanel,productionPanelGrid,message" />
+                            </apex:selectList>    
+            </apex:tab>
+            <!-- End the Tab for Production Sheet -->
+
+            <!-- Define the Tab for Proto Risk Sheet -->
+            <apex:tab label="{!$Label.GF_CE_Proto_Risk_Production}" title="{!$Label.GF_CE_Proto_Risk_Production}" style="background-color:#F5FFFA;" name="protoTab">
+                <b><apex:actionstatus startText="Processing..." stopText="" id="protostatus" /></b>
+                <table width="80%">
+                    <tr>
+                        <td width="10%"><apex:outputLabel value="{!$Label.GF_CE_Region}" style="font-weight:bold;"/></td>
+                        <td width="17%"><apex:outputLabel value="{!$Label.GF_CE_Customer}" style="font-weight:bold;"/></td>
+                        <td width="10%"><apex:outputLabel value="{!$Label.GF_CE_Fab}" style="font-weight:bold;"/></td>
+                        <td width="15%"><apex:outputLabel value="{!$Label.GF_CE_Device}" style="font-weight:bold;"/></td>
+                        <td width="10%"><apex:outputLabel value="{!$Label.GF_CE_Export}" style="font-weight:bold;"/></td>
+                    </tr>
+                    <tr>
+                        <td width="10%"><apex:selectList size="1" value="{!protoRegion}" id="protoregion">
+                            <apex:selectOption itemLabel="--None--" itemValue="None"></apex:selectOption>
+                            <apex:selectOption itemLabel="APJ" itemValue="APJ"></apex:selectOption>
+                            <apex:selectOption itemLabel="EUR" itemValue="EUR"></apex:selectOption>
+                            <apex:selectOption itemLabel="US" itemValue="US"></apex:selectOption>
+                            <apex:selectOption itemLabel="MULTIPLE" itemValue="MULTIPLE"></apex:selectOption>
+                            </apex:selectList></td>
+                        <td width="17%"><apex:inputText value="{!protoCustomer}" id="protocust"/></td>
+                        <td width="10%"><apex:selectList size="1" value="{!protoFab}" id="protofab">
+                                <apex:selectOption itemLabel="--None--" itemValue="None"></apex:selectOption>
+                            <apex:selectOption itemLabel="FAB 1" itemValue="FAB 1"></apex:selectOption>
+                            <apex:selectOption itemLabel="FAB 2" itemValue="FAB 2"></apex:selectOption>
+                            <apex:selectOption itemLabel="FAB 3" itemValue="FAB 3"></apex:selectOption>
+                            <apex:selectOption itemLabel="FAB 3E" itemValue="FAB 3E"></apex:selectOption>
+                            <apex:selectOption itemLabel="FAB 3/5" itemValue="FAB 3/5"></apex:selectOption>
+                            <apex:selectOption itemLabel="FAB 5" itemValue="FAB 5"></apex:selectOption>
+                            <apex:selectOption itemLabel="FAB 6" itemValue="FAB 6"></apex:selectOption>
+                            <apex:selectOption itemLabel="FAB 7" itemValue="FAB 7"></apex:selectOption>
+                            <apex:selectOption itemLabel="FAB 8" itemValue="FAB 8"></apex:selectOption>
+                            <apex:selectOption itemLabel="MULTIPLE" itemValue="MULTIPLE"></apex:selectOption>
+                            </apex:selectList></td>
+                        <td width="15%"><apex:inputText value="{!protoDevice}" id="protodevice"/></td>
+                        <td width="10%"><apex:selectList size="1" value="{!protoExport}" id="protoExport">
+                            <apex:selectOption itemLabel="--None--" itemValue="None"></apex:selectOption>
+                            <apex:selectOption itemLabel="Yes" itemValue="Yes"></apex:selectOption>
+                            <apex:selectOption itemLabel="No" itemValue="No"></apex:selectOption>
+                            </apex:selectList></td>
+                        <td align="left">
+                            &nbsp;<apex:commandButton value="Filter" reRender="protoPanel,protoPanelGrid,protoPanelGridtop,message" action="{!filterProto}" status="protostatus"/> 
+                            &nbsp;<apex:commandButton value="Clear" reRender="protoPanel,protoPanelGrid,protoPanelGridtop,protocust,protoregion,protofab,protodevice,message" action="{!clearProtoFilters}"/></td>
+                    </tr>
+                </table><br/>
+                <apex:panelGrid columns="7" id="protoPanelGridtop">
+                    <apex:commandButton value="|< First" action="{!firstProto}" disabled="{!!hasPreviousProto}" title="First Page"/>
+                    <apex:commandButton value="< Previous" action="{!previousProto}" disabled="{!!hasPreviousProto}" title="Previous Page"/>
+                         <apex:outputText >Page {!pageNumberProto} of {!totalPagesProto}</apex:outputText>
+                    <apex:commandButton value="Next>" action="{!nextProto}" disabled="{!!hasNextProto}" title="Next Page"/>
+                    <apex:commandButton value="Last >|" action="{!lastProto}" disabled="{!!hasNextProto}" title="Last Page"/>
+                </apex:panelGrid>
+                <apex:outputPanel id="protoPanel">
+                    <table class="list" border="0" cellpadding="0" cellspacing="0">
+                        <!-- TABLE HEADER-->
+                        <thead class="headerRow">
+                                <tr>
+                                    <th  style="background-color:#F8F8F8; word-wrap: break-word; text-align:center;" width="2%">Mgmt Export</th>
+                                    <!--<th  scope="col" colspan="1" width="5%">{!$Label.GF_CE_Publish_Report}</th>-->
+                                    <th style="background-color:#F8F8F8; word-wrap: break-word; text-align:center;" width="2%">{!$Label.GF_CE_Region}</th>
+                                    <th style="background-color:#F8F8F8; word-wrap: break-word; text-align:center;" width="7%">{!$Label.GF_CE_Customer}</th>
+                                    <th style="background-color:#F8F8F8; word-wrap: break-word; text-align:center;" width="2%">{!$Label.GF_CE_Geo}</th>
+                                    <th style="background-color:#F8F8F8; word-wrap: break-word; text-align:center;" width="2%">{!$Label.GF_CE_Tech}</th>
+                                    <th style="background-color:#F8F8F8; word-wrap: break-word; text-align:center;" width="6%">{!$Label.GF_CE_Device}</th>
+                                    <th style="background-color:#F8F8F8; word-wrap: break-word; text-align:center;" width="4%">{!$Label.GF_CE_Fab}</th>
+                                    <th style="background-color:#F8F8F8; word-wrap: break-word; text-align:center;" width="7%">{!$Label.GF_CE_AttnTo}</th>
+                                    <th style="background-color:#F8F8F8; word-wrap: break-word; text-align:center;" width="54%">{!$Label.GF_CE_Comments}</th>
+                                    <!--<th style="background-color:#F8F8F8; word-wrap: break-word; text-align:center;" width="3%">{!$Label.GF_CE_Proto_Functional}</th>
+                                    <th style="background-color:#F8F8F8; word-wrap: break-word; text-align:center;" width="3%">{!$Label.GF_CE_Yield_Percentage}</th>
+                                    <th style="background-color:#F8F8F8; word-wrap: break-word; text-align:center;" width="3%">{!$Label.GF_CE_ET_Within}</th>
+                                    <th style="background-color:#F8F8F8; word-wrap: break-word; text-align:center;" width="5%">{!$Label.GF_CE_Prime_Die}</th>-->
+                                </tr>
+                        </thead>
+                        <tbody>
+                            <apex:repeat value="{!T2}" var="proto" id="repeat2">
+                                <tr>
+                                    <td class="dataCell" valign="top" width="2%"><apex:inputField value="{!proto.Export__c}"/></td>
+                                    <!--<td class="dataCell" valign="top" width="5%">
+                                        <apex:outputField value="{!proto.Publish_Report__c}">
+                                            <apex:inlineEditSupport event="ondblClick"  showOnEdit="saveBtn,cancelBtn" hideOnEdit="publishBtn,emailBtn"/>
+                                        </apex:outputField>
+                                    </td>-->
+                                    <td class="dataCell" valign="top" width="2%"><apex:outputField value="{!proto.Region__c}"/></td>
+                                    <td class="dataCell" valign="top" width="7%"><apex:outputField value="{!proto.Account_Name__c}"/></td>
+                                    <td class="dataCell" valign="top" width="2%"><apex:outputField value="{!proto.Geometry__c}"/></td>
+                                    <td class="dataCell" valign="top" width="2%"><apex:outputField value="{!proto.Technology__c}"/></td>
+                                    <td class="dataCell" valign="top" width="6%">
+                                        <apex:outputLink value="{!URLFOR($Action.Device__c.View, proto.Device__c)}" rendered="{!If(proto.Device__c <> null,true,false)}">
+                                            <apex:outputField value="{!proto.Device_Id__c}"/>
+                                        </apex:outputLink>
+                                        <apex:outputLink value="{!URLFOR($Action.Manual_Device__c.View, proto.id)}" rendered="{!If(AND(proto.id <> null,proto.Device__c == null),true,false)}">
+                                            <apex:outputField value="{!proto.Device_Id__c}"/>
+                                        </apex:outputLink>
+                                    </td>
+                                    <td class="dataCell" valign="top" width="4%"><apex:outputField value="{!proto.Fab__c}"/></td>
+                                    <td class="dataCell" valign="top" width="7%">
+                                        <apex:outputField value="{!proto.Attn_To__c}">
+                                            <apex:inlineEditSupport event="ondblClick"  showOnEdit="saveBtn,cancelBtn" hideOnEdit="publishBtn"/>
+                                        </apex:outputField>
+                                    </td>
+                                    <td class="dataCell" valign="top" width="54%" style="font-size:14px">
+                                        <apex:outputField value="{!proto.Project_Update__c}">
+                                            <apex:inlineEditSupport event="ondblClick"  showOnEdit="saveBtn,cancelBtn" hideOnEdit="publishBtn"/>
+                                        </apex:outputField>
+                                    </td>
+                                    <!--<td class="dataCell" valign="top" width="3%">
+                                        <apex:outputField value="{!proto.Proto_Functional_Status__c}">
+                                            <apex:inlineEditSupport event="ondblClick"  showOnEdit="saveBtn,cancelBtn" hideOnEdit="publishBtn"/>
+                                        </apex:outputField>
+                                    </td>
+                                    <td class="dataCell" valign="top" width="3%">
+                                        <apex:outputField value="{!proto.Yield__c}">
+                                            <apex:inlineEditSupport event="ondblClick"  showOnEdit="saveBtn,cancelBtn" hideOnEdit="publishBtn"/>
+                                        </apex:outputField>
+                                    </td>
+                                    <td class="dataCell" valign="top" width="3%">
+                                        <apex:outputField value="{!proto.ET_Met_Target__c}">
+                                            <apex:inlineEditSupport event="ondblClick"  showOnEdit="saveBtn,cancelBtn" hideOnEdit="publishBtn"/>
+                                        </apex:outputField>
+                                    </td>
+                                    <td class="dataCell" valign="top" width="5%">
+                                        <apex:outputField value="{!proto.Prime_Die__c}">
+                                            <apex:inlineEditSupport event="ondblClick"  showOnEdit="saveBtn,cancelBtn" hideOnEdit="publishBtn"/>
+                                        </apex:outputField>
+                                    </td>-->
+                                </tr>
+                            </apex:repeat>
+                        </tbody>
+                    </table>
+                </apex:outputPanel>
+                <apex:panelGrid columns="7" id="protoPanelGrid">
+                    <apex:commandButton value="|< First" action="{!firstProto}" disabled="{!!hasPreviousProto}" title="First Page"/>
+                    <apex:commandButton value="< Previous" action="{!previousProto}" disabled="{!!hasPreviousProto}" title="Previous Page"/>
+                         <apex:outputText >Page {!pageNumberProto} of {!totalPagesProto}</apex:outputText>
+                    <apex:commandButton value="Next>" action="{!nextProto}" disabled="{!!hasNextProto}" title="Next Page"/>
+                    <apex:commandButton value="Last >|" action="{!lastProto}" disabled="{!!hasNextProto}" title="Last Page"/>
+                </apex:panelGrid>
+                <apex:outputText style="font-style:italic" value="Set Page Size"/>
+                <apex:selectList size="1" value="{!recordProtosize}" id="recordsizeProto">
+                            <apex:selectOption itemLabel="10" itemValue="10"></apex:selectOption>
+                            <apex:selectOption itemLabel="20" itemValue="20"></apex:selectOption>
+                            <apex:selectOption itemLabel="30" itemValue="30"></apex:selectOption>
+                            <apex:selectOption itemLabel="40" itemValue="40"></apex:selectOption>
+                             <apex:actionSupport event="onchange" action="{!refreshProtopagesize}" rerender="protoPanelGridtop,protoPanel,protoPanelGrid,message" />
+                            </apex:selectList>  
+            </apex:tab>
+            <!-- End the Tab for Proto Risk Sheet -->
+
+            <!-- Define the Tab for Tapeout Sheet -->
+            <apex:tab label="{!$Label.GF_CE_Tapeout}" title="{!$Label.GF_CE_Tapeout}" style="background-color:#F5FFFA;" name="tapeoutTab">
+            <b><apex:actionstatus startText="Processing..." stopText="" id="tapeoutStatus" /></b>
+            <table width="80%" >
+                <tr>
+                    <td width="10%"><apex:outputLabel value="{!$Label.GF_CE_Region}" style="font-weight:bold;"/></td>
+                    <td width="17%"><apex:outputLabel value="{!$Label.GF_CE_Customer}" style="font-weight:bold;"/></td>
+                    <td width="10%"><apex:outputLabel value="{!$Label.GF_CE_Fab}" style="font-weight:bold;"/></td>
+                    <td width="15%"><apex:outputLabel value="{!$Label.GF_CE_Device}" style="font-weight:bold;"/></td>
+                    <td width="10%"><apex:outputLabel value="{!$Label.GF_CE_Export}" style="font-weight:bold;"/></td>
+                </tr>
+                <tr>
+                    <td width="10%"><apex:selectList size="1" value="{!tapeRegion}" id="taperegion">
+                        <apex:selectOption itemLabel="--None--" itemValue="None"></apex:selectOption>
+                            <apex:selectOption itemLabel="APJ" itemValue="APJ"></apex:selectOption>
+                            <apex:selectOption itemLabel="EUR" itemValue="EUR"></apex:selectOption>
+                            <apex:selectOption itemLabel="US" itemValue="US"></apex:selectOption>
+                            <apex:selectOption itemLabel="MULTIPLE" itemValue="MULTIPLE"></apex:selectOption>
+                        </apex:selectList>
+                    </td>
+                    <td width="17%"><apex:inputText value="{!tapeCustomer}" id="tapecust"/></td>
+                    <td width="10%"><apex:selectList size="1" value="{!tapeFab}" id="tapefab">
+                            <apex:selectOption itemLabel="--None--" itemValue="None"></apex:selectOption>
+                            <apex:selectOption itemLabel="FAB 1" itemValue="FAB 1"></apex:selectOption>
+                            <apex:selectOption itemLabel="FAB 2" itemValue="FAB 2"></apex:selectOption>
+                            <apex:selectOption itemLabel="FAB 3" itemValue="FAB 3"></apex:selectOption>
+                            <apex:selectOption itemLabel="FAB 3E" itemValue="FAB 3E"></apex:selectOption>
+                            <apex:selectOption itemLabel="FAB 3/5" itemValue="FAB 3/5"></apex:selectOption>
+                            <apex:selectOption itemLabel="FAB 5" itemValue="FAB 5"></apex:selectOption>
+                            <apex:selectOption itemLabel="FAB 6" itemValue="FAB 6"></apex:selectOption>
+                            <apex:selectOption itemLabel="FAB 7" itemValue="FAB 7"></apex:selectOption>
+                            <apex:selectOption itemLabel="FAB 8" itemValue="FAB 8"></apex:selectOption>
+                            <apex:selectOption itemLabel="MULTIPLE" itemValue="MULTIPLE"></apex:selectOption>
+                        </apex:selectList></td>
+                    <td width="15%"><apex:inputText value="{!tapeDevice}" id="tapedevice"/></td>
+                    <td width="10%"><apex:selectList size="1" value="{!tapeExport}" id="tapeExport">
+                            <apex:selectOption itemLabel="--None--" itemValue="None"></apex:selectOption>
+                            <apex:selectOption itemLabel="Yes" itemValue="Yes"></apex:selectOption>
+                            <apex:selectOption itemLabel="No" itemValue="No"></apex:selectOption>
+                            </apex:selectList></td>
+                    <td align="left">
+                    &nbsp;<apex:commandButton value="Filter" reRender="tapeoutBlock,message,tapeoutPanelGrid,tapeoutPanelGridtop" action="{!filterTapeout}" status="tapeoutStatus"/>
+                    &nbsp;<apex:commandButton value="Clear" reRender="tapeoutBlock,tapeoutPanelGrid,tapeoutPanelGridtop,tapecust,taperegion,tapedevice,tapefab,message" action="{!clearTapeoutFilters}" status="tapeoutStatus"/></td>
+                </tr>
+            </table><br/>
+            <apex:panelGrid columns="7" id="tapeoutPanelGridtop">
+                <apex:commandButton value="|< First" action="{!firstTapeout}" disabled="{!!hasPrevious}" title="First Page"/>
+                <apex:commandButton value="< Previous" action="{!previousTapeout}" disabled="{!!hasPrevious}" title="Previous Page"/>
+                     <apex:outputText >Page {!pageNumberTapeout} of {!totalPagesTapeout}</apex:outputText>
+                <apex:commandButton value="Next>" action="{!nextTapeout}" disabled="{!!hasNext}" title="Next Page"/>
+                <apex:commandButton value="Last >|" action="{!lastTapeout}" disabled="{!!hasNext}" title="Last Page"/>
+            </apex:panelGrid>
+            <apex:outputPanel id="tapeoutBlock">
+                <table class="list" border="0" cellpadding="0" cellspacing="0" style="width: 100%;">
+                    <!-- TABLE HEADER -->
+                    <thead>
+                        <tr>
+                            <th style="background-color:#F8F8F8; word-wrap: break-word; text-align:center;" width="2%">Mgmt Export</th>
+                            <!--<th style="background-color:#F8F8F8; word-wrap: break-word; text-align:center;" scope="col" colspan="1" width="5%">{!$Label.GF_CE_Publish_Report}</th> -->
+                            <th style="background-color:#F8F8F8; word-wrap: break-word; text-align:center;" width="2%">{!$Label.GF_CE_Region}</th>
+                            <th style="background-color:#F8F8F8; word-wrap: break-word; text-align:center;" width="5%">{!$Label.GF_CE_Customer}</th>
+                            <th style="background-color:#F8F8F8; word-wrap: break-word; text-align:center;" width="7%">{!$Label.GF_CE_Process_Family}</th>
+                            <th style="background-color:#F8F8F8; word-wrap: break-word; text-align:center;" width="2%">{!$Label.GF_CE_Geo}</th>
+                            <th style="background-color:#F8F8F8; word-wrap: break-word; text-align:center;" width="6%">{!$Label.GF_CE_Device}</th>
+                            <th style="background-color:#F8F8F8; word-wrap: break-word; text-align:center;" width="6%">{!$Label.GF_CE_Fab}</th>
+                            <th style="background-color:#F8F8F8; word-wrap: break-word; text-align:center;" width="7%">{!$Label.GF_CE_AttnTo}</th>
+                            <th style="background-color:#F8F8F8; word-wrap: break-word; text-align:center;" width="56%">{!$Label.GF_CE_Comments}</th>
+                            <th style="background-color:#F8F8F8; word-wrap: break-word; text-align:center;" width="3%">{!$Label.GF_CE_Forecast}</th>
+                            <th style="background-color:#F8F8F8; word-wrap: break-word; text-align:center;" width="3%">{!$Label.GF_CE_Forecast_Lot}</th>
+                            <th style="background-color:#F8F8F8; word-wrap: break-word; text-align:center;" width="3%">{!$Label.Actual_Tapeout_Date}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <apex:repeat value="{!T1}" var="tape" id="repeat3">
+                            <tr>
+                                <td class="dataCell" valign="top" width="2%"><apex:inputField value="{!tape.Export__c}"/></td>
+                                <!--<td class="dataCell" valign="top" width="5%"><apex:outputField value="{!tape.Publish_Report__c}"/></td>-->
+                                <td class="dataCell" valign="top" width="2%"><apex:outputField value="{!tape.Region__c}"/></td>
+                                <td class="dataCell" valign="top" width="5%"><apex:outputField value="{!tape.Account_Name__c}"/></td>
+                                <td class="dataCell" valign="top" width="7%"><apex:outputField value="{!tape.Process_Family__c}"/></td>
+                                <td class="dataCell" valign="top" width="2%"><apex:outputField value="{!tape.Geometry__c}"/></td>
+                                <td class="dataCell" valign="top" width="6%">
+                                    <apex:outputLink value="{!URLFOR($Action.Device__c.View, tape.Device__c)}" rendered="{!If(tape.Device__c <> null,true,false)}">
+                                        <apex:outputField value="{!tape.Device_Id__c}"/>
+                                    </apex:outputLink>
+                                    <apex:outputLink value="{!URLFOR($Action.Manual_Device__c.View, tape.id)}" rendered="{!If(AND(tape.id <> null,tape.Device__c == null),true,false)}">
+                                    <apex:outputField value="{!tape.Device_Id__c}"/>
+                                        </apex:outputLink>
+                                </td>
+                                <td class="dataCell" valign="top" width="6%"><apex:outputField value="{!tape.Fab__c}"/></td>
+                                <td class="dataCell" valign="top" width="7%">
+                                    <apex:outputField value="{!tape.Attn_To__c}">
+                                        <apex:inlineEditSupport event="ondblClick" showOnEdit="saveBtn,cancelBtn" hideOnEdit="publishBtn"/>
+                                    </apex:outputField>
+                                </td>
+                                <td class="dataCell" valign="top" width="56%" style="font-size:14px">
+                                    <apex:outputField value="{!tape.Project_Update__c}">
+                                        <apex:inlineEditSupport event="ondblClick" showOnEdit="saveBtn,cancelBtn" hideOnEdit="publishBtn"/>
+                                    </apex:outputField>
+                                </td>
+                                <td class="dataCell" valign="top" width="3%">
+                                    <apex:outputText value="{0,date,MM'/'dd'/'yyyy}">
+                                        <apex:param value="{!tape.Forecast_GDSII_In__c}" />
+                                    </apex:outputText>
+                                </td>
+                                <td class="dataCell" valign="top" width="3%">
+                                    <apex:outputText value="{0,date,MM'/'dd'/'yyyy}">
+                                        <apex:param value="{!tape.Forecast_1st_3_reticle_Lot_Start__c}" />
+                                    </apex:outputText>
+                                </td>
+                                <td class="dataCell" valign="top" width="3%"><apex:outputField value="{!tape.Device__r.Actual_Tapeout_Date_GMT__c}"/></td>
+                              </tr>
+                                </apex:repeat>
+                            </tbody>
+                        </table>
+              </apex:outputPanel>
+            <apex:panelGrid columns="7" id="tapeoutPanelGrid">
+                <apex:commandButton value="|< First" action="{!firstTapeout}" disabled="{!!hasPrevious}" title="First Page"/>
+                <apex:commandButton value="< Previous" action="{!previousTapeout}" disabled="{!!hasPrevious}" title="Previous Page"/>
+                     <apex:outputText >Page {!pageNumberTapeout} of {!totalPagesTapeout}</apex:outputText>
+                <apex:commandButton value="Next>" action="{!nextTapeout}" disabled="{!!hasNext}" title="Next Page"/>
+                <apex:commandButton value="Last >|" action="{!lastTapeout}" disabled="{!!hasNext}" title="Last Page"/>
+            </apex:panelGrid>
+            <apex:outputText style="font-style:italic"  value="Set Page Size"/>
+            <apex:selectList size="1" value="{!recordTapeoutsize}" id="recordsizeTapeout">
+                            <apex:selectOption itemLabel="10" itemValue="10"></apex:selectOption>
+                            <apex:selectOption itemLabel="20" itemValue="20"></apex:selectOption>
+                            <apex:selectOption itemLabel="30" itemValue="30"></apex:selectOption>
+                            <apex:selectOption itemLabel="40" itemValue="40"></apex:selectOption>
+                             <apex:actionSupport event="onchange" action="{!refreshTapeoutpagesize}" rerender="tapeoutPanelGridtop,tapeoutBlock,tapeoutPanelGrid,message" />
+                            </apex:selectList>
+            </apex:tab>
+            <!-- End the Tab for Tapeout Sheet -->
+
+        </apex:tabPanel>
+        <!-- End the Tab Panel -->
+        </apex:pageBlock>
+    </apex:form>
+</apex:page>

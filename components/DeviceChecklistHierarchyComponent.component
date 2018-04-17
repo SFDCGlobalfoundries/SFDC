@@ -1,0 +1,82 @@
+<apex:component >
+    <apex:attribute name="container" description="Container Project" type="DeviceChecklistContainerModel" required="true"/>
+    <apex:attribute name="isAdmin" description="Is admin user" type="boolean" required="true"/>
+    <apex:outputPanel rendered="{!container.rows!= null}" styleClass="tableContainer">
+        <span >
+            <div class="datagrid">
+                <table>
+                    <thead>
+                        <th style='display:none;' ></th>
+                        <th class='headerCenter hasToolTip' tooltipText="{!$Label.Device_Checklist_Completed_Column_tooltip}">Completed <span class="glyphicon glyphicon-question-sign" style="color: rgb(231, 169, 75);font-size: 13px;" ></span></th>
+                        <th>Task Name</th>
+                        <th class='headerCenter hasToolTip' tooltipText="{!$Label.Device_Checklist_Deadline_Column_tooltip}">Deadline
+                                <span class="glyphicon glyphicon-question-sign" style="color: rgb(231, 169, 75);font-size: 13px;" ></span>
+                        </th>
+                        <th class='headerCenter'>Days To TO</th>
+                        <th class='headerCenter hasToolTip' tooltipText="{!$Label.Device_Checklist_Owner_Column_tooltip}">Owner
+                            <span class="glyphicon glyphicon-question-sign " style="color: rgb(231, 169, 75);font-size: 13px;" ></span>
+                        </th>
+                        <th class='headerCenter hasToolTip' tooltipText="{!$Label.Device_Checklist_RedFlag_Column_tooltip}">Red Flag
+                                <span  class="glyphicon glyphicon-question-sign" style="color: rgb(231, 169, 75);font-size: 13px;" ></span>
+                        </th>
+                        <th class='headerCenter notApplicableColumn' style="display:{!IF(isAdmin, '', 'none')}">N/A</th>
+                        <th style="display:{!IF(isAdmin, '', 'none')}"></th>
+                     </thead>   
+                    <tbody>
+                        <apex:repeat value="{!container.rows}" var="taskRow">
+                        <tr class="taskTableRow {!IF( AND(taskRow.task.Deadline__c != null,  !taskRow.task.Is_Completed__c), IF(TODAY() > taskRow.task.Deadline__c , 'overdueTask', ''),'')}  {!IF($User.Id == taskRow.task.OwnerId, 'myTask', 'notMyTask')}  {!(IF(taskRow.task.Red_Flag__c, 'RedFlagTask','NonRedFlagTask'))} {!taskRow.task.OwnerId} {!IF(taskRow.task.Is_Completed__c, 'ClosedTask','OpenTask')}
+                        {!IF(taskRow.task.Container__r.Archive_Project__c, 'Archived', '')}">
+                            <td style='width:15px; display:none;'>
+                                <apex:inputCheckbox value="{!taskRow.updated}" styleClass="updatedTask"/>
+                            </td>
+                            <td style='text-align: center;width:50px;'>
+                                <apex:inputField value="{!taskRow.task.Is_Completed__c}" styleClass="flagUpdate completedFlag" rendered="{!taskRow.task.Dependent_Object__c == null}"/>
+                                <apex:outputField value="{!taskRow.task.Is_Completed__c}" styleClass="flagUpdate completedFlag" rendered="{!taskRow.task.Dependent_Object__c != null}"/>
+                            </td>
+                            <td style='text-align:left' class="taskNameColumn" title="{!taskRow.task.Dependency_Tootip__c}">
+                                <a href="javascript:void(0)" onclick="openTaskPopup(); showChatterForTask('{!taskRow.task.id}');">{!taskRow.task.Name}</a>
+                            </td>
+                            <td class="deadlineDatePicker" style='text-align: center; width:90px;'>
+                                <apex:inputField value="{!taskRow.task.Deadline__c}" styleClass="flagUpdate  {!IF(AND(taskRow.task.Deadline__c != null,  !taskRow.task.Is_Completed__c), IF(TODAY() > taskRow.task.Deadline__c , 'overdueTaskDeadline', ''),'')}"/>
+                            </td>
+                            <td style='text-align: center; width: 80px;'>
+                                <span style="display:{!IF(isAdmin, 'none', 'inline')}">
+                                    <span class="{!IF(taskRow.task.Override_Tapeout_Date__c, 'dontShowToTO','showToTO')}">{!taskRow.task.Days_Due_Before_TO__c}</span>
+                                    <span class="{!IF(taskRow.task.Override_Tapeout_Date__c, 'showToTO','dontShowToTO')}">--</span>
+                                </span>
+                                <span style="display:{!IF(isAdmin, 'inline', 'none')}">
+                                    <apex:inputField styleClass="flagUpdate" value="{!taskRow.task.Days_Due_Before_TO__c}" style="width:25px; text-align:center;" rendered="{!!taskRow.task.Override_Tapeout_Date__c}"/>
+                                    <apex:outputPanel rendered="{!taskRow.task.Override_Tapeout_Date__c}">
+                                        <span class="{!IF(taskRow.task.Override_Tapeout_Date__c, 'showToTO','dontShowToTO')}">--</span>
+                                    </apex:outputPanel>
+                                </span>
+                            </td>
+                            <td style="width: 200px;text-align:center;" >
+                                <apex:inputField value="{!taskRow.task.OwnerId}" styleClass="flagUpdate ownerlookupcell"/>
+                            </td>
+                            <td style='text-align: center;width:50px;'>
+                                <apex:inputField value="{!taskRow.task.Red_Flag__c}" styleClass="flagUpdate flagField"/>
+                                <span class="{!IF(taskRow.task.Red_Flag__c == true, 'redFlag', 'greyFlag')} {!IF(taskRow.task.Is_Completed__c == true, '', 'redFlagRef')}" style="width:20px; height:15px; display:inline-block; background-size: 20px 15px;"></span>
+                            </td>
+                            
+                            <td style="text-align: center;width:50px; display:{!IF(isAdmin, '', 'none')}" class='notApplicableColumn'>
+                                <apex:inputField value="{!taskRow.task.Not_Applicable__c}" styleClass="flagUpdate notApplicableCheckbox"/>
+                            </td>
+                            <td style="text-align: center;width:50px; display:{!IF(isAdmin, '', 'none')}" >
+                                <a class="saveButton addTaskButton" style='padding: 4px; width: 70px; margin:0px;' href="javascript:void(0);" onclick='addTaskUnder("{!container.pId}", "{!container.Name}", "{!taskRow.task.sequence__c}")'>Add Task</a>
+                            </td>
+                        </tr>
+                        </apex:repeat>
+                    </tbody>
+                </table>
+            </div>
+        </span>
+        <script>
+            $('.ClosedTask input[type=text]').attr('disabled','disabled');
+            $('.ClosedTask .notApplicableCheckbox').attr('disabled','disabled');
+            $('.Archived input[type=text]').attr('disabled','disabled');
+            $('.Archived .notApplicableCheckbox').attr('disabled','disabled');
+            $('.Archived .completedFlag').attr('disabled','disabled');
+        </script>
+       </apex:outputPanel>  
+</apex:component>

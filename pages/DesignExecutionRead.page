@@ -1,0 +1,1049 @@
+<!---------------------------------------------------------------------------------------------
+* Author: Sakthi
+* Project: Global Foundries 
+* Description: Page is created for view the Design Execution record and to take other action like edit/Sign off/Waiver Capability
+* History:
+* Modified By : Abhishek/Sandesh 
+* Modified date : 03-Dec-2016     
+----------------------------------------------------------------------------------------------->
+
+<apex:page standardController="Design_Execution__c" extensions="DesignExecutionController" tabStyle="Design_Execution__c" action="{!createDesignExecutionRecord}" >
+    <apex:includeScript value="https://code.jquery.com/jquery-1.11.0.min.js" />
+    <apex:includeScript value="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js" />
+    <apex:stylesheet value="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.12.1/themes/black-tie/jquery-ui.min.css" />
+    <script type="text/javascript">
+          function ritOffSetbtn() {
+            $("#ritOffSetDiv").dialog({
+                modal: true,
+                title: 'Change Rit Off Set',
+                zIndex: 10000,
+                autoOpen: true,
+                width: 620,
+                height: 400,	
+                resizable: true,
+                buttons: [{
+                    text: "Save",
+                    click: function() {
+                        var v1 = jQuery('input[id$=ritA7LPId]').val();
+                         var v2 = jQuery('input[id$=ritB7LPId]').val();
+                         var v3 = jQuery('input[id$=ritA14LPPId]').val();
+                         var v4 = jQuery('input[id$=ritB14LPPId]').val();
+                        
+                        ritOffset(v1,v2,v3,v4);
+                    }
+                }, {
+                    text: "Cancel",
+                    click: function() {
+                        $(this).dialog("close");
+                    }
+                }]
+            });
+              $(this).parent().css('position', 'fixed');
+        }
+      function close(){
+       $("#ritOffSetDiv").dialog("close")
+      }
+    </script>  
+  <apex:form >
+      <apex:pageBlock title="Design Phase Form {!recordTypeName}">
+      
+          <style>
+                body .bPageBlock .pbBody .red .pbSubheader{
+                    background-color:#c00000;
+                }
+                body .bPageBlock .pbBody .grey .pbSubheader{
+                    background-color:#e9e9e9;
+                }
+                body .bPageBlock .pbBody .grey .pbSubheader h3{
+                color:#000;
+                }
+                .tableHeader 
+                {
+                  padding: 0px 10px 10px 0px;
+                  margin: 0px 0px 0px 0px;
+                  color: #4A4A56;
+                  font-size: 100%;
+                  //font-weight: bold;
+                  background: white;
+                  font-family: Arial,Helvetica,sans-serif;
+                }
+            </style>
+            
+           <!-- <apex:pageMessages />-->
+          <apex:pageBlockButtons >
+            <apex:commandButton value="Edit" action="{!editExecutionDetail}" rendered="{!showeditbutton}"> 
+              <apex:param name="recordTypeName" value="{!recordTypeName}" />  
+            </apex:commandButton>
+            <apex:commandButton value="Respin" onclick="window.open('/apex/BNPTRClone?scontrolCaching=1&id={!designExecution.Option__c}'); return false;"/>
+            <apex:commandButton value="Design Deliverable" onclick="window.open('/apex/DesignExecutionDeliverableGConnect?DEID={!designExecution.Id}&DEName={!designExecution.Name}&GoogleSheetID={!designExecution.Google_Sheet_Id__c}'); return false;" rendered="{!showDDbutton}" />
+            <apex:commandButton value="Waiver Capability" action="{!redirectToWaiverCapability}" rendered="{!showWaiverbutton}" />
+            <apex:commandButton value="Sign Off" action="{!viewSignOffRT}" rendered="{!showSignoffbutton}"/>
+            <apex:commandButton Value="Requote" action="{!requoteExecutionDetail}" /> 
+            <apex:commandButton Value="Export Milestones" action="{!exportMilestones}" rendered="{!showexportmilestone}"/>
+            <!--<apex:commandButton Value="# Promote to Customer Decision " action="{!redirectToDecision}" rendered="{!showPromotetoCustomerDecisionbutton}"  />-->
+            <apex:commandButton Value="Tech Review" action="{!goToTechReview}"/>
+            <apex:commandButton value="Close" onclick="window.close();"/>
+          </apex:pageBlockButtons>
+            
+            <apex:outputPanel styleClass="tableHeader" layout="block" id="panelId">        
+                <apex:pageBlockSection collapsible="false" title="Design Schedule" columns="1">
+                    <c:BnP_OptionHeader RcId="{!designExecution.Option__c}"></c:BnP_OptionHeader>
+                    <!--<apex:outputText label="Opportunity Product Line" value="{!designExecution.Opportunity_Product_Line__c}"/>-->
+                </apex:pageBlockSection>
+                <apex:pageBlockSection columns="2">
+                    <apex:outputText label="CDS Record" >
+                        <apex:outputLink value="/apex/CDSViewPageFrame?id={!designExecution.Customer_Design_Specification__c}" target="_blank">{!designExecution.Customer_Design_Specification__r.name}</apex:outputLink>
+                    </apex:outputText>
+                    <apex:outputText label="IDR Actual Date" value="{0,date,MM'/'dd'/'yyyy}" >
+                        <apex:param value="{!designExecution.Actual_Date__c}" />
+                    </apex:outputText>
+                </apex:pageBlockSection>
+            </apex:outputpanel>
+            
+            <apex:outputPanel styleClass="tableHeader" layout="block" id="details" >
+                <apex:pageBlockSection collapsible="false" title="Opportunity Program Team Members" columns="1" >
+                </apex:pageBlockSection>
+                <apex:selectList multiselect="false" size="1" value="{!limits}" >
+                    Show <apex:selectOptions value="{!items}"/>
+                </apex:selectList>
+                    <table border="1" width="100%" style="padding:0px;height:12px" cellspacing="1" >
+                        <thead >
+                            <tr>
+                                <td style="font-weight: bold;">Name</td>
+                                <td style="font-weight: bold;">Role</td>
+                                <td style="font-weight: bold;">Phone</td>
+                                <td style="font-weight: bold;">Email</td>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <apex:repeat value="{!acctProxyList}" var="contact" >
+                                <tr>
+                                    <td class="ui-widget-content" style="padding:0px;height:12px"> 
+                                        <apex:outputfield value="{!contact.User_Full_Name__c}" style="width:92px;padding:0px;" />
+                                    </td> 
+                                    
+                                    <td class="ui-widget-content" style="padding:0px;height:12px"> 
+                                        <apex:outputfield value="{!contact.Team_Role__c}" style="width:92px;padding:0px;" />
+                                    </td> 
+                                    
+                                    <td class="ui-widget-content" style="padding:0px;height:12px"> 
+                                        <apex:outputfield value="{!contact.User__r.phone}" style="width:92px;padding:0px;" />
+                                    </td> 
+                                    
+                                    <td class="ui-widget-content" style="padding:0px;height:12px"> 
+                                        <apex:outputfield value="{!contact.User_Email__c}" style="width:92px;padding:0px;" />
+                                    </td> 
+                                    
+                                </tr> 
+                            </apex:repeat>                             
+                        </tbody>
+                    </table>
+                    <apex:commandButton value="<<" action="{!fstbtn}" disabled="{!prv}" rerender="details"/>
+                    <apex:commandButton value="<" action="{!prvbtn}" disabled="{!prv}" rerender="details"/>
+                    <apex:commandButton value=">" action="{!nextbtn}" disabled="{!nxt}" rerender="details"/>
+                    <apex:commandButton value=">>" action="{!endbtn}" disabled="{!nxt}" rerender="details"/>
+                    <table>
+                        <tr><td></td></tr>
+                        <tr><td></td></tr>
+                         <tr>   
+                             <td colspan="4"><apex:outputLink value="/apex/Opportunity_Team_Members?id={!oppProgId}" target="_blank">Select Opportunity Program Team Members</apex:outputLink>
+                             </td>
+                        </tr>
+                    </table>   
+            </apex:outputPanel>
+                
+            
+            <apex:outputPanel styleClass="tableHeader" layout="block" id="panelId1">
+                <div align="center" draggable="false" id="divId">
+                    <apex:commandButton action="{!enableDisableRITDTButton}" rendered="{!cancelDT}" value="Cancel DT"
+                                        reRender="panelId1" status="actStatusId">
+                        <apex:param assignTo="{!cancelDT}" name="cancelDT" value="false"/> 
+                        <apex:param assignTo="{!avoidCallInConst}" name="avoidCallInConst" value="true"/>
+                        <apex:param assignTo="{!avoidCallInConst}" name="avoidCallInConst" value="false"/> 
+                        <apex:actionStatus id="actStatusId" >
+                            <apex:facet name="start" >
+                              <img src="/img/loading.gif" />                    
+                            </apex:facet>
+            			</apex:actionStatus>
+                    </apex:commandButton>
+                    <apex:commandButton action="{!enableDisableRITDTButton}" rendered="{!NOT(cancelDT)&& NOT(enablePTRF || enablePTRFB || enableNONPTRFB)}"
+                                        value="Create DT" reRender="panelId1" status="actStatusId2">
+                        <apex:param assignTo="{!cancelDT}" name="cancelDT" value="true"/> 
+                        <apex:param assignTo="{!enableCreateRTDTButton}" name="createlDT" value="false"/> 
+                        <apex:param assignTo="{!avoidCallInConst}" name="avoidCallInConst" value="false"/> 
+                        <apex:actionStatus id="actStatusId2" >
+                            <apex:facet name="start" >
+                              <img src="/img/loading.gif" />                    
+                            </apex:facet>
+            			</apex:actionStatus>
+                    </apex:commandButton>
+                    
+                    <apex:commandButton action="{!enableDisableRITDTButton}" rendered="{!enableCreateRTDTButton}" id="ritSplit"
+                                        value="Cancel Rit A/B Split" reRender="panelId1,id1" status="actStatusId3">
+                        <apex:param assignTo="{!enableRITABSplitButton}" name="enableCreateRTDTButton" value="True"/>
+                        <apex:param assignTo="{!enableCreateRTDTButton}" name="enableRITABSplitButton" value="False"/>
+                         <apex:param assignTo="{!avoidCallInConst}" name="avoidCallInConst" value="false"/> 
+                        <apex:actionStatus id="actStatusId3" >
+                            <apex:facet name="start" >
+                              <img src="/img/loading.gif" />                    
+                            </apex:facet>
+            			</apex:actionStatus>
+                    </apex:commandButton>
+                    <apex:commandButton onClick="ritOffSetbtn();return false;" value="RIT Off Set Change" id="ritBtn" rendered="{!IsritOffSetBtn}"/>
+                   <apex:commandButton action="{!enableDisableRITDTButton}" rendered="{!enableRITABSplitButton}"
+                                       id="rtdt" value="RIT A/B Split" reRender="panelId1,id1" status="actStatusId4">
+                        <apex:param assignTo="{!enableCreateRTDTButton}" name="enableRITABSplitButton" value="True"/>
+                        <apex:param assignTo="{!enableRITABSplitButton}" name="enableCreateRTDTButton" value="False"/>
+                        <apex:param assignTo="{!avoidCallInConst}" name="avoidCallInConst" value="false"/> 
+                       <apex:actionStatus id="actStatusId4" >
+                            <apex:facet name="start" >
+                              <img src="/img/loading.gif" />                    
+                            </apex:facet>
+            			</apex:actionStatus>
+                    </apex:commandButton> 
+                </div>
+                <apex:pageBlockSection collapsible="flase" title="Key Checkpoint Dates" id="tableId"/>
+                    <table border="0" width="100%">
+                        <tr>
+                            <td ><b> Checkpoint</b> </td>
+                            <td><b> RIT Type </b></td>
+                            <td ><b> IDR</b> </td>
+                            <td ><b> Commit Date</b> </td>
+                            <td ><b> Outlook Date</b> </td>
+                            <td ><b> Actual Date</b> </td>
+                            <td ><b> No. NL Del.</b> </td>
+                        </tr>
+                        <tr>
+                            <td colspan="1"><apex:outputLabel value="Last Update:" /></td>
+                            <td colspan="1"><apex:outputText value="{!designExecution.Option__r.RIT_Type__c}" /> </td>
+                            <td ><apex:outputText value="{0,date,MM'/'dd'/'yyyy}">
+                            <apex:param value="{!designExecution.Last_Update_IDR__c}"/>
+                            </apex:outputText></td>
+                            <td colspan="1"><apex:outputText value="{0,date,MM'/'dd'/'yyyy}">
+                            <apex:param value="{!designExecution.Last_Updated_Commit_Date__c}" />
+                            </apex:outputText></td>
+                            <td colspan="1"><apex:outputText value="{0,date,MM'/'dd'/'yyyy}">
+                            <apex:param value="{!designExecution.Last_Updated_Outlook_Date__c}" />
+                            </apex:outputText></td>
+                            <td colspan="1"><apex:outputText value="{0,date,MM'/'dd'/'yyyy}">
+                            <apex:param value="{!designExecution.Last_Updated_Actual_Date__c}" />
+                            </apex:outputText></td>
+                            <td colspan="1"><apex:outputLabel value="{!designExecution.Last_Updated_No_NL_Del__c}" /></td>
+                        </tr>
+                        <tr>
+                            <td ><apex:outputLabel value="Ready for IDR:" /></td>
+                            <td colspan="1"><apex:outputText value="{!designExecution.Option__r.RIT_Type__c}" /> </td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td ><apex:outputText value="{0,date,MM'/'dd'/'yyyy}">
+                            <apex:param value="{!de.Customer_Design_Specification__r.IDR_actual_date__c}" />
+                            </apex:outputText></td>
+                            <td></td>
+                        </tr>
+                        <tr>
+                            <td ><apex:outputLabel value="CDS Complete:" /></td>
+                            <td colspan="1"><apex:outputText value="{!designExecution.Option__r.RIT_Type__c}" /> </td>
+                          <!--  <td ><apex:outputText value="{0,date,MM'/'dd'/'yyyy}">
+                            <apex:param value="{!designExecution.CDS_completion_IDR__c}"/>
+                            </apex:outputText></td>
+                            <td colspan="1"><apex:outputText value="{0,date,MM'/'dd'/'yyyy}">
+                            <apex:param value="{!designExecution.CDS_completion_Commit_Date__c}" />
+                            </apex:outputText></td>
+                            <td colspan="1"><apex:outputText value="{0,date,MM'/'dd'/'yyyy}">
+                            <apex:param value="{!designExecution.CDS_completion_Outlook_Date__c}" />
+                            </apex:outputText></td>
+                            <td colspan="1"><apex:outputText value="{0,date,MM'/'dd'/'yyyy}">
+                            <apex:param value="{!designExecution.CDS_completion_Actual_Date__c}" />
+                            </apex:outputText></td>
+                            <td colspan="1"><apex:outputLabel value="{!designExecution.CDS_completion_No_NL_Del__c}" /></td> -->
+                            <td >&nbsp;</td>
+                            <td >&nbsp;</td>
+                            <td >&nbsp;</td>
+                            <td ><apex:outputText value="{0,date,MM'/'dd'/'yyyy}">
+                            <apex:param value="{!de.Customer_Design_Specification__r.CDS_Complete__c}" />
+                            </apex:outputText></td>
+                            <td >&nbsp;</td>
+                        </tr>
+                        <tr>
+                            <td colspan="1"><apex:outputLabel value="Analysis netlist delivery:" /></td>
+                            <td colspan="1"><apex:outputText value="{!designExecution.Option__r.RIT_Type__c}" /> </td>
+                            <td colspan="1"><apex:outputText value="{0,date,MM'/'dd'/'yyyy}">
+                            <apex:param value="{!designExecution.Analysis_netlist_delivery_IDR__c}" />
+                            </apex:outputText></td>
+                            <td colspan="1"><apex:outputText value="{0,date,MM'/'dd'/'yyyy}">
+                            <apex:param value="{!designExecution.Analysis_netlist_delivery_Commit_Date__c}" />
+                            </apex:outputText></td>
+                            <td colspan="1"><apex:outputText value="{0,date,MM'/'dd'/'yyyy}">
+                            <apex:param value="{!designExecution.Analysis_netlist_delivery_Outlook_Date__c}" />
+                            </apex:outputText></td>
+                            <td colspan="1"><apex:outputText value="{0,date,MM'/'dd'/'yyyy}">
+                            <apex:param value="{!designExecution.Analysis_netlist_delivery_Actual_Date__c}" />
+                            </apex:outputText></td>
+                            <td colspan="1"><apex:outputLabel value="{!designExecution.Analysis_netlist_delivery_No_NL_Del__c} " /></td>
+                        </tr>
+                        <tr style ="background-color:#EEEEEE;">
+                            <td colspan="1"><apex:outputLabel value="Floorplan netlist delivery:" /></td>
+                            <td colspan="1"><apex:outputText value="{!designExecution.Option__r.RIT_Type__c}" /> </td>
+                            <td colspan="1"><apex:outputText value="{0,date,MM'/'dd'/'yyyy}">
+                            <apex:param value="{!designExecution.Floorplan_netlist_delivery_IDR__c}" />
+                            </apex:outputText></td>
+                            <td colspan="1"><apex:outputText value="{0,date,MM'/'dd'/'yyyy}">
+                            <apex:param value="{!designExecution.Floorplan_netlist_delivery_Commit_Date__c}" />
+                            </apex:outputText></td>
+                            <td colspan="1"><apex:outputText value="{0,date,MM'/'dd'/'yyyy}">
+                            <apex:param value="{!designExecution.Floorplan_netlist_delivery_Outlook_Date__c}" />
+                            </apex:outputText></td>
+                            <td colspan="1"><apex:outputText value="{0,date,MM'/'dd'/'yyyy}">
+                            <apex:param value="{!designExecution.Floorplan_netlist_delivery_Actual_Date__c}" />
+                            </apex:outputText></td>
+                            <td colspan="1"><apex:outputLabel value="{!designExecution.Floorplan_netlist_delivery_No_NL_Del__c} " /></td>
+                        </tr>
+                        <tr style ="background-color:#EEEEEE;">
+                            <td colspan="1"><apex:outputLabel value="Release to Floorplan:" /></td>
+                            <td colspan="1"><apex:outputText value="{!designExecution.Option__r.RIT_Type__c}" /> </td>
+                            <td colspan="1"><apex:outputText value="{0,date,MM'/'dd'/'yyyy}">
+                            <apex:param value="{!designExecution.Release_to_Floorplan_IDR__c}" />
+                            </apex:outputText></td>
+                            <td colspan="1"><apex:outputText value="{0,date,MM'/'dd'/'yyyy}">
+                            <apex:param value="{!designExecution.Release_to_Floorplan_Commit_Date__c}" />
+                            </apex:outputText></td>
+                            <td colspan="1"><apex:outputText value="{0,date,MM'/'dd'/'yyyy}">
+                            <apex:param value="{!designExecution.Release_to_Floorplan_Outlook_Date__c}" />
+                            </apex:outputText></td>
+                            <td colspan="1"><apex:outputText value="{0,date,MM'/'dd'/'yyyy}">
+                            <apex:param value="{!designExecution.Release_to_Floorplan_Actual_Date__c}" />
+                            </apex:outputText></td>
+                            <td colspan="1"><apex:outputLabel value="{!designExecution.Release_to_Floorplan_No_NL_Del__c}" /></td>
+                        </tr>
+                        <tr style ="background-color:#EEEEEE;">
+                            <td colspan="1"><apex:outputLabel value="Exit from Floorplan:" /></td>
+                            <td colspan="1"><apex:outputText value="{!designExecution.Option__r.RIT_Type__c}" /> </td>
+                            <td colspan="1"><apex:outputText value="{0,date,MM'/'dd'/'yyyy}">
+                            <apex:param value="{!designExecution.Exit_from_Floorplan_IDR__c}" />
+                            </apex:outputText></td>
+                            <td colspan="1"><apex:outputText value="{0,date,MM'/'dd'/'yyyy}">
+                            <apex:param value="{!designExecution.Exit_from_Floorplan_Commit_Date__c}" />
+                            </apex:outputText></td>
+                            <td colspan="1"><apex:outputText value="{0,date,MM'/'dd'/'yyyy}">
+                            <apex:param value="{!designExecution.Exit_from_Floorplan_Outlook_Date__c}" />
+                            </apex:outputText></td>
+                            <td colspan="1"><apex:outputText value="{0,date,MM'/'dd'/'yyyy}">
+                            <apex:param value="{!designExecution.Exit_from_Floorplan_Actual_Date__c}" />
+                            </apex:outputText></td>
+                            <td colspan="1"><apex:outputLabel value="{!designExecution.Exit_from_Floorplan_No_NL_Del__c}" /></td>
+                        </tr> 
+                        <tr style ="background-color:#E0E0E0;">
+                            <td colspan="1"><apex:outputLabel value="Preliminary netlist delivery:" /></td>
+                            <td colspan="1"><apex:outputText value="{!designExecution.Option__r.RIT_Type__c}" /> </td>
+                            <td colspan="1"><apex:outputText value="{0,date,MM'/'dd'/'yyyy}">
+                            <apex:param value="{!designExecution.Preliminary_netlist_delivery_IDR__c}" />
+                            </apex:outputText></td>
+                            <td colspan="1"><apex:outputText value="{0,date,MM'/'dd'/'yyyy}">
+                            <apex:param value="{!designExecution.Preliminary_ntlst_delivery_Commit_Date__c}" />
+                            </apex:outputText></td>
+                            <td colspan="1"><apex:outputText value="{0,date,MM'/'dd'/'yyyy}">
+                            <apex:param value="{!designExecution.Preliminary_ntlst_delivery_Outlook_Date__c}" />
+                            </apex:outputText></td>
+                            <td colspan="1"><apex:outputText value="{0,date,MM'/'dd'/'yyyy}">
+                            <apex:param value="{!designExecution.Preliminary_ntlst_delivery_Actual_Date__c}" />
+                            </apex:outputText></td>
+                            <td colspan="1"><apex:outputLabel value="{!designExecution.Preliminary_ntlst_delivery_No_NL_Del__c}" /></td>
+                        </tr> 
+                        <tr style ="background-color:#E0E0E0;">
+                            <td colspan="1"><apex:outputLabel value="Release to Preliminary:" /></td>
+                            <td colspan="1"><apex:outputText value="{!designExecution.Option__r.RIT_Type__c}" /> </td>
+                            <td colspan="1"><apex:outputText value="{0,date,MM'/'dd'/'yyyy}">
+                            <apex:param value="{!designExecution.Release_to_Preliminary_IDR__c}" />
+                            </apex:outputText></td>
+                            <td colspan="1"><apex:outputText value="{0,date,MM'/'dd'/'yyyy}">
+                            <apex:param value="{!designExecution.Release_to_Preliminary_Commit_Date__c}" />
+                            </apex:outputText></td>
+                            <td colspan="1"><apex:outputText value="{0,date,MM'/'dd'/'yyyy}">
+                            <apex:param value="{!designExecution.Release_to_Preliminary_Outlook_Date__c}" />
+                            </apex:outputText></td>
+                            <td colspan="1"><apex:outputText value="{0,date,MM'/'dd'/'yyyy}">
+                            <apex:param value="{!designExecution.Release_to_Preliminary_Actual_Date__c}" />
+                            </apex:outputText></td>
+                            <td colspan="1"><apex:outputLabel value="{!designExecution.Release_to_Preliminary_No_NL_Del__c}"/></td>
+                        </tr> 
+                        <tr style ="background-color:#E0E0E0;">
+                            <td colspan="1"><apex:outputLabel value="Exit from Preliminary:" /></td>
+                            <td colspan="1"><apex:outputText value="{!designExecution.Option__r.RIT_Type__c}" /> </td>
+                            <td colspan="1"><apex:outputText value="{0,date,MM'/'dd'/'yyyy}">
+                            <apex:param value="{!designExecution.Exit_from_Preliminary_IDR__c}" />
+                            </apex:outputText></td>
+                            <td colspan="1"><apex:outputText value="{0,date,MM'/'dd'/'yyyy}">
+                            <apex:param value="{!designExecution.Exit_from_Preliminary_Commit_Date__c}" />
+                            </apex:outputText></td>
+                            <td colspan="1"><apex:outputText value="{0,date,MM'/'dd'/'yyyy}">
+                            <apex:param value="{!designExecution.Exit_from_Preliminary_Outlook_Date__c}" />
+                            </apex:outputText></td>
+                            <td colspan="1"><apex:outputText value="{0,date,MM'/'dd'/'yyyy}">
+                            <apex:param value="{!designExecution.Exit_from_Preliminary_Actual_Date__c}" />
+                            </apex:outputText></td>
+                            <td colspan="1"><apex:outputLabel value="{!designExecution.Exit_from_Preliminary_No_NL_Del__c}"  /></td>
+                        </tr> 
+                        <tr>
+                            <td colspan="1"><apex:outputLabel value="Production netlist delivery:" /></td>
+                            <td colspan="1"><apex:outputText value="{!designExecution.Option__r.RIT_Type__c}" /> </td>
+                            <td colspan="1"><apex:outputText value="{0,date,MM'/'dd'/'yyyy}">
+                            <apex:param value="{!designExecution.Production_netlist_delivery_IDR__c}" />
+                            </apex:outputText></td>
+                            <td colspan="1"><apex:outputText value="{0,date,MM'/'dd'/'yyyy}">
+                            <apex:param value="{!designExecution.Production_netlist_delivery_Commit_Date__c}" />
+                            </apex:outputText></td>
+                            <td colspan="1"><apex:outputText value="{0,date,MM'/'dd'/'yyyy}">
+                            <apex:param value="{!designExecution.Production_ntlst_delivery_Outlook_Date__c}" />
+                            </apex:outputText></td>
+                            <td colspan="1"><apex:outputText value="{0,date,MM'/'dd'/'yyyy}">
+                            <apex:param value="{!designExecution.Production_netlist_delivery_Actual_Date__c}" />
+                            </apex:outputText></td>
+                            <td colspan="1"><apex:outputLabel value="{!designExecution.Production_netlist_delivery_No_NL_Del__c}" /></td>
+                        </tr>          
+                        <tr>
+                            <td colspan="1"><apex:outputLabel value="Release to Layout:" /></td>
+                            <td colspan="1"><apex:outputText value="{!designExecution.Option__r.RIT_Type__c}" /> </td>
+                            <td colspan="1"><apex:outputText value="{0,date,MM'/'dd'/'yyyy}">
+                            <apex:param value="{!designExecution.Release_to_Layout_IDR__c}" />
+                            </apex:outputText></td>
+                            <td colspan="1"><apex:outputText value="{0,date,MM'/'dd'/'yyyy}">
+                            <apex:param value="{!designExecution.Release_to_Layout_Commit_Date__c}" />
+                            </apex:outputText></td>
+                            <td colspan="1"><apex:outputText value="{0,date,MM'/'dd'/'yyyy}">
+                            <apex:param value="{!designExecution.Release_to_Layout_Outlook_Date__c}" />
+                            </apex:outputText></td>
+                            <td colspan="1"><apex:outputText value="{0,date,MM'/'dd'/'yyyy}">
+                            <apex:param value="{!designExecution.Release_to_Layout_Actual_Date__c}" />
+                            </apex:outputText></td>
+                            <td colspan="1"><apex:outputLabel value="{!designExecution.Release_to_Layout_No_NL_Del__c}" /></td>
+                        </tr> 
+                      <!--  <tr><td>Value: {!(enableCreateRTDTButton && NOT(enableRITABSplitButton))}</td></tr> -->
+					<apex:outputpanel layout="none" rendered="{!( NOT(enableNONPTRFB || enablePTRFB) && enableCreateRTDTButton && NOT(enableRITABSplitButton))}" id="id1">
+						<apex:outputpanel layout="none" rendered="{!NOT(enablePTRF) && cancelDT}">    
+							<tr style ="background-color:#EEEEEE;">
+								<td colspan="1"><apex:outputLabel value="RTC DT ready:" /></td>
+								<td colspan="1"><apex:outputText value="{!designExecution.Option__r.RIT_Type__c}" /> </td>
+								<td colspan="1"><apex:outputText value="{0,date,MM'/'dd'/'yyyy}">
+								<apex:param value="{!designExecution.RTC_DT_ready_IDR__c}" />
+								</apex:outputText></td>
+								<!--
+								<td colspan="1"><apex:outputText value="{0,date,MM'/'dd'/'yyyy}">
+								<apex:outputLabel value="{!designExecution.RTC_DT_ready_IDR__c}" />
+								</apex:outputText ></td> -->
+								<td colspan="1"><apex:outputText value="{0,date,MM'/'dd'/'yyyy}">
+								<apex:param value="{!designExecution.RTC_DT_ready_Commit_Date__c}" />
+								</apex:outputText></td>
+								<td colspan="1"><apex:outputText value="{0,date,MM'/'dd'/'yyyy}">
+								<apex:param value="{!designExecution.RTC_DT_ready_Outlook_Date__c}" />
+								</apex:outputText></td>
+								<td colspan="1"><apex:outputText value="{0,date,MM'/'dd'/'yyyy}">
+								<apex:param value="{!designExecution.RTC_DT_ready_Actual_Date__c}" />
+								</apex:outputText></td>
+								<td colspan="1"><apex:outputLabel value="{!designExecution.RTC_DT_ready_No_NL_Del__c}" /></td>
+							</tr>     
+							<tr style ="background-color:#E0E0E0;">
+								<td colspan="1"><apex:outputLabel value="RTM DT ready:" /></td>
+								<td colspan="1"><apex:outputText value="{!designExecution.Option__r.RIT_Type__c}" /> </td>
+								<td colspan="1"><apex:outputText value="{0,date,MM'/'dd'/'yyyy}">
+								<apex:param value="{!designExecution.RTM_DT_ready_IDR__c}" />
+								</apex:outputText></td>
+								<td colspan="1"><apex:outputText value="{0,date,MM'/'dd'/'yyyy}">
+								<apex:param value="{!designExecution.RTM_DT_ready_Commit_Date__c}" />
+								</apex:outputText></td>
+								<td colspan="1"><apex:outputText value="{0,date,MM'/'dd'/'yyyy}">
+								<apex:param value="{!designExecution.RTM_DT_ready_Outlook_Date__c}" />
+								</apex:outputText></td>
+								<td colspan="1"><apex:outputText value="{0,date,MM'/'dd'/'yyyy}">
+								<apex:param value="{!designExecution.RTM_DT_ready_Actual_Date__c}" />
+								</apex:outputText></td>
+								<td colspan="1"><apex:outputLabel value="{!designExecution.RTM_DT_ready_No_NL_Del__c}" /></td>
+							</tr> 
+							<tr style ="background-color:#E0E0E0;">
+								<td colspan="1"><apex:outputLabel value="RTM DT:" /></td>
+								<td colspan="1"><apex:outputText value="{!designExecution.Option__r.RIT_Type__c}" /> </td>
+								<!--<td colspan="1"><apex:outputLabel value="{!designExecution.RTM_e_Release_IDR__c}" /></td>-->
+								<td colspan="1"><apex:outputText value="{0,date,MM'/'dd'/'yyyy}">
+								<apex:param value="{!designExecution.RTM_e_Release_IDR__c}" />
+								</apex:outputText></td>
+								<td colspan="1"><apex:outputText value="{0,date,MM'/'dd'/'yyyy}">
+								<apex:param value="{!designExecution.RTM_e_Release_Commit_Date__c}" />
+								</apex:outputText></td>
+								<td colspan="1"><apex:outputText value="{0,date,MM'/'dd'/'yyyy}">
+								<apex:param value="{!designExecution.RTM_e_Release_Outlook_Date__c}" />
+								</apex:outputText></td>
+								<td colspan="1"><apex:outputText value="{0,date,MM'/'dd'/'yyyy}">
+								<apex:param value="{!designExecution.RTM_e_Release_Actual_Date__c}" />
+								</apex:outputText></td>
+								<td colspan="1"><apex:outputLabel value="{!designExecution.RTM_e_Release_No_NL_Del__c}" /></td>
+							</tr> 
+						</apex:outputPanel>
+						
+                        <tr style ="background-color:#EEEEEE;">
+                            <td colspan="1"><apex:outputLabel value="RTC RIT A ready:" /></td>
+                            <td colspan="1"><apex:outputText value="{!designExecution.Option__r.RIT_Type__c}" /> </td>
+                            <td colspan="1"><apex:outputText value="{0,date,MM'/'dd'/'yyyy}">
+                            <apex:param value="{!designExecution.RTC_RIT_A_ready_IDR__c}" />
+                            </apex:outputText></td>
+                            <td colspan="1"><apex:outputText value="{0,date,MM'/'dd'/'yyyy}">
+                            <apex:param value="{!designExecution.RTC_RIT_A_ready_Commit_Date__c}" />
+                            </apex:outputText></td>
+                            <td colspan="1"><apex:outputText value="{0,date,MM'/'dd'/'yyyy}">
+                            <apex:param value="{!designExecution.RTC_RIT_A_ready_Outlook_Date__c}" />
+                            </apex:outputText></td>
+                            <td colspan="1"><apex:outputText value="{0,date,MM'/'dd'/'yyyy}">
+                            <apex:param value="{!designExecution.RTC_RIT_A_ready_Actual_Date__c}" />
+                            </apex:outputText></td>
+                            <td colspan="1"><apex:outputLabel value="{!designExecution.RTC_RIT_A_ready_No_NL_Del__c}" /></td>
+                        </tr> 
+					<apex:outputpanel layout="none" rendered="{!enablePTRF}">	
+						<tr style ="background-color:#EEEEEE;">
+                            <td colspan="1"><apex:outputLabel value="PTRF RIT A:" /></td>
+                            <td colspan="1"><apex:outputText value="{!designExecution.Option__r.RIT_Type__c}" /> </td>
+                            <td colspan="1"><apex:outputText value="{0,date,MM'/'dd'/'yyyy}">
+                            <apex:param value="{!designExecution.PTRF_RIT_A_IDR__c}" />
+                            </apex:outputText></td>
+                            <td colspan="1"><apex:outputText value="{0,date,MM'/'dd'/'yyyy}">
+                            <apex:param value="{!designExecution.PTRF_RIT_A_Commit_Date__c}" />
+                            </apex:outputText></td>
+                            <td colspan="1"><apex:outputText value="{0,date,MM'/'dd'/'yyyy}">
+                            <apex:param value="{!designExecution.PTRF_RIT_A_Outlook_Date__c}" />
+                            </apex:outputText></td>
+                            <td colspan="1"><apex:outputText value="{0,date,MM'/'dd'/'yyyy}">
+                            <apex:param value="{!designExecution.PTRF_RIT_A_Actual_Date__c}" />
+                            </apex:outputText></td>
+                            <td colspan="1"><apex:outputLabel value="{!designExecution.PTRF_RIT_A_No_NL_Del__c}" /></td>
+                        </tr> 
+					</apex:outputpanel>
+                        <tr style ="background-color:#E0E0E0;">
+                            <td colspan="1"><apex:outputLabel value="RTM RIT A ready:" /></td>
+                            <td colspan="1"><apex:outputText value="{!designExecution.Option__r.RIT_Type__c}" /> </td>
+                            <td colspan="1"><apex:outputText value="{0,date,MM'/'dd'/'yyyy}">
+                            <apex:param value="{!designExecution.RTM_RIT_A_ready_IDR__c}" />
+                            </apex:outputText></td>
+                            <td colspan="1"><apex:outputText value="{0,date,MM'/'dd'/'yyyy}">
+                            <apex:param value="{!designExecution.RTM_RIT_A_ready_Commit_Date__c}" />
+                            </apex:outputText></td>
+                            <td colspan="1"><apex:outputText value="{0,date,MM'/'dd'/'yyyy}">
+                            <apex:param value="{!designExecution.RTM_RIT_A_ready_Outlook_Date__c}" />
+                            </apex:outputText></td>
+                            <td colspan="1"><apex:outputText value="{0,date,MM'/'dd'/'yyyy}">
+                            <apex:param value="{!designExecution.RTM_RIT_A_ready_Actual_Date__c}" />
+                            </apex:outputText></td>
+                            <td colspan="1"><apex:outputLabel value="{!designExecution.RTM_RIT_A_ready_No_NL_Del__c}" /></td>
+                        </tr> 
+                        
+                        <tr style ="background-color:#E0E0E0;">
+                            <td colspan="1"><apex:outputLabel value="! RTM RIT A:" /></td>
+                            <td colspan="1"><apex:outputText value="{!designExecution.Option__r.RIT_Type__c}" /> </td>
+                            <td colspan="1"><apex:outputText value="{0,date,MM'/'dd'/'yyyy}">
+                            <apex:param value="{!designExecution.RTM_e_Release_RIT_A_IDR__c}" />
+                            </apex:outputText></td>
+                            <td colspan="1"><apex:outputText value="{0,date,MM'/'dd'/'yyyy}">
+                            <apex:param value="{!designExecution.RTM_e_Release_RIT_A_Commit_Date__c}" />
+                            </apex:outputText></td>
+                            <td colspan="1"><apex:outputText value="{0,date,MM'/'dd'/'yyyy}">
+                            <apex:param value="{!designExecution.RTM_e_Release_RIT_A_Outlook_Date__c}" />
+                            </apex:outputText></td>
+                            <td colspan="1"><apex:outputText value="{0,date,MM'/'dd'/'yyyy}">
+                            <apex:param value="{!designExecution.RTM_e_Release_RIT_A_Actual_Date__c}" />
+                            </apex:outputText></td>
+                            <td colspan="1"><apex:outputLabel value="{!designExecution.RTM_e_Release_RIT_A_No_NL_Del__c}" /></td>
+                        </tr>     
+                        <tr style ="background-color:#EEEEEE;">
+                            <td colspan="1"><apex:outputLabel value="RTC RIT B ready:" /></td>
+                            <td colspan="1"><apex:outputText value="{!designExecution.Option__r.RIT_Type__c}" /> </td>
+                            <td colspan="1"><apex:outputText value="{0,date,MM'/'dd'/'yyyy}">
+                            <apex:param value="{!designExecution.RTC_RIT_B_ready_IDR__c}" />
+                            </apex:outputText></td>
+                            <td colspan="1"><apex:outputText value="{0,date,MM'/'dd'/'yyyy}">
+                            <apex:param value="{!designExecution.RTC_RIT_B_ready_Commit_Date__c}" />
+                            </apex:outputText></td>
+                            <td colspan="1"><apex:outputText value="{0,date,MM'/'dd'/'yyyy}">
+                            <apex:param value="{!designExecution.RTC_RIT_B_ready_Outlook_Date__c}" />
+                            </apex:outputText></td>
+                            <td colspan="1"><apex:outputText value="{0,date,MM'/'dd'/'yyyy}">
+                            <apex:param value="{!designExecution.RTC_RIT_B_ready_Actual_Date__c}" />
+                            </apex:outputText></td>
+                            <td colspan="1"><apex:outputLabel value="{!designExecution.RTC_RIT_B_ready_No_NL_Del__c}" /></td>
+                        </tr>  
+					<apex:outputpanel layout="none" rendered="{!enablePTRF}">	
+						<tr style ="background-color:#EEEEEE;">
+                            <td colspan="1"><apex:outputLabel value="PTRF RIT B:" /></td>
+                            <td colspan="1"><apex:outputText value="{!designExecution.Option__r.RIT_Type__c}" /> </td>
+                            <td colspan="1"><apex:outputText value="{0,date,MM'/'dd'/'yyyy}">
+                            <apex:param value="{!designExecution.PTRF_RIT_B_IDR__c}" />
+                            </apex:outputText></td>
+                            <td colspan="1"><apex:outputText value="{0,date,MM'/'dd'/'yyyy}">
+                            <apex:param value="{!designExecution.PTRF_RIT_B_Commit_Date__c}" />
+                            </apex:outputText></td>
+                            <td colspan="1"><apex:outputText value="{0,date,MM'/'dd'/'yyyy}">
+                            <apex:param value="{!designExecution.PTRF_RIT_B_Outlook_Date__c}" />
+                            </apex:outputText></td>
+                            <td colspan="1"><apex:outputText value="{0,date,MM'/'dd'/'yyyy}">
+                            <apex:param value="{!designExecution.PTRF_RIT_B_Actual_Date__c}" />
+                            </apex:outputText></td>
+                            <td colspan="1"><apex:outputLabel value="{!designExecution.PTRF_RIT_B_No_NL_Del__c}" /></td>
+                        </tr> 
+					</apex:outputpanel>
+                        <tr style ="background-color:#E0E0E0;">
+                         <!--<apex:outputPanel rendered="{!If((designExecution.Option__r.RIT_Type__c =='B'|| designExecution.Option__r.RIT_Type__c =='B R') ,true,false)}"> -->
+                            <td colspan="1"><apex:outputLabel value="RTM RIT B ready:" /></td>
+                            <td colspan="1"><apex:outputText value="{!designExecution.Option__r.RIT_Type__c}" /> </td>
+                            <!--<td colspan="1"><apex:outputLabel value="{!designExecution.RTM_RIT_B_ready_IDR__c}" /></td>-->
+                            <td colspan="1"><apex:outputText value="{0,date,MM'/'dd'/'yyyy}">
+                            <apex:param value="{!designExecution.RTM_RIT_B_ready_IDR__c}" />
+                            </apex:outputText></td>
+                            <td colspan="1"><apex:outputText value="{0,date,MM'/'dd'/'yyyy}">
+                            <apex:param value="{!designExecution.RTM_RIT_B_ready_Commit_Date__c}" />
+                            </apex:outputText></td>
+                            <td colspan="1"><apex:outputText value="{0,date,MM'/'dd'/'yyyy}">
+                            <apex:param value="{!designExecution.RTM_RIT_B_ready_Outlook_Date__c}" />
+                            </apex:outputText></td>
+                            <td colspan="1"><apex:outputText value="{0,date,MM'/'dd'/'yyyy}">
+                            <apex:param value="{!designExecution.RTM_RIT_B_ready_Actual_Date__c}" />
+                            </apex:outputText></td>
+                            <td colspan="1"><apex:outputLabel value="{!designExecution.RTM_RIT_B_ready_No_NL_Del__c}" /></td>
+                      <!--  </apex:outputPanel> -->
+                        </tr> 
+                        <tr style ="background-color:#E0E0E0;">
+                      <!--  <apex:outputPanel rendered="{!If((designExecution.Option__r.RIT_Type__c =='B'|| designExecution.Option__r.RIT_Type__c =='B R') ,true,false)}"> -->
+                            <td colspan="1"><apex:outputLabel value="! RTM RIT B:" /></td>
+                            <td colspan="1"><apex:outputText value="{!designExecution.Option__r.RIT_Type__c}" /> </td>
+                            <td colspan="1"><apex:outputText value="{0,date,MM'/'dd'/'yyyy}"> 
+                            <apex:param value="{!designExecution.RTM_e_Release_RIT_B_IDR__c}" />
+                            </apex:outputText></td>
+                            <td colspan="1"><apex:outputText value="{0,date,MM'/'dd'/'yyyy}">
+                            <apex:param value="{!designExecution.RTM_e_Release_RIT_B_Commit_Date__c}" /> 
+                            </apex:outputText></td> 
+                            <td colspan="1"><apex:outputText value="{0,date,MM'/'dd'/'yyyy}">
+                            <apex:param value="{!designExecution.RTM_e_Release_RIT_B_Outlook_Date__c}" />
+                            </apex:outputText></td>
+                            <td colspan="1"><apex:outputText value="{0,date,MM'/'dd'/'yyyy}">
+                            <apex:param value="{!designExecution.RTM_e_Release_RIT_B_Actual_Date__c}" />
+                            </apex:outputText></td>
+                            <td colspan="1"><apex:outputLabel value="{!designExecution.RTM_e_Release_RIT_B_No_NL_Del__c}" /></td>
+                      <!--   </apex:outputPanel> -->
+                        </tr>
+					</apex:outputPanel>
+            
+                    <apex:outputpanel layout="none" rendered="{!(NOT(enableCreateRTDTButton && enableNONPTRFB && enablePTRFB) && enableRITABSplitButton)}" >
+						<apex:outputpanel layout="none" rendered="{!NOT(enablePTRF) && cancelDT}"> 	
+							<tr style ="background-color:#EEEEEE;">
+								<td colspan="1"><apex:outputLabel value="RTC DT ready:" /></td>
+								<td colspan="1"><apex:outputText value="{!designExecution.Option__r.RIT_Type__c}" /> </td>
+								<td colspan="1"><apex:outputText value="{0,date,MM'/'dd'/'yyyy}">
+								<apex:param value="{!designExecution.RTC_DT_ready_IDR__c}" />
+								</apex:outputText></td>
+								<td colspan="1"><apex:outputText value="{0,date,MM'/'dd'/'yyyy}">
+								<apex:param value="{!designExecution.RTC_DT_ready_Commit_Date__c}" />
+								</apex:outputText></td>
+								<td colspan="1"><apex:outputText value="{0,date,MM'/'dd'/'yyyy}">
+								<apex:param value="{!designExecution.RTC_DT_ready_Outlook_Date__c}" />
+								</apex:outputText></td>
+								<td colspan="1"><apex:outputText value="{0,date,MM'/'dd'/'yyyy}">
+								<apex:param value="{!designExecution.RTC_DT_ready_Actual_Date__c}" />
+								</apex:outputText></td>
+								<td colspan="1"><apex:outputLabel value="{!designExecution.RTC_DT_ready_No_NL_Del__c}" /></td>
+							</tr>
+						</apex:outputPanel>	
+						<!--<apex:outputPanel rendered="{!enableRITABCombine}"> -->
+                        <tr style ="background-color:#EEEEEE;">
+                            <td colspan="1"><apex:outputLabel value="RTC RIT A/B ready:" /></td>
+                            <td colspan="1"><apex:outputText value="{!designExecution.Option__r.RIT_Type__c}" /> </td>
+                            <td colspan="1"><apex:outputText value="{0,date,MM'/'dd'/'yyyy}">
+                            <apex:param value="{!designExecution.RTC_Rit_A_B_Ready_IDR__c}" />
+                            </apex:outputText></td>
+                            <td colspan="1"><apex:outputText value="{0,date,MM'/'dd'/'yyyy}">
+                            <apex:param value="{!designExecution.RTC_Rit_A_B_Ready_Commit_Date__c}" />
+                            </apex:outputText></td>
+                            <td colspan="1"><apex:outputText value="{0,date,MM'/'dd'/'yyyy}">
+                            <apex:param value="{!designExecution.RTC_Rit_A_B_Ready_Outlook_Date__c}" />
+                            </apex:outputText></td>
+                            <td colspan="1"><apex:outputText value="{0,date,MM'/'dd'/'yyyy}">
+                            <apex:param value="{!designExecution.RTC_Rit_A_B_Ready_Actual_Date__c}" />
+                            </apex:outputText></td>
+                            <td colspan="1"><apex:outputLabel value="{!designExecution.RTC_Rit_A_B_Ready_No_NL_Del__c}" /></td>
+                        </tr> 
+						<!--</apex:outputPanel> -->
+                      <!--  <tr style ="background-color:#EEEEEE;">
+                            <td colspan="1"><apex:outputLabel value="RTC RIT A ready:" /></td>
+                            <td colspan="1"><apex:outputText value="{!designExecution.Option__r.RIT_Type__c}" /> </td>
+                            <td colspan="1"><apex:outputText value="{0,date,MM'/'dd'/'yyyy}">
+                            <apex:param value="{!designExecution.RTC_RIT_A_ready_IDR__c}" />
+                            </apex:outputText></td>
+                            <td colspan="1"><apex:outputText value="{0,date,MM'/'dd'/'yyyy}">
+                            <apex:param value="{!designExecution.RTC_RIT_A_ready_Commit_Date__c}" />
+                            </apex:outputText></td>
+                            <td colspan="1"><apex:outputText value="{0,date,MM'/'dd'/'yyyy}">
+                            <apex:param value="{!designExecution.RTC_RIT_A_ready_Outlook_Date__c}" />
+                            </apex:outputText></td>
+                            <td colspan="1"><apex:outputText value="{0,date,MM'/'dd'/'yyyy}">
+                            <apex:param value="{!designExecution.RTC_RIT_A_ready_Actual_Date__c}" />
+                            </apex:outputText></td>
+                            <td colspan="1"><apex:outputLabel value="{!designExecution.RTC_RIT_A_ready_No_NL_Del__c}" /></td>
+                        </tr>    
+						<tr style ="background-color:#EEEEEE;">
+                            <td colspan="1"><apex:outputLabel value="RTC RIT B ready:" /></td>
+                            <td colspan="1"><apex:outputText value="{!designExecution.Option__r.RIT_Type__c}" /> </td>
+                            <td colspan="1"><apex:outputText value="{0,date,MM'/'dd'/'yyyy}">
+                            <apex:param value="{!designExecution.RTC_RIT_B_ready_IDR__c}" />
+                            </apex:outputText></td>
+                            <td colspan="1"><apex:outputText value="{0,date,MM'/'dd'/'yyyy}">
+                            <apex:param value="{!designExecution.RTC_RIT_B_ready_Commit_Date__c}" />
+                            </apex:outputText></td>
+                            <td colspan="1"><apex:outputText value="{0,date,MM'/'dd'/'yyyy}">
+                            <apex:param value="{!designExecution.RTC_RIT_B_ready_Outlook_Date__c}" />
+                            </apex:outputText></td>
+                            <td colspan="1"><apex:outputText value="{0,date,MM'/'dd'/'yyyy}">
+                            <apex:param value="{!designExecution.RTC_RIT_B_ready_Actual_Date__c}" />
+                            </apex:outputText></td>
+                            <td colspan="1"><apex:outputLabel value="{!designExecution.RTC_RIT_B_ready_No_NL_Del__c}" /></td>
+                        </tr>  -->
+					<apex:outputpanel layout="none" rendered="{!enablePTRF}">
+					<!--<apex:outputPanel rendered="{!enableRITABCombine}">-->
+                        <tr style ="background-color:#EEEEEE;">
+                            <td colspan="1"><apex:outputLabel value="PTRF RIT A/B:" /></td>
+                            <td colspan="1"><apex:outputText value="{!designExecution.Option__r.RIT_Type__c}" /> </td>
+                            <td colspan="1"><apex:outputText value="{0,date,MM'/'dd'/'yyyy}">
+                            <apex:param value="{!designExecution.PTRF_RIT_A_B_IDR__c}" />
+                            </apex:outputText></td>
+                            <td colspan="1"><apex:outputText value="{0,date,MM'/'dd'/'yyyy}">
+                            <apex:param value="{!designExecution.PTRF_RIT_A_B_Commit_Date__c}" />
+                            </apex:outputText></td>
+                            <td colspan="1"><apex:outputText value="{0,date,MM'/'dd'/'yyyy}">
+                            <apex:param value="{!designExecution.PTRF_RIT_A_B_Outlook_Date__c}" />
+                            </apex:outputText></td>
+                            <td colspan="1"><apex:outputText value="{0,date,MM'/'dd'/'yyyy}">
+                            <apex:param value="{!designExecution.PTRF_RIT_A_B_Actual_Date__c}" />
+                            </apex:outputText></td>
+                            <td colspan="1"><apex:outputLabel value="{!designExecution.PTRF_RIT_A_B_No_NL_Del__c}" /></td>
+                        </tr> 
+					<!--</apex:outputPanel> -->
+					<!--	<tr style ="background-color:#EEEEEE;">
+                            <td colspan="1"><apex:outputLabel value="PTRF RIT A:" /></td>
+                            <td colspan="1"><apex:outputText value="{!designExecution.Option__r.RIT_Type__c}" /> </td>
+                            <td colspan="1"><apex:outputText value="{0,date,MM'/'dd'/'yyyy}">
+                            <apex:param value="{!designExecution.PTRF_RIT_A_IDR__c}" />
+                            </apex:outputText></td>
+                            <td colspan="1"><apex:outputText value="{0,date,MM'/'dd'/'yyyy}">
+                            <apex:param value="{!designExecution.PTRF_RIT_A_Commit_Date__c}" />
+                            </apex:outputText></td>
+                            <td colspan="1"><apex:outputText value="{0,date,MM'/'dd'/'yyyy}">
+                            <apex:param value="{!designExecution.PTRF_RIT_A_Outlook_Date__c}" />
+                            </apex:outputText></td>
+                            <td colspan="1"><apex:outputText value="{0,date,MM'/'dd'/'yyyy}">
+                            <apex:param value="{!designExecution.PTRF_RIT_A_Actual_Date__c}" />
+                            </apex:outputText></td>
+                            <td colspan="1"><apex:outputLabel value="{!designExecution.PTRF_RIT_A_No_NL_Del__c}" /></td>
+                        </tr> 
+						<tr style ="background-color:#EEEEEE;">
+                            <td colspan="1"><apex:outputLabel value="PTRF RIT B:" /></td>
+                            <td colspan="1"><apex:outputText value="{!designExecution.Option__r.RIT_Type__c}" /> </td>
+                            <td colspan="1"><apex:outputText value="{0,date,MM'/'dd'/'yyyy}">
+                            <apex:param value="{!designExecution.PTRF_RIT_B_IDR__c}" />
+                            </apex:outputText></td>
+                            <td colspan="1"><apex:outputText value="{0,date,MM'/'dd'/'yyyy}">
+                            <apex:param value="{!designExecution.PTRF_RIT_B_Commit_Date__c}" />
+                            </apex:outputText></td>
+                            <td colspan="1"><apex:outputText value="{0,date,MM'/'dd'/'yyyy}">
+                            <apex:param value="{!designExecution.PTRF_RIT_B_Outlook_Date__c}" />
+                            </apex:outputText></td>
+                            <td colspan="1"><apex:outputText value="{0,date,MM'/'dd'/'yyyy}">
+                            <apex:param value="{!designExecution.PTRF_RIT_B_Actual_Date__c}" />
+                            </apex:outputText></td>
+                            <td colspan="1"><apex:outputLabel value="{!designExecution.PTRF_RIT_B_No_NL_Del__c}" /></td>
+                        </tr> -->
+					</apex:outputpanel> 
+					<apex:outputpanel layout="none" rendered="{!NOT(enablePTRF) && cancelDT}">
+						<tr style ="background-color:#E0E0E0;">
+                            <td colspan="1"><apex:outputLabel value="RTM DT ready:" /></td>
+							<td colspan="1"><apex:outputText value="{!designExecution.Option__r.RIT_Type__c}" /> </td>
+							<td colspan="1"><apex:outputText value="{0,date,MM'/'dd'/'yyyy}">
+							<apex:param value="{!designExecution.RTM_DT_ready_IDR__c}" />
+							</apex:outputText></td>
+							<td colspan="1"><apex:outputText value="{0,date,MM'/'dd'/'yyyy}">
+							<apex:param value="{!designExecution.RTM_DT_ready_Commit_Date__c}" />
+							</apex:outputText></td>
+							<td colspan="1"><apex:outputText value="{0,date,MM'/'dd'/'yyyy}">
+							<apex:param value="{!designExecution.RTM_DT_ready_Outlook_Date__c}" />
+							</apex:outputText></td>
+							<td colspan="1"><apex:outputText value="{0,date,MM'/'dd'/'yyyy}">
+							<apex:param value="{!designExecution.RTM_DT_ready_Actual_Date__c}" />
+							</apex:outputText></td>
+							<td colspan="1"><apex:outputLabel value="{!designExecution.RTM_DT_ready_No_NL_Del__c}" /></td>
+                        </tr> 
+					</apex:outputpanel>	
+					<!--<apex:outputPanel rendered="{!enableRITABCombine}"> -->
+						<tr style ="background-color:#E0E0E0;">
+                            <td colspan="1"><apex:outputLabel value="RTM RIT A/B ready:" /></td>
+                            <td colspan="1"><apex:outputText value="{!designExecution.Option__r.RIT_Type__c}" /> </td>
+                            <td colspan="1"><apex:outputText value="{0,date,MM'/'dd'/'yyyy}">
+                            <apex:param value="{!designExecution.RTM_RIT_A_B_ready_IDR__c}" />
+                            </apex:outputText></td>
+                            <td colspan="1"><apex:outputText value="{0,date,MM'/'dd'/'yyyy}">
+                            <apex:param value="{!designExecution.RTM_RIT_A_B_ready_Commit_Date__c}" />
+                            </apex:outputText></td>
+                            <td colspan="1"><apex:outputText value="{0,date,MM'/'dd'/'yyyy}">
+                            <apex:param value="{!designExecution.RTM_RIT_A_B_ready_Outlook_Date__c}" />
+                            </apex:outputText></td>
+                            <td colspan="1"><apex:outputText value="{0,date,MM'/'dd'/'yyyy}">
+                            <apex:param value="{!designExecution.RTM_RIT_A_B_ready_Actual_Date__c}" />
+                            </apex:outputText></td>
+                            <td colspan="1"><apex:outputLabel value="{!designExecution.RTM_RIT_A_B_ready_No_NL_Del__c}" /></td>
+                        </tr>
+					<!--</apex:outputpanel> -->
+					<!--<tr style ="background-color:#E0E0E0;">
+                            <td colspan="1"><apex:outputLabel value="RTM RIT A ready:" /></td>
+                            <td colspan="1"><apex:outputText value="{!designExecution.Option__r.RIT_Type__c}" /> </td>
+                            <td colspan="1"><apex:outputText value="{0,date,MM'/'dd'/'yyyy}">
+                            <apex:param value="{!designExecution.RTM_RIT_A_ready_IDR__c}" />
+                            </apex:outputText></td>
+                            <td colspan="1"><apex:outputText value="{0,date,MM'/'dd'/'yyyy}">
+                            <apex:param value="{!designExecution.RTM_RIT_A_ready_Commit_Date__c}" />
+                            </apex:outputText></td>
+                            <td colspan="1"><apex:outputText value="{0,date,MM'/'dd'/'yyyy}">
+                            <apex:param value="{!designExecution.RTM_RIT_A_ready_Outlook_Date__c}" />
+                            </apex:outputText></td>
+                            <td colspan="1"><apex:outputText value="{0,date,MM'/'dd'/'yyyy}">
+                            <apex:param value="{!designExecution.RTM_RIT_A_ready_Actual_Date__c}" />
+                            </apex:outputText></td>
+                            <td colspan="1"><apex:outputLabel value="{!designExecution.RTM_RIT_A_ready_No_NL_Del__c}" /></td>
+                        </tr> 
+					<tr style ="background-color:#E0E0E0;">
+						<td colspan="1"><apex:outputLabel value="RTM RIT B ready:" /></td>
+						<td colspan="1"><apex:outputText value="{!designExecution.Option__r.RIT_Type__c}" /> </td>
+						<td colspan="1"><apex:outputText value="{0,date,MM'/'dd'/'yyyy}">
+						<apex:param value="{!designExecution.RTM_RIT_B_ready_IDR__c}" />
+						</apex:outputText></td>
+						<td colspan="1"><apex:outputText value="{0,date,MM'/'dd'/'yyyy}">
+						<apex:param value="{!designExecution.RTM_RIT_B_ready_Commit_Date__c}" />
+						</apex:outputText></td>
+						<td colspan="1"><apex:outputText value="{0,date,MM'/'dd'/'yyyy}">
+						<apex:param value="{!designExecution.RTM_RIT_B_ready_Outlook_Date__c}" />
+						</apex:outputText></td>
+						<td colspan="1"><apex:outputText value="{0,date,MM'/'dd'/'yyyy}">
+						<apex:param value="{!designExecution.RTM_RIT_B_ready_Actual_Date__c}" />
+						</apex:outputText></td>
+						<td colspan="1"><apex:outputLabel value="{!designExecution.RTM_RIT_B_ready_No_NL_Del__c}" /></td>
+					</tr> -->
+					<apex:outputpanel layout="none" rendered="{!NOT(enablePTRF) && cancelDT}">	
+						<tr style ="background-color:#E0E0E0;">
+                            <td colspan="1"><apex:outputLabel value="RTM DT:" /></td>
+                            <td colspan="1"><apex:outputText value="{!designExecution.Option__r.RIT_Type__c}" /> </td>
+                            <!--<td colspan="1"><apex:outputLabel value="{!designExecution.RTM_e_Release_IDR__c}" /></td>-->
+                            <td colspan="1"><apex:outputText value="{0,date,MM'/'dd'/'yyyy}">
+                            <apex:param value="{!designExecution.RTM_e_Release_IDR__c}" />
+                            </apex:outputText></td>
+                            <td colspan="1"><apex:outputText value="{0,date,MM'/'dd'/'yyyy}">
+                            <apex:param value="{!designExecution.RTM_e_Release_Commit_Date__c}" />
+                            </apex:outputText></td>
+                            <td colspan="1"><apex:outputText value="{0,date,MM'/'dd'/'yyyy}">
+                            <apex:param value="{!designExecution.RTM_e_Release_Outlook_Date__c}" />
+                            </apex:outputText></td>
+                            <td colspan="1"><apex:outputText value="{0,date,MM'/'dd'/'yyyy}">
+                            <apex:param value="{!designExecution.RTM_e_Release_Actual_Date__c}" />
+                            </apex:outputText></td>
+                            <td colspan="1"><apex:outputLabel value="{!designExecution.RTM_e_Release_No_NL_Del__c}" /></td>
+                        </tr> 
+					</apex:outputpanel>
+					<!--<apex:outputPanel rendered="{!enableRITABCombine}"> -->
+                        <tr style ="background-color:#E0E0E0;">
+                            <td colspan="1"><apex:outputLabel value="! RTM RIT A/B:" /></td>
+                            <td colspan="1"><apex:outputText value="{!designExecution.Option__r.RIT_Type__c}" /> </td>
+                            <td colspan="1"><apex:outputText value="{0,date,MM'/'dd'/'yyyy}">
+                            <apex:param value="{!designExecution.RTM_RIT_A_B_IDR__c}" />
+                            </apex:outputText></td>
+                            <td colspan="1"><apex:outputText value="{0,date,MM'/'dd'/'yyyy}">
+                            <apex:param value="{!designExecution.RTM_RIT_A_B_Commit_Date__c}" />
+                            </apex:outputText></td>
+                            <td colspan="1"><apex:outputText value="{0,date,MM'/'dd'/'yyyy}">
+                            <apex:param value="{!designExecution.RTM_RIT_A_B_Outlook_Date__c}" />
+                            </apex:outputText></td>
+                            <td colspan="1"><apex:outputText value="{0,date,MM'/'dd'/'yyyy}">
+                            <apex:param value="{!designExecution.RTM_RIT_A_B_Actual_Date__c}" />
+                            </apex:outputText></td>
+                            <td colspan="1"><apex:outputLabel value="{!designExecution.RTM_RIT_A_B_No_NL_Del__c}" /></td>
+                        </tr>   
+					<!--</apex:outputpanel>-->
+					<!--	<tr style ="background-color:#E0E0E0;">
+                            <td colspan="1"><apex:outputLabel value="! RTM RIT A:" /></td>
+                            <td colspan="1"><apex:outputText value="{!designExecution.Option__r.RIT_Type__c}" /> </td>
+                            <td colspan="1"><apex:outputText value="{0,date,MM'/'dd'/'yyyy}">
+                            <apex:param value="{!designExecution.RTM_e_Release_RIT_A_IDR__c}" />
+                            </apex:outputText></td>
+                            <td colspan="1"><apex:outputText value="{0,date,MM'/'dd'/'yyyy}">
+                            <apex:param value="{!designExecution.RTM_e_Release_RIT_A_Commit_Date__c}" />
+                            </apex:outputText></td>
+                            <td colspan="1"><apex:outputText value="{0,date,MM'/'dd'/'yyyy}">
+                            <apex:param value="{!designExecution.RTM_e_Release_RIT_A_Outlook_Date__c}" />
+                            </apex:outputText></td>
+                            <td colspan="1"><apex:outputText value="{0,date,MM'/'dd'/'yyyy}">
+                            <apex:param value="{!designExecution.RTM_e_Release_RIT_A_Actual_Date__c}" />
+                            </apex:outputText></td>
+                            <td colspan="1"><apex:outputLabel value="{!designExecution.RTM_e_Release_RIT_A_No_NL_Del__c}" /></td>
+                        </tr>    
+						<tr style ="background-color:#E0E0E0;">
+                            <td colspan="1"><apex:outputLabel value="! RTM RIT B:" /></td>
+                            <td colspan="1"><apex:outputText value="{!designExecution.Option__r.RIT_Type__c}" /> </td>
+                            <td colspan="1"><apex:outputText value="{0,date,MM'/'dd'/'yyyy}"> 
+                            <apex:param value="{!designExecution.RTM_e_Release_RIT_B_IDR__c}" />
+                            </apex:outputText></td>
+                            <td colspan="1"><apex:outputText value="{0,date,MM'/'dd'/'yyyy}">
+                            <apex:param value="{!designExecution.RTM_e_Release_RIT_B_Commit_Date__c}" /> 
+                            </apex:outputText></td> 
+                            <td colspan="1"><apex:outputText value="{0,date,MM'/'dd'/'yyyy}">
+                            <apex:param value="{!designExecution.RTM_e_Release_RIT_B_Outlook_Date__c}" />
+                            </apex:outputText></td>
+                            <td colspan="1"><apex:outputText value="{0,date,MM'/'dd'/'yyyy}">
+                            <apex:param value="{!designExecution.RTM_e_Release_RIT_B_Actual_Date__c}" />
+                            </apex:outputText></td>
+                            <td colspan="1"><apex:outputLabel value="{!designExecution.RTM_e_Release_RIT_B_No_NL_Del__c}" /></td>
+                        </tr> -->
+                    </apex:outputPanel>
+					<apex:outputpanel layout="none" rendered="{!(NOT(enableCreateRTDTButton) && NOT(enableRITABSplitButton))}" >
+						<apex:outputpanel layout="none" rendered="{!(enablePTRFB && NOT(enableNONPTRFB))}" >
+							<tr style ="background-color:#EEEEEE;">
+								<td colspan="1"><apex:outputLabel value="PTRF RIT B:" /></td>
+								<td colspan="1"><apex:outputText value="{!designExecution.Option__r.RIT_Type__c}" /> </td>
+								<td colspan="1"><apex:outputText value="{0,date,MM'/'dd'/'yyyy}">
+								<apex:param value="{!designExecution.PTRF_RIT_B_IDR__c}" />
+								</apex:outputText></td>
+								<td colspan="1"><apex:outputText value="{0,date,MM'/'dd'/'yyyy}">
+								<apex:param value="{!designExecution.PTRF_RIT_B_Commit_Date__c}" />
+								</apex:outputText></td>
+								<td colspan="1"><apex:outputText value="{0,date,MM'/'dd'/'yyyy}">
+								<apex:param value="{!designExecution.PTRF_RIT_B_Outlook_Date__c}" />
+								</apex:outputText></td>
+								<td colspan="1"><apex:outputText value="{0,date,MM'/'dd'/'yyyy}">
+								<apex:param value="{!designExecution.PTRF_RIT_B_Actual_Date__c}" />
+								</apex:outputText></td>
+								<td colspan="1"><apex:outputLabel value="{!designExecution.PTRF_RIT_B_No_NL_Del__c}" /></td>
+							</tr> 
+							<tr style ="background-color:#E0E0E0;">
+								<td colspan="1"><apex:outputLabel value="RTM RIT B ready:" /></td>
+								<td colspan="1"><apex:outputText value="{!designExecution.Option__r.RIT_Type__c}" /> </td>
+								<!--<td colspan="1"><apex:outputLabel value="{!designExecution.RTM_RIT_B_ready_IDR__c}" /></td>-->
+								<td colspan="1"><apex:outputText value="{0,date,MM'/'dd'/'yyyy}">
+								<apex:param value="{!designExecution.RTM_RIT_B_ready_IDR__c}" />
+								</apex:outputText></td>
+								<td colspan="1"><apex:outputText value="{0,date,MM'/'dd'/'yyyy}">
+								<apex:param value="{!designExecution.RTM_RIT_B_ready_Commit_Date__c}" />
+								</apex:outputText></td>
+								<td colspan="1"><apex:outputText value="{0,date,MM'/'dd'/'yyyy}">
+								<apex:param value="{!designExecution.RTM_RIT_B_ready_Outlook_Date__c}" />
+								</apex:outputText></td>
+								<td colspan="1"><apex:outputText value="{0,date,MM'/'dd'/'yyyy}">
+								<apex:param value="{!designExecution.RTM_RIT_B_ready_Actual_Date__c}" />
+								</apex:outputText></td>
+								<td colspan="1"><apex:outputLabel value="{!designExecution.RTM_RIT_B_ready_No_NL_Del__c}" /></td>
+							</tr> 
+							<tr style ="background-color:#E0E0E0;">
+								<td colspan="1"><apex:outputLabel value="! RTM RIT B:" /></td>
+								<td colspan="1"><apex:outputText value="{!designExecution.Option__r.RIT_Type__c}" /> </td>
+								<td colspan="1"><apex:outputText value="{0,date,MM'/'dd'/'yyyy}"> 
+								<apex:param value="{!designExecution.RTM_e_Release_RIT_B_IDR__c}" />
+								</apex:outputText></td>
+								<td colspan="1"><apex:outputText value="{0,date,MM'/'dd'/'yyyy}">
+								<apex:param value="{!designExecution.RTM_e_Release_RIT_B_Commit_Date__c}" /> 
+								</apex:outputText></td> 
+								<td colspan="1"><apex:outputText value="{0,date,MM'/'dd'/'yyyy}">
+								<apex:param value="{!designExecution.RTM_e_Release_RIT_B_Outlook_Date__c}" />
+								</apex:outputText></td>
+								<td colspan="1"><apex:outputText value="{0,date,MM'/'dd'/'yyyy}">
+								<apex:param value="{!designExecution.RTM_e_Release_RIT_B_Actual_Date__c}" />
+								</apex:outputText></td>
+								<td colspan="1"><apex:outputLabel value="{!designExecution.RTM_e_Release_RIT_B_No_NL_Del__c}" /></td>
+							</tr>
+						</apex:outputPanel>
+						<apex:outputpanel layout="none" rendered="{!(NOT(enablePTRFB) && enableNONPTRFB)}" >
+							<tr style ="background-color:#EEEEEE;">
+                            <td colspan="1"><apex:outputLabel value="RTC RIT B ready:" /></td>
+                            <td colspan="1"><apex:outputText value="{!designExecution.Option__r.RIT_Type__c}" /> </td>
+                            <td colspan="1"><apex:outputText value="{0,date,MM'/'dd'/'yyyy}">
+                            <apex:param value="{!designExecution.RTC_RIT_B_ready_IDR__c}" />
+                            </apex:outputText></td>
+                            <td colspan="1"><apex:outputText value="{0,date,MM'/'dd'/'yyyy}">
+                            <apex:param value="{!designExecution.RTC_RIT_B_ready_Commit_Date__c}" />
+                            </apex:outputText></td>
+                            <td colspan="1"><apex:outputText value="{0,date,MM'/'dd'/'yyyy}">
+                            <apex:param value="{!designExecution.RTC_RIT_B_ready_Outlook_Date__c}" />
+                            </apex:outputText></td>
+                            <td colspan="1"><apex:outputText value="{0,date,MM'/'dd'/'yyyy}">
+                            <apex:param value="{!designExecution.RTC_RIT_B_ready_Actual_Date__c}" />
+                            </apex:outputText></td>
+                            <td colspan="1"><apex:outputLabel value="{!designExecution.RTC_RIT_B_ready_No_NL_Del__c}" /></td>
+                        </tr>  
+						<tr style ="background-color:#E0E0E0;">
+                            <td colspan="1"><apex:outputLabel value="RTM RIT B ready:" /></td>
+                            <td colspan="1"><apex:outputText value="{!designExecution.Option__r.RIT_Type__c}" /> </td>
+                            <!--<td colspan="1"><apex:outputLabel value="{!designExecution.RTM_RIT_B_ready_IDR__c}" /></td>-->
+                            <td colspan="1"><apex:outputText value="{0,date,MM'/'dd'/'yyyy}">
+                            <apex:param value="{!designExecution.RTM_RIT_B_ready_IDR__c}" />
+                            </apex:outputText></td>
+                            <td colspan="1"><apex:outputText value="{0,date,MM'/'dd'/'yyyy}">
+                            <apex:param value="{!designExecution.RTM_RIT_B_ready_Commit_Date__c}" />
+                            </apex:outputText></td>
+                            <td colspan="1"><apex:outputText value="{0,date,MM'/'dd'/'yyyy}">
+                            <apex:param value="{!designExecution.RTM_RIT_B_ready_Outlook_Date__c}" />
+                            </apex:outputText></td>
+                            <td colspan="1"><apex:outputText value="{0,date,MM'/'dd'/'yyyy}">
+                            <apex:param value="{!designExecution.RTM_RIT_B_ready_Actual_Date__c}" />
+                            </apex:outputText></td>
+                            <td colspan="1"><apex:outputLabel value="{!designExecution.RTM_RIT_B_ready_No_NL_Del__c}" /></td>
+                        </tr> 
+                        <tr style ="background-color:#E0E0E0;">
+                            <td colspan="1"><apex:outputLabel value="! RTM RIT B:" /></td>
+                            <td colspan="1"><apex:outputText value="{!designExecution.Option__r.RIT_Type__c}" /> </td>
+                            <td colspan="1"><apex:outputText value="{0,date,MM'/'dd'/'yyyy}"> 
+                            <apex:param value="{!designExecution.RTM_e_Release_RIT_B_IDR__c}" />
+                            </apex:outputText></td>
+                            <td colspan="1"><apex:outputText value="{0,date,MM'/'dd'/'yyyy}">
+                            <apex:param value="{!designExecution.RTM_e_Release_RIT_B_Commit_Date__c}" /> 
+                            </apex:outputText></td> 
+                            <td colspan="1"><apex:outputText value="{0,date,MM'/'dd'/'yyyy}">
+                            <apex:param value="{!designExecution.RTM_e_Release_RIT_B_Outlook_Date__c}" />
+                            </apex:outputText></td>
+                            <td colspan="1"><apex:outputText value="{0,date,MM'/'dd'/'yyyy}">
+                            <apex:param value="{!designExecution.RTM_e_Release_RIT_B_Actual_Date__c}" />
+                            </apex:outputText></td>
+                            <td colspan="1"><apex:outputLabel value="{!designExecution.RTM_e_Release_RIT_B_No_NL_Del__c}" /></td>
+                        </tr>
+						</apex:outputPanel>
+					</apex:outputPanel>
+                    </table>
+                <!--</apex:pageBlockSection -->
+				</apex:outputPanel>
+        <div id="ritOffSetDiv" style="display: none;">
+         	<apex:pageBlock id="rfspbId">                
+                <apex:pageBlockSection collapsible="false" columns="4" id="ritSectionId" rendered="{!ritOffSetSec1}">
+                    <apex:outputLabel style="font-weight:600;">Default Off Set A:</apex:outputLabel>
+                	<apex:inputText value="{!ritA14LPP}" style="width:50px;" id="ritA14LPPId"/>
+                    <apex:outputLabel style="font-weight:600;">User Selected Off Set A:</apex:outputLabel>
+                    <apex:outputText value="{!ritAVar}" style="width: 50px;"/>
+                    <apex:outputLabel style="font-weight:600;">Default Off Set B:</apex:outputLabel>
+                	<apex:inputText value="{!ritB14LPP}" style="width:50px;" id="ritB14LPPId"/>
+                    <apex:outputLabel style="font-weight:600;">User Selected Off Set B:</apex:outputLabel>
+                    <apex:outputText value="{!ritBVar}" style="width: 50px;"/>
+                </apex:pageBlockSection>
+                <apex:pageBlockSection collapsible="false" columns="4" id="ritSecId" rendered="{!ritOffSetSec2}">                    
+                    <apex:outputLabel style="font-weight:600;">Default Off Set A:</apex:outputLabel>
+                    <apex:inputText value="{!ritA7LP}" id="ritA7LPId" style="width: 50px;"/>
+                    <apex:outputLabel style="font-weight:600;">User Selected Off Set A:</apex:outputLabel>
+                    <apex:outputText value="{!ritAVar}" style="width: 50px;"/> 
+                    <apex:outputLabel style="font-weight:600;">Default Off Set B:</apex:outputLabel>
+                    <apex:inputText value="{!ritB7LP}" id="ritB7LPId" style="width: 50px;"/>
+                    <apex:outputLabel style="font-weight:600;">User Selected Off Set B:</apex:outputLabel>
+                    <apex:outputText value="{!ritBVar}" style="width: 50px;"/>
+                </apex:pageBlockSection>
+            </apex:pageBlock>   
+        </div>          
+      </apex:pageBlock>
+      <apex:actionFunction name="ritOffset" action="{!saveExecutionDetail}" id="ritOffsetfunc" reRender="" oncomplete="close();">
+         <apex:param name="ritOffSetval1" value="" assignTo="{!ritVar1}"/>
+           <apex:param name="ritOffSetval2" value="" assignTo="{!ritVar2}"/>
+           <apex:param name="ritOffSetval3" value="" assignTo="{!ritVar3}"/>
+           <apex:param name="ritOffSetval4" value="" assignTo="{!ritVar4}"/>
+      </apex:actionFunction>       
+  </apex:form>
+</apex:page>

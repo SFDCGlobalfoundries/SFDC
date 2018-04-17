@@ -1,0 +1,180 @@
+<!--
+ Type Name: PCN_EOLPageModified
+ Author: Dinesh Suggala
+ Created Date: 11/23/2016
+ Reason: This page is overrided with New and Edit button.
+
+ Author: Cognizant
+ Modified Date: 21-Feb-2017
+ Reason: To add new field Other_Package_Type_Affected__c, to make Stage__c field editable to only RF,CE Queue members.
+-->
+<apex:page standardController="PCN_EOL__c" extensions="PCN_EOLController_Modified" showHeader="true" sidebar="false" >  
+  <style>
+      .dateFormat{
+       visibility:hidden;
+     }
+  </style>  
+<apex:form id="form1" >   
+ <apex:pageMessages id="message1"/>
+ <apex:pageBlock id="pb1" title="End of Life Edit"  >       
+ <apex:pageBlockSection title="Information" id="pan"> 
+     <apex:pageBlockSectionItem >
+                <apex:outputLabel value="Title" />
+                         <apex:inputField value="{!EOL.Name}" required="true" />  
+     </apex:pageBlockSectionItem>
+     
+     <apex:outputField value="{!EOL.OwnerId}" />
+     
+     <apex:pageBlockSectionItem >
+     <apex:outputLabel value="Fab" />   
+                        <apex:inputField value="{!EOL.Fab__c}" required="true"/>
+     </apex:pageBlockSectionItem>   
+     
+      <apex:inputField value="{!EOL.Last_Order_Date__c}" required="true"/>
+     
+      
+      <apex:pageBlockSectionItem >  
+         <apex:outputLabel value="LMT Affected" />
+                   <apex:inputField value="{!EOL.LMT_Affected__c}" required="true" />
+     </apex:pageBlockSectionItem>
+
+     <apex:inputField value="{!EOL.Last_Ship_Date__c}" required="true"/>
+     
+     
+    <apex:pageBlockSectionItem rendered="{!InQueue}">
+             <apex:outputLabel value="EOL Stage" />          
+                        <apex:inputField value="{!EOL.EOL_Stage__c}"   required="true" />
+     </apex:pageBlockSectionItem>
+     <apex:pageBlockSectionItem rendered="{!NOT(InQueue)}">
+             <apex:outputLabel value="EOL Stage" />            
+             <apex:outputField value="{!EOL.EOL_Stage__c}" />
+    </apex:pageBlockSectionItem>
+       
+     <apex:inputField value="{!EOL.End_of_Service_and_Support_Date__c}" required="true"/>
+    
+
+     <!-- <apex:pageBlockSectionItem >
+             <apex:outputLabel value="Package Type Affected" />
+                         <apex:inputField value="{!EOL.Package_Type_Affected__c}" required="true"/> 
+     </apex:pageBlockSectionItem> -->
+     <apex:pageBlockSectionItem >
+            <apex:outputLabel value="Package Type Affected"/>
+                <apex:actionRegion >
+                 <apex:inputField value="{!EOL.Package_Type_Affected__c}" required="true"> 
+                    <apex:actionSupport event="onchange" reRender="pan1"/> 
+                 </apex:inputField>
+               </apex:actionRegion>
+      </apex:pageBlockSectionItem>
+      
+
+       <apex:pageBlockSectionItem >  
+        <apex:panelGrid columns="2" id="pan1"> 
+        <apex:outputLabel value="Other Package Type Affected" rendered="{!IF(CONTAINS(EOL.Package_Type_Affected__c, 'Other'),"true","false")}" />
+        <apex:inputField value="{!EOL.Other_Package_Type_Affected__c}" style="width: 300px;height: 70px;" rendered="{!IF(CONTAINS(EOL.Package_Type_Affected__c, 'Other'),"true","false")}" />
+        </apex:panelGrid>
+       </apex:pageBlockSectionItem>
+          
+     <apex:pageBlockSectionItem >
+             <apex:outputLabel value="Technology Affected" />
+                        <apex:inputField value="{!EOL.Technology_Affected__c}" required="true"/>
+     </apex:pageBlockSectionItem> 
+     
+     <apex:pageBlockSectionItem >
+                <apex:outputLabel value="Reason For the Discontinuance" /> 
+                        <apex:inputField value="{!EOL.Reason_for_the_discontinuance__c}"  style="width: 300px;height: 70px;" required="true"/>
+     </apex:pageBlockSectionItem>
+     
+     
+     
+     <apex:pageBlockSectionItem HelpText="{!$ObjectType.PCN_EOL__c.fields.Affected_Part_Numbers__c.inlineHelpText}">
+     <apex:outputLabel for="searchText">Affected Part Numbers</apex:outputLabel>     
+     <apex:actionregion id="region1">
+     <apex:panelGroup >      
+       <apex:inputtext value="{!searchtext}" title="Please type or paste list of affected GF parts.  Must be 12 alphameric characters and separated by comma (,)" />
+       <apex:commandButton value="Get Affected Customers" action="{!search}"  rerender="affected,affected2,message1" status="LoadingStatusSpinner" />
+      </apex:panelGroup> 
+      </apex:actionregion>
+     </apex:pageBlockSectionItem>   
+     
+      <apex:inputField value="{!EOL.Method_to_contrl_discontinued_device_p_n__c}" style="width:300px;height:70px;"/>
+     
+     </apex:pageBlockSection> 
+
+    <c:LoadingStatusSpinner />
+      <apex:outputPanel id="affected">
+     <!-- <apex:pageMessages id="message2"/>-->
+      <apex:pageBlockSection title="Affected Accounts and Parts" id="pbs1" columns="1" rendered="{!fetch}">
+      <apex:outputPanel layout="block" style="overflow: auto;height: 200px;">
+       <apex:pageBlockTable value="{!listwrapper}" var="s">     
+              <apex:column headerValue="Action">
+                <apex:commandbutton value="Delete" action="{!removingRow}" reRender="form1" status="LoadingStatusSpinner">
+                   <apex:param name="index" value="{!s.counterWrap}"/>  
+                </apex:commandbutton>
+              </apex:column> 
+              <apex:column headerValue="Device P/N">
+               <apex:outputtext value="{!s.shipline.IBM_Part_Num__c}"/>
+              </apex:column>
+              <apex:column headerValue="Customer Part Number">
+                <apex:outputtext value="{!s.shipline.Cust_Part_Num__c }"/> 
+              </apex:column>
+              <apex:column headerValue="Customer">           
+               <apex:outputfield value="{!s.shipline.Shipment__r.Account__c}"/> 
+              </apex:column>
+              <apex:column headerValue="PO#" >
+               <apex:outputtext value="{!s.shipline.PO_Num__c}" rendered="{!IF(s.selected,TRUE,FALSE)}"/>
+               <apex:outputtext value="-" rendered="{!IF(s.selected,FALSE,TRUE)}"/>
+              </apex:column>
+              <apex:column headerValue="Customer Shrt Name">
+                <apex:outputtext value="{!s.shipline.Shipment__r.Account__r.Short_Name__c}"/>
+              </apex:column> 
+              <apex:column headerValue="Ultimate Customer">
+                <apex:outputtext value="{!S.shipline.Ultimate_Customer_Account__r.Name}"/>
+              </apex:column> 
+              
+              
+       </apex:pageBlockTable>
+       </apex:outputPanel>
+    </apex:pageBlockSection>
+    </apex:outputPanel>
+    
+    <apex:outputPanel id="affected2">
+      <apex:pageBlockSection title="TO Delete Affected Accounts and Parts " id="pbs2" columns="1" rendered="{!AND(OR(edit,fetch),SecondSearchHide)}">
+      <apex:outputPanel layout="block" style="overflow: auto;height: 200px;">
+       <apex:pageBlockTable value="{!partrecords}" var="s">     
+              <apex:column headerValue="Action">
+                <apex:commandbutton value="Delete" action="{!removingRow1}" reRender="form1" status="LoadingStatusSpinner">
+                   <apex:param name="index1" value="{!s.counterWrap}"/>  
+                </apex:commandbutton>
+              </apex:column> 
+              <apex:column headerValue="Device P/N">
+               <apex:outputtext value="{!s.partcustomerinfo.IBM_Part_Number__c}"/>
+              </apex:column>
+              <apex:column headerValue="Customer Part Number">
+                <apex:outputtext value="{!s.partcustomerinfo.Shipment_Line_Internal__r.Cust_Part_Num__c }"/> 
+              </apex:column>
+              <apex:column headerValue="Customer">           
+               <apex:outputfield value="{!s.partcustomerinfo.Account__c}"/> 
+              </apex:column>
+              <apex:column headerValue="PO#" >
+               <apex:outputtext value="{!s.partcustomerinfo.Shipment_Line_Internal__r.PO_Num__c}" rendered="{!IF(s.selected,TRUE,FALSE)}"/>
+               <apex:outputtext value="-" rendered="{!IF(s.selected,FALSE,TRUE)}"/>
+              </apex:column>
+              <apex:column headerValue="Customer Shrt Name">
+                <apex:outputtext value="{!s.partcustomerinfo.Account__r.Short_Name__c}"/>
+              </apex:column> 
+              <apex:column headerValue="Ultimate Customer">
+                <apex:outputtext value="{!S.partcustomerinfo.Ultimate_Customer_Account__r.Name}"/>
+              </apex:column>             
+              
+       </apex:pageBlockTable>
+       </apex:outputPanel>
+    </apex:pageBlockSection>
+    </apex:outputPanel>
+   
+    <apex:pageBlockButtons >
+     <apex:commandButton action="{!save}" value="save" reRender="form1"/>
+     <apex:commandButton action="{!cancel}" value="Cancel"/>
+    </apex:pageBlockButtons>      
+ </apex:pageBlock>    
+ </apex:form> 
+</apex:page>

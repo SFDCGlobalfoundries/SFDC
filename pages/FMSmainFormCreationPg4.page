@@ -1,0 +1,157 @@
+<!--
+* @ Author :- Ashwin Dash
+* @ Description :- 
+* @ Date :- 21/07/2016
+* @ Change History :-  
+* Inshu Misra  13-10-2016       modified the Save button action...#IM
+* Abhita Bansal 06-03-2017      Added By Abhita for replacing None with Select a value
+-->
+<apex:page standardController="Form_Management_System__c" extensions="FMSmainFormEditController" action="{!init}" showHeader="true" sidebar="true">
+<!-- <apex:page showHeader="{!!isPortalUser}" sidebar="{!!isPortalUser}" /> -->
+    <apex:includeScript value="{!URLFOR($Resource.jquery, 'js/jquery-1.8.3.min.js')}"/>
+    <apex:includeScript value="{!URLFOR($Resource.jquery, 'js/jquery-ui-1.9.2.custom.js')}"/>
+    <apex:includeScript value="{!URLFOR($Resource.jqPlugin, '/jquery.blockUI.js')}"/>
+<style>  
+    .bPageBlock .requiredInput .requiredBlock{background-color: #F6FBF6;}  
+    .requiredInput .requiredBlock::before { display: block; content: "*"; font-size: 1.5em; font-weight: bold; color: #c00; margin-left: -12px; margin-top: -3px; }  
+
+    p{
+       color:brown;
+    }    
+    a{
+        text-decoration: none;
+    } 
+</style>
+<script type="text/javascript">
+    $j = jQuery.noConflict();
+    
+    $j(function() {        
+        $j("select.ReplaceNone option[value='']").text("=== Select a Value ===");       
+    }); 
+    
+    function blockPage(){ 
+        $j.blockUI({ message: '<img src="/img/loading32.gif" /><h1> Refreshing...</h1>', 
+            css: { 
+             border: 'none', 
+             padding: '15px',  
+             '-webkit-border-radius': '10px', 
+             '-moz-border-radius': '10px', 
+             opacity: .9
+            } 
+        }); 
+        return false;
+    }
+    //function to unblock the page
+    function unblockPage(){
+        $j.unblockUI();
+    }
+    
+    function showSimpleDialog(){    
+       var sd = new SimpleDialog("Test"+Dialogs.getNextId(), true);    
+       sd.setTitle("Warning");   
+       sd.createDialog();   
+       window.parent.sd = sd;   
+       var ex = sd.setContentInnerHTML("<p align='center' ><img src='/img/msg_icons/warning24.png'/> <b>Warning!</b> <br/></p><p align='center'>The data you are attempting to save is either incomplete or has errors. <br/> <br/> You can either go back and correct the errors, or proceed to save this form anyway (this will save only the fields with valid data).</p><p align='center'><br /><button class='btn' onclick='window.parent.sd.hide(); return false;'>Back to the form</button> &nbsp; &nbsp; &nbsp; &nbsp; <button class='btn' onclick='saveandExit(\"page4\"); return true;'>Save Anyway</button></p>"); 
+       sd.show();   
+       return ex;
+    }  
+    
+    function showDialogforCancel(){
+    
+        var sd = new SimpleDialog("Test"+Dialogs.getNextId(), true);    
+        sd.createDialog(); 
+        sd.setWidth(400);               
+        window.parent.sd = sd;
+        var ex = sd.setContentInnerHTML("<img src='/img/msg_icons/warning24.png'/> <b>Warning!</b> <br/><br/>Are you sure you want to Cancel your changes?<br/> Any changes that you made to this form since the last Save will be lost. <br/><br/><p align='center'><button class='btn' onclick='cancelFormFunction(); window.parent.sd.hide(); return true;'>Confirm</button>&nbsp; &nbsp; &nbsp; &nbsp; <button class='btn' onclick='window.parent.sd.hide(); return false;'>Cancel</button></p>"); 
+        sd.show();   
+        return ex;
+    }
+    
+    /*function getLicenseDetails(){
+        Visualforce.remoting.Manager.invokeAction(
+                '{!$RemoteAction.FMSmainFormEditController.checkLicense}',                
+                function(result, event){
+                    if (result != null) {                                           
+                        alert(result);                        
+                    } 
+                    else{                                               
+                        GoToConfig();
+                    }                                  
+                }
+            );
+    }*/
+</script>
+
+<apex:pagemessages id="errorMsg" /> 
+
+<apex:form id="fmsFormpg4">
+
+    <c:FMSNameDesc ></c:FMSNameDesc>
+    
+    <apex:actionFunction name="saveandExit" action="{!saveandExit}">
+        <apex:param assignTo="{!pageN}" name="page" value=""/>
+    </apex:actionFunction>
+    
+    <apex:actionFunction name="cancelFormFunction" action="{!cancelForm}" status="blockUI"/>
+    <apex:actionStatus onstart="blockPage()" onstop="unblockPage()" id="blockUI"/>
+    
+    <apex:pageblock title="Form Page {!pageNum}" id="pb1">
+        <apex:pageBlockSection title="Yield Projection Inputs" columns="1" collapsible="false">
+            <apex:inputField label="Circuit Types:" styleClass="ReplaceNone" value="{!formObj.CircuitTypeInput__c}" rendered="{!formObj.Packaging_Services__c =='Yes' || formObj.TestServices__c == 'Yes'}" style="width: 200px;"/>
+            <apex:inputField label="Total Transistor Count:" value="{!formObj.TotalTransCount__c}" rendered="{!formObj.Packaging_Services__c =='Yes' || formObj.TestServices__c == 'Yes'}" style="width: 200px;"/>
+            <apex:inputField label="Digital Circuit Count (2-Input NAND Equivalent, not including RAM/ROM/Register Arrays):" value="{!formObj.DigitalCircuitCount__c}" rendered="{!(formObj.Packaging_Services__c =='Yes' || formObj.TestServices__c == 'Yes') && renderLabel}" style="width: 200px;"/> <!-- Corrected the label name for DEFECT 35 -- Ashwin Dash -->
+            <apex:inputField label="Equivalent Digital Circuit Count (2-Input NAND Equivalent, not including RAM/ROM/Register Arrays):" value="{!formObj.DigitalCircuitCount__c}" rendered="{!(formObj.Packaging_Services__c =='Yes' || formObj.TestServices__c == 'Yes') && !renderLabel}" style="width: 200px;"/> <!-- Corrected the label name for DEFECT 35 -- Ashwin Dash -->
+            <hr style ="border-color: #b4c374;"/>
+            <h1>Embedded Arrays</h1>            
+            <apex:inputField label="RAM (single-port bits):" value="{!formObj.RamSinglePort__c}" rendered="{!formObj.Packaging_Services__c =='Yes' || formObj.TestServices__c == 'Yes'}" style="width: 200px;"/> <!-- Corrected the label name for DEFECT 36 -- Ashwin Dash -->
+            <apex:inputField label="RAM (multi-port bits):" value="{!formObj.RamMultiPort__c}" rendered="{!formObj.Packaging_Services__c =='Yes' || formObj.TestServices__c == 'Yes'}" style="width: 200px;"/>
+            <apex:inputField label="ROM (bits):" value="{!formObj.RomBits__c}" rendered="{!formObj.Packaging_Services__c =='Yes' || formObj.TestServices__c == 'Yes'}" style="width: 200px;"/>
+            <apex:inputField label="Registers (bits):" value="{!formObj.RegisterBits__c}" rendered="{!formObj.Packaging_Services__c =='Yes' || formObj.TestServices__c == 'Yes'}" style="width: 200px;"/>
+            <apex:inputField label="RAM Redundancy:" value="{!formObj.RamRedundancy__c}" rendered="{!formObj.Packaging_Services__c =='Yes' || formObj.TestServices__c == 'Yes'}" />
+            <apex:inputField label="Describe Usage:" value="{!formObj.DescriptionOfTransistorUsage__c}" rendered="{!formObj.Packaging_Services__c =='Yes' || formObj.TestServices__c == 'Yes'}" style="width: 200px;"/>
+            <apex:pageblockSectionItem rendered="{!formObj.Packaging_Services__c =='Yes' || formObj.TestServices__c == 'Yes'}">
+                <apex:outputLabel value="Maximum Tj:"/>
+                <apex:outputPanel >   
+                    <div class = "requiredInput">
+                        <div class = "requiredBlock"></div>   
+                        <apex:inputField styleClass="ReplaceNone" value="{!formObj.WorstCaseTj__c}" style="width: 200px;"/> <!--Added By Abhita for replacing None with Select a value-->
+                    </div>
+                </apex:outputPanel>
+            </apex:pageblockSectionItem>
+            <apex:inputField label="Minimum Tj:" value="{!formObj.MinimumTj__c}" rendered="{!formObj.Packaging_Services__c =='Yes' || formObj.TestServices__c == 'Yes'}" style="width: 200px;" />
+        </apex:pageBlockSection><br/>
+        <!-- Commenting out -  Changed to configurator button - 20-Oct-2016 -- Ashwin Dash-->
+        <!--<apex:outputPanel rendered="{!formObj.TestServices__c == 'Yes' && formObj.Packaging_Services__c == 'No'}">
+            <p style="color:brown;font-size: 120%;">Click this link to go configurator for entering technical features information </p><br/>             
+            <apex:commandlink style="font-size: 100%; text-decoration:none;" styleClass="btn" value="Configurator" immediate="true" action="{!redirectConfig}" target="_blank"/>
+        </apex:outputPanel>
+        <br/>-->
+        <p style="color:black;font-weight: bold;">Use Next / Previous to navigate through the form. Use 'Save' or 'Save and Exit' to permanently save your edits. </p>
+        <br/><!--Added 'Save' or to the above text - 23-Nov-2016    -- Ashwin Dash -->
+        <apex:commandlink value="Previous" action="{!prev}" style="color:blue;">
+            <apex:param assignTo="{!pageN}" name="page" value="page4"/>
+        </apex:commandlink>&nbsp;
+        <apex:outputText >Page &nbsp;{!pageNum}  of  {!totalPageNums} &nbsp; </apex:outputText>
+        <apex:commandlink value="Next" action="{!next}" rendered="{!pageNum < totalPageNums}" style="color:blue;">
+            <apex:param assignTo="{!pageN}" name="page" value="page4"/>
+        </apex:commandlink>
+        <!-- Added By Abhita --> <!--Changed configurator link to button only -->
+        <!--<apex:commandlink value="Save and go to configurator" onClick="getLicenseDetails();return false;" styleClass="btn" style="color:blue;" rendered="{!AND(pageNum == totalPageNums, formObj.ReleaseProcessFlow__c == 'Original Flow')}" >
+            <apex:param assignTo="{!pageN}" name="page" value="page4"/>
+        </apex:commandlink>&nbsp;
+        <apex:actionFunction name="GoToConfig" action="{!configPage}" oncomplete="window.scrollTo(0,0);" reRender="errorMsg" />-->        
+        <!-- Ended Abhita Code here --><!--Changed to Save and go to configurator from Click here to go to configurator Page for Business Issue #11 - Ashwin Dash-->
+        <apex:pageBlockButtons location="bottom">
+            <apex:commandButton action="{!validateSave}" reRender="errorMsg" value="Save and Exit" oncomplete="window.scrollTo(0,0);showSimpleDialog();">
+                <apex:param assignTo="{!pageN}" name="page" value="page4"/>
+            </apex:commandButton>
+            <apex:commandButton action="{!saveForm}" value="Save" id="saveForm" reRender="errorMsg" oncomplete="window.scrollTo(0,0);">
+                <apex:param assignTo="{!pageN}" name="page" value="page4"/>
+            </apex:commandButton>
+            <!--<apex:commandButton value="Cancel" immediate="true" action="{!cancelForm}" onclick="if(!confirm('Are you sure you want to Cancel your changes? Any changes that you made to this form since the last Save will be lost.')){return false;}"/>-->
+            <apex:commandButton value="Cancel" onclick="showDialogforCancel(); window.scrollTo(0,0); return false;" />
+        </apex:pageBlockButtons>
+    </apex:pageblock>
+
+</apex:form>
+</apex:page>

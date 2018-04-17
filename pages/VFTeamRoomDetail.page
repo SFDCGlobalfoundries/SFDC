@@ -1,0 +1,552 @@
+<!-- 
+Type Name: VFTeamRoomDetail.page
+Author: Cognizant 
+Created Date: 21-May-2013
+Reason: This Page is used for overriding team room view page and display the corresponding details of the team room 
+Change History:
+Author: 
+Modified Date: 
+Reason: 
+    ARoy     06192014    - Commenting the Proposals in Team Room Detail Page  
+ -->
+
+<apex:page standardController="Team_Room__c" extensions="ClsTeamRoomDetail" sidebar="false" action="{!redirectToStandardPage}">
+
+  <apex:sectionHeader title="Team Room : {!Team_Room__c.name}"/>   
+  <chatter:feedWithFollowers entityId="{!Team_Room__c.Id}" showHeader="true"/> 
+  <apex:outputPanel layout="block" style="margin-top:20px"> 
+           
+     <apex:form >
+         <apex:iframe src="{!OpenTextLoginServerURL}" height="1px" width="1px" />
+         <apex:actionFunction name="goToAcc" action="{!goToNewTRAccount}"/>
+         <apex:actionFunction name="goToManageMember" action="{!goToNewMember}"/>
+         <apex:actionFunction name="goToNewTask" action="{!goToNewtask}"/>
+         <apex:actionFunction name="goToNewMeeting" action="{!goToNewMeeting}"/>
+         
+         <apex:pageBlock mode="maindetail">
+             <apex:pageBlockButtons location="top" style="padding:20px">
+                 <apex:commandButton value="Edit" action="{!edit}"/>
+                 <apex:commandButton value="Delete" action="{!delete}" rendered="{!isOwnerorAdmin}"/>
+                 <!--apex:commandButton value="Add Specification" action="{!addDoc}" id="addDocbtn" rendered="{!blnaddremoveDoc}"/>-->
+                 <!--apex:commandButton value="Remove Document" disabled="{!disableremovedocButton}" action="{!removeDoc}" id="removeDocbtn" rendered="{!blnaddremoveDoc}"/>-->
+             </apex:pageBlockButtons>
+             <apex:pageBlockSection title="Team Room Detail Information">                
+                 <apex:repeat value="{!$ObjectType.Team_Room__c.FieldSets.VFTeamRoomDetail_Fields}" var="f">                                
+                       <apex:outputField value="{!Team_Room__c[f]}" rendered="{!f!='OwnerId'}"/>                                                                                                                             
+                 </apex:repeat> 
+                 <apex:outputField value="{!Team_Room__c.OwnerId}">
+                     &nbsp;&nbsp;
+                     <apex:outputLink value="/{!Team_Room__c.id}/a?retURL={!Team_Room__c.id}&saveURL={!Team_Room__c.id}" rendered="{!isOwnerorAdmin}">[Change]</apex:outputLink>
+                 </apex:outputField>                                                   
+             </apex:pageBlockSection> 
+          </apex:pageBlock>    
+         
+        
+         
+       <apex:outputPanel layout="block" style="margin-top:40px" rendered="{!showCalendar}">
+              <apex:pageBlock mode="maindetail">
+                 <apex:pageBlockSection title="Calendar" columns="1">
+                     <apex:outputPanel layout="block" style="margin-top:20px"> 
+                         <apex:include pageName="VFTeamRoomCalendar"/>
+                     </apex:outputPanel>
+                      
+                 </apex:pageBlockSection>  
+              </apex:pageBlock>      
+         </apex:outputPanel>
+         
+          <apex:outputPanel style="margin-top:40px" id="docPanel"> 
+             
+             <apex:pageBlock id="pb1" mode="maindetail">
+                     <apex:pageBlockSection title="Documents"  id="pbs1" columns="1">
+
+<apex:actionStatus id="myStatus">
+<apex:facet name="start">
+<apex:outputpanel >
+<apex:outputLabel value="{!$Label.WaitingOpenTextLabel}" style="display:block;width:420px;color:black;font-size:15px;font-weight: bold"></apex:outputLabel>
+<apex:image value="{!$Resource.WaitingOpenTextLogo}" Style="margin-left:400px"/>
+</apex:outputpanel>
+</apex:facet>  
+
+<apex:facet name="stop">
+<apex:outputpanel >
+<apex:outputLabel value="{!$Label.WaitingOpenTextLabel}" style="display:block;width:420px;color:black;font-size:15px;font-weight: bold" rendered="{!showWaitSession}"></apex:outputLabel>
+
+                         <apex:image value="{!$Resource.WaitingOpenTextLogo}" rendered="{!showWaitSession}" Style="margin-left:400px"/>
+                         <apex:iframe src="{!documentURL}" scrolling="true" width="100%" height="400px" rendered="{!showOpenTextSession}" />
+                         </apex:outputpanel>  
+</apex:facet>          
+            
+
+
+</apex:actionStatus>
+                         
+                     </apex:pageblockSection>
+             </apex:pageBlock>
+             <apex:actionPoller action="{!autorefresh}" status="myStatus" reRender="pb1,pbs1" interval="5" enabled="{!IF(count = 1,false,true)}" /> 
+         </apex:outputPanel> 
+         
+         
+         <apex:outputPanel layout="block" style="margin-top:40px">                         
+             <apex:pageBlock id="AssociatedAccounts">
+                 <apex:pageBlockButtons location="top">
+                     <apex:commandButton id="addAccount" value="Add Account" onclick="goToAcc();return false;" rendered="{!isOwnerorAdmin}"/>
+                 </apex:pageBlockButtons>
+                  <apex:pageBlockButtons location="bottom" rendered="{!AccMapSize>1}">
+            
+                    <apex:outputPanel >
+                        <apex:outputText value="<<" style="color:grey;font-weight:bold" rendered="{!currentActPage ==1}"></apex:outputText>
+                        <apex:commandLink value="<<" status="AccountStatus" style="font-weight:bold" action="{!first}" rerender="AssociatedAccounts" rendered="{!currentActPage >1}">
+                            <apex:param name="objectTonavigate" value="Account"/>                                       
+                        </apex:commandLink>
+                        &nbsp;&nbsp;&nbsp;&nbsp;
+                    </apex:outputPanel>
+                    
+                    <apex:outputPanel >
+                        <apex:outputText value="<" style="color:grey;font-weight:bold" rendered="{!currentActPage ==1}"></apex:outputText>
+                        <apex:commandLink value="<" status="AccountStatus" style="font-weight:bold" action="{!previous}" rerender="AssociatedAccounts" rendered="{!currentActPage >1}">
+                            <apex:param name="objectTonavigate" value="Account"/>                                       
+                        </apex:commandLink>
+                       &nbsp;&nbsp;&nbsp;&nbsp;
+                    </apex:outputPanel>
+                    
+                  
+                    
+                     <apex:repeat value="{!mapObjectToLstDisplayNumber['Account']}" var="pg">
+                        <apex:outputPanel rendered="{!pg<=AccMapSize&& pg>=1}">
+                            <apex:commandLink style="color:#015ba7"  value="{!pg}" action="{!updatePageNumberDisplay}" reRender="AssociatedAccounts" status="AccountStatus" rendered="{!pg!=currentActPage}">
+                               <apex:param name="objectTonavigate" value="Account"/> 
+                               <apex:param name="selectedPageNum" value="{!pg}"/>                                  
+                            </apex:commandLink>                       
+                            <apex:outputText value="{!pg}" rendered="{!pg==currentActPage}">                                                
+                            </apex:outputText>
+                            &nbsp;&nbsp;&nbsp;&nbsp;
+                        </apex:outputPanel>                        
+                     </apex:repeat>
+                    
+                    
+                    <apex:outputPanel >               
+                         <apex:outputText value=">" style="color:grey;font-weight:bold" rendered="{!currentActPage >=AccMapSize}"></apex:outputText> 
+                         <apex:commandLink value=">" status="AccountStatus" style="font-weight:bold" action="{!next}" rerender="AssociatedAccounts" rendered="{!currentActPage <AccMapSize}">
+                            <apex:param name="objectTonavigate" value="Account"/>                                       
+                        </apex:commandLink>   
+                         &nbsp;&nbsp;&nbsp;&nbsp;
+                    </apex:outputPanel>
+                    
+                    <apex:outputPanel >
+                        <apex:commandLink value=">>" status="AccountStatus" style="font-weight:bold" action="{!last}" rerender="AssociatedAccounts" rendered="{!currentActPage <AccMapSize}">
+                            <apex:param name="objectTonavigate" value="Account"/>                                       
+                        </apex:commandLink> 
+                        <apex:outputText value=">>" style="color:grey;font-weight:bold" rendered="{!currentActPage >=AccMapSize}"></apex:outputText> 
+                    </apex:outputPanel>
+                    
+                    <apex:outputPanel >
+                         <apex:actionStatus id="AccountStatus">
+                            <apex:facet name="start" >
+                                <apex:image url="/img/loading32.gif" height="20px"/>                       
+                            </apex:facet>
+                        </apex:actionStatus>
+                    </apex:outputPanel>
+                     
+                 </apex:pageBlockButtons>
+                 
+                 <apex:pageBlockSection title="Associated Accounts" columns="1">      
+                     <apex:outputLabel rendered="{!AccMapSize==0}">No records to display</apex:outputLabel>  
+                     <apex:outputLabel style="color:red" rendered="{!accNotDelMsg!=null}">{!accNotDelMsg}</apex:outputLabel>          
+                     <apex:pageBlockTable value="{!mapPageToAccRecords[currentActPage]}" var="acc" rendered="{!AccMapSize>0}">
+                           <apex:column headerValue="Action" rendered="{!isOwnerorAdmin}">
+                                <apex:commandLink value="Edit" style="color:#015ba7" action="{!goToEditTRAccount}">
+                                      <apex:param name="accToEdit" value="{!acc.Id}"/>                                       
+                                 </apex:commandLink>
+                                 
+                                 &nbsp;|&nbsp;
+                                 <apex:commandLink value="Del" style="color:#015ba7" action="{!deleteTRAccount}" status="AccountDelStatus" reRender="AssociatedAccounts">
+                                      <apex:param name="accToDelete" value="{!acc.Id}"/> 
+                                      <apex:param name="accNameToDelete" value="{!acc.name}"/>                                           
+                                 </apex:commandLink>
+                                 <apex:outputPanel >
+                                     <apex:actionStatus id="AccountDelStatus">
+                                        <apex:facet name="start" >
+                                            <apex:image url="/img/loading32.gif" height="20px"/>                       
+                                        </apex:facet>
+                                    </apex:actionStatus>
+                                </apex:outputPanel>
+                           </apex:column>
+                           
+                          <apex:repeat value="{!$ObjectType.Account.FieldSets.VFTeamRoomDetail_Account_Fields}" var="a">           
+                             <apex:column headerValue="{!a.Label}" rendered="{!$ObjectType['Account'].fields[a].accessible}"> 
+                                 <apex:outputField value="{!acc[a]}"/>
+                             </apex:column>                 
+                         </apex:repeat> 
+                          <apex:column value="{!mapAccountIdToType[acc.Id]}" headerValue="Type"/>   
+                     </apex:pageBlockTable>
+                 </apex:pageBlockSection>  
+             </apex:pageBlock>                                        
+         </apex:outputPanel>
+         
+           <apex:outputPanel layout="block" style="margin-top:40px">
+             <apex:pageBlock id="MemberBlock">
+                 <apex:pageBlockButtons location="top">
+                     <apex:commandButton value="Manage Membership" rendered="{!isAddDelMember}" onclick="goToManageMember();return false;"/>
+                 </apex:pageBlockButtons>
+                 <apex:pageBlockButtons location="bottom" rendered="{!MemberMapSize>1}">
+            
+                        <apex:outputPanel >
+                            <apex:outputText value="<<" style="color:grey;font-weight:bold" rendered="{!currentMemberPage ==1}"></apex:outputText>
+                            <apex:commandLink value="<<" status="MemberStatus" style="font-weight:bold" action="{!first}" rerender="MemberBlock" rendered="{!currentMemberPage >1}">
+                                <apex:param name="objectTonavigate" value="Member"/>                                       
+                            </apex:commandLink>
+                            &nbsp;&nbsp;&nbsp;&nbsp;
+                        </apex:outputPanel>
+                        
+                        <apex:outputPanel >
+                            <apex:outputText value="<" style="color:grey;font-weight:bold" rendered="{!currentMemberPage ==1}"></apex:outputText>
+                            <apex:commandLink value="<" status="MemberStatus" style="font-weight:bold" action="{!previous}" rerender="MemberBlock" rendered="{!currentMemberPage >1}">
+                                <apex:param name="objectTonavigate" value="Member"/>                                       
+                            </apex:commandLink>
+                           &nbsp;&nbsp;&nbsp;&nbsp;
+                        </apex:outputPanel>
+                   
+                        
+                        
+                        <apex:repeat value="{!mapObjectToLstDisplayNumber['Member']}" var="pg">
+                            <apex:outputPanel rendered="{!pg<=MemberMapSize && pg>=1}">
+                                <apex:commandLink style="color:#015ba7"  value="{!pg}" action="{!updatePageNumberDisplay}" reRender="MemberBlock" status="MemberStatus" rendered="{!pg!=currentMemberPage}">
+                                   <apex:param name="objectTonavigate" value="Member"/> 
+                                   <apex:param name="selectedPageNum" value="{!pg}"/>                                  
+                                </apex:commandLink>                       
+                                <apex:outputText value="{!pg}" rendered="{!pg==currentMemberPage }">                                                
+                                </apex:outputText>
+                                &nbsp;&nbsp;&nbsp;&nbsp;
+                            </apex:outputPanel>                        
+                         </apex:repeat>
+                        
+                        
+                        <apex:outputPanel >               
+                             <apex:outputText value=">" style="color:grey;font-weight:bold" rendered="{!currentMemberPage >=MemberMapSize}"></apex:outputText> 
+                             <apex:commandLink value=">" status="MemberStatus" style="font-weight:bold" action="{!next}" rerender="MemberBlock" rendered="{!currentMemberPage <MemberMapSize}">
+                                <apex:param name="objectTonavigate" value="Member"/>                                       
+                            </apex:commandLink>   
+                             &nbsp;&nbsp;&nbsp;&nbsp;
+                        </apex:outputPanel>
+                        
+                        <apex:outputPanel >
+                            <apex:commandLink value=">>" status="MemberStatus" style="font-weight:bold" action="{!last}" rerender="MemberBlock" rendered="{!currentMemberPage <MemberMapSize}">
+                                <apex:param name="objectTonavigate" value="Member"/>                                       
+                            </apex:commandLink> 
+                            <apex:outputText value=">>" style="color:grey;font-weight:bold" rendered="{!currentMemberPage >=MemberMapSize}"></apex:outputText> 
+                        </apex:outputPanel>
+                        
+                        <apex:outputPanel >
+                             <apex:actionStatus id="MemberStatus">
+                                <apex:facet name="start" >
+                                    <apex:image url="/img/loading32.gif" height="20px"/>                       
+                                </apex:facet>
+                            </apex:actionStatus>
+                        </apex:outputPanel>
+                         
+                     </apex:pageBlockButtons>
+                 
+                 <apex:pageBlockSection title="Members" columns="1">
+                     <apex:outputLabel rendered="{!MemberMapSize==0}">No records to display</apex:outputLabel>
+                     <apex:pageBlockTable value="{!mapPageToMemberRecords[currentMemberPage]}" var="trm" rendered="{!MemberMapSize>0}">
+                         <apex:column headerValue="Action" rendered="{!isAddDelMember}">
+                             <apex:commandLink value="Del" style="color:#015ba7" action="{!deleteMember}" reRender="MemberBlock" status="MemberDelStatus">
+                                 <apex:param name="memberId" value="{!trm.Id}"/>                                                                       
+                            </apex:commandLink>
+                            <apex:outputPanel >
+                                 <apex:actionStatus id="MemberDelStatus">
+                                    <apex:facet name="start" >
+                                        <apex:image url="/img/loading32.gif" height="20px"/>                       
+                                    </apex:facet>
+                                </apex:actionStatus>
+                            </apex:outputPanel>
+                         </apex:column>
+                         <apex:repeat value="{!$ObjectType.Team_Room_Member__c.FieldSets.VFTeamRoomDetail_Member_Fields}" var="a">           
+                             <apex:column value="{!trm[a]}" rendered="{!$ObjectType['Team_Room_Member__c'].fields[a].accessible}"/>                  
+                         </apex:repeat> 
+                         
+                         <apex:column headerValue="Type">
+                             <apex:outputText rendered="{!trm.Account__c==null && trm.Public_Group_Name__c==null}">Individual</apex:outputText>
+                             <apex:outputText rendered="{!trm.Account__c!=null && trm.Public_Group_Name__c==null}">Account Team</apex:outputText>
+                             <apex:outputText rendered="{!trm.Account__c==null && trm.Public_Group_Name__c!=null}">Public Group</apex:outputText>
+                         </apex:column>
+                     </apex:pageBlockTable>
+                 </apex:pageBlockSection>
+             </apex:pageBlock>         
+         </apex:outputPanel> 
+         
+         <apex:outputPanel layout="block" style="margin-top:40px">
+             
+             <apex:pageBlock id="OpenActivitiesBlock">
+                
+                 <apex:pageBlockButtons location="top">
+                     <apex:commandButton value="New Task" onclick="goToNewTask();return false;" rendered="{!isOwnerorAdmin || isMember==True}"/>
+                     <apex:commandButton value="New Meeting" onclick="goToNewMeeting();return false;" rendered="{!isOwnerorAdmin || isMember==True}"/>
+                 </apex:pageBlockButtons>
+                 
+                
+                 <apex:pageBlockButtons location="bottom" rendered="{!OpenActivityMapSize>1}">
+            
+                        <apex:outputPanel >
+                            <apex:outputText value="<<" style="color:grey;font-weight:bold" rendered="{!currentOpenActPage==1}"></apex:outputText>
+                            <apex:commandLink value="<<" status="OpenActivityStatus" style="font-weight:bold" action="{!first}" reRender="OpenActivitiesBlock" rendered="{!currentOpenActPage>1}">
+                                <apex:param name="objectTonavigate" value="OpenActivity"/>                                       
+                            </apex:commandLink>
+                            &nbsp;&nbsp;&nbsp;&nbsp;
+                        </apex:outputPanel>
+                        
+                        <apex:outputPanel >
+                            <apex:outputText value="<" style="color:grey;font-weight:bold" rendered="{!currentOpenActPage==1}"></apex:outputText>
+                            <apex:commandLink value="<" status="OpenActivityStatus" style="font-weight:bold" action="{!previous}" reRender="OpenActivitiesBlock" rendered="{!currentOpenActPage>1}">
+                                <apex:param name="objectTonavigate" value="OpenActivity"/>                                       
+                            </apex:commandLink>
+                           &nbsp;&nbsp;&nbsp;&nbsp;
+                        </apex:outputPanel>
+                        
+                       
+                        
+                        <apex:repeat value="{!mapObjectToLstDisplayNumber['OpenActivity']}" var="pg">
+                            <apex:outputPanel rendered="{!pg<=OpenActivityMapSize && pg>=1}">
+                                <apex:commandLink style="color:#015ba7"  value="{!pg}" action="{!updatePageNumberDisplay}" reRender="OpenActivitiesBlock" status="OpenActivityStatus" rendered="{!pg!=currentOpenActPage}">
+                                   <apex:param name="objectTonavigate" value="OpenActivity"/> 
+                                   <apex:param name="selectedPageNum" value="{!pg}"/>                                  
+                                </apex:commandLink>                       
+                                <apex:outputText value="{!pg}" rendered="{!pg==currentOpenActPage}">                                                
+                                </apex:outputText>
+                                &nbsp;&nbsp;&nbsp;&nbsp;
+                            </apex:outputPanel>                        
+                         </apex:repeat>  
+                        
+                        
+                        <apex:outputPanel >               
+                             <apex:outputText value=">" style="color:grey;font-weight:bold" rendered="{!currentOpenActPage>=OpenActivityMapSize}"></apex:outputText> 
+                             <apex:commandLink value=">" status="OpenActivityStatus" style="font-weight:bold" action="{!next}" reRender="OpenActivitiesBlock" rendered="{!currentOpenActPage<OpenActivityMapSize}">
+                                <apex:param name="objectTonavigate" value="OpenActivity"/>                                       
+                            </apex:commandLink>   
+                             &nbsp;&nbsp;&nbsp;&nbsp;
+                        </apex:outputPanel>
+                        
+                        <apex:outputPanel >
+                            <apex:commandLink value=">>" status="OpenActivityStatus" style="font-weight:bold" action="{!last}" reRender="OpenActivitiesBlock" rendered="{!currentOpenActPage<OpenActivityMapSize}">
+                                <apex:param name="objectTonavigate" value="OpenActivity"/>                                       
+                            </apex:commandLink> 
+                            <apex:outputText value=">>" style="color:grey;font-weight:bold" rendered="{!currentOpenActPage>=OpenActivityMapSize}"></apex:outputText> 
+                        </apex:outputPanel>
+                        
+                        <apex:outputPanel >
+                             <apex:actionStatus id="OpenActivityStatus">
+                                <apex:facet name="start" >
+                                    <apex:image url="/img/loading32.gif" height="20px"/>                       
+                                </apex:facet>
+                            </apex:actionStatus>
+                        </apex:outputPanel>
+                         
+                     </apex:pageBlockButtons>
+                     <apex:pageBlockSection title="Open Activity" columns="1">
+                          <apex:outputPanel rendered="{!OpenActivityMapSize==0}">No Records To Display</apex:outputPanel>
+                         <apex:pageBlockTable value="{!mapPageToOpenActRecords[currentOpenActPage]}" var="wrap" rendered="{!OpenActivityMapSize>0}">
+                             <apex:column headerValue="Action">
+                                 <apex:commandLink value="Edit" style="color:#015ba7" action="{!goToEditActivity}" rendered="{!wrap.meetingRec!=null && (isOwnerorAdmin==True || isMember==True)}">
+                                      <apex:param name="objectToEdit" value="{!wrap.meetingRec.Id}"/>                                       
+                                 </apex:commandLink>
+                                 <apex:commandLink value="Edit" style="color:#015ba7" action="{!goToEditActivity}" rendered="{!wrap.tskRec!=null && (isOwnerorAdmin==True || isMember==True)}">
+                                      <apex:param name="objectToEdit" value="{!wrap.tskRec.Id}"/>                                       
+                                 </apex:commandLink>
+                                 
+                                 &nbsp;&nbsp;
+                                 <apex:commandLink value="Del" style="color:#015ba7" action="{!deleteActivity}" rendered="{!wrap.meetingRec!=null && (isOwnerorAdmin==True || isMember==True)}" status="OpenActivityDelStatus" reRender="OpenActivitiesBlock">
+                                      <apex:param name="MeetingTonavigate" value="{!wrap.meetingRec.Id}"/>                                       
+                                 </apex:commandLink>
+                                 <apex:commandLink value="Del" style="color:#015ba7" action="{!deleteActivity}" rendered="{!wrap.tskRec!=null && (isOwnerorAdmin==True || isMember==True)}" status="OpenActivityDelStatus" reRender="OpenActivitiesBlock">
+                                      <apex:param name="TaskTonavigate" value="{!wrap.tskRec.Id}"/>                                       
+                                 </apex:commandLink>
+                                 <apex:outputPanel >
+                                     <apex:actionStatus id="OpenActivityDelStatus">
+                                        <apex:facet name="start" >
+                                            <apex:image url="/img/loading32.gif" height="20px"/>                       
+                                        </apex:facet>
+                                    </apex:actionStatus>
+                                </apex:outputPanel>
+                                 
+                             </apex:column>
+                             <apex:repeat value="{!mapFieldNameToLabel}" var="a">           
+                                  <apex:variable value="{!wrap.tskRec}" var="istask"/>     
+                                  <apex:variable value="{!wrap.meetingRec}" var="isMeeting"/>     
+                                  <apex:column headerValue="{!mapFieldNameToLabel[a]}" rendered="{!(mapFieldNameToSobjectName[a]=='Both' && $ObjectType['GF_Task__c'].fields[a].accessible && istask!=null) || (mapFieldNameToSobjectName[a]=='Both' && $ObjectType['Team_Room_Meeting__c'].fields[a].accessible && isMeeting!=null )|| (mapFieldNameToSobjectName[a]=='GF_Task__c' && $ObjectType['GF_Task__c'].fields[a].accessible) || (mapFieldNameToSobjectName[a]=='Team_Room_Meeting__c' && $ObjectType['Team_Room_Meeting__c'].fields[a].accessible)}">                                                                             
+                                     <apex:outputPanel rendered="{!wrap.meetingRec!=null && mapFieldNameToSobjectName[a]!='GF_Task__c'}">
+                                         <apex:outputLink rendered="{!a=='Subject__c'}" value="/{!wrap.meetingRec.Id}">{!wrap.meetingRec.Subject__c}</apex:outputLink>
+                                         <apex:outputField value="{!wrap.meetingRec[a]}" rendered="{!a!='Subject__c'}"></apex:outputField>
+                                     </apex:outputPanel>
+                                     <apex:outputPanel rendered="{!wrap.tskRec!=null && mapFieldNameToSobjectName[a]!='Team_Room_Meeting__c'}">
+                                         <apex:outputLink rendered="{!a=='Subject__c'}" value="/{!wrap.tskRec.Id}">{!wrap.tskRec.Subject__c}</apex:outputLink>
+                                         <apex:outputField value="{!wrap.tskRec[a]}" rendered="{!a!='Subject__c'}"></apex:outputField>
+                                     </apex:outputPanel>
+                                 </apex:column>            
+                             </apex:repeat>
+                         </apex:pageBlockTable>
+                 </apex:pageBlockSection>
+             </apex:pageBlock>         
+         </apex:outputPanel> 
+         
+        
+          <apex:outputPanel layout="block" style="margin-top:40px">
+             <apex:pageBlock id="ActivityHistories">
+                  <apex:pageBlockButtons location="bottom" rendered="{!ClosedActivityMapSize>1}">
+            
+                        <apex:outputPanel >
+                            <apex:outputText value="<<" style="color:grey;font-weight:bold" rendered="{!currentActHistPage==1}"></apex:outputText>
+                            <apex:commandLink value="<<" status="ActivityHistoryStatus" style="font-weight:bold" action="{!first}" reRender="ActivityHistories" rendered="{!currentActHistPage>1}">
+                                <apex:param name="objectTonavigate" value="ActivityHistory"/>                                       
+                            </apex:commandLink>
+                            &nbsp;&nbsp;&nbsp;&nbsp;
+                        </apex:outputPanel>
+                        
+                        <apex:outputPanel >
+                            <apex:outputText value="<" style="color:grey;font-weight:bold" rendered="{!currentActHistPage==1}"></apex:outputText>
+                            <apex:commandLink value="<" status="ActivityHistoryStatus" style="font-weight:bold" action="{!previous}" reRender="ActivityHistories" rendered="{!currentActHistPage>1}">
+                                <apex:param name="objectTonavigate" value="ActivityHistory"/>                                       
+                            </apex:commandLink>
+                           &nbsp;&nbsp;&nbsp;&nbsp;
+                        </apex:outputPanel>
+                        
+                       
+                        <apex:repeat value="{!mapObjectToLstDisplayNumber['ActivityHistory']}" var="pg">
+                            <apex:outputPanel rendered="{!pg<=ClosedActivityMapSize && pg>=1}">
+                                <apex:commandLink style="color:#015ba7"  value="{!pg}" action="{!updatePageNumberDisplay}" reRender="ActivityHistories" status="ActivityHistoryStatus" rendered="{!pg!=currentActHistPage}">
+                                   <apex:param name="objectTonavigate" value="ActivityHistory"/> 
+                                   <apex:param name="selectedPageNum" value="{!pg}"/>                                  
+                                </apex:commandLink>                       
+                                <apex:outputText value="{!pg}" rendered="{!pg==currentActHistPage}">                                                
+                                </apex:outputText>
+                                &nbsp;&nbsp;&nbsp;&nbsp;
+                            </apex:outputPanel>                        
+                         </apex:repeat>
+                         
+                          <apex:outputPanel >               
+                             <apex:outputText value=">" style="color:grey;font-weight:bold" rendered="{!currentActHistPage>=ClosedActivityMapSize}"></apex:outputText> 
+                             <apex:commandLink value=">" status="ActivityHistoryStatus" style="font-weight:bold" action="{!next}" reRender="ActivityHistories" rendered="{!currentActHistPage<ClosedActivityMapSize}">
+                                <apex:param name="objectTonavigate" value="ActivityHistory"/>                                       
+                            </apex:commandLink>   
+                             &nbsp;&nbsp;&nbsp;&nbsp;
+                        </apex:outputPanel>
+                        
+                        <apex:outputPanel >
+                            <apex:commandLink value=">>" status="ActivityHistoryStatus" style="font-weight:bold" action="{!last}" reRender="ActivityHistories" rendered="{!currentActHistPage<ClosedActivityMapSize}">
+                                <apex:param name="objectTonavigate" value="ActivityHistory"/>                                       
+                            </apex:commandLink> 
+                            <apex:outputText value=">>" style="color:grey;font-weight:bold" rendered="{!currentActHistPage>=ClosedActivityMapSize}"></apex:outputText> 
+                        </apex:outputPanel>
+                        
+                        <apex:outputPanel >
+                             <apex:actionStatus id="ActivityHistoryStatus">
+                                <apex:facet name="start" >
+                                    <apex:image url="/img/loading32.gif" height="20px"/>                       
+                                </apex:facet>
+                            </apex:actionStatus>
+                        </apex:outputPanel>
+                         
+                     </apex:pageBlockButtons>
+                 <apex:pageBlockSection title="Activity History" columns="1">
+                     <apex:outputLabel rendered="{!ClosedActivityMapSize==0}">No records to display</apex:outputLabel>
+                     <apex:pageBlockTable value="{!mapPageToActHistRecords[currentActHistPage]}" var="wrap" rendered="{!ClosedActivityMapSize>0}">
+                         <apex:repeat value="{!mapFieldNameToLabel}" var="a">           
+                              <apex:variable value="{!wrap.tskRec}" var="istask"/>     
+                              <apex:variable value="{!wrap.meetingRec}" var="isMeeting"/>     
+                              <apex:column headerValue="{!mapFieldNameToLabel[a]}" rendered="{!(mapFieldNameToSobjectName[a]=='Both' && $ObjectType['GF_Task__c'].fields[a].accessible && istask!=null) || (mapFieldNameToSobjectName[a]=='Both' && $ObjectType['Team_Room_Meeting__c'].fields[a].accessible && isMeeting!=null )|| (mapFieldNameToSobjectName[a]=='GF_Task__c' && $ObjectType['GF_Task__c'].fields[a].accessible) || (mapFieldNameToSobjectName[a]=='Team_Room_Meeting__c' && $ObjectType['Team_Room_Meeting__c'].fields[a].accessible)}">                                                                                  
+                                 <apex:outputPanel rendered="{!wrap.meetingRec!=null && mapFieldNameToSobjectName[a]!='GF_Task__c'}">
+                                     <apex:outputLink rendered="{!a=='Subject__c'}" value="/{!wrap.meetingRec.Id}">{!wrap.meetingRec.Subject__c}</apex:outputLink>
+                                     <apex:outputField value="{!wrap.meetingRec[a]}" rendered="{!a!='Subject__c'}"></apex:outputField>
+                                 </apex:outputPanel>
+                                 <apex:outputPanel rendered="{!wrap.tskRec!=null && mapFieldNameToSobjectName[a]!='Team_Room_Meeting__c'}">
+                                     <apex:outputLink rendered="{!a=='Subject__c'}" value="/{!wrap.tskRec.Id}">{!wrap.tskRec.Subject__c}</apex:outputLink>
+                                     <apex:outputField value="{!wrap.tskRec[a]}" rendered="{!a!='Subject__c'}"></apex:outputField>
+                                 </apex:outputPanel>
+                             </apex:column>            
+                         </apex:repeat>
+                     </apex:pageBlockTable>
+                 </apex:pageBlockSection> 
+             </apex:pageBlock>         
+         </apex:outputPanel>    
+
+               
+      </apex:form> 
+      
+      <apex:outputPanel layout="block" style="margin-top:40px">
+         <apex:pageBlock >
+             <apex:pageBlockSection title="Team Rooms" columns="1">
+                 <apex:relatedList title="" subject="{!Team_Room__c}" list="Team_Rooms__r" />
+             </apex:pageBlockSection>  
+         </apex:pageBlock>      
+       </apex:outputPanel>
+      
+      <!--Update by JOYDEV on 2nd Oct 2013-->      
+      <!--Update by JOYDEV on 20th Feb 2014-->      
+      <!--<apex:form rendered="{!ISPICKVAL($User.UserType,'Standard')}">-->
+      <!--Modified by ARoy on 06192014 - Commenting the Proposals in Team Room Detail Page-->
+      <!--
+      <apex:form >
+        <apex:outputPanel layout="block" style="margin-top:40px">
+            <apex:pageBlock >
+                <apex:pageblockButtons location="top">
+                    <apex:commandButton action="{!createProposalRedirection}"
+                                        value="New Proposal"
+                                        immediate="true"/>
+                </apex:pageblockButtons>
+                
+                <apex:pageBlockSection title="Proposals" columns="1">
+                    <apex:pageBlockTable value="{!LstProposals}" 
+                                         var="prop" 
+                                         rendered="{!NOT(ISNULL(LstProposals))}">
+                        <apex:repeat value="{!$ObjectType.Apttus_Proposal__Proposal__c.FieldSets.Related_List_Column_for_Team_Room}" 
+                                     var="f">                
+                            <apex:column headerValue="{!f.Label}">
+                                <apex:outputField value="{!prop[f]}"
+                                                  rendered="{!IF(f='Name', False, True)}"/>
+                                <apex:outputPanel rendered="{!IF(f='Name', True, False)}">
+                                    <a href="/{!IF(ISPICKVAL($User.UserType,'Standard'),'','GlobalfoundryView/')}{!prop.Id}">{!prop[f]}</a>
+                                </apex:outputPanel>
+                            </apex:column>                                                    
+                        </apex:repeat>
+                    </apex:pageBlockTable>
+                    <apex:outputLabel value="No records to display" 
+                                      rendered="{!(ISNULL(LstProposals))}" 
+                                      styleClass="noRowsHeader"/>
+                </apex:pageBlockSection>  
+             </apex:pageBlock>      
+          </apex:outputPanel>
+      </apex:form>
+      -->
+      
+    <!-- Changes Related to Case Management (Sprint18) -->  
+      
+       <apex:outputPanel layout="block" style="margin-top:40px">
+         <apex:pageBlock >
+             <apex:pageBlockSection title="Cases" columns="1">
+                 <apex:relatedList title="" subject="{!Team_Room__c}" list="Cases__r" rendered="{!$ObjectType.Case.accessible}" />
+             </apex:pageBlockSection>  
+         </apex:pageBlock>      
+       </apex:outputPanel> 
+       
+      <!-- Changes END Related to Case Management-->
+ <!--      
+       <apex:outputPanel layout="block" style="margin-top:40px">
+         <apex:pageBlock >
+             <apex:pageBlockSection title="Devices" columns="1">
+                 <apex:relatedList title="" subject="{!Team_Room__c}" list="Devices__r" />
+             </apex:pageBlockSection>  
+         </apex:pageBlock>      
+       </apex:outputPanel> 
+      -->
+
+        
+    <apex:outputPanel layout="block" style="margin-top:40px" rendered="{!showNotesAndAttachments}"> 
+         <apex:pageBlock >
+             <apex:pageBlockSection title="Notes and Attachments" columns="1">
+                 <apex:relatedList title="" subject="{!Team_Room__c}" list="NotesAndAttachments" />
+             </apex:pageBlockSection>  
+         </apex:pageBlock>      
+       </apex:outputPanel>
+   
+   </apex:outputPanel>       
+
+</apex:page>

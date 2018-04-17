@@ -1,0 +1,782 @@
+<!--
+	Page API Name : CPQ_Proposal_pdf
+-->
+<apex:page showheader="false" sidebar="false" controller="CPQProposalPDFController" renderAs="pdf" action="{!savePDF}" standardStylesheets="false" applyBodyTag="false" > 
+	<head>
+		<style type="text/css" media="print">
+			@page {
+				@top-right{ 
+					content: element(header);
+				}
+				@bottom-left {
+					content: element(footer);
+				}
+			}
+			div.header {
+				padding: 10px;
+				position: running(header);
+			}
+			div.footer {
+				display: block;
+				padding: 5px;
+				position: running(footer);
+			}
+			.pagenumber:before {
+				content: counter(page);
+			}
+			.pagecount:before {
+				content: counter(pages);
+			}
+		</style>
+	</head>
+	
+	<div class="header" style="color:#808080;text-align:right;">
+		<div>
+			<table align="right">
+			<tr>
+			  <td align="left">Configuration ID:</td>
+			  <td>{!proposal.Name}</td>
+			</tr>
+			<tr>
+			  <td align="left">Page:</td>
+			  <td><span class="pagenumber"/> of <span class="pagecount"/></td>
+			</tr>
+			</table>
+		</div>
+	</div>
+
+	<div class="footer" style="color:#808080;">
+		<center>                 
+			<div>GLOBALFOUNDRIES Confidential
+				<br/>
+				Any hard and soft copy out of the Document Management System deemed as uncontrolled.
+			</div>
+		</center>
+	</div>
+
+	<div class="content">
+		<apex:image rendered="{!if(proposal.Purpose_of_the_Configuration__c != 'Final',true,false)}" 
+					value="{!URLFOR($Resource.DraftWatermark)}" width="100%" height="100%"
+					style="position: fixed;background-repeat:repeat;left: 0cm; top:0cm; z-index:-999; opacity=10;">
+		</apex:image>
+		<br/>
+
+		<table width="100%" style="font-size:14px;" align="center">
+			<tr>
+				<td>
+					<apex:image value="{!$Resource.GFLogo}" height="130px;"/>
+					<p>
+						<b>
+							Contact your GLOBALFOUNDRIES Customer Engineering or Field Engineering representative for 
+							question or comments about this Proposal.  
+						</b>
+					</p>
+					<p>
+						<b>  
+							Copyright © 2012 by GLOBALFOUNDRIES 
+						</b>
+					</p>
+					<p style="font-size:12px;">        
+						The information disclosed herein is the property of GLOBALFOUNDRIES. GLOBALFOUNDRIES reserves all 
+						proprietary, design, manufacturing, reproduction, use, and sales right thereto, and to any article or 
+						process utilizing such information, except to the extent that rights are expressly granted to others.
+					</p>
+				</td>
+			</tr>
+		</table>
+		
+		<!--
+
+						FIRST SECTION  -  CUSTOMER INFORMATION - to be Displayed always
+
+		-->
+		
+		<div style="page-break-inside: avoid;">
+			<table align="center" width="100%" cellspacing="0" cellpadding="4" border="0" style="font-size:18px;">
+				<tr>
+					<td colspan="2">
+						<b>Customer Information</b>
+					</td>
+				</tr>
+			</table>
+		
+			<table align="center" width="100%" style="margin-top:20px;margin-bottom:20px;" cellspacing="0" cellpadding="4" border="1">
+				<tr>
+					<td width="40%">Customer</td>
+					<td>{!proposal.Apttus_Proposal__Account__r.name}</td>   
+				</tr>
+				<tr>
+					<td>Configuration Name</td>
+					<td>{!proposal.Apttus_Proposal__Proposal_Name__c}</td>   
+				</tr>
+				<tr>
+					<td>Process Description</td>
+					<td>{!productLine.Apttus_Proposal__Description__c}</td>   
+				</tr>
+				<tr>
+					<td>Purpose of the Configuration</td>
+					<td>{!proposal.Purpose_of_the_Configuration__c}</td>   
+				</tr>
+				<tr>
+					<td>Configuration ID</td>
+					<td>Product Config - {!proposal.Apttus_Proposal__Proposal_Name__c}</td>   
+				</tr>
+				<tr>
+					<td>Process Technology Name</td>
+					<td>{!proposal.Process_Technology_Name__c}</td>   
+				</tr>
+				<tr>
+					<td>Author</td>
+					<td>{!proposal.Owner.Name}</td>   
+				</tr>
+				<tr>
+					<td>Contact</td>
+					<td>{!proposal.Apttus_Proposal__Primary_Contact__r.Firstname & ' ' & proposal.Apttus_Proposal__Primary_Contact__r.Lastname}</td>   
+				</tr>
+				<tr>
+					<td>Contact Email</td>
+					<td>{!proposal.Apttus_Proposal__Primary_Contact__r.Email}</td>   
+				</tr>
+				<tr>
+					<td>Device Name</td>
+					<td>{!proposal.Device__r.Name}</td>   
+				</tr>
+				<tr>
+					<td>DM Version in use</td>
+					<td>{!proposal.PDK_Version__c}</td>   
+				</tr>
+				<tr>
+					<td>Application</td>
+					<td>{!proposal.Application__c}</td>   
+				</tr>
+				<tr>
+					<td>Forecast Tape out Date</td>
+					<td>
+						<apex:outputText value="{0,date,MM/dd/yyyy}">
+							<apex:param value="{!proposal.Forecast_Tape_out_Date__c}"/>
+						</apex:outputText>
+					</td>   
+				</tr>
+				<tr>
+					<td>VV Large via Size Option</td>
+					<td>{!proposal.VV_Large_Via_Size_option__c}</td>   
+				</tr>
+				<tr>
+					<td>Fab Name</td>
+					<td>{!proposal.Fab_Name__c}</td>   
+				</tr>
+				<tr>
+					<td>Fab Location</td>
+					<td>{!proposal.Fab_Location__c}</td>   
+				</tr> 
+			</table>
+		</div>
+
+		<!--
+
+						
+						SECTION(S)  - Product Attribute Groups 
+		
+		-->
+		<div style="page-break-inside: avoid;">
+			<!-- added by shiva start -->
+			<apex:outputpanel layout="none">
+				<apex:repeat value="{!objProposalAttributesController.ProdGrpSect}" var="grp">
+					<apex:variable var="i" value="{!1}"/> 
+					<apex:outputpanel layout="none">
+						<div>
+							<table align="center"  width="100%" style="margin-top:20px;margin-bottom:20px;" cellspacing="0" cellpadding="4" border="1">
+								<tr>
+									<td colspan="2"><b>{!grp}</b></td>
+								</tr>
+								<apex:repeat value="{!objProposalAttributesController.attrMap[grp]}" var="c">
+									<apex:outputpanel layout="none">
+										<tr>
+											<td  width="40%">{!c.Attvalue}</td>
+											<td>{!c.Attlabel}</td>
+										</tr>
+									</apex:outputpanel>
+									<apex:variable var="i" value="{!i}"/>
+								</apex:repeat>
+								<br/>
+							</table> 
+						</div> 
+					</apex:outputpanel>
+				</apex:repeat>
+			</apex:outputpanel>
+			<!-- added by shiva end -->
+		</div>
+		
+		<!--
+						
+						SECTION  -  METAL STACK & PACKAGING DETAILS
+						
+						Displays -  list of "Apttus_Proposal__Proposal_Line_Item__c" with Option_Product_Family_Static__c = 'Packaging' OR 'packaging' order by CategoryHierarchy.Left ASC
+						
+						Displays -  list of "Configurator Plus Responses" with (level, uniqueIdentifier & response) != blank
+		
+		-->
+		<apex:outputpanel layout="none">
+			<div style="page-break-inside: avoid;">
+				<table  align="center" width="100%" style="margin-top:20px;margin-bottom:20px;{!IF(proposal.IS_Manually_Configured__c,'display:none','display:')}" cellspacing="0" cellpadding="4" border="1">
+					<tr>
+						<td colspan='2' style="background-color:#f3f3ec"><b>Metal Stack &amp; Packaging Details</b> </td>
+					</tr>
+					<tr>
+						<td>Metal Option</td>
+						<td>{!proposal.APTPS_Metal_Options__c}</td>   
+					</tr>
+					
+					<apex:repeat value="{!lstPacakgingLstLineItem}" var="objpackge">
+						<tr>
+							<td>{!objpackge.Option_Section_Name_Static__c}</td>
+							<td>{!objpackge.Option_Name_Static__c}</td>
+						</tr>
+					</apex:repeat>
+					
+					<apex:repeat value="{!lstAdvancedPackagingResponses}" var="AdvancedPackagingResponse">
+						<tr>
+							<td>{!AdvancedPackagingResponse.Configurator_Plus_Question__r.Question_Name__c}</td>
+							<td>{!AdvancedPackagingResponse.Response__c}</td>
+						</tr>
+					</apex:repeat>
+					<tr>
+						<td>Packaging Customization Details</td>
+						<td>{!proposal.Packaging_Customisation_Details__c}</td>   
+					</tr>
+					<tr>
+						<td>Packaging Disclaimer Message</td>
+						<td>{!proposal.Packaging_Disclaimer_Message__c}</td>   
+					</tr>
+				</table>
+			</div>
+		</apex:outputpanel> 
+		
+		
+		<!--
+						
+						SECTION  -  IPs Listing
+						
+						Displays -  list of "Apttus_Proposal__Proposal_Line_Item__c" with Option_Product_Family_Static__c = 'IPs'
+									- fetching the latest IP Design Kit Name from the system dynamically
+									- Displaying each device in the ipDeviceList in new line
+						
+		
+		-->
+	    <apex:outputpanel layout="none" rendered='{!lstWrapIp!=null && lstWrapIp.size>0}'> 
+			<div style="page-break-inside: avoid;">
+				<table  align="center" width="100%" style="table-layout: fixed;margin-top:20px;margin-bottom:20px;{!IF(proposal.IS_Manually_Configured__c,'display:none','display:')}" cellspacing="0" cellpadding="4" border="1">
+					<tr>
+						<td colspan='4' style="background-color:#f3f3ec"><b>IPs Listing</b></td>
+					</tr>
+					<tr>
+						<td width="20%" style="word-wrap: break-word;"><b>IPs</b></td>
+						<!--td><b>IP Lifecycle</b></td-->
+						<td><b>LIBID</b></td>
+						<td><b>IP Type</b></td>
+						<!--<td><b>IP Vendors</b></td> -->
+						<td><b>Device</b></td>
+					</tr>  
+					<apex:repeat value="{!lstWrapIp}" var="ips">
+						<tr>
+							<td width="20%" style="word-wrap: break-word;">{!ips.item.Option_Name_Static__c}</td>
+							<!--td>{!ips.item.APTPS_IP_Lifecycle__c}</td-->
+							<td>{!IF(ISBLANK(ips.item.IP_Design_Kit__c),IF(ISBLANK(ips.ipid),ips.item.Option_Product_ExternalId_Static__c,ips.ipid),ips.item.IP_Design_Kit__c)}</td> 
+							<td>{!ips.item.APTPS_IP_Type__c}</td> 
+							<!--<td>{!ips.item.IP_Vendors__c}</td>-->
+							<td width="40%" style="word-wrap: break-word;">{!ips.device}</td>
+						</tr>
+					</apex:repeat>
+				</table>
+			</div>
+		</apex:outputpanel>
+		
+		
+		<!--
+						
+						SECTION  -  IPs Merge Kit
+						Displays -  list of "Configurator_Plus_IP_Merge_Kit__c" records
+		
+		-->
+		<apex:outputpanel layout="none" rendered='{!lstIpMergeKit!=null && lstIpMergeKit.size>0}'> 
+			<div style="page-break-inside: avoid;">
+				<table  align="center" width="100%" style="margin-top:20px;margin-bottom:20px;{!IF(proposal.IS_Manually_Configured__c,'display:none','display:')}" cellspacing="0" cellpadding="4" border="1">
+					<tr>
+						<td colspan='2' style="background-color:#f3f3ec"><b>IPs Merge Kit</b></td>
+					</tr>
+					<tr>
+						<td><b>IP Merge</b></td>
+						<td><b>Comment</b></td>        
+					</tr>  
+					<apex:repeat value="{!lstIpMergeKit}" var="ips">
+						<tr>
+							<td>{!ips.IP_Merge__r.Name}</td>
+							<td>{!ips.Comment__c}</td>
+						</tr>
+					</apex:repeat>
+				</table>
+			</div>
+		</apex:outputpanel>
+		
+		
+		<!--
+						
+						SECTION  -  Device-Mask Layers
+						Displays -  list of "Apttus_Proposal__Proposal_Line_Item__c" with Option_Product_Family_Static__c = 'Devices'
+						
+		-->	 
+		<apex:outputpanel layout="none" rendered='{!lstDevicesLstLineItem!=null && lstDevicesLstLineItem.size>0}'> 
+			<div style="page-break-inside: avoid;">
+				<table  align="center" width="100%" style="margin-top:20px;margin-bottom:20px;{!IF(proposal.IS_Manually_Configured__c,'display:none','display:')}" cellspacing="0" cellpadding="4" border="1">
+					<tr>
+						<td colspan='4' style="background-color:#f3f3ec"><b>Device-Mask Layers</b></td>
+					</tr>
+					<tr>
+						<td><b>Type</b></td>
+						<td><b>Device</b></td>
+						<td><b>Mask Sets</b></td>
+						<td><b>Description</b></td>
+					</tr>  
+					<apex:repeat value="{!lstDevicesLstLineItem}" var="ips">
+						<tr>
+							<td>{!ips.Option_Section_Name_Static__c}</td>
+							<td>{!ips.Option_Name_Static__c}</td>
+							<td>{!ips.Option_Mask_Sets_Static__c}</td>
+							<td>{!ips.Option_Model_Name_Static__c}</td>
+						</tr>
+					</apex:repeat>
+				</table>
+			</div>
+		</apex:outputpanel>
+		
+		
+		<!--
+						
+						SECTION  -  Poly Orientation used for DRC Check & Final Delivery
+		
+		-->	 
+		<div style="page-break-inside: avoid;">
+			<table align="center" width="100%" style="margin-top:20px;margin-bottom:20px;" cellspacing="0" cellpadding="4" border="1">
+				<tr>
+					<td colspan='2' style="background-color:#f3f3ec"><b>Poly Orientation used for DRC Check &amp; Final Delivery</b></td>
+				</tr>
+				<tr>
+					<td  width="40%">SRAM</td>
+					<td>{!proposal.SRAM__c}</td>   
+				</tr>
+				<tr>
+					<td>SRAM Gate Orientation</td>
+					<td>{!proposal.SRAM_Gate_Orientation__c}</td>   
+				</tr>
+				<tr>
+					<td>Gate Orientation Horizontal &amp; Vertical</td>
+					<td>{!proposal.Gate_Orientation_Horizontal_Vertical__c}</td>   
+				</tr>
+				<tr>
+					<td>Gate Orientation PFET</td>
+					<td>{!proposal.Gate_Orientation_PFET__c}</td>   
+				</tr>
+				<tr>
+					<td>ACLV Gate Orientation</td>
+					<td>{!proposal.ACLV_Gate_Orientation__c}</td>   
+				</tr>
+				<tr>
+					<td>Anti-Clockwise Die Rotation @ Tape Out</td>
+					<td>{!proposal.PTRF_Rotation__c}</td>   
+				</tr>
+			</table>
+		</div>
+		
+		
+		<!--
+						
+						SECTION  -  SRAM
+							[proposal.SRAM_Sizes__c.Split('<:>')]-- Split('>:<')
+		-->	 
+		<apex:outputpanel layout="none" rendered='{!LstSRAMDevicesView!=null && LstSRAMDevicesView.size>0}'> 
+			<div style="page-break-inside: avoid;">
+				<table  align="center" width="100%" style="margin-top:20px;margin-bottom:20px;" cellspacing="0" cellpadding="4" border="1">
+					<tr>
+						<td colspan='2' style="background-color:#f3f3ec"><b>SRAM</b></td>
+					</tr>
+					<tr>
+						<td><b>SRAM</b></td> 
+						<td><b>Size</b></td>      
+					</tr>  
+					<apex:repeat value="{!LstSRAMDevicesView}" var="ips">
+						<tr>
+							<td>{!ips.prodName}</td>
+							<td>{!ips.size}</td>        
+						</tr>
+					</apex:repeat>
+				</table>
+			</div>
+		</apex:outputpanel>
+		
+		
+		<!--
+						
+						SECTION  -  Additional Requirements
+		
+		-->	 
+		<div style="page-break-inside: avoid;">
+			<table align="center" width="100%" style="margin-top:20px;margin-bottom:20px;" cellspacing="0" cellpadding="4" border="1">
+				<tr>
+					<td colspan='2' style="background-color:#f3f3ec"><b>Additional Requirements</b></td>
+				</tr>
+				<tr>
+					<td  width="40%">Is there a gap/changes required in Layer Mapping Table ?</td>
+					<td>{!proposal.Is_there_gap_req_in_Layer_Map_Table__c}</td>   
+				</tr>
+
+				<tr>
+					<td>Any other Special Requirements</td>
+					<td>{!proposal.Any_other_Special_Requirements__c}</td>   
+				</tr>
+				<tr>
+					<td>DMOS Type?</td>
+					<td>{!proposal.DMOS_Type__c}</td>   
+				</tr>
+				<tr>
+					<td>Additional Scribeline/Dropin Requirement?</td>
+					<td>{!proposal.Additional_Scribeline_Dropin_Req__c}</td>   
+				</tr>
+				<tr>
+					<td>Other Special Requirements?</td>
+					<td>{!proposal.Other_Special_Requirements__c}</td>   
+				</tr>
+				<tr>
+					<td>Drop-in Required?</td>
+					<td>{!proposal.Drop_in_Required__c}</td>   
+				</tr>
+				<tr>
+					<td>Special test structure placement</td>
+					<td>{!proposal.Special_test_structure_placement__c}</td>   
+				</tr> 
+				<tr>
+					<td>BEOL stack (Not offered by DM)</td>
+					<td>{!proposal.BEOL_stack_Not_offered_by_DM__c}</td>   
+				</tr> 
+				<tr>
+					<td>SRAM cell (Not offered by DM)</td>
+					<td>{!proposal.SRAM_cell_Not_offered_by_DM__c}</td>   
+				</tr> 
+				<tr>
+					<td>Speed-push (Not offered by DM)</td>
+					<td>{!proposal.Speed_push_Not_offered_by_DM__c}</td>   
+				</tr> 
+				<tr>
+					<td>Request for special chip arrangement</td>
+					<td>{!proposal.Request_for_special_chip_arrangement__c}</td>   
+				</tr>  
+				<tr>
+					<td>Metal Wall/Seal Ring(NotPartOfCustProd)</td>
+					<td>{!proposal.Metal_Wall_Seal_Ring_NotPartOfCustProd__c}</td>   
+				</tr>
+				<tr>
+					<td>Dicing dependency(wafer back grind thik)</td>
+					<td>{!proposal.Dicing_dependency__c}</td>   
+				</tr>
+				<tr>
+					<td>Special illumination field usage)</td>
+					<td>{!proposal.Special_illumination_field_usage__c}</td>   
+				</tr>
+			</table>
+		</div>
+		
+		
+		<!--
+						
+						SECTION  -  Roadmap features
+						Displays -  list of "Configurator_Plus_Response__c" records with Response = 'TRUE' & ResponseType = 'Roadmap Features'
+		-->	 
+		<apex:outputpanel layout="none" rendered='{!lstConfigResponse!=null && lstConfigResponse.size>0}'> 
+			<div style="page-break-inside: avoid;">
+				<table  align="center" width="100%" style="margin-top:20px;margin-bottom:20px;" cellspacing="0" cellpadding="4" border="1">
+					<tr>
+						<td colspan='2' style="background-color:#f3f3ec"><b>Roadmap features</b></td>
+					</tr>
+					<tr>
+						<td><b>Roadmap Features</b></td>
+						<td><b>Metal Options</b></td>
+						<!-- td>Expected Release date</td-->
+					</tr>  
+					<apex:repeat value="{!lstConfigResponse}" var="ips">
+						<tr>
+							<td>{!ips.Configurator_Plus_Question__r.Question_Name__c}</td>
+							<td>{!ips.Configurator_Plus_Question__r.Metal_Options__c}</td>
+							<!--td>{!ips.Configurator_Plus_Question__r.Expected_Release_date__c}</td-->
+						</tr>
+					</apex:repeat>
+				</table>
+			</div>
+		</apex:outputpanel>
+		
+
+		<!--
+						
+						SECTION  -  Frontside-Laserscribe
+						Displays -  list of "Configurator_Plus_Response__c" with ResponseType ='Additional Requirement'
+		
+		-->	 
+		<apex:outputpanel layout="none" rendered='{!responselist1!=null && responselist1.size>0}'> 
+			<div style="page-break-inside: avoid;">
+				<table  align="center" width="100%" style="margin-top:20px;margin-bottom:20px;" cellspacing="0" cellpadding="4" border="1">
+					<tr>
+						<td colspan='2' style="background-color:#f3f3ec"><b>Frontside-Laserscribe</b></td>
+					</tr>
+					<apex:repeat value="{!responselist1}" var="ips">
+						<tr>
+							<td><b>{!ips.Name__c}</b></td>
+							<td>{!If(ips.Response__c = "Others",ips.Additional_Response__c,ips.Response__c)}</td>        
+						</tr>
+					</apex:repeat>
+				</table>
+			</div>
+		</apex:outputpanel>
+		
+		
+		<!--
+						
+						SECTION  -  Scribewidth Output
+		
+		-->	 
+		<div style="page-break-inside: avoid;">
+			<table  align="center" width="100%" style="margin-top:20px;margin-bottom:20px;" cellspacing="0" cellpadding="4" border="1">
+				<tr>
+					<td colspan='4' style="background-color:#f3f3ec"><b>Scribewidth Output</b></td>
+				</tr>
+				<tr>        
+					<td>Dies horizontal (X) per illumination field</td> 
+					<td>{!proposal.Device__r.Dies_X_per_illumination_field__c}</td>
+					<td>Dies vertical (Y) per illumination field</td>
+					<td>{!proposal.Device__r.Dies_Y_per_illumination_field__c}</td>      
+				</tr>
+				<tr>        
+					<td>Minimum horizontal scribe width X post shrink</td> 
+					<td>{!proposal.Device__r.Min_scribe_width_X_post_shrink__c}</td>
+					<td>Minimum vertical scribe width Y post shrink</td>
+					<td>{!proposal.Device__r.Min_scribe_width_Y_post_shrink__c}</td> 
+				</tr>  
+				<tr>        
+					<td>Standard horizontal scribe width X post shrink</td> 
+					<td>{!proposal.Device__r.Std_scribe_width_X_post_shrink__c}</td>
+					<td>Standard vertical scribe width Y post shrink</td>
+					<td>{!proposal.Device__r.Std_scribe_width_Y_post_shrink__c}</td>      
+				</tr>  
+			</table>
+		</div>
+
+	  
+		<!--
+						
+						SECTION  -  IP Declaration Form
+						Displays -  list of "IP_Declaration_Form__c" records
+		->
+		<apex:outputpanel layout="none" rendered='{!lstIpDeclaration!=null && lstIpDeclaration.size>0}'> 
+			<div style="page-break-inside: avoid;">
+				<table  align="center" width="100%" style="margin-top:20px;margin-bottom:20px;" cellspacing="0" cellpadding="4" border="1">
+					<tr>
+						<td colspan='6' style="background-color:#f3f3ec"><b>IP Declaration Form</b></td>
+					</tr>
+					<tr>
+						<td>IP Declaration Form ID</td>
+						<td>IP Declaration Template</td>
+						<td>IP Technology</td>
+						<td>Fab</td>
+						<td>Form Submitted Date</td>
+						<td>Last Modified By</td>
+					</tr>  
+					<apex:repeat value="{!lstIpDeclaration}" var="ips">
+						<tr>
+							<td>{!ips.Name}</td>
+							<td>{!ips.IP_Declaration_Template__c}</td>
+							<td>{!ips.IP_Technology__c}</td>
+							<td>{!ips.Fab__c}</td>
+							<td>{!ips.Form_Submitted_Date__c}</td>
+							<td>{!ips.LastModifiedBy__c}</td>
+						</tr>
+					</apex:repeat>
+					</table>
+			</div>
+		</apex:outputpanel>
+		
+		-->
+		
+		
+		<!--
+						
+						SECTION  -  Additional Enabled Devices
+		
+			->	 
+			<div style="page-break-inside: avoid;">
+				<table  align="center" width="100%" style="margin-top:20px;margin-bottom:20px;{!IF(proposal.IS_Manually_Configured__c,'display:none','display:')}" cellspacing="0" cellpadding="4" border="1">
+					<tr>
+						<td colspan='1' style="background-color:#f3f3ec"><b>Additional Enabled Devices</b></td>
+					</tr>
+					<tr>
+						<td><apex:outputText value="{!proposal.Free_Device_Names__c}" escape="false"></apex:outputText></td>
+					</tr>  
+				</table>
+			</div>
+		-->
+
+
+		<!--
+						
+						SECTION  -  Additional Enabled Transistor Device(not used for current tapeout)
+						Displays -  list of "Product2" Where ProductCode IN [proposal.Free_Devices__c.split('<:>')]
+		-->
+		<apex:outputpanel layout="none" rendered='{!LstFreeDevices!=null && LstFreeDevices.size>0}'> 
+			<div style="page-break-inside: avoid;">
+				<table  align="center" width="100%" style="margin-top:20px;margin-bottom:20px;{!IF(proposal.IS_Manually_Configured__c,'display:none','display:')}" cellspacing="0" cellpadding="4" border="1">
+					<tr>
+							<td colspan='{!$ObjectType.Product2.FieldSets.Free_Devices_Columns.size}' style="background-color:#f3f3ec"><b>Additional Enabled Transistor Device(not used for current tapeout)</b></td>
+					</tr>
+					<tr>
+						<apex:repeat value="{!$ObjectType.Product2.FieldSets.Free_Devices_Columns}" var="f">
+							<td>{!f.label}</td>
+						</apex:repeat>
+					</tr>  
+					<apex:repeat value="{!LstFreeDevices}" var="Device">
+						<tr>
+							<apex:repeat value="{!$ObjectType.Product2.FieldSets.Free_Devices_Columns}" var="f"> 
+								<td>{!Device[f]}</td>
+							</apex:repeat>
+						</tr>
+					</apex:repeat>
+				</table>
+			</div>
+		</apex:outputpanel>
+		
+		
+		<!--
+						
+						SECTION  -  Mask Process Steps
+		
+		-->
+		<div style="page-break-inside: avoid;">
+			<table  align="center" width="100%" style="margin-top:20px;margin-bottom:20px;{!IF(proposal.IS_Manually_Configured__c,'display:none','display:')}" cellspacing="0" cellpadding="4" border="1">
+				<tr>
+					<td colspan='1' style="background-color:#f3f3ec"><b>Mask Process Steps</b></td>
+				</tr>
+				<tr>
+					<td>{!proposal.Mask_Count__c}</td>
+				</tr>  
+				<tr>
+					<td>{!proposal.Mask_Set_Long__c}</td>
+				</tr>  
+			</table>
+		</div>
+		
+		
+		<!--
+						
+						SECTION  -  Assigned PID Mask Process Steps
+						
+						Added by Ravi Teja 08012017 Case#00084788
+		
+		-->
+		<apex:outputpanel layout="none" rendered="{!proposal.Assigned_Process_ID__c != null}"> 
+			<div style="page-break-inside: avoid;">
+				<table  align="center" width="100%" style="margin-top:20px;margin-bottom:20px;{!IF(proposal.IS_Manually_Configured__c,'display:none','display:')}" cellspacing="0" cellpadding="4" border="1">
+					<tr>
+						<td colspan='1' style="background-color:#f3f3ec"><b>Assigned PID Mask Process Steps</b></td>
+					</tr>
+					<tr>
+						<td>{!assignedPIDMaskCount}</td>
+					</tr>  
+					<tr>
+						<td>{!assignedPIDMask}</td>
+					</tr>  
+				</table>
+			</div>
+		</apex:outputpanel>
+		
+		
+		<!--
+						
+						SECTION  -  Additional Questions
+						Displays -  list of "Apttus_Proposal__Proposal_Line_Item__c" with Option_Product_Family_Static__c = 'Additional Questions'
+		
+		-->
+		<apex:outputpanel layout="none" rendered='{!lstAddlntQuesLstLineItem!=null && lstAddlntQuesLstLineItem.size>0}'> 
+			<div style="page-break-inside: avoid;">
+				<table  align="center" width="100%" style="margin-top:20px;margin-bottom:20px;{!IF(proposal.IS_Manually_Configured__c,'display:none','display:')}" cellspacing="0" cellpadding="4" border="1">   
+					<tr>
+						<td style="background-color:#f3f3ec"><b>Additional Questions</b></td>
+						<!-- <td style="background-color:#f3f3ec"><b>Value</b></td> -->
+					</tr>          
+					<apex:repeat value="{!lstAddlntQuesLstLineItem}" var="ips">
+						<tr>
+							<td>{!ips.Option_Name_Static__c}</td>
+							<!-- <td></td> -->
+						</tr>
+					</apex:repeat>
+				</table>
+			</div>
+		</apex:outputpanel>
+		
+		<!--
+						
+						SECTION  -  Reference flows
+						Displays -  list of "Apttus_Proposal__Proposal_Line_Item__c" with Option_Product_Family_Static__c = 'RF'
+		-->
+		<apex:outputpanel layout="none" rendered='{!lstRFLstLineItem!=null && lstRFLstLineItem.size>0}'> 
+			<div style="page-break-inside: avoid;">
+				<table  align="center" width="100%" style="margin-top:20px;margin-bottom:20px;{!IF(proposal.IS_Manually_Configured__c,'display:none','display:')}" cellspacing="0" cellpadding="4" border="1">   
+					<tr>
+						<td colspan='2' style="background-color:#f3f3ec"><b>Reference flows</b></td>
+					</tr>
+						
+					<apex:repeat value="{!lstRFLstLineItem}" var="ips">
+						<tr>
+							<td>{!ips.Option_Name_Static__c}</td>
+						</tr>
+					</apex:repeat>
+				</table>
+			</div>
+		</apex:outputpanel>
+		
+		
+		<!--
+						
+						SECTION  -  Post Fab Services (for PCM Configurations)
+		
+		-->	 
+		<div style="page-break-inside: avoid;">
+			<c:CPQ_PostFabServicesReadonlyView configurationId="{!proposal.id}" generatePdf="true"/>
+		</div>
+		
+		
+		<!--
+						
+						SECTION  -  Applicable for Manually Configured Configuration only
+		
+		-->	 
+		<div style="page-break-inside: avoid;">
+			<table align="center"  width="100%" style="margin-top:20px;margin-bottom:20px;{!IF(proposal.IS_Manually_Configured__c,'display:','display:none')}" cellspacing="0" cellpadding="4" border="1">
+			  <tr>
+				<td colspan='2' style="background-color:#f3f3ec"><b>Custom Configuration</b></td>
+			  </tr>
+			  <tr>
+				<td  width="40%">Devices</td>
+				<td>{!proposal.Devices_1__c}</td>   
+			  </tr>
+			  <tr>
+				<td>IPs</td>
+				<td>{!proposal.IPs__c}</td>   
+			  </tr>
+			  <tr>
+				<td>Metal Options</td>
+				<td>{!proposal.Metal_Stacks_1__c}</td>   
+			  </tr>
+			  <tr>
+				<td>Masks</td>
+				<td>{!proposal.Mask_layers_1__c}</td>   
+			  </tr>
+			</table>
+		</div>
+		
+	</div>
+</apex:page>

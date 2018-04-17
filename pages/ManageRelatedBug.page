@@ -1,0 +1,70 @@
+<!-- 
+   Type Name:  ManageRelatedBug.page
+   Author: Cognizant 
+   Created Date: 05/14/2014
+   Reason: 
+   Change History:
+   Author: 
+   Modified Date: 
+   Reason: 
+    -->
+<apex:page extensions="ManageRelatedBug" standardController="Bug__c">
+   <style type="text/css">
+      .exceptionText{ 
+      font-size:16\2px; 
+      text-align:left;
+      color:red;}
+   </style>
+   <apex:form >
+      <apex:sectionHeader title="Related Bug Association Page"/>
+      <apex:outputPanel id="msg">
+         <apex:facet name=""></apex:facet>
+         <apex:messages styleClass="exceptionText"/>
+      </apex:outputPanel>
+      <apex:pageblock >
+         <apex:pageBlockSection columns="2">
+            <apex:commandLink value="back to bug detail page >>>" action="{!redirecttoBug}" immediate="True"/>
+            <apex:commandButton value="Done" action="{!redirecttoBug}" immediate="true" style="float:right;"/>
+         </apex:pageBlockSection>
+      </apex:pageblock>
+      <apex:messages />
+      <apex:outputPanel id="addbug">
+         <apex:pageblock title="Associate Bugs">
+            <apex:pageblocksection columns="1">
+               <script type='text/javascript' src= '//ajax.googleapis.com/ajax/libs/jquery/1.6.2/jquery.min.js'></script>
+               <script language="javascript">
+                  $(function() {        
+                      $('select.RemoveNone option[selected=selected]').remove();
+                   });
+               </script>
+               <apex:inputfield value="{!bugVar.name}" label="BugA"/>
+               <apex:inputfield value="{!relatedBugVar.BugB__c}" required="true"/>
+               <apex:inputfield value="{!relatedBugVar.Relasionship__c}" required="true" />
+               <apex:commandButton action="{!addRelatedBug}" reRender="bugtable,addbug,msg" value="Add Related Bug"/>
+            </apex:pageblocksection>
+         </apex:pageblock>
+      </apex:outputPanel>
+      <apex:pageblock title="Related Bugs">
+         <apex:pageblocktable value="{!RelatedBugs}" var="b" id="bugtable">
+            <apex:column headerValue="Action" width="200">
+               <apex:actionStatus startText=" (Deleting...)"
+                  id="deletestatus">
+                  <apex:facet name="start">
+                     Deleting
+                  </apex:facet>
+                  <apex:facet name="stop">
+                     <apex:commandLink action="{!deleteRelatedBug}" reRender="bugtable" value="Delete" 
+                        immediate="true"  status="deletestatus" >
+                        <apex:param id="q" name="q" value="{!b.id}" assignTo="{!relatedBugVar.id}"/>
+                     </apex:commandlink>
+                  </apex:facet>
+               </apex:actionstatus>
+            </apex:column>
+            
+            <apex:repeat value="{!$ObjectType.RelatedBugAssociation__c.FieldSets.BugAssociation}" var="f">
+                <apex:column headerValue="{!f.Label}" value="{!b[f]}" width="500"/>
+            </apex:repeat>
+         </apex:pageblocktable>
+      </apex:pageblock>
+   </apex:form>
+</apex:page>

@@ -1,0 +1,90 @@
+<!--
+* Company       :   Cognizant Technologies PTE Ltd.
+* Description   :   Export page for search page of RMA records based on different filters.
+* History       :   
+
+        Initials        Date          Description
+-----------------------------------------------------------------------------------------
+        Nikhil Jain    19-Oct-15      Created the Visualforce Page
+-->
+
+<apex:page readOnly="true" showHeader="false" sidebar="false" cache="false"  
+    controller="RMA_SearchController" showChat="false" contentType="application/vnd.ms-excel#RMASearchResult-{!fileName}.xls" >
+    <style>
+        table {
+        width:100%;
+        }
+        table, th, td {
+        border: 1px solid black;
+        border-collapse: collapse;
+        }
+        th, td {
+        padding: 5px;
+        text-align: left;
+        }
+        table#t01 tr:nth-child(even) {
+        background-color: #eee;
+        }
+        table#t01 tr:nth-child(odd) {
+        background-color:#fff;
+        }
+        table#t01 th    {
+        background-color: black;
+        color: white;
+        }
+    </style>
+    <table>
+        <tr>
+            <td><b>Total No of RMA Requests: {!totalRecords}</b></td>
+        </tr>
+    </table>
+    <table id="t01" border="1" style="width:100%">
+        <tr>
+            <th>{!$ObjectType.RMA__c.Fields.Name.Label}</th>
+            
+            <apex:variable var="foo" value="foo" rendered="{!NOT(IsFoundryview)}">
+            	<th>{!$ObjectType.RMA__c.Fields.Customer__c.Label}</th>
+            </apex:variable>
+            
+            <th>{!$ObjectType.RMA__c.Fields.Fab__c.Label}</th>
+            
+            <apex:variable var="foo" value="foo" rendered="{!NOT(IsFoundryview)}">
+            	<th>{!$ObjectType.RMA__c.Fields.Region__c.Label}</th>
+            	<th>{!$ObjectType.RMA__c.Fields.RMA_Category__c.Label}</th>
+            	<th>{!$ObjectType.RMA__c.Fields.Status__c.Label}</th>
+            </apex:variable>
+            
+            <th>{!IF(isFoundryView, 'RMA', 'Workflow')} Stage</th>
+            
+            <apex:variable var="foo" value="foo" rendered="{!(IsFoundryview)}">
+            	<th>Quantity</th>
+            	<th>Amount</th>	
+            	<th>CN / DN#</th>	
+            </apex:variable>
+            <th>Created Date</th>
+            <th>Owner</th>
+        </tr>
+        <apex:repeat value="{!listRMAPage}" var="a">
+            <tr>
+                <td>{!a.SearchRMANumber}</td>
+                <apex:variable var="foo" value="foo" rendered="{!NOT(IsFoundryview)}">
+                	<td>{!a.CustomerName}</td>
+                </apex:variable>
+                <td>{!a.FabName}</td>
+                <apex:variable var="foo" value="foo" rendered="{!NOT(IsFoundryview)}">
+	                <td>{!a.Region}</td>
+	                <td>{!a.RMAcategory}</td>
+	                <td>{!a.Status}</td>
+                </apex:variable>
+                <td>{!a.Stage}</td>
+                <apex:variable var="foo" value="foo" rendered="{!(IsFoundryview)}">
+                	<td>{!a.Total_Wafers_Final}</td>
+                	<td>{!a.Grand_Total_Final}</td>
+                	<td>{!a.CN_DN_Number}</td>
+                </apex:variable>
+                <td><c:RMA_UserLocaleDateTimeFormatter date_Timevalue="{!a.createdDate}"/></td>
+                <td>{!a.OwnerName}</td>
+            </tr>
+        </apex:repeat>
+    </table>
+</apex:page>

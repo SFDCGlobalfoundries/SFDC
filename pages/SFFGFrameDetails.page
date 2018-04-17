@@ -1,0 +1,259 @@
+<!-- **
+* Author: Devendra Babu Itraju
+* Company: GF
+* Project: Standard Foundry Frame Generation 
+* Description: 
+*  
+*  
+* History:
+*    <Devendra Babu Itraju> 2016-03-10 - Created
+**-->
+<apex:page controller="SFFG_CreatePrimeDieCtrl" id="pg">
+<style>
+.bPageBlock {
+        border-top:0px !important;
+    }
+    
+.pbSubheader {
+  border-top: 0;
+  color: white;
+  background-color: #1797c0 !important;
+}
+
+select:disabled {
+    color: #000;
+}
+</style>
+<!-- Resources related to streaming api --start-->
+<apex:includeScript value="{!$Resource.agf__cometd_2_2_0}"/>
+<apex:includeScript value="{!$Resource.agf__jquery_1_8_3_min }"/>
+<apex:includeScript value="{!$Resource.agf__json2}"/>
+<apex:includeScript value="{!$Resource.agf__jquery_cometd_2_2_0}"/>
+<!-- Resources related to streaming api ----end -->
+
+<script>
+
+var $jq = jQuery.noConflict();
+
+     $jq(function() {
+        if('{!isEdit}'=='true')document.getElementById("pg:theForm:thePB:topSec:fabEleId").disabled="disabled";
+        window.setTimeout(function() { $jq( "input:text" ).blur(); },1000);
+        // Connect to the CometD endpoint
+
+        $jq.cometd.init({
+         url: window.location.protocol+'//'+window.location.hostname+'/cometd/30.0/',
+         requestHeaders: { Authorization: 'OAuth {!$Api.Session_ID}'}
+        });
+
+     $jq.cometd.subscribe('/topic/SFFGService', function(message) {
+            window.location.href=window.location.href;
+      });
+      
+      
+
+});
+
+var regex = /^(?:\d*\.\d{1,3}|\d+)$/;
+
+function testNumber(val) {
+    //console.log(val);
+    if(val.length>0){
+        val=val.replace(/\,/gi,'');
+        if(!regex.test(val))alert('Warning: Size with more than three decimal places will be rounded to nearest decimal.');
+    }
+}
+
+</script>
+<apex:sectionHeader title="Standard Foundry Frame Information - {!Frame.SFFG_Frame_Status__c}" />
+<p style="font-weight:bold;">Definition of Standard Foundry Frame: No Special requirement in Scribe width, Scribe Array, Assembly die size, floorplan and no drop-in.<br/>Note: For 20nm and below tech node, Frame Generation required details need to be finalized 14 days prior to Customer forecast tapeout date.</p>
+<chatter:feedWithFollowers entityid="{!Frame.id}" showHeader="true" rendered="{!IF(ISNULL(Frame.id),false,true)}" />
+
+<apex:form id="theForm">
+
+
+ <!-- edit block start  -->
+ <apex:pagemessages id="pgMsgId"/>
+ <apex:pageblock id="thePB" rendered="{!(isEdit)}">
+ 
+ <apex:pageblockButtons >
+   <apex:commandButton rendered="{!IF((Frame.SWIFT_Status__c!='Send' && Frame.SWIFT_Status__c!='Pending'),true,false)}" value="Save"  action="{!SaveMultiplePrimeDieData}" />
+   <apex:commandButton rendered="{!IF(Frame.SWIFT_PTRF_ID__c==null && (Frame.SWIFT_Status__c=='Error' ||Frame.SWIFT_Status__c=='New'),true,false)}" rerender="theForm" value="Save & Finalize Frame" action="{!saveAndFinalize}"/>
+   <apex:commandButton value="Cancel"  immediate="true"  action="{!cancel}"/>
+  
+  </apex:pageblockButtons>
+  
+    <apex:pageBlockSection columns="2" id="topSec" title="Frame Details" collapsible="False"> 
+    <apex:inputField required="true" id="fabEleId" value="{!Frame.Fab__c}"/>
+    <apex:outputField value="{!Frame.Device__c}"/>
+    
+    <apex:outputField rendered="{!IF((Frame.Fab__c=='FAB 1' || Frame.Fab__c=='FAB 7' || Frame.Fab__c=='FAB 8'),true,false)}" value="{!Frame.Backgrind_Thickness__c}"/>
+    <apex:inputField rendered="{!Not(IF((Frame.Fab__c=='FAB 1' || Frame.Fab__c=='FAB 7' || Frame.Fab__c=='FAB 8'),true,false))}" value="{!Frame.Backgrind_Thickness__c}"/>
+    <apex:outputField value="{!device.Assigned_Process_ID__c}"/>
+    <apex:outputField value="{!device.Geometry__c}"/>
+    <apex:outputField value="{!device.Current_Forecast_Tapeout_Date__c}"/>
+    <apex:outputField value="{!device.Assigned_Process_ID__r.Main_Generation_Rule_Spec__c}"/>
+    </apex:pageBlockSection>
+ 
+  <apex:pageBlockSection title="LG configuration" collapsible="False" rendered="{!showLGConfigOptions}">
+      
+    
+    <apex:pageBlockTable value="{!configTypesSet}" var="configType">
+     <apex:column >
+     <apex:facet name="header">Configuration Type</apex:facet>
+      {!configType}
+      </apex:column>
+    
+        <apex:column >
+        <apex:facet name="header">Configuration Option</apex:facet>
+        <div class="requiredInput"><div class="requiredBlock"></div>
+        <apex:selectList value="{!configSelectedMap[configType]}" multiselect="false" size="1">
+            <apex:selectOptions value="{!configTypeMap[configType]}"/>
+        </apex:selectList>
+        </div>
+        </apex:column>
+    
+    </apex:pageBlockTable>
+  
+  </apex:pageBlockSection>
+    
+    <apex:outputPanel id="primeDieHead">
+      <apex:variable value="{!0}" var="rowNum"/> 
+        <apex:pageBlockSection columns="1" title="Prime Die Details" id="thePbs" collapsible="False"> 
+         <apex:pageBlockTable value="{!pdWrapList}" var="primeDieWrap"> 
+          
+          <apex:column headerValue="Action">
+            <apex:commandLink value="Remove" style="color:red" action="{!removeRow}" rendered="{!rowNum > 0}" rerender="primeDieHead" immediate="true" >
+                 <apex:param value="{!rowNum}" name="rowToRemove" assignTo="{!rowToRemove}"/>
+             </apex:commandLink>
+             <apex:variable var="rowNum" value="{!rowNum + 1}"/>
+          </apex:column>
+          
+          <apex:column headerValue="Prime Die Name">
+                                <apex:inputField value="{!primeDieWrap.record.Name}" required="true"/>
+           </apex:column>
+          
+          <apex:column headerValue="Size X(um)">
+                                <apex:inputField onchange="testNumber(this.value);" value="{!primeDieWrap.record.Size_X_um__c}" required="true"/>
+           </apex:column>
+          
+          <apex:column headerValue="Size Y(um)">
+                                <apex:inputField onchange="testNumber(this.value);"  value="{!primeDieWrap.record.Size_Y_um__c}" required="true"/>
+           </apex:column>
+           
+           
+           <apex:column headerValue="Die AntiClockWise Rotation">
+                                    <apex:inputField value="{!primeDieWrap.record.Die_Anti_clock_wise_Rotation__c}" required="true"/>
+            </apex:column>
+          
+          <apex:column headerValue="Foundry to add Guardring" rendered="{!isGaurdingRequired}">
+                <apex:inputField value="{!primeDieWrap.record.Foundry_to_add_Guardring__c}" required="true"/>
+          </apex:column>
+          
+          <apex:column headerValue="Foundry to add CrackStop" rendered="{!isCrackStopRequired}">
+                <apex:inputField value="{!primeDieWrap.record.Foundry_to_Add_CrackStop__c}" required="true"/>
+          </apex:column>   
+        
+        </apex:pageBlockTable>
+       </apex:pageBlockSection>
+       <apex:commandButton value="Add More" action="{!addNewRow}" rerender="primeDieHead" Status="status"  />
+      </apex:outputPanel>
+   
+ </apex:pageblock>
+  <!-- edit block end  -->
+ <!-- view block start  -->
+ <apex:pageblock id="theViewPB" rendered="{!Not(isEdit)}">
+ 
+ <apex:pageblockButtons >
+   <apex:commandButton value="Edit" rendered="{!IF((Frame.SWIFT_Status__c!='Send' && Frame.SWIFT_Status__c!='Pending' && NOT(readonlyMode)),true,false)}" action="{!Edit}" />
+   <apex:commandButton rendered="{!IF(Frame.SWIFT_PTRF_ID__c==null && (Frame.SWIFT_Status__c=='Error' ||Frame.SWIFT_Status__c=='New'),true,false)}" rerender="theForm" value="Finalize Frame" action="{!Finalize}"/>
+   <apex:commandButton value="Cancel" immediate="true" action="{!cancel}"/>
+  
+  </apex:pageblockButtons>
+  
+    <apex:pageBlockSection columns="2" id="topSec" title="Frame Details" collapsible="False"> 
+    <apex:outputField value="{!Frame.Fab__c}"/>
+    <apex:outputField value="{!Frame.Device__c}"/>
+    <apex:outputField value="{!Frame.Backgrind_Thickness__c}"/>
+    <apex:outputField value="{!device.Assigned_Process_ID__c}"/>
+    <apex:outputField value="{!device.Geometry__c}"/>
+    <apex:outputField value="{!device.Assigned_Process_ID__r.Main_Generation_Rule_Spec__c}"/>
+    <apex:outputField value="{!device.Current_Forecast_Tapeout_Date__c}"/>
+    </apex:pageBlockSection>
+    
+    <apex:pageBlockSection title="LG configuration" rendered="{!showLGConfigOptions}" collapsible="False">
+      
+    <apex:pageBlockTable value="{!configTypesSet}" var="configType">
+     <apex:column >
+     <apex:facet name="header">Configuration Type</apex:facet>
+      {!configType}
+      </apex:column>
+    
+        <apex:column >
+        <apex:facet name="header">Configuration Option</apex:facet>
+        {!configSelectedMap[configType]}
+        </apex:column>
+    
+    </apex:pageBlockTable>
+  
+  </apex:pageBlockSection>
+  
+
+   <apex:pageBlockSection columns="1" title="Prime Die Details" id="thePbs" collapsible="False">
+     <apex:pageBlockTable value="{!pdWrapList}" var="primeDieWrap"> 
+      
+      <apex:column headerValue="Prime Die Name">
+                            <apex:outputField value="{!primeDieWrap.record.Name}"  />
+       </apex:column>
+      
+      <apex:column headerValue="Size X(um)">
+                            <apex:outputField value="{!primeDieWrap.record.Size_X_um__c}" />
+       </apex:column>
+      
+      <apex:column headerValue="Size Y(um)">
+                            <apex:outputField value="{!primeDieWrap.record.Size_Y_um__c}"  />
+       </apex:column>
+       
+       
+       <apex:column headerValue="Die AntiClockWise Rotation">
+                                <apex:outputField value="{!primeDieWrap.record.Die_Anti_clock_wise_Rotation__c}"  />
+        </apex:column>
+      
+      <apex:column headerValue="Foundry to add Guardring" rendered="{!isGaurdingRequired}">
+                                <apex:outputField value="{!primeDieWrap.record.Foundry_to_add_Guardring__c}"  />
+      </apex:column>
+      <apex:column headerValue="Foundry to add CrackStop" rendered="{!isCrackStopRequired}">
+                                <apex:outputField value="{!primeDieWrap.record.Foundry_to_Add_CrackStop__c}"  />
+      </apex:column>   
+    
+    </apex:pageBlockTable>
+   </apex:pageBlockSection>
+   
+   
+            <apex:outputPanel id="section9">
+                <apex:pageBlockSection title="GLOBALFOUNDRIES FAE"
+                    collapsible="false" columns="2">
+                    <apex:pageBlockTable value="{!feList}" var="fe">
+                        <apex:column >
+                            <apex:outputField value="{!fe.User__c}" />
+                            <apex:facet name="header">Name</apex:facet>
+                        </apex:column>
+                        <apex:column headerValue="Email">{!fe.User_Email__c}</apex:column>
+                    </apex:pageBlockTable>
+                </apex:pageBlockSection>
+            </apex:outputPanel>
+            
+            <apex:outputPanel id="section10">
+                <apex:pageBlockSection title="PTRF Request Status Information"
+                    collapsible="false" columns="2">
+                    <apex:outputfield value="{!Frame.SWIFT_Status__c}"/>
+                    <apex:outputfield value="{!Frame.SWIFT_Response__c}"/>
+                    <apex:outputfield value="{!Frame.SWIFT_PTRF_ID__c}"/>
+                </apex:pageBlockSection>
+            </apex:outputPanel>
+
+ </apex:pageblock>
+  <!-- view block end  -->
+ 
+</apex:form>
+  
+</apex:page>

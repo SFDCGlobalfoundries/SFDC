@@ -1,0 +1,510 @@
+<!--
+    Author: Zymark Ambat
+    Description: This page is used for NPC Portal Users.
+    History: 
+        ZAmbat      11252013    - Page creation.
+        ZAmbat      12182013    - Update code regarding NPC Form status after 2nd step rejection:  From no change in status ('In Execution') to 'Pending Resubmission'.
+        ZAmbat      01282014    - Updated code as per CASE 4515.
+        ARoy        01302014    - Updated to add Recall button on the Approval History section. (Case : 00004883)
+        ZAmbat      03262014    - Updated layout. 
+        ZAmbat      04032014    - Updated code as per CASE 7400.
+        ZAmbat      04042014    - Updated code as per CASE 8489.
+        ZAmbat      04142014    - Updated code to modify/add help text to 'Reason for New Part', 'Do you require to create a New Part?', and 'Is Mask Modified?' fields.
+        ZAmbat      06062014    - Updated code as per CASE 24014.
+        ZAmbat      06252014    - Updated code to show Additional Recipients.
+        ZAmbat      07092014    - Updated code as per CASE 27667.
+        ZAmbat      12022014    - Updated code as per CASE 7573.     
+        DBiswal     12042014    - Updated code to display Clone Button.
+        DBiswal     03062015    - Updated code for Reason for New Part new field value 'ShortLoop Flow'.
+        KOKA GOPI   07042015    - Updated Automotive_Grade__c for readonly page              
+-->
+
+<apex:page id="NPCFormReadOnlyVF" standardController="New_Part_Creation_Form__c" extensions="NPCFormReadOnlyController" sidebar="true" showHeader="true" tabStyle="New_Part_Creation_Form__c" action="{!checkInstance}">
+    <apex:includeScript value="{!URLFOR($Resource.jquery, 'js/jquery-1.8.3.js')}" />
+    <style type="text/css">
+        .showHide {
+            display: none;
+        }
+        
+        .mainTbl {
+            width: 85%;
+            border: none;
+            border-collapse: collapse;
+        }
+        
+        .mainTbl td {
+            padding-top: 5px;
+            padding-bottom: 5px;
+        }
+        
+        .imgclass:hover {  
+            background-image: url(/img/help/helpOrbs.gif);  
+            background-repeat: no-repeat;  
+            width: 16px;  
+            height: 15px;     
+            background-position: right;  
+         
+        }  
+        
+        .imgclass {  
+            background-image: url(/img/help/helpOrbs.gif);  
+            background-repeat: no-repeat;  
+            width: 16px;  
+            height: 15px;  
+        }  
+        
+        .helpTextStyle {
+            text-decoration: none;
+            position: absolute;
+            width: 15em;
+            z-index: 12;
+            background-color: #fefdb9;
+            padding: 2px 5px;
+            border: 1px solid orange;
+            text-align: left;
+            white-space: normal;
+            font-weight: normal;
+            color: #000;
+        }
+    </style>
+    
+    <script>
+        function showHelpText(id) {
+            document.getElementById(id).style.display = "block";
+            document.getElementById(id).style.opacity = 0.99;
+        }
+        
+        function hideHelpText(id) {
+            document.getElementById(id).style.display = "none";
+            document.getElementById(id).style.opacity = -0.2;
+        }
+        
+        function submitRecord(id) {
+            window.location.href = '/GlobalfoundryView/apex/NPCFormApproval?id=' + id;
+        }
+    </script>
+    
+    <script>
+        $(document).ready(function(){
+            if($("[id$='reasonForNewPartOutput']").text() == "Others") {
+                $("#requireToCreateTheNewPartPanel").show();
+                $("#newCustomerNamePanel").hide();
+                $("#newCustomerNamePanel2").hide();
+                $("#currentForecastTapeoutDatePanel").hide();
+                $("#newFabPanel").hide();
+            } else if($("[id$='reasonForNewPartOutput']").text() == "CustomerNameChange") {
+                $("#requireToCreateTheNewPartPanel").hide();
+                $("#newCustomerNamePanel").show();
+                $("#newCustomerNamePanel2").show();
+                $("#currentForecastTapeoutDatePanel").hide();
+                $("#newFabPanel").hide();
+            } else if($("[id$='reasonForNewPartOutput']").text() == "Fab to Fab Transfer") {
+                $("#requireToCreateTheNewPartPanel").hide();
+                $("#newCustomerNamePanel").hide();
+                $("#newCustomerNamePanel2").hide();
+                if ($("[id$='tapeoutOutput']").text() == 'Yes') {        
+                    $("#currentForecastTapeoutDatePanel").show();  
+                } else {
+                    $("#currentForecastTapeoutDatePanel").hide();
+                }
+                $("#newFabPanel").show();
+            } else if($("[id$='reasonForNewPartOutput']").text() == "Change in PID") {
+                $("#requireToCreateTheNewPartPanel").hide();
+                $("#newCustomerNamePanel").hide();
+                $("#newCustomerNamePanel2").hide();
+                if ($("[id$='tapeoutOutput']").text() == 'Yes') {        
+                    $("#currentForecastTapeoutDatePanel").show();  
+                } else {
+                    $("#currentForecastTapeoutDatePanel").hide();
+                }
+                $("#newFabPanel").hide();
+            } else if($("[id$='reasonForNewPartOutput']").text() == "Retrofit") {
+                $("#requireToCreateTheNewPartPanel").hide();
+                $("#newCustomerNamePanel").hide();
+                $("#newCustomerNamePanel2").hide();
+                if ($("[id$='tapeoutOutput']").text() == 'Yes') {        
+                    $("#currentForecastTapeoutDatePanel").show();  
+                } else {
+                    $("#currentForecastTapeoutDatePanel").hide();
+                }
+                $("#newFabPanel").hide();
+            } else if($("[id$='reasonForNewPartOutput']").text() == "Retrofit + Add ROM Code") {
+                $("#requireToCreateTheNewPartPanel").hide();
+                $("#newCustomerNamePanel").hide();
+                $("#newCustomerNamePanel2").hide();
+                if ($("[id$='tapeoutOutput']").text() == 'Yes') {        
+                    $("#currentForecastTapeoutDatePanel").show();  
+                } else {
+                    $("#currentForecastTapeoutDatePanel").hide();
+                }
+                $("#newFabPanel").hide();
+            } else if($("[id$='reasonForNewPartOutput']").text() == "StartingMaterialChange") {
+                $("#requireToCreateTheNewPartPanel").hide();
+                $("#newCustomerNamePanel").hide();
+                $("#newCustomerNamePanel2").hide();
+                if ($("[id$='tapeoutOutput']").text() == 'Yes') {        
+                    $("#currentForecastTapeoutDatePanel").show();  
+                } else {
+                    $("#currentForecastTapeoutDatePanel").hide();
+                }
+                $("#newFabPanel").hide();
+            } else if($("[id$='reasonForNewPartOutput']").text() == "BackgrindThicknessChange") {
+                $("#requireToCreateTheNewPartPanel").hide();
+                $("#newCustomerNamePanel").hide();
+                $("#newCustomerNamePanel2").hide();
+                if ($("[id$='tapeoutOutput']").text() == 'Yes') {        
+                    $("#currentForecastTapeoutDatePanel").show();  
+                } else {
+                    $("#currentForecastTapeoutDatePanel").hide();
+                }
+                $("#newFabPanel").hide();
+            } else if($("[id$='reasonForNewPartOutput']").text() == "ShortLoop Flow") {
+                $("#requireToCreateTheNewPartPanel").hide();
+                $("#newCustomerNamePanel").hide();
+                $("#newCustomerNamePanel2").hide();
+                if ($("[id$='tapeoutOutput']").text() == 'Yes') {        
+                    $("#currentForecastTapeoutDatePanel").show();  
+                } else {
+                    $("#currentForecastTapeoutDatePanel").hide();
+                }
+                $("#newFabPanel").hide();
+            } else {
+                $("#requireToCreateTheNewPartPanel").hide();
+                $("#newCustomerNamePanel").hide();
+                $("#newCustomerNamePanel2").hide();
+                $("#currentForecastTapeoutDatePanel").hide();
+                $("#newFabPanel").hide();
+            }
+        });
+    </script>
+    
+    <apex:sectionHeader title="NPC Form" subtitle="{!npcForm.Name}" help="https://help.salesforce.com/htviewhelpdoc?id=co_edit.htm&siteLang=en_US" />
+    <apex:pageMessages id="errorSection" />
+    
+    <apex:form id="form1">
+        <apex:pageBlock mode="edit" title="NPC Form Detail" id="pageBlock1">
+            <div class="pbSubheader brandTertiaryBgr first tertiaryPalette" id="head_1_ep">
+                <h3>New Part Creation Form</h3>
+            </div>
+            
+            <!-- apex:pageBlockButtons location="both" rendered="{!IF(OR(npcForm.NPC_Form_Status__c == 'Pending Submission', npcForm.NPC_Form_Status__c == 'Pending Resubmission', AND(npcForm.NPC_Form_Status__c == 'In Execution', showCancel)), true, false)}" -->
+            <apex:pageBlockButtons location="both">
+                <apex:commandButton value="Edit" action="{!editNPC}" rendered="{!showEdit}" />
+                <apex:commandButton value="Submit for Approval" action="{!submitNPC}" rendered="{!showSubmit}" />
+                <apex:commandButton value="Cancel NPC Form" action="{!cancelNPC}" rendered="{!showCancel}" />
+                <apex:commandButton value="Clone" action="{!cloneNPC}" />                
+            </apex:pageBlockButtons>
+            
+            <table class="mainTbl" cols="5">
+                <tr><td colspan="5">&nbsp;</td></tr>
+                <tr>
+                    <td width="27%" class="labelCol" style="vertical-align: middle;">
+                        {!$ObjectType.New_Part_Creation_Form__c.fields.Name.label}
+                    </td>
+                    <td width="20%" style="vertical-align: middle;">
+                        <apex:outputText value="{!npcForm.Name}" />
+                    </td>
+                    <td width="4%">&nbsp;</td>
+                    <td width="24%" class="labelCol" style="vertical-align: middle;">
+                        {!$ObjectType.New_Part_Creation_Form__c.fields.NPC_Form_Status__c.label}
+                    </td>
+                    <td width="25%" style="vertical-align: middle;">
+                        <apex:outputText value="{!npcForm.NPC_Form_Status__c}" />
+                    </td>
+                </tr>
+                <tr>
+                    <td width="27%" class="labelCol" style="vertical-align: middle;">
+                        {!$ObjectType.New_Part_Creation_Form__c.fields.Account__c.label}
+                    </td>
+                    <td width="20%" style="vertical-align: middle;">
+                        <apex:outputText value="{!npcForm.Account_Name__c}" />
+                    </td>
+                    <td width="4%">&nbsp;</td>
+                    <td width="24%" class="labelCol" style="vertical-align: middle;">
+                        {!$ObjectType.New_Part_Creation_Form__c.fields.Account_Short_Name__c.label}
+                    </td>
+                    <td width="25%" style="vertical-align: middle;">
+                        <apex:outputText value="{!npcForm.Account_Short_Name__c}" />
+                    </td>
+                </tr>
+                <tr>
+                    <td class="labelCol" style="vertical-align: middle;">
+                        {!$ObjectType.New_Part_Creation_Form__c.fields.Originating_Device__c.label}
+                        <img src="/s.gif" class="imgclass" onmouseover="showHelpText('divSFDCReferenceDevice');" onmouseout="hideHelpText('divSFDCReferenceDevice');" />
+                    </td>
+                    <td style="vertical-align: middle;">
+                        <apex:outputText value="{!npcForm.Originating_Device__r.Name}" />
+                    </td>
+                    <td>&nbsp;</td>
+                    <td class="labelCol" style="vertical-align: middle;">
+                        {!$ObjectType.Device__c.fields.Fab__c.label}
+                    </td>
+                    <td style="vertical-align: middle;">
+                        <apex:outputText value="{!npcForm.Fab__c}" />
+                    </td>
+                </tr>
+                <tr>
+                    <td class="labelCol" style="vertical-align: middle;">
+                        {!$ObjectType.New_Part_Creation_Form__c.fields.Reason_for_New_Part__c.label}
+                        <img src="/s.gif" class="imgclass" onmouseover="showHelpText('divReasonForNewPart');" onmouseout="hideHelpText('divReasonForNewPart');" />
+                    </td>
+                    <td style="vertical-align: middle;">
+                       <apex:outputText id="reasonForNewPartOutput" value="{!npcForm.Reason_for_New_Part__c}" />
+                    </td>
+                    <td>&nbsp;</td>
+                    <td class="labelCol" style="vertical-align: middle;">
+                        {!$ObjectType.New_Part_Creation_Form__c.fields.Tapeout_Required__c.label}
+                        <img src="/s.gif" class="imgclass" onmouseover="showHelpText('divTapeoutRequired');" onmouseout="hideHelpText('divTapeoutRequired');" />
+                    </td>
+                    <td style="vertical-align: middle;">
+                        <apex:outputField id="tapeoutOutput" value="{!npcForm.Tapeout_Required__c}" />
+                    </td>
+                </tr>                
+                
+                <tr id="requireToCreateTheNewPartPanel">
+                    <td class="labelCol" style="vertical-align: middle;">
+                        {!$ObjectType.New_Part_Creation_Form__c.fields.Require_To_Create_The_New_Part__c.label}
+                        <img src="/s.gif" class="imgclass" onmouseover="showHelpText('divRequireToCreateANewPart');" onmouseout="hideHelpText('divRequireToCreateANewPart');" />
+                    </td>
+                    <td style="vertical-align: middle;">
+                       <apex:outputText id="reqToCreateNewPartOutput" value="{!npcForm.Require_To_Create_The_New_Part__c}" />
+                    </td>
+                    <td>&nbsp;</td>
+                    <td>&nbsp;</td>
+                    <td>&nbsp;</td>
+                </tr>
+                <tr id="newCustomerNamePanel">
+                    <td class="labelCol" style="vertical-align: middle;">
+                        {!$ObjectType.New_Part_Creation_Form__c.fields.New_Customer_Name__c.label}
+                    </td>
+                    <td style="vertical-align: middle;">
+                       <apex:outputText value="{!npcForm.New_Customer_Name__c}" />
+                    </td>
+                    <td>&nbsp;</td>
+                    <td class="labelCol" style="vertical-align: middle;">
+                        {!$ObjectType.New_Part_Creation_Form__c.fields.New_Customer_Short_Name__c.label}
+                    </td>
+                    <td style="vertical-align: middle;">
+                       <apex:outputText value="{!npcForm.New_Customer_Short_Name__c}" />
+                    </td>
+                </tr>
+                <tr id="newFabPanel">
+                    <td class="labelCol" style="vertical-align: middle;">
+                        {!$ObjectType.New_Part_Creation_Form__c.fields.New_Fab__c.label}
+                    </td>
+                    <td style="vertical-align: middle;">
+                       <apex:outputText value="{!npcForm.New_Fab__c}" />
+                    </td>
+                    <td>&nbsp;</td>
+                    <td>&nbsp;</td>
+                    <td>&nbsp;</td>
+                </tr>
+                <tr>
+                    <td class="labelCol" style="vertical-align: middle;">
+                        {!$ObjectType.New_Part_Creation_Form__c.fields.Reference_Id__c.label}
+                        <img src="/s.gif" class="imgclass" onmouseover="showHelpText('divMESReferenceId');" onmouseout="hideHelpText('divMESReferenceId');" />
+                    </td>
+                    <td style="vertical-align: middle;">
+                        <apex:outputText value="{!npcForm.Reference_Id__c}" />
+                    </td>
+                    <td>&nbsp;</td>
+                    <td class="labelCol" style="vertical-align: middle;">
+                        {!$ObjectType.New_Part_Creation_Form__c.fields.New_Part_ID__c.label}
+                    </td>
+                    <td style="vertical-align: middle;">
+                        <apex:outputText value="{!npcForm.New_Part_ID__c}" />
+                    </td>
+                </tr>
+                <tr>
+                    <td class="labelCol" style="vertical-align: middle;">
+                        {!$ObjectType.New_Part_Creation_Form__c.fields.Secure_Device__c.label}
+                    </td>
+                    <td style="vertical-align: middle;">
+                        <apex:outputText value="{!npcForm.Secure_Device__c}" />
+                    </td>
+                    <td>&nbsp;</td>
+                    <td class="labelCol" style="vertical-align: middle;">
+                        {!$ObjectType.New_Part_Creation_Form__c.fields.Automotive_Device__c.label}
+                    </td>
+                    <td style="vertical-align: middle;">
+                        <apex:outputText value="{!npcForm.Automotive_Device__c}" />
+                    </td>
+                </tr>
+                <tr>
+                    <td class="labelCol" style="vertical-align: middle;">
+                        <!-- {!$ObjectType.New_Part_Creation_Form__c.fields.Device_Mask_Set_Title__c.label} -->
+                        {!$ObjectType.New_Part_Creation_Form__c.fields.Mask_Set_Title__c.label}
+                    </td>
+                    <td style="vertical-align: middle;">
+                        <!-- apex:outputText value="{!npcForm.Device_Mask_Set_Title__c}" / -->
+                        <apex:outputText value="{!npcForm.Mask_Set_Title__c}" />
+                    </td>
+                    <td>&nbsp;</td>
+                    <td class="labelCol" style="vertical-align: middle;">
+                        {!$ObjectType.New_Part_Creation_Form__c.fields.Automotive_Grade__c.label}
+                    </td>
+                    <td style="vertical-align: middle;">
+                        <apex:outputText value="{!npcForm.Automotive_Grade__c}" />
+                    </td>
+                </tr>
+                <tr id="currentForecastTapeoutDatePanel">
+                    <td class="labelCol" style="vertical-align: middle;">
+                        {!$ObjectType.New_Part_Creation_Form__c.fields.Current_Forecast_Tapeout_Date__c.label}
+                    </td>
+                    <td style="vertical-align: middle;">
+                        <apex:outputField value="{!npcForm.Current_Forecast_Tapeout_Date__c}" />
+                    </td>
+                    <td>&nbsp;</td>
+                    <td>&nbsp;</td>
+                    <td>&nbsp;</td>
+                </tr>
+                <tr>
+                    <td class="labelCol" style="vertical-align: middle;">
+                        {!$ObjectType.New_Part_Creation_Form__c.fields.Comments__c.label}
+                    </td>
+                    <td colspan="4">
+                        <apex:outputField value="{!npcForm.Comments__c}" style="width: 80%" />
+                    </td>
+                </tr>
+                <tr>
+                    <td class="labelCol" style="vertical-align: middle;">
+                        <apex:outputText escape="false" value="{!IF(listAdditionalRecipients.size > 0, 'Additional Customer Recipient(s)', '&nbsp;')}" />
+                        <apex:outputPanel rendered="{!IF(listAdditionalRecipients.size > 0, true, false)}">
+                            <img src="/s.gif" class="imgclass" onmouseover="showHelpText('divAdditionalRecipients');" onmouseout="hideHelpText('divAdditionalRecipients');" />
+                        </apex:outputPanel>
+                    </td>
+                    <td colspan="4">
+                        <apex:repeat value="{!listAdditionalRecipients}" var="r" rendered="{!IF(listAdditionalRecipients.size > 0, true, false)}">
+                            <apex:outputText value="{!r}" /><br />
+                        </apex:repeat>
+                    </td>
+                </tr>
+                <tr id="newCustomerNamePanel2">
+                    <td class="labelCol" style="vertical-align: middle;">
+                        <apex:outputText escape="false" value="{!IF(OR(npcForm.NPC_Form_Status__c == 'In Execution', npcForm.NPC_Form_Status__c == 'Executed', AND(OR(npcForm.NPC_Form_Status__c == 'Pending Resubmission', npcForm.NPC_Form_Status__c == 'Not Executed'), NOT(ISNULL(npcForm.Case__c)))), $ObjectType.New_Part_Creation_Form__c.fields.Case__c.label, '&nbsp;')}" />
+                        <apex:outputPanel rendered="{!IF(OR(npcForm.NPC_Form_Status__c == 'In Execution', npcForm.NPC_Form_Status__c == 'Executed', AND(OR(npcForm.NPC_Form_Status__c == 'Pending Resubmission', npcForm.NPC_Form_Status__c == 'Not Executed'), NOT(ISNULL(npcForm.Case__c)))), true, false)}">
+                            <img src="/s.gif" class="imgclass" onmouseover="showHelpText('divCase');" onmouseout="hideHelpText('divCase');" />
+                        </apex:outputPanel>
+                    </td>
+                    <td style="vertical-align: middle;">
+                        <apex:outputText escape="false" value="{!IF(OR(npcForm.NPC_Form_Status__c == 'In Execution', npcForm.NPC_Form_Status__c == 'Executed', AND(OR(npcForm.NPC_Form_Status__c == 'Pending Resubmission', npcForm.NPC_Form_Status__c == 'Not Executed'), NOT(ISNULL(npcForm.Case__c)))), caseNumber, '&nbsp;')}" />
+                    </td>
+                    <td>&nbsp;</td>
+                    <td>&nbsp;</td>
+                    <td>&nbsp;</td>
+                </tr>
+                <tr><td colspan="5">&nbsp;</td></tr>
+            </table>
+            
+            <apex:pageBlockTable value="{!listMask}" var="m" style="width: 85%; margin-right: auto; margin-left: auto;">
+                <apex:column value="{!m.Layer__c}">
+                    <apex:facet name="header">Layer</apex:facet>
+                </apex:column>
+                <apex:column value="{!m.Original_Mask__c}">
+                    <apex:facet name="header">Mask</apex:facet>
+                </apex:column>
+                <apex:column value="{!m.Modified_Mask__c}">
+                    <apex:facet name="header">Modified Mask</apex:facet>
+                </apex:column>
+                <apex:column value="{!m.Is_Mask_Modified__c}">
+                    <apex:facet name="header">
+                        Is Mask Modified? 
+                        <img src="/s.gif" class="imgclass" onmouseover="showHelpText('divIsMaskModified');" onmouseout="hideHelpText('divIsMaskModified');" />
+                    </apex:facet>
+                </apex:column>
+            </apex:pageBlockTable>   
+        </apex:pageBlock>
+        
+        <apex:pageBlock title="Devices">
+            <apex:pageBlockTable value="{!listDevice}" var="d">
+                <apex:column >
+                    <apex:facet name="header">Device ID</apex:facet>
+                    <apex:outputLink value="/{!d.Id}" rendered="{!d.hasShare}">{!d.Name}</apex:outputLink>
+                    <apex:outputText value="{!d.Name}" rendered="{!NOT(d.hasShare)}" />
+                </apex:column>
+                <apex:column value="{!d.CRMDID}">
+                    <apex:facet name="header">CRMDID</apex:facet>
+                </apex:column>
+                <apex:column value="{!d.Stage}">
+                    <apex:facet name="header">Stage</apex:facet>
+                </apex:column>
+                <apex:column value="{!d.Status}">
+                    <apex:facet name="header">Status</apex:facet>
+                </apex:column>
+            </apex:pageBlockTable>
+        </apex:pageBlock>
+        
+        <apex:pageBlock title="Attachments">
+            <apex:pageBlockTable value="{!listAttachment}" var="a">
+                <apex:column >
+                    <apex:facet name="header">Title</apex:facet>
+                    <apex:outputLink value="/{!a.Id}">{!a.Name}</apex:outputLink>
+                </apex:column>
+                <apex:column value="{!a.LastModifiedDate}">
+                    <apex:facet name="header">Last Modified</apex:facet>
+                </apex:column>
+                <apex:column value="{!a.CreatedById}">
+                    <apex:facet name="header">Created By</apex:facet>
+                </apex:column>
+            </apex:pageBlockTable>
+        </apex:pageBlock>
+        
+        <apex:pageBlock title="Approval History">
+            <!-- Start of section for Recall button -->
+            <apex:pageBlockButtons location="top" rendered="{!showNPCRecallButton}">
+                <apex:commandButton value="Recall Approval Request" action="{!recallNPC}" />
+            </apex:pageBlockButtons>
+            <!-- End of section for Recall button -->
+            <apex:pageBlockTable value="{!listApprovalHistory}" var="h">
+                <apex:column >
+                    <apex:facet name="header">Date</apex:facet>
+                    <apex:outputText value="{0,date,MM'/'dd'/'yyyy h:mm a}">
+                        <apex:param value="{!h.CreatedDate}" /> 
+                    </apex:outputText>
+                </apex:column>
+                <apex:column >
+                    <apex:facet name="header">Status</apex:facet>
+                    <apex:outputText value="{!IF(h.StepStatus == 'NoResponse', '', h.StepStatus)}" />
+                </apex:column>
+                <apex:column value="{!h.AssignedTo}">
+                    <apex:facet name="header">Assigned To</apex:facet>
+                </apex:column>
+                <apex:column value="{!h.ActualApprover}">
+                    <apex:facet name="header">Actual Approver</apex:facet>
+                </apex:column>
+                <apex:column value="{!h.Comments}">
+                    <apex:facet name="header">Comments</apex:facet>
+                </apex:column>
+            </apex:pageBlockTable>
+        </apex:pageBlock>
+        
+        <table border="0" height="40px">
+            <tr><td></td></tr>
+        </table>
+        
+        <div id="divSFDCReferenceDevice" class="helpTextStyle" style="top: 240px; display: none; opacity: -0.2; left: 200px;">
+            {!$ObjectType.New_Part_Creation_Form__c.fields.Originating_Device__c.inlineHelpText}
+        </div>
+        <div id="divReasonForNewPart" class="helpTextStyle" style="top: 265px; display: none; opacity: -0.2; left: 200px;">
+            {!$ObjectType.New_Part_Creation_Form__c.fields.Reason_for_New_Part__c.inlineHelpText}
+        </div>
+        <div id="divTapeoutRequired" class="helpTextStyle" style="top: 265px; display: none; opacity: -0.2; left: 580px;">
+            {!$ObjectType.New_Part_Creation_Form__c.fields.Tapeout_Required__c.inlineHelpText}
+        </div>
+        <div id="divRequireToCreateANewPart" class="helpTextStyle" style="top: 290px; display: none; opacity: -0.2; left: 200px;">
+            {!$ObjectType.New_Part_Creation_Form__c.fields.Require_To_Create_The_New_Part__c.inlineHelpText}
+        </div>
+        <div id="divMESReferenceId" class="helpTextStyle" style="top: 290px; display: none; opacity: -0.2; left: 200px;">
+            {!$ObjectType.New_Part_Creation_Form__c.fields.Reference_Id__c.inlineHelpText}
+        </div>
+        <div id="divIsMaskModified" class="helpTextStyle" style="top: 400px; display: none; opacity: -0.2; left: 650px;">
+            {!$ObjectType.Mask__c.fields.Is_Mask_Modified__c.inlineHelpText}
+        </div>
+        <div id="divCase" class="helpTextStyle" style="top: 400px; display: none; opacity: -0.2; left: 200px;">
+            {!$ObjectType.New_Part_Creation_Form__c.fields.Case__c.inlineHelpText}
+        </div>
+        <div id="divAdditionalRecipients" class="helpTextStyle" style="top: 400px; display: none; opacity: -0.2; left: 200px;">
+            This is to include the additional customer (selected) contacts in the email notification list.
+        </div>
+    </apex:form>    
+</apex:page>

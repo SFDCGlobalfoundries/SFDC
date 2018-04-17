@@ -1,0 +1,81 @@
+<!--
+    @Author <Cognizant Technology Solutions>
+    @name <SelectAndCreateDeliveryPartNumber>
+    @CreateDate <30/11/2016>
+    @Description <This page is used to create/Select a New/Existing DPN or DAPN.>
+    @Version <>
+    @reference <>
+-->
+<apex:page standardController="Customer_Requirement__c" showHeader="false" showChat="false" sidebar="false" extensions="BnP_SelectAndCreateDeliveryPartNumber" docType="html-5.0">  
+  <apex:form >     
+      <apex:pageBlock title="Select Part Number Type"> 
+          <table>
+              <tr>
+                  <td>
+                      <apex:selectRadio value="{!SelectValue}" disabled="{!isEnableTypeSelection}">
+                          <apex:selectOption itemValue="DPN" itemlabel="Deliverable Part Number"/>
+                          <apex:selectOption itemValue="DAPN" itemlabel="Design Assay Part Number"/>
+                      </apex:selectRadio>
+                  </td>
+                  <td>
+                      <apex:commandButton value="Continue" action="{!SelectDPNType}" disabled="{!isEnableTypeSelection}"  />
+                  </td>
+              </tr>
+          </table>    
+     </apex:pageBlock>
+     <apex:pageMessages />
+      <!--------------------------------------->
+      <apex:outputPanel id="DPNType" rendered="{!IsDPNType}" >
+      
+      
+      <apex:actionFunction name="refreshPageSize" action="{!refreshPageSize}" status="fetchStatus" reRender="DPN"/>
+      
+      <apex:actionregion >
+                    
+          <apex:pageBlock title="{!PageTitleName}" Id="DPN"> 
+              <apex:outputPanel id="cntblock">             
+                  <apex:commandButton value="{!labelSelectPN}" action="{!AddDPNtoOption}" disabled="{!IsDisabled}" oncomplete="window.close();"/>
+              
+                  <apex:commandButton value="{!labelAddPN}" action="{!CreateandAddDPNtoOption}" oncomplete="window.close();" />
+              </apex:outputPanel>
+              <apex:pageBlockTable value="{!waAllDPNList}" var="DPNWrap" id="table" title="All skill" > 
+                  <apex:column width="25px">
+                      
+                      
+                      <!-- Update By Pullaro -->
+                      <input type="radio" name="chosen" value="false" onclick="changeValue(this,'{!$Component.RadioButtonValue}');"/>
+                      <apex:inputHidden value="{!DPNWrap.selected}" id="RadioButtonValue" />
+                      <apex:actionSupport event="onclick" action="{!getSelected}" status="buttonStatus"  reRender="cntblock">
+                          
+                      </apex:actionSupport>                            
+                  </apex:column>                                              
+                  <apex:column value="{!DPNWrap.AllDPN.Name}" />
+                  <apex:column headerValue="Control Option Number">                    
+                      <apex:outputLabel value="{!DPNWrap.optionControlNumber}"></apex:outputLabel>
+                  </apex:column>                             
+              </apex:pageBlockTable>
+              <apex:panelGrid columns="4">                  
+                  <apex:selectList value="{!size}" multiselect="false" size="1" onchange="refreshPageSize();">
+                      <apex:selectOptions value="{!paginationSizeOptions}"/>
+                  </apex:selectList>                 
+                  <apex:outputPanel >                      
+                      <apex:actionStatus id="fetchStatus" >
+                          <apex:facet name="start" >
+                              <img src="/img/loading.gif" />                    
+                          </apex:facet>
+                      </apex:actionStatus>
+                  </apex:outputPanel>
+              </apex:panelGrid>              
+          </apex:pageBlock>
+      </apex:actionregion>
+      </apex:outputPanel>
+  </apex:form>
+  <script>
+    function changeValue(input, textid) 
+    {                        
+        document.getElementById(textid).value = 'true';        
+        
+    }
+    
+    </script>
+</apex:page>

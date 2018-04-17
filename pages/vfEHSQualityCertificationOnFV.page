@@ -1,0 +1,307 @@
+<apex:page controller="ClsEHSQualityCertificationOnFV" showHeader="false" sidebar="false">
+    <style>
+    html .brandTertiaryBgr {
+        background-color: #B7B7B7  !important;
+        background-image: none !important;
+        color: #222222 !important;
+    }
+    .ui-menu{ position: absolute; width: 100px; }      
+    .firstColumn { text-align:left; }
+    .middleColumn { text-align:center; }
+    .lastColumn { text-align:right; }
+    .prevNextLinks a {
+        color: rgb(51, 51, 51);
+        text-decoration: none;
+    }       
+    .prevNextLinks {
+        color: rgb(168, 168, 168);
+    }
+    .prevNext {
+        margin: 0px 3px;
+    }
+    .first1 {
+        background-image: url("{!$Resource.ROS_Pagination_Image}");
+        background-repeat: no-repeat;
+        background-position: 0px 1px;
+        width: 9px;
+        height: 10px;
+    }
+    .next {
+        background-image: url("{!$Resource.ROS_Pagination_Image}");
+        background-repeat: no-repeat;
+        background-position: -17px 1px;
+        width: 9px;
+        height: 10px;
+    }
+    .prev{
+        background-image: url("{!$Resource.ROS_Pagination_Image}");
+        background-repeat: no-repeat;
+        background-position: -10px 1px;
+        margin: 0px;
+        padding: 0px;
+        width: 9px;
+        height: 10px;
+    }    
+    .firstoff{
+        background-image: url("{!$Resource.ROS_Pagination_Image}");
+        background-repeat: no-repeat;
+        background-position: 0px -10px;
+        width: 9px;
+        height: 10px;
+    }   
+    .prevoff {
+        background-image: url("{!$Resource.ROS_Pagination_Image}");
+        background-repeat: no-repeat;
+        background-position: -10px -10px;
+        margin: 0px;
+        padding: 0px;
+        width: 9px;
+        height: 10px;
+    }
+    .last1 {
+        background-image: url("{!$Resource.ROS_Pagination_Image}");
+        background-repeat: no-repeat;
+        background-position: -27px 1px;
+        width: 9px;
+        height: 10px;
+    }
+    .nextoff{
+        background-image: url("{!$Resource.ROS_Pagination_Image}");
+        background-repeat: no-repeat;
+        background-position: -17px -10px;
+        width: 9px;
+        height: 10px;
+    }
+    .lastoff {
+        background-image: url("{!$Resource.ROS_Pagination_Image}");
+        background-repeat: no-repeat;
+        background-position: -27px -10px;
+        width: 9px;
+        height: 10px;
+    } 
+    </style>
+    
+    <apex:form >
+        <c:loadingPanel ></c:loadingPanel>
+        <apex:actionFunction name="updateCertType" rerender="certificationType"/>
+        <br/>
+        <apex:pageBlock >
+           <apex:outputText rendered="{!IF(OR(rectypName == 'Business Continuity Mgmt',rectypName == 'Business Continuity Mgmt Approved'),true,false)}">
+             &nbsp;&nbsp;   GLOBALFOUNDRIES strives to meet commitments to customers, the community and employees through credible risk assessment, disciplined mitigation, comprehensive threat awareness and practiced crisis management.  In this manner, we hope to achieve strategic and practical recovery planning backed by responsible risk financing.  Below, you can find documents further outlining GLOBALFOUNDRIES' approach to Business Continuity globally and at the manufacturing site level.
+            </apex:outputText> <br/><br/>
+            <apex:pageBlockSection title="Business Continuity Mgmt" columns="1" collapsible="false" id="bcmCertificateId" rendered="{!IF(OR(rectypName == 'Business Continuity Mgmt',rectypName == 'Business Continuity Mgmt Approved'),true,false)}">
+            
+                <apex:pageBlockSection columns="3">
+                    <apex:pageBlockSectionItem >
+                        <apex:outputLabel value="Locations" for="fabList"/>
+                        <apex:selectList id="fabList1" value="{!fabSelected}" size="3" label="FAB" multiselect="true" style="width:200px;">
+                            <apex:selectOptions value="{!lstFabOptions}"/>
+                        </apex:selectList>
+                    </apex:pageBlockSectionItem>
+                    
+                    <apex:panelGrid columns="2" >
+                        <apex:outputLabel value="Document Group" for="CertGroup" style="color: #4a4a56;font-weight: bold;font-size: 91%;align:left;" rendered="{!isEHSList}" /> 
+                        <apex:selectList id="CertGroup" value="{!certificateGroup}" size="1" onchange="updateCertType();" rendered="{!isEHSList}" > 
+                            <apex:selectOption itemValue="None" itemLabel="--None--"/>
+                            <apex:selectOption itemValue="REACH" itemLabel="REACH"/>
+                            <apex:selectOption itemValue="MD" itemLabel="MD"/>
+                            <apex:selectOption itemValue="CMRT" itemLabel="CMRT"/>
+                        </apex:selectList>
+                        <apex:outputLabel value="Document Type" for="certificationType" style="color: #4a4a56;font-weight: bold;font-size: 91%;align:left;"/>
+                        <apex:selectList id="certificationType1" value="{!certTypeSelected}" size="1" label="Document Type">
+                            <apex:selectOptions value="{!lstCertTypeOptions}"/>
+                        </apex:selectList>
+                    </apex:panelGrid>
+                    
+                    <apex:pageBlockSectionItem >
+                        <apex:commandButton value="Search" action="{!Search}"  reRender="qcTable2,buttonPanel,pageMessages" status="LoadingStatusSpinner"/>
+                    </apex:pageBlockSectionItem>
+                    
+                </apex:pageBlockSection>
+                
+                <!-- Renamed Quality Certificate to ISO/TS Certificate 04072014 Vijay  -->
+                <!-- Renamed ISO/TS Certificate to ISO/Others Certificate 06162014 Nikhil  -->
+               <apex:pageBlockTable value="{!qcAccList}" id="qcTable2"  var="qc" title="Other EHS/CSR Disclosures" columns="7">
+                    <apex:column >
+                        <apex:facet name="header">{!$ObjectType.Other_EHS_CSR_Certificate__c.fields.Name.label}</apex:facet>
+                        <apex:commandLink action="{!onClickRedirect}">
+                        {!qc.Other_EHS_CSR_Disclosures__r.Name}
+                        <apex:param name="qcId" assignTo="{!qcId}" value="{!qc.Other_EHS_CSR_Disclosures__r.Id}"/>
+                        </apex:commandLink>
+                    </apex:column>
+                    <apex:column >
+                        <apex:facet name="header">{!$ObjectType.Other_EHS_CSR_Certificate__c.fields.Certificate_Title__c.label}</apex:facet>
+                        {!qc.Other_EHS_CSR_Disclosures__r.Certificate_Title__c}
+                    </apex:column>
+                    <apex:column >
+                        <apex:facet name="header">{!$ObjectType.Other_EHS_CSR_Certificate__c.fields.Certificate_Type__c.label}</apex:facet>
+                        {!qc.Other_EHS_CSR_Disclosures__r.Certificate_Type__c}
+                    </apex:column>
+                    <apex:column >
+                        <apex:facet name="header">{!$ObjectType.Other_EHS_CSR_Certificate__c.fields.Fabs__c.label}</apex:facet>
+                        {!qc.Other_EHS_CSR_Disclosures__r.Fabs__c}
+                    </apex:column>
+                    <apex:column >
+                        <apex:facet name="header">{!$ObjectType.Other_EHS_CSR_Certificate__c.fields.Effective_Date__c.label}</apex:facet>
+                        <apex:outputField value="{!qc.Other_EHS_CSR_Disclosures__r.Effective_Date__c}"/>
+                    </apex:column>
+                    <apex:column >
+                        <apex:facet name="header">{!$ObjectType.Other_EHS_CSR_Certificate__c.fields.Expiry_Date__c.label}</apex:facet>
+                        <apex:outputField value="{!qc.Other_EHS_CSR_Disclosures__r.Expiry_Date__c}"/>
+                    </apex:column>
+                 </apex:pageBlockTable>
+                 </apex:pageBlockSection>
+             <apex:outputText rendered="{!IF(OR(rectypName == 'Other EHS CSR Certificate',rectypName == 'Other EHS CSR Approved'),true,false)}">
+                 &nbsp;&nbsp;   This page contains information for customers on EHS/CSR items, such as on REACH SVHC, Conflict Minerals. 
+            </apex:outputText> <br/><br/>
+                 <apex:pageBlockSection title="Other EHS/CSR Disclosures" columns="1" collapsible="false" id="isootherCertificateId" rendered="{!IF(OR(rectypName == 'Other EHS CSR Certificate',rectypName == 'Other EHS CSR Approved'),true,false)}">
+            
+                <apex:pageBlockSection columns="3">
+                    <apex:pageBlockSectionItem >
+                        <apex:outputLabel value="FAB" for="fabList"/>
+                        <apex:selectList id="fabList" value="{!fabSelected}" size="3" label="FAB" multiselect="true" style="width:200px;">
+                            <apex:selectOptions value="{!lstFabOptions}"/>
+                        </apex:selectList>
+                    </apex:pageBlockSectionItem>
+                    
+                    <apex:panelGrid columns="2" >
+                        <apex:outputLabel value="Document Group" for="CertGroup" style="color: #4a4a56;font-weight: bold;font-size: 91%;align:left;"/> 
+                        <apex:selectList id="CertGroup" value="{!certificateGroup}" size="1" onchange="updateCertType();"> 
+                            <apex:selectOption itemValue="None" itemLabel="--None--"/>
+                            <apex:selectOption itemValue="REACH" itemLabel="REACH"/>
+                            <apex:selectOption itemValue="MD" itemLabel="MD"/>
+                            <apex:selectOption itemValue="CMRT" itemLabel="CMRT"/>
+                        </apex:selectList>
+                        <apex:outputLabel value="Document Type" for="certificationType" style="color: #4a4a56;font-weight: bold;font-size: 91%;align:left;"/>
+                        <apex:selectList id="certificationType" value="{!certTypeSelected}" size="1" label="Document Type">
+                            <apex:selectOptions value="{!lstCertTypeOptions}"/>
+                        </apex:selectList>
+                    </apex:panelGrid>
+                    
+                    <apex:pageBlockSectionItem >
+                        <apex:commandButton value="Search" action="{!Search}"  reRender="qcTable,buttonPanel,pageMessages" status="LoadingStatusSpinner"/>
+                    </apex:pageBlockSectionItem>
+                    
+                </apex:pageBlockSection>
+                
+                <!-- Renamed Quality Certificate to ISO/TS Certificate 04072014 Vijay  -->
+                <!-- Renamed ISO/TS Certificate to ISO/Others Certificate 06162014 Nikhil  -->
+                <apex:pageBlockTable value="{!qcAccList}" id="qcTable"  var="qc" title="Other EHS/CSR Disclosures" columns="7">
+                    <apex:column >
+                        <apex:facet name="header">{!$ObjectType.Other_EHS_CSR_Certificate__c.fields.Name.label}</apex:facet>
+                        <apex:commandLink action="{!onClickRedirect}">
+                        {!qc.Other_EHS_CSR_Disclosures__r.Name}
+                        <apex:param name="qcId" assignTo="{!qcId}" value="{!qc.Other_EHS_CSR_Disclosures__r.Id}"/>
+                        </apex:commandLink>
+                    </apex:column>
+                    <apex:column >
+                        <apex:facet name="header">{!$ObjectType.Other_EHS_CSR_Certificate__c.fields.Certificate_Title__c.label}</apex:facet>
+                        {!qc.Other_EHS_CSR_Disclosures__r.Certificate_Title__c}
+                    </apex:column>
+                    <apex:column >
+                        <apex:facet name="header">{!$ObjectType.Other_EHS_CSR_Certificate__c.fields.Certificate_Type__c.label}</apex:facet>
+                        {!qc.Other_EHS_CSR_Disclosures__r.Certificate_Type__c}
+                    </apex:column>
+                    <apex:column >
+                        <apex:facet name="header">{!$ObjectType.Other_EHS_CSR_Certificate__c.fields.Fabs__c.label}</apex:facet>
+                        <apex:outputField value="{!qc.Other_EHS_CSR_Disclosures__r.Fabs__c}"/>
+                    </apex:column>
+                    <apex:column >
+                        <apex:facet name="header">{!$ObjectType.Other_EHS_CSR_Certificate__c.fields.Effective_Date__c.label}</apex:facet>
+                            <apex:outputField value="{!qc.Other_EHS_CSR_Disclosures__r.Effective_Date__c}"/>
+                    </apex:column>
+                    <apex:column >
+                        <apex:facet name="header">{!$ObjectType.Other_EHS_CSR_Certificate__c.fields.Expiry_Date__c.label}</apex:facet>
+                        <apex:outputField value="{!qc.Other_EHS_CSR_Disclosures__r.Expiry_Date__c}"/>
+                    </apex:column>
+                 </apex:pageBlockTable>
+                 </apex:pageBlockSection> 
+            <apex:outputText rendered="{!IF(OR(rectypName == 'Impact Notification',rectypName == 'Impact Notification Approved'),true,false)}">
+             &nbsp;&nbsp;  This page contains information for customers regarding impact to GLOBALFOUNDRIES operations due to specific events such as supply chain interruptions, severe weather, significant site-level emergencies.
+            </apex:outputText> <br/><br/>
+		<apex:pageBlockSection title="Impact Notification" columns="1" collapsible="false" id="ImpactCertificateId" rendered="{!IF(OR(rectypName == 'Impact Notification',rectypName == 'Impact Notification Approved'),true,false)}">
+			<apex:pageBlockSection columns="3">
+                    <apex:pageBlockSectionItem >
+                        <apex:outputLabel value="Locations" for="fabList"/>
+                        <apex:selectList id="fabList" value="{!fabSelected}" size="3" label="FAB" multiselect="true" style="width:200px;">
+                            <apex:selectOptions value="{!lstFabOptions}"/>
+                        </apex:selectList>
+                    </apex:pageBlockSectionItem>                  
+                   <apex:pageBlockSectionItem >
+                        <apex:commandButton value="Search" action="{!Search}"  reRender="qcTable1,buttonPanel,pageMessages" status="LoadingStatusSpinner"/>
+                    </apex:pageBlockSectionItem>                    
+                </apex:pageBlockSection>  
+  				 <apex:pageBlockTable value="{!qcAccList}" id="qcTable1"  var="qc" title="Other EHS/CSR Disclosures" columns="7">
+                    <apex:column >
+                        <apex:facet name="header">{!$ObjectType.Other_EHS_CSR_Certificate__c.fields.Name.label}</apex:facet>
+                        <apex:commandLink action="{!onClickRedirect}">
+                        {!qc.Other_EHS_CSR_Disclosures__r.Name}
+                        <apex:param name="qcId" assignTo="{!qcId}" value="{!qc.Other_EHS_CSR_Disclosures__r.Id}"/>
+                        </apex:commandLink>
+                    </apex:column>                  
+                    <apex:column >
+                        <apex:facet name="header">{!$ObjectType.Other_EHS_CSR_Certificate__c.fields.Fabs__c.label}</apex:facet>
+                        {!qc.Other_EHS_CSR_Disclosures__r.Fabs__c}
+                    </apex:column>
+                    
+                     <apex:column rendered="{!IF(rectypName!='Impact Notification',false,true)}">
+                        <apex:facet name="header">{!$ObjectType.Other_EHS_CSR_Certificate__c.fields.Issue_Description__c.label}</apex:facet>
+                        <apex:outputField value="{!qc.Other_EHS_CSR_Disclosures__r.Issue_Description__c}"/>
+                    </apex:column> 
+                     <apex:column >
+                        <apex:facet name="header">{!$ObjectType.Other_EHS_CSR_Certificate__c.fields.Date_of_Occurrence__c.label}</apex:facet>
+                        <apex:outputField value="{!qc.Other_EHS_CSR_Disclosures__r.Date_of_Occurrence__c}"/>
+                    </apex:column>                      
+                 </apex:pageBlockTable>  
+				</apex:pageBlockSection> 
+            
+                <apex:pageMessages id="pageMessages"></apex:pageMessages>
+                <apex:outputPanel id="buttonPanel">  
+                    <div class="bottomNav">
+                        <apex:panelGrid width="100%" columns="4" columnClasses="firstColumn, middleColumn, lastColumn">
+                            <apex:outputPanel > {!displayRecordStart} - {!displayRecordEnd} of {!qcAccList.size}</apex:outputPanel>
+                            
+                            <apex:panelGroup styleClass="prevNextLinks">
+                                <apex:outputPanel styleClass="prevNext" rendered="{!DisablePrevious}">
+                                    <img class="firstoff" alt="First Page" src="/s.gif"></img>
+                                </apex:outputPanel>
+                                <apex:outputPanel styleClass="prevNext" rendered="{!DisablePrevious}">
+                                    <img class="prevoff" alt="Previous" src="/s.gif"></img>
+                                    Previous
+                                </apex:outputPanel>
+                                <apex:outputPanel styleClass="prevNext" rendered="{!Not(DisablePrevious)}">
+                                    <apex:commandLink action="{!goToFirstPage}" status="LoadingStatusSpinner" title="First" reRender="qcTable,buttonPanel,LoadingStatusSpinner">
+                                        <img src="/s.gif" title="First Page" alt="First Page" class="first1"/>
+                                    </apex:commandLink>
+                                </apex:outputPanel>
+                                <apex:outputPanel styleClass="prevNext" rendered="{!NOT(DisablePrevious)}">
+                                    <apex:commandLink action="{!goToPreviousPage}" status="LoadingStatusSpinner" title="Previous" reRender="qcTable,buttonPanel,LoadingStatusSpinner">
+                                        <img src="/s.gif" title="Previous Page" alt="Previous" class="prev"/>
+                                        Previous
+                                    </apex:commandLink>
+                                </apex:outputPanel>
+                                <apex:outputPanel styleClass="prevNext" rendered="{!DisableNext}">
+                                    Next
+                                   <img class="nextoff" alt="Next" src="/s.gif"></img>
+                                </apex:outputPanel>
+                                <apex:outputPanel styleClass="prevNext" rendered="{!DisableNext}">
+                                  <img class="lastoff" alt="Last Page" src="/s.gif"></img>
+                                </apex:outputPanel>
+                                <apex:outputPanel styleClass="prevNext" rendered="{!Not(DisableNext)}">
+                                   <apex:commandLink action="{!goToNextPage}" status="LoadingStatusSpinner" title="Next" reRender="qcTable,buttonPanel,LoadingStatusSpinner">
+                                       Next <img src="/s.gif" title="Next" alt="Next" class="next"/>
+                                     </apex:commandLink>
+                                </apex:outputPanel>
+                                <apex:outputPanel styleClass="prevNext" rendered="{!NOT(disableNext)}">
+                                   <apex:commandLink action="{!goToLastPage}" status="LoadingStatusSpinner" title="Next" reRender="qcTable,buttonPanel,LoadingStatusSpinner">
+                                        <img src="/s.gif" title="Last Page" alt="Last Page" class="last1"/>
+                                    </apex:commandLink>
+                                </apex:outputPanel>
+                            </apex:panelGroup>
+                            <apex:outputPanel >Page {!pageNumber} of {!totalPageCount}</apex:outputPanel>
+                        </apex:panelGrid>
+                    </div>
+                </apex:outputPanel>                        
+		 </apex:pageBlock>
+    </apex:form>
+</apex:page>

@@ -1,0 +1,1408 @@
+<!--START OF WaiverCollaboratorPDF-->
+<!--
+* @ Author :- Suhas
+* @ Description :- Export pdf with collaborator details
+* @ Date :-23/01/2017
+* @ Change History :- Mohan Gandhapu - Added Review summary Table into the PDF.    
+-->
+
+<apex:page id="DRCPDFPage" standardController="Wavier_Collaborator__c" renderAs="pdf" extensions="DRCWaiverCollaboratorController"  
+           applyBodyTag="false" applyHtmlTag="false" showHeader="false" >
+    
+    <head>
+        <style>
+            
+            @page{  /* Landscape orientation*/ 
+            size:A4;
+            /* Put page numbers in the bottom left corner of each page in the pdf document.*/
+            @bottom-left{
+            color: #717171 !important;
+            content: "Page " counter(page) " of " counter(pages);
+            border-top: solid 1px #717171 !important;
+            }
+            @bottom-right{            
+            content: element(footer) !important;           
+            }
+            @bottom-center{
+            border-top: solid 1px #717171 !important;
+            }
+            
+            margin-top:1cm;
+            
+            }
+            
+            body { font-family: Arial Unicode MS; }
+            
+             .standardBackground {            
+            background-color: #0000FF;            
+            }
+            
+            table {
+            border-collapse: collapse;
+            width: 100%;
+            font-size: 90%;
+            }
+            
+            
+            .tablehead {
+            background-color: #99ff99;            
+            font-weight: bold;            
+            font-size: 120%;            
+            }
+            
+            .totals {            
+            background-color: #0099FF;            
+            font-weight: bold;            
+            }
+            
+            
+            .odd {
+            background-color: #ECE5B6;            
+            font-size: 100%;            
+            }
+            
+            .even {           
+            font-size: 100%;            
+            }
+            
+            
+            
+            .highlightcol {            
+            background-color: #FBB917;            
+            }
+            
+            
+            .page-break {
+            display:block;
+            page-break-after:always;
+            }
+            body {            
+            font-family: Arial Unicode MS;font-size: .9em;
+            }
+            
+            .dataRow even first{
+            padding:5px 5px 5px 5px;
+            padding-top:3px;
+            padding-right:3px;
+            padding-bottom:3px;
+            margin:0 0 15px 0;
+            
+            }
+            
+            h1 { text-align: center; margin: 0; font-size: 1.2em; font-weight: normal; }
+            hr.seperator { margin: 10px auto 5px quto; width: 50%; color: #000; background-color: #000; height:1px; border: none; }
+            h5 { text-align: center; margin: 0; font-size: .7em; font-weight: normal; }
+            h3 { text-align: right; margin: 0; font-size: .8em; font-weight: normal; }
+            p { margin-top: 10px; margin-bottom: 10px; }
+            p.proclamation { font-size: 1.3em; font-style: italic; }
+            
+            .myclass tbody tr {
+            border: 1px solid black ;            
+            }
+            .columnHeader tbody thead tr{
+            font-weight: bold;
+            font-size: 1.3em;
+            background-color: #99ff99; 
+            }
+            
+            .myclass1 tbody tr {
+            border: 1px solid black ;            
+            }
+            
+            /* Copyright 2013-2015 etc Chris Tabor. Licensed under MIT. */
+            /*css for progressbar-------------start */
+            .flexer,
+            .progress-indicator {
+                display: -webkit-box;
+                display: -moz-box;
+                display: -ms-flexbox;
+                display: -webkit-flex;
+                display: flex;
+            }
+            .no-flexer,
+            .progress-indicator.stacked {
+                display: block;
+            }
+            .no-flexer-element {
+                -ms-flex: 0;
+                -webkit-flex: 0;
+                -moz-flex: 0;
+                flex: 0;
+            }
+            .flexer-element,
+            .progress-indicator > li {
+                -ms-flex: 1;
+                -webkit-flex: 1;
+                -moz-flex: 1;
+                flex: 1;
+            }
+            .progress-indicator {
+                margin: 0;
+                padding: 0;
+                font-size: 80%;
+                font-weight:bold;
+                text-transform: uppercase;
+                margin-bottom: 1em;
+            }
+            .progress-indicator > li {
+                list-style: none;
+                text-align: center;
+                width: auto;
+                padding: 0;
+                margin: 0;
+                position: relative;
+                text-overflow: ellipsis;
+                color: #bbbbbb;
+                display: block;
+            }
+            .progress-indicator > li:hover {
+                color: #6e6e6e;
+            }
+            .progress-indicator > li .bubble {
+                width: 20px;
+                height: 20px;
+                background-color: #bbbbbb;
+                display: block;
+                margin: 0 auto 0.5em auto;
+                border-bottom: 1px solid #888888;
+            }
+            .progress-indicator > li .bubble:before,
+            .progress-indicator > li .bubble:after {
+                display: block;
+                position: absolute;
+                top: 9px;
+                width: 100%;
+                height: 3px;
+                content: '';
+                background-color: #bbbbbb;
+            }
+            .progress-indicator > li .bubble:before {
+                left: 0;
+            }
+            .progress-indicator > li .bubble:after {
+                right: 0;
+            }
+            .progress-indicator > li.completed {
+                color: green;
+            }
+            .progress-indicator > li.completed .bubble {
+                background-color: #65d074;
+                color: #65d074;
+                border-color: #247830;
+            }
+            .progress-indicator > li.completed .bubble:before,
+            .progress-indicator > li.completed .bubble:after {
+                background-color: #65d074;
+                border-color: #247830;
+            }
+            .progress-indicator > li.pending {
+                color: #ccc;
+            }
+            .progress-indicator > li.pending .bubble {
+                background-color: #ccc;
+                color: #ccc;
+                border-color: #595959;
+            }
+            .progress-indicator > li.pending .bubble:before,
+            .progress-indicator > li.pending .bubble:after {
+                background-color: #ccc;
+                border-color: #595959;
+            }
+            
+            .progress-indicator > li.cancelled {
+                color: #FF0000;
+            }
+            .progress-indicator > li.cancelled .bubble {
+                background-color: #FF0000;
+                color: #FF0000;
+                border-color: #595959;
+            }
+            .progress-indicator > li.cancelled .bubble:before,
+            .progress-indicator > li.cancelled .bubble:after {
+                background-color: #FF0000;
+                border-color: #595959;
+            }
+            
+            .progress-indicator > li.current {
+                color: #4285f4;
+            }
+            .progress-indicator > li.current .bubble {
+                background-color: #4285f4;
+                color: #4285f4;
+                border-color: #152e8c;
+            }
+            .progress-indicator > li.current .bubble:before,
+            .progress-indicator > li.current .bubble:after {
+                background-color: #4285f4;
+                border-color: #152e8c;
+            }
+            .progress-indicator > li a:hover .bubble {
+                background-color: #5671d0;
+                color: #5671d0;
+                border-color: #1f306e;
+            }
+            .progress-indicator > li a:hover .bubble:before,
+            .progress-indicator > li a:hover .bubble:after {
+                background-color: #5671d0;
+                border-color: #1f306e;
+            }
+            .progress-indicator > li.danger .bubble {
+                background-color: #d3140f;
+                color: #d3140f;
+                border-color: #440605;
+            }
+            .progress-indicator > li.danger .bubble:before,
+            .progress-indicator > li.danger .bubble:after {
+                background-color: #d3140f;
+                border-color: #440605;
+            }
+            .progress-indicator > li.warning .bubble {
+                background-color: #edb10a;
+                color: #edb10a;
+                border-color: #5a4304;
+            }
+            .progress-indicator > li.warning .bubble:before,
+            .progress-indicator > li.warning .bubble:after {
+                background-color: #edb10a;
+                border-color: #5a4304;
+            }
+            .progress-indicator > li.info .bubble {
+                background-color: #5b32d6;
+                color: #5b32d6;
+                border-color: #25135d;
+            }
+            .progress-indicator > li.info .bubble:before,
+            .progress-indicator > li.info .bubble:after {
+                background-color: #5b32d6;
+                border-color: #25135d;
+            }
+            .progress-indicator.stacked > li {
+                text-indent: -10px;
+                text-align: center;
+                display: block;
+            }
+            .progress-indicator.stacked > li .bubble:before,
+            .progress-indicator.stacked > li .bubble:after {
+                left: 50%;
+                margin-left: -1.5px;
+                width: 3px;
+                height: 100%;
+            }
+            .progress-indicator.stacked .stacked-text {
+                position: relative;
+                z-index: 10;
+                top: 0;
+                margin-left: 60% !important;
+                width: 45% !important;
+                display: inline-block;
+                text-align: left;
+                line-height: 1.2em;
+            }
+            .progress-indicator.stacked > li a {
+                border: none;
+            }
+            @media handheld,
+            screen and (max-width: 400px) {
+                .progress-indicator {
+                    font-size: 60%;
+                }
+            }
+            .box{
+              height:10px;
+              width:10px;
+              display: inline-block;
+              margin-left:5em;
+              margin-top:5px;
+            }
+            .left20{
+              padding-left:15px;
+              font-size:11px;
+              padding-top:-25px;
+            }
+            .green{
+                background-color: #65d074;
+                border-color: #247830;
+            }
+            .grey{
+                background-color: #ccc;
+                border-color: #595959;
+            }
+            
+            .red{
+                background-color: #FF0000;
+                border-color: #595959;
+            }
+            
+            .blue{
+                background-color: #4285f4;
+                border-color: #152e8c;
+            }
+            /*css for progressbar-------------End */
+            
+            /* css for removing horizontal line in the beginning and last---start----*/
+    .progress-indicator > li .bubblefirst {
+        width: 20px;
+        height: 20px;
+        background-color: #bbbbbb;
+        display: block;
+        margin: 0 auto 0.5em auto;
+        border-bottom: 1px solid #888888;
+    }
+    .progress-indicator > li .bubblefirst:before{
+        display: block;
+        position: absolute;
+        top: 9px;
+        width: 0%;
+        height: 3px;
+        content: '';
+        background-color: #bbbbbb;
+    }
+    .progress-indicator > li .bubblefirst:after {
+        display: block;
+        position: absolute;
+        top: 9px;
+        width: 50%;
+        height: 3px;
+        content: '';
+        background-color: #bbbbbb;
+    }
+    .progress-indicator > li .bubblefirst:before {
+        left: 0;
+    }
+    .progress-indicator > li .bubblefirst:after {
+        right: 0;
+    }
+    .progress-indicator > li.completed {
+        color: green;
+    }
+    .progress-indicator > li.completed .bubblefirst {
+        background-color: #65d074;
+        color: #65d074;
+        border-color: #247830;
+    }
+    .progress-indicator > li.completed .bubblefirst:after {
+        background-color: #65d074;
+        border-color: #247830;
+    }
+    .progress-indicator > li.completed .bubblefirst:before {
+        background-color: #65d074;
+        border-color: #247830;
+    }
+    .progress-indicator > li .bubblelast {
+        width: 20px;
+        height: 20px;
+        background-color: #bbbbbb;
+        display: block;
+        margin: 0 auto 0.5em auto;
+        border-bottom: 1px solid #888888;
+    }
+    .progress-indicator > li .bubblelast:before{
+        display: block;
+        position: absolute;
+        top: 9px;
+        width: 50%;
+        height: 3px;
+        content: '';
+        background-color: #bbbbbb;
+    }
+    .progress-indicator > li .bubblelast:after {
+        display: block;
+        position: absolute;
+        top: 9px;
+        width: 0%;
+        height: 3px;
+        content: '';
+        background-color: #bbbbbb;
+    }
+    .progress-indicator > li .bubblelast:before {
+        left: 0;
+    }
+    .progress-indicator > li .bubblelast:after {
+        right: 0;
+    }
+    .progress-indicator > li.completed {
+        color: green;
+    }
+    .progress-indicator > li.completed .bubblelast {
+        background-color: #65d074;
+        color: #65d074;
+        border-color: #247830;
+    }
+    .progress-indicator > li.completed .bubblelast:after {
+        background-color: #65d074;
+        border-color: #247830;
+    }
+    .progress-indicator > li.completed .bubblelast:before {
+        background-color: #65d074;
+        border-color: #247830;
+    }
+    .progress-indicator > li.pending {
+        color: #ccc;
+    }
+    .progress-indicator > li.pending .bubblefirst {
+        background-color: #ccc;
+        color: #ccc;
+        border-color: #595959;
+    }
+    .progress-indicator > li.pending .bubblefirst:before{
+        background-color: #ccc;
+        border-color: #595959;
+    }
+    .progress-indicator > li.pending .bubblefirst:after {
+        background-color: #ccc;
+        border-color: #595959;
+    }
+    
+    .progress-indicator > li.cancelled {
+        color: #FF0000;
+    }
+    .progress-indicator > li.cancelled .bubblefirst {
+        background-color: #FF0000;
+        color: #FF0000;
+        border-color: #595959;
+    }
+    .progress-indicator > li.cancelled .bubblefirst:after {
+        background-color: #FF0000;
+        border-color: #595959;
+    }
+    .progress-indicator > li.cancelled .bubblefirst:before{
+        background-color: #FF0000;
+        border-color: #595959;
+    }
+    
+    .progress-indicator > li.current {
+        color: #4285f4;
+    }
+    .progress-indicator > li.current .bubblefirst {
+        background-color: #4285f4;
+        color: #4285f4;
+        border-color: #152e8c;
+    }
+    .progress-indicator > li.current .bubblefirst:after {
+        background-color: #4285f4;
+        border-color: #152e8c;
+    }
+    .progress-indicator > li.current .bubblefirst:before{
+        background-color: #4285f4;
+        border-color: #152e8c;
+    }
+    .progress-indicator > li.pending {
+        color: #ccc;
+    }
+    .progress-indicator > li.pending .bubblelast {
+        background-color: #ccc;
+        color: #ccc;
+        border-color: #595959;
+    }
+    .progress-indicator > li.pending .bubblelast:before{
+        background-color: #ccc;
+        border-color: #595959;
+    }
+    .progress-indicator > li.pending .bubblelast:after {
+        background-color: #ccc;
+        border-color: #595959;
+    }
+    
+    .progress-indicator > li.cancelled {
+        color: #FF0000;
+    }
+    .progress-indicator > li.cancelled .bubblelast {
+        background-color: #FF0000;
+        color: #FF0000;
+        border-color: #595959;
+    }
+    .progress-indicator > li.cancelled .bubblelast:after {
+        background-color: #FF0000;
+        border-color: #595959;
+    }
+    .progress-indicator > li.cancelled .bubblelast:before{
+        background-color: #FF0000;
+        border-color: #595959;
+    }
+    
+    .progress-indicator > li.current {
+        color: #4285f4;
+    }
+    .progress-indicator > li.current .bubblelast {
+        background-color: #4285f4;
+        color: #4285f4;
+        border-color: #152e8c;
+    }
+    .progress-indicator > li.current .bubblelast:after {
+        background-color: #4285f4;
+        border-color: #152e8c;
+    }
+    .progress-indicator > li.current .bubblelast:before{
+        background-color: #4285f4;
+        border-color: #152e8c;
+    }
+    /* css for removing horizontal line in the beginning and last---end----*/
+        </style>
+    </head>
+    
+    
+    <apex:form id="formDRCPDF"  > 
+        <table width="100%">
+        <tr>
+            
+            <td align="left;"><apex:image id="gfLogo" value="{!$Resource.Gfllogo}" width="326" height="51" /><br/>
+                
+            </td>   
+            <td align="right;">{!$Label.Pdf_Confidential}</td>
+        </tr>       
+    </table>
+        <h3>
+          <apex:outputText style="padding-left:150px;" value="Date: {0,date,dd'/'MM'/'yyyy HH:mm a} GMT">
+                    <apex:param value="{!NOW()}" />
+                </apex:outputText>  
+        </h3> 
+       <h1><apex:outputText value="{!waiverCollaborator.PTSR_Service_Type__c +' '+ waiverCollaborator.Name}" /> </h1>
+        
+         <br/>
+            <!--START OF PROGRESS BAR CREATION COMPONENT-->
+            <c:ProgressBarComponent pBarObject="{!waiverCollaborator}" appName="DRC"/>
+            <div style="clear:both;"></div>
+                <div style="float:left;margin-left:-75px;padding-bottom:5px;">
+ 
+                  <div  class="green box">
+                  <div class="left20">Completed</div>
+                  </div>
+                  <div class="blue box">
+                  <div class="left20">Inprogress</div>
+                  </div>
+                  <div class="grey box">
+                  <div class="left20">Future</div>
+                  </div>
+                  <div class="red box">
+                  <div class="left20">Cancelled</div>
+                  </div>
+                 
+                </div>  
+        <br/>
+        
+            <!-- END OF PROGRESS BAR CREATION COMPONENT -->
+             <div class="myclass" >
+            <apex:panelGrid width="100%" border="1">
+                <apex:pageBlock id="pBlockId1"  >            
+                    <apex:pageBlockSection columns="1"  >
+                        <apex:repeat value="{!fields}" var="f"  > 
+                          <apex:outputfield value="{!waiverCollaborator[f.fieldPath]}" label="{!f.label}"   rendered="{!IF(AND(f.fieldPath != 'Top_Cell_Name__c',f.fieldPath != 'Is_Sync_with_AIA__c',f.fieldPath != 'Workflow_Status__c',f.fieldPath!='IsGfAcceptsRisk__c',f.fieldPath!='DFMServiceOption__c',f.fieldPath!='DFM_Design_Type__c',f.fieldPath!='Mask_Set_Title_ID__c'),true,false)}" style="width:50%;padding:0px;"/>
+                           <apex:outputField value="{!waiverCollaborator[f.fieldPath]}"  rendered="{!(f.fieldPath=='DFMServiceOption__c' || f.fieldPath=='DFM_Design_Type__c') && isTypeDFM}"/>    
+                            <apex:pageBlockSectionItem dataStyle="width:60%" labelStyle="width:40%" rendered="{!f.fieldPath == 'Top_Cell_Name__c'}" >
+                                <apex:outputLabel >Top Cell Name</apex:outputLabel>
+                                <apex:outputtext value="{!waiverCollaborator[f.fieldPath]}"/>
+                            </apex:pageBlockSectionItem>
+                            
+                        </apex:repeat>                
+                    </apex:pageBlockSection>
+                </apex:pageBlock>
+            </apex:panelGrid>
+        </div>
+        <div class="footer" >
+            <td>
+                
+            </td>
+        </div>
+       
+             <div class="columnHeader" style="page-break-before:always;"> 
+      
+      <apex:pageBlock >
+      
+      <apex:pageblocksection columns="1" rendered="{!IF(AND(waiverCollaborator.Is_Sync_with_AIA__c),false,true)}">
+              
+           <!--   <apex:outputpanel >
+             <b>Review Summary  </b> <br/>   
+             <b>Task Message :</b><br/>
+            
+                 <apex:outputText value="Execution /review is in progress. No action is required from customer yet." escape="false" /> 
+                <br/>
+           
+       </apex:outputpanel> -->
+      </apex:pageblocksection> 
+      
+        <apex:pageblocksection columns="1" rendered="{!IF(AND(!isPortalUser,waiverCollaborator.Is_Sync_with_AIA__c),true,false)}">
+              
+             <apex:outputpanel > 
+             <b>Review Summary  </b> <br/>  
+             <b>Task Message :</b><br/>
+            
+                 <apex:outputText value="{!taskMessage}" escape="false" /> 
+
+                <br/>
+            <table class="list" border="1" cellpadding="1" cellspacing="0" height="20" width="100%">
+                
+                <thead class="rich-table-thead">
+                    <tr>
+                        <td class="headerRow" scope="col"  width="20%">
+                        <div ><B>Final Status</B></div>
+                        </td> 
+                        <td class="headerRow" scope="col" width="10%">
+                        <div><B>No. of Rules</B></div>
+                        </td> 
+                        <td class="headerRow" scope="col" width="5%">
+                        <div><B>Short Description</B></div>
+                        </td>
+                        <td class="headerRow" scope="col" width="75%">
+                        <div><B>Required Action</B></div>
+                        </td>
+                        
+                    </tr>
+                </thead>
+                
+                <apex:outputpanel rendered="{!isTypeDRC}" layout="none" >
+                <tr class="dataRow odd"> <!-- -->
+                <td class="dataCell" colspan="1"><span><b>PI : Pass Ignore</b></span></td>
+                <td class="dataCell" colspan="1" align="center"><span><b>{!countMap['PI']}</b></span></td>
+                <td class="dataCell" colspan="1"><span><img src="/resource/DWC/DWC/PI.JPG" alt=" " height="25" width="50"/></span></td>
+                <td class="dataCell" colspan="1"><span><b>No review requested by Customer,GLOBALFOUNDRIES expectation is that violation is absent in final TO or requested in additional waiver request.</b></span></td>
+               
+                </tr>
+                </apex:outputpanel>
+               
+                <tr class="dataRow odd">
+                <td class="dataCell" colspan="1" > <span> <b>PW : Pass Waive</b> </span></td>
+                <td class="dataCell" colspan="1" align="center"><span><b>{!countMap['PW']}</b></span></td>
+                <td class="dataCell" colspan="1"><span><img src="/resource/DWC/DWC/PW.JPG" alt=" " height="25" width="50" border="0"/></span></td>
+                <td class="dataCell" colspan="1"><span><b>Waived for the specified use and/or Tapeout. No further action required by Customer.</b></span></td>
+                
+                </tr>
+               <apex:outputpanel layout="none" rendered="{!isTypeDFM}" >
+               <tr class="dataRow odd">
+                <td class="dataCell" colspan="1"><span><b>PA : Pass</b></span></td>
+                <td class="dataCell" colspan="1" align="center"><span><b>{!countMap['PA']}</b></span></td>
+                <td class="dataCell" colspan="1"><span><img src="/resource/DWC/DWC/PA.jpg" alt=" " height="25" width="50" border="0"/></span></td>
+                <td class="dataCell" colspan="1"><span><b>No Violations present in report.No further action required by Customer.</b></span></td>
+                
+                </tr>
+                </apex:outputpanel>
+                
+                <apex:outputpanel rendered="{!isTypeDRC}" layout="none" >
+                 <tr class="dataRow odd">
+                <td class="dataCell" colspan="1" ><span><b>POF : Pass, Out of Scope. Customer Agrees to Fix</b></span></td>
+                <td class="dataCell" colspan="1" align="center"><span><b>{!countMap['POF']}</b></span></td>
+                <td class="dataCell" colspan="1"><span><img src="/resource/DWC/DWC/POF.jpg" alt=" " height="25" width="50" border="0"/></span></td>
+                <td class="dataCell" colspan="1"><span><b>Cannot be waived by GLOBALFOUNDRIES but not in scope of current request. Already agreed by customer to be fixed in final TO.</b></span></td>
+                
+                </tr>
+                </apex:outputpanel>
+                
+                <tr class="dataRow odd">
+                <td class="dataCell" colspan="1" ><span><b>FCD : Fail Design, Customer disagrees to fix or risk</b></span></td>
+                <td class="dataCell" colspan="1" align="center"><span><b>{!countMap['FCD']}</b></span></td>
+                <td class="dataCell" colspan="1"><span><img src="/resource/DWC/DWC/FCD.jpg" alt=" " height="25" width="50" border="0"/></span></td>
+                <td class="dataCell" colspan="1"><span><b>Cannot be waived by GLOBALFOUNDRIES. Customer disagrees to fix or to waive the assumed risk liability.</b></span></td>
+                
+                </tr>
+                <tr class="dataRow odd">
+                <td class="dataCell" colspan="1"><span><b>WEA : Waive Exceptional Agreement</b></span></td>
+                <td class="dataCell" colspan="1" align="center"><span><b>{!countMap['WEA']}</b></span></td>
+                <td class="dataCell" colspan="1"><span><img src="/resource/DWC/DWC/WEA.JPG" alt=" " height="25" width="50" border="0"/></span></td>
+                <td class="dataCell" colspan="1"><span><b>Waived with exceptional agreement by GLOBALFOUNDRIES. Please contact GLOBALFOUNDRIES Customer Representative</b></span></td>
+              
+                    
+                </tr>
+                <tr class="dataRow odd">
+                <td class="dataCell" colspan="1"><span><b>WCR : Waive, Customer Agrees to Take Risk</b></span></td>
+                <td class="dataCell" colspan="1" align="center"><span><b>{!countMap['WCR']}</b></span></td>
+                <td class="dataCell" colspan="1"><span><img src="/resource/DWC/DWC/WCR.JPG" alt=" " height="25" width="50" border="0"/></span></td>
+                <td class="dataCell" colspan="1"><span><b>Customer agreed to waive, Customer is aware of related risk. Risk is assumed by Customer.</b></span></td>
+                
+                </tr>
+                <tr class="dataRow odd">
+                <td class="dataCell" colspan="1" ><span><b>FCF : Fail Design, Customer Agree to Fix</b></span></td>
+                <td class="dataCell" colspan="1" align="center"><span><b>{!countMap['FCF']}</b></span></td>
+                <td class="dataCell" colspan="1"><span><img src="/resource/DWC/DWC/FCF.JPG" alt=" " height="25" width="50" border="0"/></span></td>
+                <td class="dataCell" colspan="1"><span><b>Customer Agreed to fix, updated design to be submitted for Tapeout.</b></span></td>
+                
+                </tr>
+                <tr class="dataRow odd">
+                <td class="dataCell" colspan="1"><span><b>FD :Fail Design</b></span></td>
+                <td class="dataCell" colspan="1" align="center"><span><b>{!countMap['FD']}</b></span></td>
+                <td class="dataCell" colspan="1"><span><img src="/resource/DWC/DWC/FD.JPG" alt=" " height="25" width="50" border="0"/></span></td>
+                <td class="dataCell" colspan="1"><span><b>Cannot be waived by GLOBALFOUNDRIES, need to be fixed for final TO.</b></span></td>
+                
+                </tr>
+                 <tr class="dataRow odd">
+                <td class="dataCell" colspan="1"><span><b>OPEN </b></span></td>
+                     <td class="dataCell" colspan="1" align="center"><span><b>{!countMap['OPEN']}</b></span></td>
+                <td class="dataCell" colspan="1"><span><img src="/resource/DWC/DWC/OPEN.JPG" alt=" " height="25" width="50" border="0"/></span></td>
+                <td class="dataCell" colspan="1"><span><b>Waiver Collaborator status is open and action needs to be taken.</b></span></td>
+                
+                </tr>
+               </table>
+               <br/>    
+               <div><b> OPEN:</b> Referring to rule violations which are still pending for the customer option selection or pending for a collaboration closure with the customer This includes violations with status <b> Initial Failed Design (iFD)</b> and <b> Fail Design, Customer to check(FCC).</b></div> 
+              
+               <br/> 
+               <b>Disclaimers :</b>  
+                    <br/>
+               <div>1. Foundry waivers (if any) are granted as per the policy detailed in the Tapeout Requirement <a href="{!$Label.DWC_OPEN_TEXT_URL}" target="_blank">Document.</a> </div>
+                      
+                <apex:outputpanel rendered="{!isTypeDFM}" >
+               <div>2. If waiver(s) is not granted by the Foundry, the customer will have an option to fix or agree to let the Foundry perform DFM analysis. Customer acknowledges that this DFM analysis will add additional cycle time to fab out. If the violations cannot be waived, the customer will assume all liability. Otherwise the tape out may be rejected. The customer should work with their Foundry account team for these exceptional cases.</div>
+               <div>3. By selecting the option of Customer Agrees to Take Risk, it is meaning that Customer wants the device to proceed for manufacturing and accepts risk liability due to the unfixed violations.</div>
+               </apex:outputpanel>
+               <apex:outputpanel rendered="{!isTypeDRC}" >
+                    <div>2. If waiver(s) is not granted by the Foundry, the customer will either have an option to fix or the customer can assume all liability. Otherwise the tape out may be rejected. The customer should work with their Foundry account team for these exceptional cases.</div>
+              
+              <div>3. Rules with PI (Pass Ignore) are violated for DRC but have not been asked for review in this request. The Foundry expectation is that these violations are absent in the final tapeout design or requested for review in a separate waiver request.</div>
+              <div>4. By selecting the option of Customer Agrees to Take Risk, it is meaning that Customer wants the device to proceed for manufacturing and accepts risk liability due to the unfixed violations.</div>      
+                    </apex:outputpanel> 
+             
+       </apex:outputpanel> 
+      </apex:pageblocksection> 
+            
+       
+        <apex:pageblocksection title=""  columns="1" rendered="{!IF(AND(isPortalUser,waiverCollaborator.Is_Sync_with_AIA__c),true,false)}">
+              <apex:outputpanel >
+              <b>Review Summary  </b> <br/>
+             <b>Task Message :</b><br/>
+            
+                 <apex:outputText value="{!taskMessage}" escape="false" /> 
+                
+                <div></div> 
+                <div></div>
+                <br/>
+            <table class="list" border="1" height="20">
+                
+                <thead class="rich-table-thead">
+                    <tr class="headerRow">
+                        <th class="headerRow" scope="col" colspan="1" width="10%">
+                        <div>Final Status</div>
+                        </th> 
+                        <td class="headerRow" scope="col" colspan="1" width="10%" align="center">
+                        <div>No. of Rules</div>
+                        </td> 
+                        <th class="headerRow" scope="col" colspan="1" width="5%">
+                        <div>Short Description</div>
+                        </th>
+                        <th class="headerRow" scope="col" colspan="1" width="75%">
+                        <div>Required Action</div>
+                        </th>
+                        
+                    </tr>
+                </thead>
+                
+                <apex:outputpanel layout="none" rendered="{!isTypeDRC}" >
+
+                
+                
+                
+                <tr class="dataRow odd">
+                     
+                <td class="dataCell" colspan="1"><span><b>PI : Pass Ignore</b></span></td>
+                    <td class="dataCell" colspan="1" align="center"><span><b>{!countMap['PI']}</b></span></td>
+                <td class="dataCell" colspan="1"><span><img src="/GlobalfoundryView/resource/DWC/DWC/PI.JPG" alt=" " height="25" width="50" border="0"/></span></td>
+                <td class="dataCell" colspan="1"><span><b>No review requested by Customer,GLOBALFOUNDRIES expectation is that violation is absent in final TO or requested in additional waiver request.</b></span></td>
+                
+                </tr>
+                </apex:outputpanel>
+                <tr class="dataRow odd">
+                <td class="dataCell" colspan="1"><span><b>PW : Pass Waive</b></span></td>
+                    <td class="dataCell" colspan="1" align="center"><span><b>{!countMap['PW']}</b></span></td>
+                <td class="dataCell" colspan="1"><span><img src="/GlobalfoundryView/resource/DWC/DWC/PW.JPG" alt=" " height="25" width="50" border="0"/></span></td>
+                <td class="dataCell" colspan="1"><span><b>Waived for the specified use and/or Tapeout. No further action required by Customer.</b></span></td>
+                
+                </tr>
+                 <apex:outputpanel layout="none" rendered="{!isTypeDFM}" >
+                <tr class="dataRow odd">
+                <td class="dataCell" colspan="1"><span><b>PA : Pass</b></span></td>
+                    <td class="dataCell" colspan="1" align="center"><span><b>{!countMap['PA']}</b></span></td>
+                <td class="dataCell" colspan="1"><span><img src="/GlobalfoundryView/resource/DWC/DWC/PA.jpg" alt=" " height="25" width="50" border="0"/></span></td>
+                <td class="dataCell" colspan="1"><span><b>No Violations present in report.No further action required by Customer.</b></span></td>
+                
+                </tr>
+                </apex:outputpanel>
+                <apex:outputpanel rendered="{!isTypeDRC}" layout="none">
+                 <tr class="dataRow odd">
+                <td class="dataCell" colspan="1" ><span><b>POF : Pass, Out of Scope. Customer Agrees to Fix</b></span></td>
+                      <td class="dataCell" colspan="1" align="center"><span><b>{!countMap['POF']}</b></span></td>
+                <td class="dataCell" colspan="1"><span><img src="/GlobalfoundryView/resource/DWC/DWC/POF.jpg" alt=" " height="25" width="50" border="0"/></span></td>
+                <td class="dataCell" colspan="1"><span><b>Cannot be waived by GLOBALFOUNDRIES but not in scope of current request. Already agreed by customer to be fixed in final TO.</b></span></td>
+               
+                </tr>
+                </apex:outputpanel>
+                <tr class="dataRow odd">
+                <td class="dataCell" colspan="1" ><span><b>FCD : Fail Design, Customer disagrees to fix or risk</b></span></td>
+                     <td class="dataCell" colspan="1" align="center"><span><b>{!countMap['FCD']}</b></span></td>
+                <td class="dataCell" colspan="1"><span><img src="/GlobalfoundryView/resource/DWC/DWC/FCD.jpg" alt=" " height="25" width="50" border="0"/></span></td>
+                <td class="dataCell" colspan="1"><span><b>Cannot be waived by GLOBALFOUNDRIES. Customer disagrees to fix or to waive the assumed risk liability.</b></span></td>
+               
+                </tr>
+                <tr class="dataRow odd">
+                <td class="dataCell" colspan="1"><span><b>WEA : Waive Exceptional Agreement</b></span></td>
+                     <td class="dataCell" colspan="1" align="center"><span><b>{!countMap['WEA']}</b></span></td>
+                <td class="dataCell" colspan="1"><span><img src="/GlobalfoundryView/resource/DWC/DWC/WEA.JPG" alt=" " height="25" width="50" border="0"/></span></td>
+                <td class="dataCell" colspan="1"><span><b>Waived with exceptional agreement by GLOBALFOUNDRIES. Please contact GLOBALFOUNDRIES Customer Representative</b></span></td>
+               
+                    
+                </tr>
+                <tr class="dataRow odd">
+                <td class="dataCell" colspan="1"><span><b>WCR : Waive, Customer Agrees to Take Risk</b></span></td>
+                     <td class="dataCell" colspan="1" align="center"><span><b>{!countMap['WCR']}</b></span></td>
+                <td class="dataCell" colspan="1"><span><img src="/GlobalfoundryView/resource/DWC/DWC/WCR.JPG" alt=" " height="25" width="50" border="0"/></span></td>
+                <td class="dataCell" colspan="1"><span><b>Customer agreed to waive, Customer is aware of related risk. Risk is assumed by Customer.</b></span></td>
+               
+                </tr>
+                <tr class="dataRow odd">
+                <td class="dataCell" colspan="1" ><span><b>FCF : Fail Design, Customer Agree to Fix </b></span></td>
+                     <td class="dataCell" colspan="1" align="center"><span><b>{!countMap['FCF']}</b></span></td>
+                <td class="dataCell" colspan="1"><span><img src="/GlobalfoundryView/resource/DWC/DWC/FCF.JPG" alt=" " height="25" width="50" border="0"/></span></td>
+                <td class="dataCell" colspan="1"><span><b>Customer Agreed to fix, updated design to be submitted for Tapeout.</b></span></td>
+               
+                </tr>
+                <tr class="dataRow odd">
+                <td class="dataCell" colspan="1"><span><b>FD :Fail Design</b></span></td>
+                     <td class="dataCell" colspan="1" align="center"><span><b>{!countMap['FD']}</b></span></td>
+                <td class="dataCell" colspan="1"><span><img src="/GlobalfoundryView/resource/DWC/DWC/FD.JPG" alt=" " height="25" width="50" border="0"/></span></td>
+                <td class="dataCell" colspan="1"><span><b>Cannot be waived by GLOBALFOUNDRIES, need to be fixed for final TO.</b></span></td>
+               
+                </tr>
+                 <tr class="dataRow odd">
+                <td class="dataCell" colspan="1"><span><b>OPEN </b></span></td>
+                     <td class="dataCell" colspan="1" align="center"><span><b>{!countMap['OPEN']}</b></span></td>
+                     <td class="dataCell" colspan="1"><span><img src="/GlobalfoundryView/resource/DWC/DWC/OPEN.JPG" alt=" " height="25" width="50" border="0"/></span></td>
+                <td class="dataCell" colspan="1"><span><b>Waiver Collaborator status is open and action needs to be taken.</b></span></td>
+                
+                </tr>
+               </table>
+                <br/> 
+               <div><b> OPEN:</b> Referring to rule violations which are still pending for the customer option selection or pending for a collaboration closure with the customer This includes violations with status <b> Initial Failed Design (iFD)</b> and <b> Fail Design, Customer to check (FCC).</b></div> 
+              
+               <br/> 
+               <b>Disclaimers :</b>  
+                    <br/>
+               <div>1. Foundry waivers (if any) are granted as per the policy detailed in the Tapeout Requirement <a href="{!$Label.DWC_OPEN_TEXT_URL}" target="_blank">Document.</a> </div>
+               <apex:outputpanel rendered="{!isTypeDFM}" >
+               <div>2. If waiver(s) is not granted by the Foundry, the customer will have an option to fix or agree to let the Foundry perform DFM analysis. Customer acknowledges that this DFM analysis will add additional cycle time to fab out. If the violations cannot be waived, the customer will assume all liability. Otherwise the tape out may be rejected. The customer should work with their Foundry account team for these exceptional cases.</div>
+               <div>3. By selecting the option of Customer Accepts Risk, it is meaning that Customer wants the device to proceed for manufacturing and accepts risk liability due to the unfixed violations.</div>
+               </apex:outputpanel>
+               
+               <apex:outputpanel rendered="{!isTypeDRC}" >
+               <div>2. If waiver(s) is not granted by the Foundry, the customer will either have an option to fix or the customer can assume all liability. Otherwise the tape out may be rejected. The customer should work with their Foundry account team for these exceptional cases.</div>
+              
+              <div>3. Rules with PI (Pass Ignore) are violated for DRC but have not been asked for review in this request. The Foundry expectation is that these violations are absent in the final tapeout design or requested for review in a separate waiver request.</div>
+              <div>4. By selecting the option of Customer Accepts Risk, it is meaning that Customer wants the device to proceed for manufacturing and accepts risk liability due to the unfixed violations.</div>      
+              </apex:outputpanel>
+                 
+                         
+       </apex:outputpanel>       
+       </apex:pageblocksection> 
+        </apex:pageBlock>
+         
+         </div>   
+         
+        
+        <div class="columnHeader" style="page-break-before:always;">
+            <apex:panelGrid width="100%" >
+          
+          
+       
+        <apex:pageBlock title=" Waiver Rule List " rendered="{!IF(ruleListWrapper.size > 0, true, false)}"  >
+            <apex:outputText value=""/>
+        </apex:pageBlock>
+        <apex:pageBlock id="pbid">        
+            <apex:pageBlockSection title="" id="ruleListId" rendered="{!IF(ruleListWrapper.size > 0, true, false)}">               
+                
+                <apex:dataTable value="{!pdfRuleList}" var="wr" id="waiverRuleTable1" headerClass="tablehead" rowClasses="odd,even" style="font-size: 60%;" width="500px"
+                                columnsWidth="10%, 20%, 10%, 10%, 10%, 10%, 10%, 10%, 10%" border="1">
+                    
+                    <apex:column >                        
+                        <apex:facet name="header">Rule Name</apex:facet>
+                        <apex:outputText value="{!wr.Design_Rule_Name__c}"/>                        
+                    </apex:column>
+                    
+                    <apex:column >                        
+                        <apex:facet name="header" >Rule Description</apex:facet>                        
+                        <apex:outputText value="{!wr.Rule_Description__c}"/>                        
+                    </apex:column>
+                    
+                    <apex:column >                        
+                        <apex:facet name="header" >Hierarchial Error Count</apex:facet>                        
+                        <apex:outputText value="{!wr.Hierarchial_Error_Count__c}"/>                        
+                    </apex:column>
+                    
+                    
+                    <apex:column >                        
+                        <apex:facet name="header" >GF Review Results</apex:facet> 
+                        <apex:outputpanel rendered="{!IF(AND(!isFoundryView),true,false)}" >
+                                            <img src="{!wr.GF_Review_Results__c}" alt=" " height="25" width="50" border="0" />
+                                        </apex:outputpanel>  
+                                        <apex:outputpanel rendered="{!IF(AND(!isFoundryView),false,true)}" >
+                                            <img src="/GlobalfoundryView{!wr.GF_Review_Results__c}" alt=" " height="25" width="50" border="0" />
+                                        </apex:outputpanel>  
+                         
+                    </apex:column>
+                    
+                    <apex:column >                        
+                        <apex:facet name="header" >GF Review Comments</apex:facet>                        
+                        <apex:outputText value="{!wr.GF_Internal_Closing_Comment__c}"/>                        
+                    </apex:column>
+                                        
+                    
+                    <apex:column >                        
+                        <apex:facet name="header" >Customer Closing Comment</apex:facet>                        
+                        <apex:outputText value="{!wr.Customer_Closing_Comment__c}"/>                        
+                    </apex:column>
+                    
+                    <apex:column >                        
+                        <apex:facet name="header" >Final Status</apex:facet>                        
+                        <apex:outputField value="{!wr.Rule_Final_Status__c}"/>                        
+                    </apex:column>
+                    
+                </apex:dataTable>
+                
+            </apex:pageBlockSection> 
+            
+        </apex:pageBlock>
+         </apex:panelGrid>
+        </div>
+
+        <apex:pageBlock title=" " >
+            <apex:outputText value=""/>
+        </apex:pageBlock>
+        <apex:pageBlock title=" " >
+            <apex:outputText value=""/>
+        </apex:pageBlock>
+         <apex:pageBlock title=" " >
+            <apex:outputText value=""/>
+        </apex:pageBlock>
+         <apex:pageBlock title=" Snapshot Indicator "  rendered="{!!IF(AND(waiverCollaborator.Is_Sync_with_AIA__c),false,true)}"> 
+        <apex:pageBlocksection rendered="{!IF(waiverRuleAttachmentTable !=null, true, false)}" >
+        
+            <apex:outputText value=""/>
+        </apex:pageBlocksection>
+       
+        
+        <div class="columnHeader" style="page-break-after:auto;">
+            <apex:panelGrid width="100%" border="1" rendered="{!IF(waiverRuleAttachmentTable != null, true, false)}" >
+                <apex:pageBlock id="pbid11">               
+                    <apex:pageBlockSection >
+                        <apex:outputPanel layout="block"  > 
+                            <apex:repeat value="{!waiverRuleAttachmentTable}" var="wra" id="waiverRuleAttachmentTable" > 
+                                <apex:outputText value="{!wra}"/>
+                                <apex:outputText value=" "/>
+                                <apex:repeat value="{!waiverRuleAttachmentTable[wra]}" var="keyvalue" >  
+                                    <apex:image url="/servlet/servlet.FileDownload?file={!keyvalue.Id}" alt=" " height="25" width="50" /> 
+                                </apex:repeat>                        
+                            </apex:repeat>
+                        </apex:outputPanel>        
+                    </apex:pageBlockSection>                      
+                </apex:pageBlock> 
+            </apex:panelGrid>
+        </div>
+         </apex:pageblock>
+         <apex:pageBlock title=" " >
+            <apex:outputText value=""/>
+        </apex:pageBlock>
+        <apex:pageBlock title=" " >
+            <apex:outputText value=""/>
+        </apex:pageBlock>
+        <apex:pageBlock title=" " >
+            <apex:outputText value=""/>
+        </apex:pageBlock>
+        <apex:pageBlock title=" Attachments: " rendered="{!IF(attachmentsCollaborator.size > 0, true, false)}">
+            <apex:outputText value=""/>
+        </apex:pageBlock>
+        <div class="columnHeader" style="page-break-after:auto;">
+            <apex:panelGrid width="100%" rendered="{!IF(attachmentsCollaborator.size > 0, true, false)}">
+                <apex:pageblock id="pBlockId"  >
+                    <apex:pageBlockSection columns="1"> 
+                        
+                        <apex:pageBlockTable value="{!attachmentsCollaborator}" var="attach" border="1">
+                            
+                            <apex:column headerValue="Title" >
+                                <apex:outputField value="{!attach.Name}" />
+                            </apex:column> 
+                            <apex:column headerValue="Created Date">
+                                <apex:outputText value="{!attach.CreatedDate}"/>
+                            </apex:column>
+                            <apex:column headerValue="Created By">
+                                <apex:outputText value="{!attach.CreatedBy.Name}"/>
+                            </apex:column>
+                            <apex:column headerValue="Last modify Date">
+                                <apex:outputText value="{!attach.LastModifiedDate}"/>
+                            </apex:column>
+                            
+                        </apex:pageBlockTable>
+                        
+                    </apex:pageBlockSection>
+                    
+                </apex:pageBlock>
+            </apex:panelGrid>
+        </div>
+        
+        <apex:pageBlock title=" " >
+            <apex:outputText value=""/>
+        </apex:pageBlock>
+        <apex:pageBlock title=" " >
+            <apex:outputText value=""/>
+        </apex:pageBlock>
+         <apex:pageBlock title=" " >
+            <apex:outputText value=""/>
+        </apex:pageBlock>
+        
+        <apex:pageBlock title=" Notes: " rendered="{!IF(notesList.size > 0, true, false)}">
+            <apex:outputText value=""/>
+        </apex:pageBlock>
+        <div class="columnHeader" style="page-break-after:auto;">
+            <apex:panelGrid width="100%" rendered="{!IF(notesList.size > 0, true, false)}">
+                <apex:pageblock id="pBlockId12"  >
+                    <apex:pageBlockSection columns="1"> 
+                        
+                        <apex:pageBlockTable value="{!notesList}" var="notes" border="1">
+                            
+                            <apex:column headerValue="Title" >
+                                <apex:outputField value="{!notes.Title}" />
+                            </apex:column> 
+                            <apex:column headerValue="Created Date">
+                                <apex:outputText value="{!notes.CreatedDate}"/>
+                            </apex:column>
+                            <apex:column headerValue="Created By">
+                                <apex:outputText value="{!notes.CreatedBy.Name}"/>
+                            </apex:column>
+                            <apex:column headerValue="Last modify Date">
+                                <apex:outputText value="{!notes.LastModifiedDate}"/>
+                            </apex:column>
+                            
+                        </apex:pageBlockTable>
+                        
+                    </apex:pageBlockSection>
+                    
+                </apex:pageBlock>
+            </apex:panelGrid>
+        </div>
+        
+        <apex:pageBlock title=" " >
+            <apex:outputText value=""/>
+        </apex:pageBlock>
+        <apex:pageBlock title=" " >
+            <apex:outputText value=""/>
+        </apex:pageBlock>
+        <apex:pageBlock title=" " >
+            <apex:outputText value=""/>
+        </apex:pageBlock>
+        <apex:pageBlock title="Closing Section: " >
+            <apex:outputText value=""/>
+        </apex:pageBlock>       
+        <apex:pageBlock title=" " >
+            <apex:outputText value=""/>
+        </apex:pageBlock>
+        <div class="columnHeader" style="page-break-after:auto;" >
+            <apex:panelGrid width="100%" border="1" >  
+                <apex:pageBlock >
+                    Final Waiver Request Status : <apex:outputField value="{!waiverCollaborator.Waiver_Status__c}" /> 
+                </apex:pageBlock>
+                </apex:panelGrid>
+        </div>
+        <!--   <div class="columnHeader"  >
+            <apex:panelGrid width="100%" rendered="{!IF(drbGroup !=null , true, false)}"> 
+                 <apex:pageBlock >
+                  <h3>GLOBALFOUNDRIES Design Review Board</h3> 
+                </apex:pageBlock>
+                <apex:pageBlock >
+                    
+                    <table border="1" cellspacing="0" cellpadding="3" bgcolor="#99ff99"> 
+                        <tr>
+                            <th bgcolor="#99ff99">DRB Group</th> 
+                            <th bgcolor="#99ff99">Created Date</th>                                                       
+                           
+                        </tr>
+                        <tr>
+                            
+                            <td bgcolor="white"><apex:outputText value="{!drbGroup}" /> </td>
+                            <td bgcolor="white"> <apex:outputText value="{!drbDate}" /> 
+                            </td>
+                           
+                        </tr>
+                        
+                    </table>
+                </apex:pageBlock>
+                 </apex:panelGrid>
+        </div>
+                <apex:pageBlock title=" " >
+                    <apex:outputText value=""/>
+                </apex:pageBlock>
+                 <div class="columnHeader" style="page-break-after:auto;" >
+            <apex:panelGrid width="100%" rendered="{!IF(lastRuleWEABy !=null , true, false)}"> 
+                <apex:pageBlock >
+                  <h3>GLOBALFOUNDRIES TIER 2 Approval Process</h3> 
+                </apex:pageBlock>
+                <apex:pageBlock >
+                    
+                    <table border="1" cellspacing="0" cellpadding="3" bgcolor="#99ff99"> 
+                        <tr>
+                            <th bgcolor="#99ff99">TIER 2 Approval</th> 
+                            <th bgcolor="#99ff99">Created Date</th>                                                       
+                           
+                        </tr>
+                        <tr>
+                            
+                            <td bgcolor="white"> <apex:outputText value="{!lastRuleWEABy}" /></td>
+                            <td bgcolor="white"> <apex:outputText value="{!lastRuleWEADate}" /> 
+                            </td>
+                           
+                        </tr>
+                        
+                    </table>
+                </apex:pageBlock>
+                </apex:panelGrid>
+        </div> -->
+             <!--    <apex:pageBlock title=" " >
+                    <apex:outputText value=""/>
+                </apex:pageBlock>
+                 <div class="columnHeader" >
+            <apex:panelGrid width="100%"  rendered="{!IF(isWEAApprovedBy !=null , true, false)}"> 
+                 <apex:pageBlock >
+                  <h3>GLOBALFOUNDRIES Field Application</h3> 
+                </apex:pageBlock>
+                <apex:pageBlock >
+                    
+                    <table border="1" cellspacing="0" cellpadding="3" bgcolor="#99ff99"> 
+                        <tr>
+                            <th bgcolor="#99ff99">FAE</th> 
+                            <th bgcolor="#99ff99">Created Date</th>                                                       
+                           
+                        </tr>
+                        <tr>
+                           
+                            <td bgcolor="white"> <apex:outputText value="{!isWEAApprovedBy}" /> </td>
+                            <td bgcolor="white"> <apex:outputText value="{!isWEAApprovedDate}" /> 
+                            </td>
+                           
+                        </tr>
+                        
+                    </table>
+                </apex:pageBlock>
+                 </apex:panelGrid>
+        </div>
+                <apex:pageBlock title=" " >
+                    <apex:outputText value=""/>
+                </apex:pageBlock>
+                 <div class="columnHeader" >
+            <apex:panelGrid width="100%"  rendered="{!IF(lastRuleCustBy !=null , true, false)}"> 
+                 <apex:pageBlock >
+                  <h3>GLOBALFOUNDRIES Customer</h3> 
+                </apex:pageBlock>
+                <apex:pageBlock rendered="{!IF(lastRuleCustBy !=null , true, false)}">
+                    
+                    <table border="1" cellspacing="0" cellpadding="3" bgcolor="#99ff99"> 
+                        <tr>
+                            <th bgcolor="#99ff99">Customer Name</th> 
+                            <th bgcolor="#99ff99">Created Date</th>                                                       
+                           
+                        </tr>
+                        <tr>
+                            
+                            <td bgcolor="white"> <apex:outputText value="{!lastRuleCustBy}" /> </td>
+                            <td bgcolor="white"> <apex:outputText value="{!lastRuleCustDate}" /> 
+                            </td>
+                           
+                        </tr>
+                        
+                    </table>
+                </apex:pageBlock>
+                
+            </apex:panelGrid>
+        </div>
+        
+        
+        
+     
+        <apex:pageBlock title=" " >
+            <apex:outputText value=""/>
+        </apex:pageBlock>
+        <apex:pageBlock title=" " >
+            <apex:outputText value=""/>
+        </apex:pageBlock>
+        <apex:pageBlock title=" " >
+            <apex:outputText value=""/>
+        </apex:pageBlock>        -->
+      
+    
+      <!--  <div class="columnHeader" style="page-break-before:always;">
+            <apex:panelGrid width="100%" >  
+                <apex:pageBlock title="Legends: " >
+                    <apex:outputText value=""/>
+                </apex:pageBlock>
+                <apex:pageBlock >
+                    
+                    <table border="1" cellspacing="0" cellpadding="3" bgcolor="grey"> 
+                        <tr>
+                            <th bgcolor="#E6E6E6">Globalfoundries Review Result</th> 
+                            <th bgcolor="#E6E6E6">Short Description</th>                                                       
+                            <th bgcolor="#E6E6E6">Required Action</th>
+                        </tr>
+                        <tr>
+                            
+                            <td bgcolor="white">PI: Pass Ignore</td>
+                            <td bgcolor="white"> <img src="/resource/DWC/DWC/PI.JPG" alt=" " height="25" width="50" border="0"/>
+                            </td>
+                            <td bgcolor="white">No review requested by Customer,GLOBALFOUNDRIES expectation is that violation is absent in final TO or requested in additional waiver request.</td>
+                        </tr>
+                        <tr>
+                            
+                            <td bgcolor="white">PW: Pass Waive</td>
+                            <td bgcolor="white"> <img src="/resource/DWC/DWC/PW.JPG" alt=" " height="25" width="50" border="0"/>
+                            </td>
+                            <td bgcolor="white">Waived for the specified use and/or Tapeout. No further action required by Customer</td>
+                        </tr>
+                        <tr>
+                            
+                            <td bgcolor="white">FCC: Failed Design, Customer to check</td>
+                            <td bgcolor="white"> <img src="/resource/DWC/DWC/FCC.JPG" alt=" " height="25" width="50" border="0"/>
+                            </td>
+                            <td bgcolor="white">Cannot be waived by GLOBALFOUNDRIES, need to be fixed or Customer Waiver provided with Customer assuming related risk.</td>
+                        </tr>
+                        <tr>
+                            
+                            <td bgcolor="white">iFD: Initial Failed Design</td>
+                            <td bgcolor="white"> <img src="/resource/DWC/DWC/IFD.JPG" alt=" " height="25" width="50" border="0"/>
+                            </td>
+                            <td bgcolor="white">Cannot be waived by GLOBALFOUNDRIES, need to be fixed for final TO.</td>
+                        </tr>
+                        
+                         <tr>
+                            
+                            <td bgcolor="white">PA: Pass</td>
+                            <td bgcolor="white"> <img src="/resource/DWC/DWC/PA.jpg" alt=" " height="25" width="50" border="0"/>
+                            </td>
+                            <td bgcolor="white">No Violations present.</td>
+                        </tr>
+                        
+                        <tr>
+                            
+                            <td bgcolor="white">WCR: Waived Customer Risk </td>
+                            <td bgcolor="white"> <img src="/resource/DWC/DWC/WCR.JPG" alt=" " height="25" width="50" border="0"/>
+                            </td>
+                            <td bgcolor="white">Customer agreed to waive, Customer is aware of related risk. Risk is assumed by Customer.</td>
+                        </tr>
+                        <tr>
+                            
+                            <td bgcolor="white">WEA: Waived Exceptional Agreement </td>
+                            <td bgcolor="white"> <img src="/resource/DWC/DWC/WEA.JPG" alt=" " height="25" width="50" border="0"/>
+                            </td>
+                            <td bgcolor="white">Waived with exceptional agreement by GLOBALFOUNDRIES. Please contact GLOBALFOUNDRIES Customer Representative</td>
+                        </tr>
+                        <tr>
+                            
+                            <td bgcolor="white">POF : Pass, Out of scope customer fix</td>
+                            <td bgcolor="white"> <img src="/resource/DWC/DWC/POF.jpg" alt=" " height="25" width="50" border="0"/>
+                            </td>
+                            <td bgcolor="white">Cannot be waived by GLOBALFOUNDRIES but not in scope of current request. </td>
+                        </tr>
+                        <tr>
+                            
+                            <td bgcolor="white">FCF : Fail Design, Customer Agrees to Fix</td>
+                            <td bgcolor="white"> <img src="/resource/DWC/DWC/FCF.JPG" alt=" " height="25" width="50" border="0"/>
+                            </td>
+                            <td bgcolor="white">Customer Agreed to fix, updated design to be submitted for Tapeout.</td>
+                        </tr>
+                        
+                    </table>
+                </apex:pageBlock>
+            </apex:panelGrid>
+        </div>
+        
+        
+       
+        <apex:pageBlock title=" " >
+            <apex:outputText value=""/>
+        </apex:pageBlock>
+        <apex:pageBlock title=" " >
+            <apex:outputText value=""/>
+        </apex:pageBlock>
+        <apex:pageBlock title=" " >
+            <apex:outputText value=""/>
+        </apex:pageBlock>
+        
+        <div class="columnHeader" style="page-break-after:auto;" >
+            <apex:panelGrid width="100%" >                
+                <apex:pageBlock >
+                    
+                    <table border="1" cellspacing="0" cellpadding="3" bgcolor="grey"> 
+                        <tr>
+                            <th bgcolor="#E6E6E6">Customer Final Status</th> 
+                            <th bgcolor="#E6E6E6">Short Description</th>                                                       
+                            <th bgcolor="#E6E6E6">Customer Assesment / Required Action</th>
+                        </tr>
+                        <tr>
+                            
+                            <td bgcolor="white">PI: Pass Ignore</td>
+                            <td bgcolor="white"> <img src="/resource/DWC/DWC/PI.JPG" alt=" " height="25" width="50" border="0"/>
+                            </td>
+                            <td bgcolor="white">No review requested by Customer,GLOBALFOUNDRIES expectation is that violation is absent in final TO or requested in additional waiver request.</td>
+                        </tr>
+                        <tr>
+                            
+                            <td bgcolor="white">PW: Pass Waive</td>
+                            <td bgcolor="white"> <img src="/resource/DWC/DWC/PW.JPG" alt=" " height="25" width="50" border="0"/>
+                            </td>
+                            <td bgcolor="white">Waived for the specified use and/or Tapeout. No further action required by Customer</td>
+                        </tr>
+                        <tr>
+                            
+                            <td bgcolor="white">PA: Pass </td>
+                            <td bgcolor="white"> <img src="/resource/DWC/DWC/PA.jpg" alt=" " height="25" width="50" border="0"/>
+                            </td>
+                            <td bgcolor="white">No Violations present.</td>
+                        </tr>
+                        
+                       
+                        <tr>
+                            
+                            <td bgcolor="white">FCF: Fail Design, Customer Agrees to Fix </td>
+                            <td bgcolor="white"><img src="/resource/DWC/DWC/FCF.JPG" alt=" " height="25" width="50" border="0"/>
+                            </td>
+                            <td bgcolor="white">Customer Agreed to fix, updated design to be submitted for Tapeout.</td>
+                        </tr>
+                        <tr>
+                            
+                            <td bgcolor="white">WCR: Waived Customer Risk </td>
+                            <td bgcolor="white"> <img src="/resource/DWC/DWC/WCR.JPG" alt=" " height="25" width="50" border="0"/>
+                            </td>
+                            <td bgcolor="white">Customer agreed to waive, Customer is aware of related risk. Risk is assumed by Customer.</td>
+                        </tr>
+                        <tr>
+                            
+                            <td bgcolor="white">WEA: Waived Exceptional Agreement </td>
+                            <td bgcolor="white"> <img src="/resource/DWC/DWC/WEA.JPG" alt=" " height="25" width="50" border="0"/>
+                            </td>
+                            <td bgcolor="white">Waived with exceptional agreement by GLOBALFOUNDRIES. Please contact GLOBALFOUNDRIES Customer Representative</td>
+                        </tr>
+                        <tr>
+                            
+                            <td bgcolor="white">FD: Failed Design, Need Fix</td>
+                            <td bgcolor="white"> <img src="/resource/DWC/DWC/FD.JPG" alt=" " height="25" width="50" border="0"/>
+                            </td>
+                            <td bgcolor="white">Cannot be waived by GLOBALFOUNDRIES. Design cannot be accepted.</td>
+                        </tr>
+                        <tr>
+                            
+                            <td bgcolor="white">Open</td>
+                            <td bgcolor="white"> <img src="/resource/DWC/DWC/OPEN.JPG" alt=" " height="25" width="50" border="0"/>
+                            </td>
+                            <td bgcolor="white">Referring to rule violations which are still pending for the customer option selection or pending for a collaboration closure with the customer This includes violations with status Initial Failed Design (iFD) and Failed Design, Customer to check (FCC).</td>
+                        </tr>
+                         <tr>
+                            
+                            <td bgcolor="white">FCD: Failed Design, Customer disagrees to fix or risk</td>
+                            <td bgcolor="white"> <img src="/resource/DWC/DWC/FCD.jpg" alt=" " height="25" width="50" border="0"/>
+                            </td>
+                            <td bgcolor="white">Cannot be waived by GLOBALFOUNDRIES. Customer disagrees to fix or to waive the assumed risk liability. </td>
+                        </tr>
+                        
+                    </table>
+                </apex:pageBlock>
+            </apex:panelGrid>
+        </div> -->
+        
+        
+        
+        
+        
+    </apex:form> 
+    
+    
+    
+</apex:page>

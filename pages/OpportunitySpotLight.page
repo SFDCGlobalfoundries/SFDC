@@ -1,0 +1,74 @@
+<apex:page standardController="Account" showHeader="false" standardStylesheets="false" sidebar="false" applyHtmlTag="false" applyBodyTag="false" docType="html-5.0">    
+<html xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">    
+<head>
+  <apex:stylesheet value="{!URLFOR($Resource.SLDS110, 'assets/styles/salesforce-lightning-design-system-vf.css')}" />
+</head>   
+ 
+<apex:remoteObjects >
+  <apex:remoteObjectModel name="Opportunity" fields="Id,Name,Amount,Spotlight__c,AccountId"/>
+</apex:remoteObjects> 
+
+<body>    
+  <!-- REQUIRED SLDS WRAPPER -->
+  <div class="slds">    
+    <!-- HEADING AREA -->
+    <div class="slds-card">
+    <header class="slds-card__header slds-grid">
+      <div class="slds-col slds-media slds-media--center">
+        <div class="slds-media__figure">
+          <svg aria-hidden="true" class="slds-icon slds-icon-standard-contact slds-icon--small">
+            <use xlink:href="{!URLFOR($Resource.SLDS110, 'assets/icons/standard-sprite/svg/symbols.svg#opportunity')}"></use>
+          </svg>
+        </div>
+        <div class="slds-media__body">
+          <h3 class="slds-text-heading--small">Spotlight Opportunities</h3>
+        </div>
+      </div>
+    </header>
+    </div>
+   <!-- /HEADING AREA -->
+   <!-- CONTENT AREA -->
+    <!-- OPPORTUNITY LIST TABLE -->
+      <div id="opportunityList" class="slds-p-vertical--medium"></div>
+  <!-- / OPPORTUNITY LIST TABLE --> 
+   <!-- /CONTENT AREA -->
+  </div>
+  <!-- / REQUIRED SLDS WRAPPER -->    
+</body>
+
+<!-- JAVASCRIPT -->
+       
+<script>
+  var opportunity = new SObjectModel.Opportunity();
+  var outputDiv = document.getElementById("opportunityList");    
+  
+  function updateOutputDiv() {    
+
+    opportunity.retrieve(
+      {where: {AccountId: {eq: '{!Account.Id}'}, Spotlight__c: {ne: ''}},
+       orderby: [{Spotlight__c: 'ASC'}, {Amount: 'DESC'}], limit: 25},
+      function(error, records) {       
+        if (error) {
+          alert(error.message);
+        } else {
+          var html = '<div class="slds-scrollable--x"><table class="slds-table slds-table--bordered">';    
+
+          html += '<thead><tr><th scope="col">Name</th>';
+          html += '<th scope="col">Amount</th>';
+          html += '<th scope="col">Spotlight</th></tr></thead><tbody>';    
+
+          records.forEach(function(record) {
+              html += '<tr><td><a href=\"javascript: sforce.one.navigateToSObject(\'' + record.get("Id") + '\');\">' + record.get("Name") + '</a></td>';
+              html += '<td>' + record.get("Amount") + '</td>';
+              html += '<td>' + record.get("Spotlight__c") + '</td></tr>';
+          });
+          html = html + '</tbody></table></div>';
+          outputDiv.innerHTML = html;
+        }
+      }
+    );
+  }
+  updateOutputDiv();
+</script>
+</html>
+</apex:page>

@@ -1,0 +1,73 @@
+<!-- 
+* @ Author :- Devendra
+* @ Description :- Super user functionality 
+* @ Date :-23/01/2017
+* @ Change History :-   
+** -->
+<apex:page id="pg" controller="DWC_SuperUserCtrl">
+
+<script type="text/javascript">
+    window.onload=function(){
+        //alert('isSuperUser'+'{!isSuperUser}')
+    if('{!isSuperUser}'=='false'){
+    alert('Superuser is notified to grant access')
+    SendEmail();
+        
+    }
+    }
+
+    function displaymessage()
+    {
+        // alert(" Are you sure to add user!");
+    displaymessage1();
+    }
+   
+</script> 
+   
+<apex:form id="fm">
+<apex:pageblock id="pb" >
+<apex:pageMessages id="showmsg"></apex:pageMessages>
+<apex:actionFunction name="SendEmail" action="{!sendMail}" reRender="fm"/>
+<apex:actionfunction name="displaymessage1" action="{!addMember}" rerender="fm"/>
+
+<apex:pageblocksection title="Add/Remove FAB Group Members" columns="1" rendered="{!isSuperUser}">
+    <font color="#ff0000"><apex:facet name="header"> <span style="color:Black">Add/Remove FAB Group Members</span> </apex:facet> </font>
+<apex:pageblocksectionitem >
+<apex:outputlabel for="sel" value="Select Fab Group: "/>
+       <apex:actionregion >
+<apex:actionfunction name="getusers" action="{!getUsers}" rerender="fm"/>
+<apex:selectList id="sel" size="1" value="{!selectedGroup}" onchange="getusers();" multiselect="false">
+<apex:selectOptions value="{!groups}"/>
+</apex:selectList>
+        </apex:actionregion>
+</apex:pageblocksectionitem>
+<apex:pageblocksectionitem >
+<apex:outputlabel for="usr" value="Select User: "/>
+<apex:inputfield id="usr" required="true" value="{!newuser.userorgroupid}" />
+</apex:pageblocksectionitem>
+<apex:pageblocksectionitem >
+<apex:outputlabel for="btn" value=""/>
+<input type="button" class="btn" value="Add Member" onclick="displaymessage()" rerender="pb" />
+</apex:pageblocksectionitem>
+</apex:pageblocksection>
+<apex:actionregion >
+<apex:actionfunction name="removeMember" action="{!removeMember}" rerender="fm">
+<apex:param name="rmvid" value="" assignTo="{!rmvid}"/>
+</apex:actionfunction>
+<apex:pageBlockTable id="pbt" value="{!fabusers}" var="e" rendered="{!isSuperUser}">
+    <apex:column ><apex:facet name="header">UserId</apex:facet>
+    {!e.Name}
+</apex:column>
+<apex:column ><apex:facet name="header">Action</apex:facet>
+  <!--  <a style="cursor:pointer;" onclick="removeMember('{!e.id}')">Remove</a> 
+    <apex:commandLink onclick="Removedisplaymessage('{!e.id}');" action="{!removeMember}" value="Remove"/> -->
+    <apex:outputLink value="javascript:if (window.confirm('Are you Sure to Remove the User?')) removeMember('{!e.id}');">
+    Remove
+    </apex:outputLink>
+</apex:column>
+</apex:pageBlockTable>
+</apex:actionregion>
+
+</apex:pageblock>
+</apex:form>
+</apex:page>

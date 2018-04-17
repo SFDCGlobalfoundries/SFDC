@@ -1,0 +1,161 @@
+<!--
+ Type Name: VFTeamRoomMeeting
+ Author: Cognizant Technology Solutions
+ Created Date: 8-Jun-2013
+ Reason: This page is responsible to make the team room meeting with meeting occurences and associated the team room members as meeting invitees.
+ Change History:
+ Author: 
+ Modified Date: 
+ Reason: 
+ …….. 
+ ……..
+-->
+
+<apex:page standardController="Team_Room_Meeting__c" extensions="ClsTeamRoomMeetingExtension" sidebar="false" >
+        <apex:sectionHeader title="Team Room Meeting Edit" subtitle="Team Room Meeting" />
+    <apex:pageMessages id="MessageId"/>
+    <apex:form id="myform">
+    <apex:pageBlock rendered="{!showTRMPrivilegeSection}">
+         <apex:pageBlockButtons >
+              <apex:commandButton value="Cancel" action="{!cancelTeamRoomMeeting}"/>
+            </apex:pageBlockButtons>
+        <apex:outputPanel > <b> {!showPrivilegemessage}</b> </apex:outputPanel>
+    </apex:pageBlock>
+        <apex:pageBlock mode="Edit" rendered="{!showTRMEditSection}">
+            <apex:pageBlockButtons >
+                <apex:commandButton value="Save" action="{!saveTeamRoomMeeting}" reRender="MessageId"/>
+                <apex:commandButton value="Cancel" action="{!cancelTeamRoomMeeting}"/>
+            </apex:pageBlockButtons>
+            <br/><br/>
+            <apex:pageBlockSection title="Team Room Meeting Details" collapsible="false" columns="1">
+                <apex:inputField value="{!Team_Room_Meeting__c.Team_Room__c}" /> 
+                <apex:outputPanel >
+                        <label style="margin-left:155px;font-style:normal;">Start Date&nbsp;&nbsp;&nbsp;&nbsp;</label><apex:inputText id="sampleDateField" value="{!sampleDateField}" onfocus="DatePicker.pickDate(true, '{!$Component.sampleDateField}', false);"/>
+                        <c:DatePickerComponent dateFieldId="{!$Component.sampleDateField}" />
+                </apex:outputPanel>
+                <apex:outputPanel id="enddateId">
+                        <label style="margin-left:158px;font-style:normal;">End Date&nbsp;&nbsp;&nbsp;&nbsp;</label><apex:inputText id="sampleEndDateField" value="{!sampleEndDateField}" onfocus="DatePicker.pickDate(true, '{!$Component.sampleEndDateField}', false);" disabled="{!showEndDate}"/>
+                        <c:DatePickerComponent dateFieldId="{!$Component.sampleEndDateField}" />
+                </apex:outputPanel>
+                <apex:outputPanel >
+                        <label style="margin-left:155px;font-style:normal;">Start Time&nbsp;&nbsp;&nbsp;&nbsp;</label>
+                        <apex:selectList value="{!startTime}" size="1" style="margin-left:0px;">
+                                <apex:selectOptions value="{!timeStamps}"/>
+                        </apex:selectList>
+                </apex:outputPanel>
+                <apex:outputPanel >
+                        <label style="margin-left:155px;font-style:normal;">End Time&nbsp;&nbsp;&nbsp;&nbsp;</label>
+                        <apex:selectList value="{!endTime}" size="1" style="margin-left:3px;">
+                                <apex:selectOptions value="{!timeStamps}"/>
+                        </apex:selectList>
+                </apex:outputPanel>
+                <!--<apex:inputField value="{!Team_Room_Meeting__c.Subject__c}"/> -->
+                <apex:outputPanel >
+                        <div class = "requiredInput">
+                            <div class = "requiredBlock" style="margin-left:220px;">
+                                <label style="margin-left:-55px;font-style:normal;position:absolute;">Subject&nbsp;&nbsp;&nbsp;&nbsp;</label>
+                            </div>
+                            <apex:inputText value="{!meetingSubject}" style="margin-left:223px;"/>
+                        </div>
+                </apex:outputPanel>
+                <!--<apex:inputField value="{!Team_Room_Meeting__c.Status__c}"/>-->
+                <apex:inputField value="{!Team_Room_Meeting__c.Description__c}" style="width:45%;height:140%"/> 
+           </apex:pageBlockSection>
+           <br/>
+            <apex:pageBlockSection title="Team Room Meeting Agenda" collapsible="false" columns="1">
+                <apex:inputField value="{!Team_Room_Meeting__c.Agenda__c}"  style="width:45%;height:140%"/>
+            </apex:pageBlockSection>
+           <br/>
+           <br/>
+
+           <apex:pageBlockSection title="Recurrence" collapsible="false" columns="1" id="pgbl1">
+                        <apex:inputCheckbox value="{!recurrenceCheck}" onclick="callchk()"/>
+                <label style="position:absolute;margin-left:25px;margin-top:-22px;"> Create Recurring Series of Team Room Meeting Events</label>
+                <apex:outputPanel rendered="{!showrecurrPanel}" id="pgId">
+                        <apex:outputLabel value="Frequency" style="padding:20px 80px"/>
+                    <apex:selectRadio value="{!recurrValue}" layout="pageDirection" onclick="selectrecurrence()" id="radiopanel" style="padding-left: 150px; padding-right: 10px;" >
+                        <apex:selectOption itemValue="Daily" itemLabel="Daily" />
+                        <apex:selectOption itemValue="Weekly" itemLabel="Weekly" />
+                        <apex:selectOption itemValue="Monthly" itemLabel="Monthly" />
+                   </apex:selectRadio>
+                      
+                   <!-- ------------------------         DAILY       ------------------------------->
+                      <apex:outputPanel rendered="{!dailyRecurrence}" id="dailyrecurrId" >
+                          <apex:selectRadio value="{!dailyrecurrValue}" layout="pageDirection"  style="padding-left: 230px;margin-top:-67px; " >
+                             <apex:selectOption itemValue="everyweekday" itemLabel="Every weekday" />
+                             <!--<apex:selectOption itemValue="every" itemLabel="Every" />-->
+                          </apex:selectRadio>
+                         <!-- <apex:inputText size="3" style="margin-left:290px;margin-top:-40px;"/>
+                          <label style="position:absolute;margin-top:-19px;" >day(s)</label>-->
+                     </apex:outputPanel>
+                    
+                   <!-- ------------------------         WEEKLY       ------------------------------->
+                     <apex:outputPanel rendered="{!weeklyRecurrence}" id="weeklyrecurrId">
+                        <apex:inputCheckbox style="position:absolute;margin-left:240px;margin-top:-40px;" value="{!sundaycheck}" onclick="sundayvalue('Sunday');"/><label style="position:absolute;margin-left:260px;margin-top:-40px;" >Sunday</label>
+                        <apex:inputCheckbox style="position:absolute;margin-left:320px;margin-top:-40px;" value="{!mondaycheck}" onclick="mondayvalue('Monday');"/><label style="position:absolute;margin-left:340px;margin-top:-40px;" >Monday</label>
+                        <apex:inputCheckbox style="position:absolute;margin-left:400px;margin-top:-40px;" value="{!tuesdaycheck}" onclick="tuesdayvalue('Tuesday');"/><label style="position:absolute;margin-left:420px;margin-top:-40px;" >Tuesday</label>
+                        <apex:inputCheckbox style="position:absolute;margin-left:480px;margin-top:-40px;" value="{!wednesdaycheck}" onclick="wednesdayvalue('Wednesday');"/><label style="position:absolute;margin-left:500px;margin-top:-40px;" >Wednesday</label>
+                        <apex:inputCheckbox style="position:absolute;margin-left:580px;margin-top:-40px;" value="{!thursdaycheck}" onclick="thursdayvalue('Thursday');"/><label style="position:absolute;margin-left:600px;margin-top:-40px;" >Thursday</label>
+                        <apex:inputCheckbox style="position:absolute;margin-left:660px;margin-top:-40px;" value="{!fridaycheck}" onclick="fridayvalue('Friday');"/><label style="position:absolute;margin-left:680px;margin-top:-40px;" >Friday</label>
+                        <apex:inputCheckbox style="position:absolute;margin-left:730px;margin-top:-40px;" value="{!saturdaycheck}" onclick="saturdayvalue('Saturday');"/><label style="position:absolute;margin-left:750px;margin-top:-40px;" >Saturday</label>
+                     </apex:outputPanel>
+                      <!-- ------------------------         MONTHLY       ------------------------------->
+                     <apex:outputPanel rendered="{!monthlyRecurrence}" id="monthlyrecurrId">
+                         <apex:selectRadio value="{!monthlyrecurrValue}"  layout="pageDirection" style="padding-left: 230px;margin-top:-25px; " >
+                             <apex:selectOption itemValue="onDay" itemLabel="On day" />
+                         </apex:selectRadio>
+                         <apex:selectList value="{!recurrPicklist}" size="1" style="position:absolute;margin-left:300px;margin-top:-23px;">
+                             <apex:selectOptions value="{!items}"/>
+                         </apex:selectList>
+                        <label style="position:absolute;margin-left:350px;margin-top:-21px;" >of every</label>
+                        <label style="position:absolute;margin-top:-20px;margin-left:395px;" >month</label>
+                     </apex:outputPanel>
+                        <br/><br/>
+                </apex:outputPanel> 
+       </apex:pageBlockSection>
+       <apex:pageBlockSection title="Team Room Members" collapsible="false" >
+               <apex:panelGrid columns="3" id="abcd">
+                                <apex:selectList id="sel1" value="{!leftselected}" multiselect="true" style="width:500px" size="10">
+                        <apex:selectOptions value="{!unselectedvalues}" />
+                    </apex:selectList>
+                    <apex:panelGroup >
+                        <br/>
+                        <apex:image value="{!$Resource.multiselected}">
+                            <apex:actionSupport event="onclick" action="{!selectclick}" reRender="abcd"/>
+                        </apex:image>
+                        <br/><br/>
+                        <apex:image value="{!$Resource.multiunselected}">
+                            <apex:actionSupport event="onclick" action="{!unselectclick}" reRender="abcd"/>
+                        </apex:image>
+                    </apex:panelGroup>
+                    <apex:selectList id="sel2" value="{!rightselected}" multiselect="true" style="width:500px" size="10">
+                        <apex:selectOptions value="{!SelectedValues}" />
+                    </apex:selectList>
+               </apex:panelGrid>
+       </apex:pageBlockSection> 
+    </apex:pageBlock>
+    <apex:actionFunction action="{!showrecurrSection}" name="callchk" reRender="enddateId,pgbl1"/>
+    <apex:actionFunction action="{!recurrSelection}" name="selectrecurrence" reRender="pgId,radiopanel"/>
+    <apex:actionFunction action="{!sundaycall}" name="sundayvalue" reRender="weeklyrecurrId">
+         <apex:param assignTo="{!day}" value="" name="param1"/>
+    </apex:actionFunction>
+    <apex:actionFunction action="{!mondaycall}" name="mondayvalue" reRender="weeklyrecurrId">
+         <apex:param assignTo="{!day}" value="" name="param1"/>
+    </apex:actionFunction>
+    <apex:actionFunction action="{!tuesdaycall}" name="tuesdayvalue" reRender="weeklyrecurrId">
+         <apex:param assignTo="{!day}" value="" name="param1"/>
+    </apex:actionFunction>
+    <apex:actionFunction action="{!wednesdaycall}" name="wednesdayvalue" reRender="weeklyrecurrId">
+         <apex:param assignTo="{!day}" value="" name="param1"/>
+    </apex:actionFunction>
+    <apex:actionFunction action="{!thursdaycall}" name="thursdayvalue" reRender="weeklyrecurrId">
+         <apex:param assignTo="{!day}" value="" name="param1"/>
+    </apex:actionFunction>
+    <apex:actionFunction action="{!fridaycall}" name="fridayvalue" reRender="weeklyrecurrId">
+         <apex:param assignTo="{!day}" value="" name="param1"/>
+    </apex:actionFunction>
+    <apex:actionFunction action="{!saturdaycall}" name="saturdayvalue" reRender="weeklyrecurrId">
+         <apex:param assignTo="{!day}" value="" name="param1"/>
+    </apex:actionFunction>
+  </apex:form>
+</apex:page>

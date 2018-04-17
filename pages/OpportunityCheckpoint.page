@@ -1,0 +1,1355 @@
+<!-- 
+    Author: Meghna Ganguly
+    Description: This serves as the visualforce page for Opportunity CheckPoint
+    History: 
+        MGanguly   02212017 - page creation.  
+        Modified-Poulami Saha-07/26/2017-  Added new field #die/target device
+-->
+
+<apex:page id="pg" standardController="Opportunity" extensions="OpportunityCheckpoint_Ctrl">  
+    <style type="text/css">
+        body {background: #F3F3EC; padding-top: 15px}
+    </style>
+    
+    
+    <script>
+    function showSimpleDialog(){
+        var val=document.getElementById('pg:fm:hd').value;
+        console.log(val);
+        if(val.length>0)alert(val);
+     }
+      
+    function closeAndRefreshParent(){
+            window.top.close();
+     }
+   
+    </script>
+    <style type="text/css">
+        .activeStyle { color: #FDCF64; }
+        
+    </style>
+
+    <apex:form id="fm" >
+    
+     <apex:inputhidden id="hd" value="{!message}" ></apex:inputhidden>
+     <!--<apex:pageMessages ></apex:pageMessages>-->
+    <style>
+                body .bPageBlock .pbBody .red .pbSubheader{
+                    background-color:#c00000;
+                }
+                body .bPageBlock .pbBody .grey .pbSubheader{
+                    background-color:#e9e9e9;
+                }
+                body .bPageBlock .pbBody .grey .pbSubheader h3{
+                color:#000;
+                }
+                .tableHeader 
+                {
+                  padding: 0px 10px 10px 0px;
+                  margin: 0px 0px 0px 0px;
+                  color: #4A4A56;
+                  font-size: 95%;
+                  //font-weight: bold;
+                  font-family: Arial,Helvetica,sans-serif;
+                }
+            </style>
+
+        <apex:pageBlock title="Opportunity Review Checklist" id="pb" rendered="{!isedit}">
+            <apex:pageBlockButtons location="top" >
+                <apex:commandButton action="{!doSave}" value="Save" rerender="fm" />
+                <apex:commandButton action="{!doCancel}" value="Back" rerender="fm" />
+            </apex:pageBlockButtons>
+            <apex:pageMessages />
+            
+             <apex:outputPanel styleClass="grey" layout="block"> 
+                <apex:pageBlockSection collapsible="flase"  />
+            </apex:outputPanel> 
+            
+            <table border="1" width="100%" style="border-collapse:collapse;padding:0px;height:12px" cellspacing="1"  >
+                  <tr>
+                        <td width="18%" bgcolor="#FDCF64" align="center"><b> Field Name </b> </td>
+                        <td width="18%" bgcolor="#FDCF64" align="center"><b> Field Value </b> </td>
+                        <td width="10%" bgcolor="#FDCF64" align="center"><b> AM<br/>(CP1,CP2,CP3)</b> </td>
+                        <td width="10%" bgcolor="#FDCF64" align="center"><b> FAE<br/>(CP1,CP2,CP3)</b>  </td>
+                        <td width="10%" bgcolor="#FDCF64" align="center"><b> PLM<br/>(CP1,CP2,CP3)</b>  </td>
+                        <td width="10%" bgcolor="#FDCF64" align="center"><b> Seg Mktg<br/>(CP2,CP3)</b>  </td>
+                        <!--<td width="10%" bgcolor="#FDCF64" align="center"><b> Pricing<br/>(CP2,CP3)</b>  </td>-->
+                  </tr>
+                  <tr>
+                      <td colspan="1"><b>
+                          <apex:outputLabel value="{!$ObjectType.Opportunity.fields.Product_Line__c.label}" /></b>
+                      </td>
+                      <td colspan="1">
+                          <apex:selectList size="1" value="{!opp.Product_Line__c}">
+                          <apex:selectOptions value="{!productLineOptions }"/>
+                          </apex:selectList>
+                      </td>
+                      <td colspan="1" align="center" bgcolor="#b3daff"><apex:inputcheckbox selected="true" disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/></td>
+                      <td colspan="1" align="center"><apex:outputText /></td>
+                      <td colspan="1" align="center" bgcolor="#b3daff"><apex:inputcheckbox disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/></td>
+                      <td colspan="1" align="center"><apex:outputText /></td>
+                      <!--<td colspan="1" align="center"><apex:outputText /></td>-->
+                      
+                  </tr>
+                  
+                  <apex:outputPanel rendered="{!showDGStatus}">
+                  <tr>
+                      <td colspan="1"><b>
+                          <apex:outputLabel value="{!$ObjectType.Opportunity.fields.Deal_Grading_Status__c.label}" /></b>
+                      </td>
+                      <td colspan="1">
+                          <apex:outputField value="{!opp.Deal_Grading_Status__c}" />
+                      </td>
+                      <td colspan="1" align="center" bgcolor="#b3daff"><apex:inputcheckbox disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/></td>
+                      <td colspan="1" align="center"><apex:outputText /></td>
+                      <td colspan="1" align="center" bgcolor="#b3daff"><apex:inputcheckbox disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/></td>
+                      <td colspan="1" align="center"><apex:outputText /></td>
+                      <!--<td colspan="1" align="center"><apex:outputText /></td>-->
+                      
+                  </tr>
+                  </apex:outputPanel>
+                  
+                  <tr>
+                      <td colspan="1"><b>
+                          <apex:outputLabel value="{!$ObjectType.Opportunity.fields.Business_Unit__c.label}" /></b>
+                      </td>
+                      <td colspan="1">
+                          <!--<apex:inputField value="{!opp.Business_Unit__c}" />-->
+                          <apex:selectList size="1" value="{!opp.Business_Unit__c}">
+                          <apex:selectOptions value="{!bunitOptions }"/>
+                          </apex:selectList>
+                      </td>
+                      <td colspan="1" align="center" bgcolor="#b3daff"><apex:inputcheckbox selected="true" disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/></td>
+                      <td colspan="1" align="center"><apex:outputText /></td>
+                      <td colspan="1" align="center" bgcolor="#b3daff"><apex:inputcheckbox disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/></td>
+                      <td colspan="1" align="center"><apex:outputText /></td>
+                      <!--<td colspan="1" align="center"><apex:outputText /></td>-->
+                      
+                  </tr>
+                  
+                  <tr>
+                      <td colspan="1"><b>
+                          <apex:outputLabel value="{!$ObjectType.Opportunity.fields.CloseDate.label}" /></b>
+                      </td>
+                      <td colspan="1">
+                          <apex:inputField value="{!opp.CloseDate}" />
+                      </td>
+                      <td colspan="1" align="center" bgcolor="#b3daff"><apex:inputcheckbox selected="true" disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/></td>
+                      <td colspan="1" align="center"><apex:outputText /></td>
+                      <td colspan="1" align="center" bgcolor="#b3daff"><apex:inputcheckbox disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/></td>
+                      <td colspan="1" align="center"><apex:outputText /></td>
+                      <!--<td colspan="1" align="center"><apex:outputText /></td>-->
+                      
+                  </tr>
+                  
+                  <tr>
+                      <td colspan="1"><b>
+                          <apex:outputLabel value="Account Name" /></b>
+                      </td>
+                      <td colspan="1">
+                          <apex:inputField value="{!opp.AccountId}" />
+                      </td>
+                      <td colspan="1" align="center" bgcolor="#b3daff"><apex:inputcheckbox selected="true" disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/></td>
+                      <td colspan="1" align="center"><apex:outputText /></td>
+                      <td colspan="1" align="center"><apex:outputText /></td>
+                      <td colspan="1" align="center"><apex:outputText /></td>
+                      <!--<td colspan="1" align="center"><apex:outputText /></td>-->
+                       
+                  </tr>
+                  
+                  <tr>
+                      <td colspan="1"><b>
+                          <apex:outputLabel value="Account Stage" /></b>
+                      </td>
+                      <td colspan="1">
+                          <apex:inputField value="{!opp.Account_Stage__c}" />
+                      </td>
+                      <td colspan="1" align="center" bgcolor="#b3daff"><apex:inputcheckbox disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/></td>
+                      <td colspan="1" align="center"><apex:outputText /></td>
+                      <td colspan="1" align="center"><apex:outputText /></td>
+                      <td colspan="1" align="center"><apex:outputText /></td>
+                      <!--<td colspan="1" align="center"><apex:outputText /></td>-->
+                       
+                  </tr>
+                  
+                  <tr>
+                      <td colspan="1"><b>
+                          <apex:outputLabel value="Opportunity Name" /></b>
+                      </td>
+                      <td colspan="1">
+                          <apex:inputField value="{!opp.Name}" />
+                      </td>
+                      <td colspan="1" align="center" bgcolor="#b3daff"><apex:inputcheckbox selected="true" disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/></td>
+                      <td colspan="1" align="center"><apex:outputText /></td>
+                      <td colspan="1" align="center"><apex:outputText /></td>
+                      <td colspan="1" align="center"><apex:outputText /></td>
+                      <!--<td colspan="1" align="center"><apex:outputText /></td>-->
+                     
+                  </tr>
+                  
+                  <tr>
+                      <td colspan="1"><b>
+                          <apex:outputLabel value="{!$ObjectType.Opportunity.fields.StageName.label}" /></b>
+                      </td>
+                      <td colspan="1">
+                          <apex:outputField value="{!opp.StageName}" />
+                      </td>
+                      <td colspan="1" align="center" bgcolor="#b3daff"><apex:inputcheckbox selected="true" disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/></td>
+                      <td colspan="1" align="center"><apex:outputText /></td>
+                      <td colspan="1" align="center"><apex:outputText /></td>
+                      <td colspan="1" align="center"><apex:outputText /></td>
+                      <!--<td colspan="1" align="center"><apex:outputText /></td>-->
+                     
+                  </tr>
+                  
+                  <tr>
+                      <td colspan="1"><b>
+                          <apex:outputLabel value="{!$ObjectType.Opportunity.fields.Market_Segment__c.label}" /></b>
+                      </td>
+                      <td colspan="1">
+                          <apex:selectList size="1" value="{!opp.Market_Segment__c}">
+                          <apex:selectOptions value="{!msegmentOptions }"/>
+                          </apex:selectList> 
+                      </td>
+                      <td colspan="1" align="center" bgcolor="#b3daff"><apex:inputcheckbox selected="true" disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/></td>
+                      <td colspan="1" align="center"><apex:outputText /></td>
+                      <td colspan="1" align="center"><apex:outputText /></td>
+                      <td colspan="1" align="center" bgcolor="#b3daff"><apex:inputcheckbox selected="true" disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/></td>
+                      <!--<td colspan="1" align="center"><apex:outputText /></td>-->
+                      
+                  </tr>
+                  
+                  <tr>
+                      <td colspan="1"><b>
+                          <apex:outputLabel value="{!$ObjectType.Opportunity.fields.Process_Geometry__c.label}" /></b>
+                      </td>
+                      <td colspan="1">
+                          <apex:selectList size="1" value="{!opp.Process_Geometry__c}">
+                          <apex:selectOptions value="{!pgeometryOptions }"/>
+                          </apex:selectList> 
+                      </td>
+                      <td colspan="1" align="center" bgcolor="#b3daff"><apex:inputcheckbox selected="true" disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/></td>
+                      <td colspan="1" align="center" bgcolor="#b3daff"><apex:inputcheckbox selected="true" disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/></td>
+                      <td colspan="1" align="center" bgcolor="#b3daff"><apex:inputcheckbox disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/></td>
+                      <td colspan="1" align="center"><apex:outputText /></td>
+                      <!--<td colspan="1" align="center"><apex:outputText /></td>-->
+                      
+                  </tr>
+                  
+                  <tr>
+                      <td colspan="1"><b>
+                          <apex:outputLabel value="{!$ObjectType.Opportunity.fields.Process_Family__c.label}" /></b>
+                      </td>
+                      <td colspan="1">
+                          <apex:selectList size="1" value="{!opp.Process_Family__c}">
+                          <apex:selectOptions value="{!pfamilyOptions }"/>
+                          </apex:selectList> 
+                      </td>
+                      <td colspan="1" align="center" bgcolor="#b3daff"><apex:inputcheckbox selected="true" disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/></td>
+                      <td colspan="1" align="center" bgcolor="#b3daff"><apex:inputcheckbox selected="true" disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/></td>
+                      <td colspan="1" align="center" bgcolor="#b3daff"><apex:inputcheckbox disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/></td>
+                      <td colspan="1" align="center"><apex:outputText /></td>
+                      <!--<td colspan="1" align="center"><apex:outputText /></td>-->
+                      
+                  </tr>
+                  
+                  <tr>
+                      <td colspan="1"><b>
+                          <apex:outputLabel value="{!$ObjectType.Opportunity.fields.Target_Process_Node__c.label}" /></b>
+                      </td>
+                      <td colspan="1">
+                          <apex:selectList size="1" value="{!opp.Target_Process_Node__c}">
+                          <apex:selectOptions value="{!tpnOptions }"/>
+                          </apex:selectList> 
+                      </td>
+                      <td colspan="1" align="center" bgcolor="#b3daff"><apex:inputcheckbox selected="true" disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/></td>
+                      <td colspan="1" align="center" bgcolor="#b3daff"><apex:inputcheckbox selected="true" disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/></td>
+                      <td colspan="1" align="center" bgcolor="#b3daff"><apex:inputcheckbox disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/></td>
+                      <td colspan="1" align="center"><apex:outputText /></td>
+                      <!--<td colspan="1" align="center"><apex:outputText /></td>-->
+                      
+                  </tr>
+                  
+                  <tr>
+                      <td colspan="1"><b>
+                          <apex:outputLabel value="{!$ObjectType.Opportunity.fields.Opportunity_Obstacles__c.label}" /></b>
+                      </td>
+                      <td colspan="1">
+                          <apex:inputField value="{!opp.Opportunity_Obstacles__c}" />
+                      </td>
+                      <td colspan="1" align="center" bgcolor="#b3daff"><apex:inputcheckbox selected="true" disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/></td>
+                      <td colspan="1" align="center" bgcolor="#b3daff"><apex:inputcheckbox selected="true" disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/></td>
+                      <td colspan="1" align="center" bgcolor="#b3daff"><apex:inputcheckbox disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/></td>
+                      <td colspan="1" align="center"><apex:outputText /></td>
+                      <!--<td colspan="1" align="center"><apex:outputText /></td>-->
+                      
+                  </tr>
+                  
+                  <tr>
+                      <td colspan="1"><b>
+                          <apex:outputLabel value="{!$ObjectType.Opportunity.fields.Production_Confidence__c.label}" /></b>
+                      </td>
+                      <td colspan="1">
+                          <!--<apex:inputField value="{!opp.Production_Confidence__c}" />-->
+                          <apex:selectList size="1" value="{!opp.Production_Confidence__c}">
+                          <apex:selectOptions value="{!pconfidenceOptions }"/>
+                          </apex:selectList>
+                      </td>
+                      <td colspan="1" align="center" bgcolor="#b3daff"><apex:inputcheckbox disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/></td>
+                      <td colspan="1" align="center"><apex:outputText /></td>
+                      <td colspan="1" align="center" bgcolor="#b3daff"><apex:inputcheckbox disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/></td>
+                      <td colspan="1" align="center"><apex:outputText /></td>
+                      <!--<td colspan="1" align="center"><apex:outputText /></td>-->
+                      
+                  </tr>
+                  
+                  <tr>
+                      <td colspan="1"><b>
+                          <apex:outputLabel value="{!$ObjectType.Opportunity.fields.Opportunity_Sourcing_Type__c.label}" /></b>
+                      </td>
+                      <td colspan="1">
+                          <!--<apex:inputField value="{!opp.Opportunity_Sourcing_Type__c}" />-->
+                          <apex:selectList size="1" value="{!opp.Opportunity_Sourcing_Type__c}">
+                          <apex:selectOptions value="{!osourcingOptions }"/>
+                          </apex:selectList>
+                      </td>
+                      <td colspan="1" align="center" bgcolor="#b3daff"><apex:inputcheckbox disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/></td>
+                      <td colspan="1" align="center"><apex:outputText /></td>
+                      <td colspan="1" align="center"><apex:outputText /></td>
+                      <td colspan="1" align="center" bgcolor="#b3daff"><apex:inputcheckbox selected="true" disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/></td>
+                      <!--<td colspan="1" align="center"><apex:outputText /></td>-->
+                      
+                  </tr>
+                  
+                  <tr>     
+                      <td colspan="1"><b>
+                          <apex:outputLabel value="{!$ObjectType.Opportunity.fields.Fab_Split__c.label}" /></b>
+                      </td>   
+                      <td colspan="1">
+                          <apex:inputField value="{!opp.Fab_Split__c}" />
+                      </td>
+                      <td colspan="1" align="center" bgcolor="#b3daff"><apex:inputcheckbox disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/></td>
+                      <td colspan="1" align="center"><apex:outputText /></td>
+                      <td colspan="1" align="center"><apex:outputText /></td>
+                      <td colspan="1" align="center" bgcolor="#b3daff"><apex:inputcheckbox selected="true" disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/></td>
+                      <!--<td colspan="1" align="center"><apex:outputText /></td>-->
+                      
+                  </tr>
+                  
+                  <tr>
+                      <td colspan="1"><b>
+                          <apex:outputLabel value="{!$ObjectType.Opportunity.fields.Fab_Assignment_1__c.label}" /></b>
+                      </td>  
+                      <td colspan="1">
+                          <apex:selectList size="1" value="{!opp.Fab_Assignment_1__c}">
+                          <apex:selectOptions value="{!pgffabOptions }"/>
+                          </apex:selectList>
+                      </td>
+                      <td colspan="1" align="center" bgcolor="#b3daff"><apex:inputcheckbox selected="true" disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/></td>
+                      <td colspan="1" align="center"><apex:outputText /></td>
+                      <td colspan="1" align="center" bgcolor="#b3daff"><apex:inputcheckbox disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/></td>
+                      <td colspan="1" align="center"><apex:outputText /></td>
+                      <!--<td colspan="1" align="center"><apex:outputText /></td>-->
+                      
+                  </tr>
+                  
+                  <tr>
+                      <td colspan="1"><b>
+                          <apex:outputLabel value="{!$ObjectType.Opportunity.fields.Process_Platform__c.label}" /></b>
+                      </td>
+                      <td colspan="1">
+                          <!--<apex:inputField value="{!opp.Process_Platform__c}" />-->
+                          <apex:selectList size="1" value="{!opp.Process_Platform__c}">
+                          <apex:selectOptions value="{!platformcateOptions }"/>
+                          </apex:selectList>
+                      </td>
+                      <td colspan="1" align="center" bgcolor="#b3daff"><apex:inputcheckbox disabled="true"/>&nbsp;<apex:inputcheckbox disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/></td>
+                      <td colspan="1" align="center"><apex:outputText /></td>
+                      <td colspan="1" align="center" bgcolor="#b3daff"><apex:inputcheckbox disabled="true"/>&nbsp;<apex:inputcheckbox disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/></td>
+                      <td colspan="1" align="center"><apex:outputText /></td>
+                      <!--<td colspan="1" align="center"><apex:outputText /></td>-->
+                      
+                  </tr>
+                  
+                  <tr>
+                      <td colspan="1"><b>
+                          <apex:outputLabel value="{!$ObjectType.Opportunity.fields.Approved_GMPL_BX009_DW__c.label}" /></b>
+                      </td>  
+                      <td colspan="1">
+                          <apex:inputField value="{!opp.Approved_GMPL_BX009_DW__c}" />
+                      </td>
+                     <td colspan="1" align="center" bgcolor="#b3daff"><apex:inputcheckbox selected="true" disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/></td>
+                      <td colspan="1" align="center" bgcolor="#b3daff"><apex:inputcheckbox selected="true" disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/></td>
+                      <td colspan="1" align="center" bgcolor="#b3daff"><apex:inputcheckbox disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/></td>
+                      <td colspan="1" align="center"><apex:outputText /></td>
+                      <!--<td colspan="1" align="center"><apex:outputText /></td>-->
+                      
+                  </tr>
+                  
+                  <tr>
+                      <td colspan="1"><b>
+                          <apex:outputLabel value="{!$ObjectType.Opportunity.fields.GF_Target_Share__c.label}" /></b>
+                      </td>  
+                      <td colspan="1">
+                          <apex:inputField value="{!opp.GF_Target_Share__c}" />
+                      </td>
+                      <td colspan="1" align="center" bgcolor="#b3daff"><apex:inputcheckbox disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/></td>
+                      <td colspan="1" align="center"><apex:outputText /></td>
+                      <td colspan="1" align="center"><apex:outputText /></td>
+                      <td colspan="1" align="center" bgcolor="#b3daff"><apex:inputcheckbox selected="true" disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/></td>
+                      <!--<td colspan="1" align="center"><apex:outputText /></td>-->
+                      
+                  </tr>
+                  
+                  <tr>
+                      <td colspan="1"><b>
+                          <apex:outputLabel value="{!$ObjectType.Opportunity.fields.X1st_Product_TO_Date__c.label}" /></b>
+                      </td>  
+                      <td colspan="1">
+                          <apex:inputField value="{!opp.X1st_Product_TO_Date__c}" />
+                      </td>
+                      <td colspan="1" align="center" bgcolor="#b3daff"><apex:inputcheckbox disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/></td>
+                      <td colspan="1" align="center"><apex:outputText /></td>
+                      <td colspan="1" align="center" bgcolor="#b3daff"><apex:inputcheckbox disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/></td>
+                      <td colspan="1" align="center"><apex:outputText /></td>
+                      <!--<td colspan="1" align="center"><apex:outputText /></td>-->
+                      
+                  </tr>
+                  
+                  <tr>
+                      <td colspan="1"><b>
+                          <apex:outputLabel value="{!$ObjectType.Opportunity.fields.X1st_Product_Production_Date__c.label}" /></b>
+                      </td>  
+                      <td colspan="1">
+                          <apex:inputField value="{!opp.X1st_Product_Production_Date__c}" />
+                      </td>
+                      <td colspan="1" align="center" bgcolor="#b3daff"><apex:inputcheckbox selected="true" disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/></td>
+                      <td colspan="1" align="center"><apex:outputText /></td>
+                      <td colspan="1" align="center"><apex:outputText /></td>
+                      <td colspan="1" align="center"><apex:outputText /></td>
+                      <!--<td colspan="1" align="center"><apex:outputText /></td>-->
+                      
+                  </tr>
+                  
+                  <tr>
+                      <td colspan="1"><b>
+                          <apex:outputLabel value="{!$ObjectType.Opportunity.fields.Years_of_Production__c.label}" /></b>
+                      </td>  
+                      <td colspan="1">
+                          <apex:inputField value="{!opp.Years_of_Production__c}" />
+                      </td>
+                      <td colspan="1" align="center" bgcolor="#b3daff"><apex:inputcheckbox selected="true" disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/></td>
+                      <td colspan="1" align="center"><apex:outputText /></td>
+                      <td colspan="1" align="center" bgcolor="#b3daff"><apex:inputcheckbox disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/></td>
+                      <td colspan="1" align="center"><apex:outputText /></td>
+                      <!--<td colspan="1" align="center"><apex:outputText /></td>-->
+                      
+                  </tr>
+                  
+                  <tr>
+                      <td colspan="1"><b>
+                          <apex:outputLabel value="{!$ObjectType.Opportunity.fields.Describe_Product_Development_Plan__c.label}" /></b>
+                      </td>  
+                      <td colspan="1">
+                          <apex:inputField value="{!opp.Describe_Product_Development_Plan__c}" />
+                      </td>
+                      <td colspan="1" align="center" bgcolor="#b3daff"><apex:inputcheckbox disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/></td>
+                      <td colspan="1" align="center"><apex:outputText /></td>
+                      <td colspan="1" align="center" bgcolor="#b3daff"><apex:inputcheckbox disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/></td>
+                      <td colspan="1" align="center"><apex:outputText /></td>
+                      <!--<td colspan="1" align="center"><apex:outputText /></td>-->
+                     
+                  </tr>
+                  
+                  <tr>
+                      <td colspan="1"><b>
+                          <apex:outputLabel value="{!$ObjectType.Opportunity.fields.Is_GF_Committed_to_Process__c.label}" /></b>
+                      </td>  
+                      <td colspan="1">
+                          <!--<apex:inputField value="{!opp.Is_GF_Committed_to_Process__c}" />-->
+                          <apex:selectList size="1" value="{!opp.Is_GF_Committed_to_Process__c}">
+                          <apex:selectOptions value="{!gfcommittedOptions }"/>
+                          </apex:selectList>
+                      </td>
+                      <td colspan="1" align="center" bgcolor="#b3daff"><apex:inputcheckbox selected="true" disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/></td>
+                      <td colspan="1" align="center"><apex:outputText /></td>
+                      <td colspan="1" align="center" bgcolor="#b3daff"><apex:inputcheckbox disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/></td>
+                      <td colspan="1" align="center"><apex:outputText /></td>
+                      <!--<td colspan="1" align="center"><apex:outputText /></td>-->
+                      
+                  </tr>
+                  
+                  <tr>
+                      <td colspan="1"><b>
+                          <apex:outputLabel value="{!$ObjectType.Opportunity.fields.Customer_Decision_Maker__c.label}" /></b>
+                      </td>  
+                      <td colspan="1">
+                          <!--<apex:inputField value="{!opp.Customer_Decision_Maker__c}" />-->
+                          <apex:selectList size="1" value="{!opp.Customer_Decision_Maker__c}">
+                          <apex:selectOptions value="{!customdecisionOptions }"/>
+                          </apex:selectList>
+                      </td>
+                      <td colspan="1" align="center" bgcolor="#b3daff"><apex:inputcheckbox disabled="true"/>&nbsp;<apex:inputcheckbox disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/></td>
+                      <td colspan="1" align="center"><apex:outputText /></td>
+                      <td colspan="1" align="center"><apex:outputText /></td>
+                      <td colspan="1" align="center"><apex:outputText /></td>
+                      <!--<td colspan="1" align="center"><apex:outputText /></td>-->
+                      
+                  </tr>
+                  
+                  <tr>
+                      <td colspan="1"><b>
+                          <apex:outputLabel value="{!$ObjectType.Opportunity.fields.Paste_Commitment_Text_from_Customer__c.label}" /></b>
+                      </td>  
+                      <td colspan="1">
+                          <apex:inputField value="{!opp.Paste_Commitment_Text_from_Customer__c}" />
+                      </td>
+                      <td colspan="1" align="center" bgcolor="#b3daff"><apex:inputcheckbox disabled="true"/>&nbsp;<apex:inputcheckbox disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/></td>
+                      <td colspan="1" align="center"><apex:outputText /></td>
+                      <td colspan="1" align="center" bgcolor="#b3daff"><apex:inputcheckbox disabled="true"/>&nbsp;<apex:inputcheckbox disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/></td>
+                      <td colspan="1" align="center"><apex:outputText /></td>
+                      <!--<td colspan="1" align="center"><apex:outputText /></td>-->
+                      
+                  </tr>
+                  
+                  <tr>
+                      <td colspan="1"><b>
+                          <apex:outputLabel value="{!$ObjectType.Opportunity.fields.Informal_Quote__c.label}" /></b>
+                      </td>  
+                      <td colspan="1">
+                          <apex:inputField value="{!opp.Informal_Quote__c}" />
+                      </td>
+                      <td colspan="1" align="center" bgcolor="#b3daff"><apex:inputcheckbox disabled="true"/>&nbsp;<apex:inputcheckbox disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/></td>
+                      <td colspan="1" align="center"><apex:outputText /></td>
+                      <td colspan="1" align="center" bgcolor="#b3daff"><apex:inputcheckbox disabled="true"/>&nbsp;<apex:inputcheckbox disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/></td>
+                      <td colspan="1" align="center"><apex:outputText /></td>
+                      <!--<td colspan="1" align="center"><apex:outputText /></td>-->
+                      
+                  </tr>
+                  
+                  <tr>
+                      <td colspan="1"><b>
+                          <apex:outputLabel value="{!$ObjectType.Opportunity.fields.Does_entered_ASP_Align_with_Quote__c.label}" /></b>
+                      </td>  
+                      <td colspan="1">
+                          <!--<apex:inputField value="{!opp.Does_entered_ASP_Align_with_Quote__c}" />-->
+                          <apex:selectList size="1" value="{!opp.Does_entered_ASP_Align_with_Quote__c}">
+                          <apex:selectOptions value="{!enteredaspOptions }"/>
+                          </apex:selectList>
+                      </td>
+                      <td colspan="1" align="center" bgcolor="#b3daff"><apex:inputcheckbox disabled="true"/>&nbsp;<apex:inputcheckbox disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/></td>
+                      <td colspan="1" align="center"><apex:outputText /></td>
+                      <td colspan="1" align="center"><apex:outputText /></td>
+                      <td colspan="1" align="center"><apex:outputText /></td>
+                      <!--<td colspan="1" align="center" bgcolor="#b3daff"><apex:inputcheckbox disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/></td>-->
+                      
+                  </tr>
+                  
+                  <tr>
+                      <td colspan="1"><b>
+                          <apex:outputLabel value="{!$ObjectType.Opportunity.fields.Quote__c.label}" /></b>
+                      </td>  
+                      <td colspan="1">
+                          <apex:inputField value="{!opp.Quote__c}" />
+                      </td>
+                      <td colspan="1" align="center" bgcolor="#b3daff"><apex:inputcheckbox disabled="true"/>&nbsp;<apex:inputcheckbox disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/></td>
+                      <td colspan="1" align="center"><apex:outputText /></td>
+                      <td colspan="1" align="center"><apex:outputText /></td>
+                      <td colspan="1" align="center"><apex:outputText /></td>
+                      <!--<td colspan="1" align="center" bgcolor="#b3daff"><apex:inputcheckbox disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/></td>-->
+                  </tr>
+                  <tr>
+                      <td colspan="1"><b>
+                          <apex:outputLabel value="{!$ObjectType.Opportunity.fields.Opportunity_Health__c.label}" /></b>
+                      </td>  
+                      <td colspan="1">
+                          <apex:outputField value="{!opp.Opportunity_Health__c}" />
+                      </td>
+                      <td colspan="1" align="center" bgcolor="#b3daff"><apex:inputcheckbox disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/></td>
+                      <td colspan="1" align="center"><apex:outputText /></td>
+                      <td colspan="1" align="center"><apex:outputText /></td>
+                      <td colspan="1" align="center"><apex:outputText /></td>
+                      <!--<td colspan="1" align="center"><apex:outputText /></td>-->
+                  </tr>
+                  <tr>
+                      <td colspan="1"><b>
+                          <apex:outputLabel value="{!$ObjectType.Opportunity.fields.Deliverable_Type__c.label}" /></b>
+                      </td>  
+                      <td colspan="1">
+                          <apex:inputField value="{!opp.Deliverable_Type__c}" />
+                      </td>
+                      <td colspan="1" align="center" bgcolor="#b3daff"><apex:inputcheckbox selected="true" disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/></td>
+                      <td colspan="1" align="center"><apex:outputText /></td>
+                      <td colspan="1" align="center"><apex:outputText /></td>
+                      <td colspan="1" align="center"><apex:outputText /></td>
+                      <!--<td colspan="1" align="center"><apex:outputText /></td>-->
+                  </tr>
+                  <tr>
+                      <td colspan="1"><b>
+                          <apex:outputLabel value="Quarterly Revenues (verify ASP and Vols)" /></b>
+                      </td>  
+                      <td colspan="1">
+                          <apex:inputField value="{!opp.Design_Win_w_NWR_Revenue__c}" />
+                      </td>
+                      <td colspan="1" align="center" bgcolor="#b3daff"><apex:inputcheckbox selected="true" disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/></td>
+                      <td colspan="1" align="center"><apex:outputText /></td>
+                      <td colspan="1" align="center" bgcolor="#b3daff"><apex:inputcheckbox disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/></td>
+                      <td colspan="1" align="center"><apex:outputText /></td>
+                      <!--<td colspan="1" align="center"><apex:outputText /></td>-->                      
+                  </tr>
+                  <tr>
+                      <td colspan="1"><b>
+                          <apex:outputLabel value="Application and Socket Def" /></b>
+                      </td>  
+                      <td colspan="1">
+                          <apex:inputField value="{!opp.Application_and_Socket_Def__c}" />
+                      </td>
+                      <td colspan="1" align="center" bgcolor="#b3daff"><apex:inputcheckbox selected="true" disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/></td>
+                      <td colspan="1" align="center" bgcolor="#b3daff"><apex:inputcheckbox selected="true" disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/><apex:inputcheckbox selected="true" disabled="true"/></td>
+                      <td colspan="1" align="center"><apex:outputText /></td>
+                      <td colspan="1" align="center" bgcolor="#b3daff"><apex:inputcheckbox selected="true" disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/></td>
+                      <!--<td colspan="1" align="center"><apex:outputText /></td>-->
+                  </tr>
+                  <tr>
+                      <td colspan="1"><b>
+                          <apex:outputLabel value="{!$ObjectType.Opportunity.fields.Estimated_Die_X_dim_mm__c.label}" /></b>
+                      </td>  
+                      <td colspan="1">
+                          <apex:inputField value="{!opp.Estimated_Die_X_dim_mm__c}"/>
+                      </td>
+                      <td colspan="1" align="center" bgcolor="#b3daff"><apex:inputcheckbox selected="true" disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/></td>
+                      <td colspan="1" align="center" bgcolor="#b3daff"><apex:inputcheckbox selected="true" disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/><apex:inputcheckbox selected="true" disabled="true"/></td>
+                      <td colspan="1" align="center"><apex:outputText /></td>
+                      <td colspan="1" align="center" bgcolor="#b3daff"><apex:inputcheckbox selected="true" disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/></td>
+                      <!--<td colspan="1" align="center"><apex:outputText /></td>-->                      
+                  </tr>
+                  <tr>
+                      <td colspan="1"><b>
+                          <apex:outputLabel value="{!$ObjectType.Opportunity.fields.Estimated_Die_Y_dim_mm__c.label}" /></b>
+                      </td>  
+                      <td colspan="1">
+                          <apex:inputField value="{!opp.Estimated_Die_Y_dim_mm__c}"/>
+                      </td>
+                      <td colspan="1" align="center" bgcolor="#b3daff"><apex:inputcheckbox selected="true" disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/></td>
+                      <td colspan="1" align="center" bgcolor="#b3daff"><apex:inputcheckbox selected="true" disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/><apex:inputcheckbox selected="true" disabled="true"/></td>
+                      <td colspan="1" align="center"><apex:outputText /></td>
+                      <td colspan="1" align="center" bgcolor="#b3daff"><apex:inputcheckbox selected="true" disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/></td>
+                      <!--<td colspan="1" align="center"><apex:outputText /></td>-->                      
+                  </tr>
+                  <tr>
+                      <td colspan="1"><b>
+                          <apex:outputLabel value="#die/target device (Handset, Tablet, Laptop, CPE, Small Cell, Sat comm Terminal etc.)" /></b>
+                      </td>  
+                      <td colspan="1">
+                          <apex:inputField value="{!opp.die_target_device__c}"/>
+                      </td>
+                      <td colspan="1" align="center" bgcolor="#b3daff"><apex:inputcheckbox disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/></td>
+                      <td colspan="1" align="center" bgcolor="#b3daff"><apex:inputcheckbox disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/><apex:inputcheckbox selected="true" disabled="true"/></td>
+                      <td colspan="1" align="center"><apex:outputText /></td>
+                      <td colspan="1" align="center" bgcolor="#b3daff"><apex:inputcheckbox selected="true" disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/></td>
+                      <!--<td colspan="1" align="center"><apex:outputText /></td>-->                      
+                </tr>
+            </table> 
+            <br/>
+        </apex:pageBlock>
+        <apex:pageBlock title="Opportunity Review Checklist" id="pbedit" mode="view" rendered="{!NOT(isedit)}">
+            <apex:pageBlockButtons location="top" >
+                <apex:commandButton action="{!edit}" value="Edit" rerender="fm" rendered="{!(($Profile.Name =='System Administrator'||$Profile.Name =='GF System Admin') || hasAccess)}" />
+                <apex:commandButton value="Return to Opportunity" action="{!cancel}"  />
+                
+            </apex:pageBlockButtons>
+            <apex:pageMessages />
+            
+         <apex:outputPanel styleClass="grey" layout="block"> 
+                <apex:pageBlockSection collapsible="flase"/>
+            </apex:outputPanel> 
+            
+            <table border="1" width="100%" style="border-collapse:collapse;padding:0px;height:12px" cellspacing="1" >
+                  <tr>
+                        <td width="18%" bgcolor="#FDCF64"  align="center"><b> Field Name </b> </td>
+                        <td width="18%" bgcolor="#FDCF64"  align="center"><b> Field Value </b> </td>
+                        <td width="10%" bgcolor="#FDCF64" align="center"><b> AM<br/>(CP1,CP2,CP3)</b> </td>
+                        <td width="10%" bgcolor="#FDCF64" align="center"><b> FAE<br/>(CP1,CP2,CP3)</b>  </td>
+                        <td width="10%" bgcolor="#FDCF64" align="center"><b> PLM<br/>(CP1,CP2,CP3)</b>  </td>
+                        <td width="10%" bgcolor="#FDCF64" align="center"><b> Seg Mktg<br/>(CP2,CP3)</b>  </td>
+                        <!--<td width="10%" bgcolor="#FDCF64" align="center"><b> Pricing<br/>(CP2,CP3)</b>  </td>-->
+                  </tr>
+                  <tr>
+                      <td colspan="1"><b>
+                          <apex:outputLabel value="{!$ObjectType.Opportunity.fields.Product_Line__c.label}" /></b>
+                      </td>
+                      <td colspan="1">
+                          <apex:outputField value="{!opp.Product_Line__c}" />
+                      </td>
+                      <td colspan="1" align="center" bgcolor="#b3daff"><apex:inputcheckbox selected="true" disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/></td>
+                      <td colspan="1" align="center"><apex:outputText /></td>
+                      <td colspan="1" align="center" bgcolor="#b3daff"><apex:inputcheckbox disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/></td>
+                      <td colspan="1" align="center"><apex:outputText /></td>
+                      <!--<td colspan="1" align="center"><apex:outputText /></td>-->
+                      
+                  </tr>
+                  
+                  <apex:outputPanel rendered="{!showDGStatus}">
+                  <tr>
+                      <td colspan="1"><b>
+                          <apex:outputLabel value="{!$ObjectType.Opportunity.fields.Deal_Grading_Status__c.label}" /></b>
+                      </td>
+                      <td colspan="1">
+                          <apex:outputField value="{!opp.Deal_Grading_Status__c}" />
+                      </td>
+                      <td colspan="1" align="center" bgcolor="#b3daff"><apex:inputcheckbox disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/></td>
+                      <td colspan="1" align="center"><apex:outputText /></td>
+                      <td colspan="1" align="center" bgcolor="#b3daff"><apex:inputcheckbox disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/></td>
+                      <td colspan="1" align="center"><apex:outputText /></td>
+                      <!--<td colspan="1" align="center"><apex:outputText /></td>-->
+                      
+                  </tr>
+                   </apex:outputPanel>
+                  
+                  <tr>
+                      <td colspan="1"><b>
+                          <apex:outputLabel value="{!$ObjectType.Opportunity.fields.Business_Unit__c.label}" /></b>
+                      </td>
+                      <td colspan="1">
+                          <apex:outputField value="{!opp.Business_Unit__c}" />
+                      </td>
+                      <td colspan="1" align="center" bgcolor="#b3daff"><apex:inputcheckbox selected="true" disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/></td>
+                      <td colspan="1" align="center"><apex:outputText /></td>
+                      <td colspan="1" align="center" bgcolor="#b3daff"><apex:inputcheckbox disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/></td>
+                      <td colspan="1" align="center"><apex:outputText /></td>
+                      <!--<td colspan="1" align="center"><apex:outputText /></td>-->
+                      
+                  </tr>
+                  
+                  <tr>
+                      <td colspan="1"><b>
+                          <apex:outputLabel value="{!$ObjectType.Opportunity.fields.CloseDate.label}" /></b>
+                      </td>
+                      <td colspan="1">
+                          <apex:outputField value="{!opp.CloseDate}" />
+                      </td>
+                      <td colspan="1" align="center" bgcolor="#b3daff"><apex:inputcheckbox selected="true" disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/></td>
+                      <td colspan="1" align="center"><apex:outputText /></td>
+                      <td colspan="1" align="center" bgcolor="#b3daff"><apex:inputcheckbox disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/></td>
+                      <td colspan="1" align="center"><apex:outputText /></td>
+                      <!--<td colspan="1" align="center"><apex:outputText /></td>-->
+                      
+                  </tr>
+                  
+                  <tr>
+                      <td colspan="1"><b>
+                          <apex:outputLabel value="Account Name" /></b>
+                      </td>
+                      <td colspan="1">
+                          <apex:outputField value="{!opp.AccountId}" />
+                      </td>
+                      <td colspan="1" align="center" bgcolor="#b3daff"><apex:inputcheckbox selected="true" disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/></td>
+                      <td colspan="1" align="center"><apex:outputText /></td>
+                      <td colspan="1" align="center"><apex:outputText /></td>
+                      <td colspan="1" align="center"><apex:outputText /></td>
+                      <!--<td colspan="1" align="center"><apex:outputText /></td>-->
+                      
+                  </tr>
+                  
+                  <tr>
+                      <td colspan="1"><b>
+                          <apex:outputLabel value="Account Stage" /></b>
+                      </td>
+                      <td colspan="1">
+                          <apex:outputField value="{!opp.Account_Stage__c}" />
+                      </td>
+                      <td colspan="1" align="center" bgcolor="#b3daff"><apex:inputcheckbox disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/></td>
+                      <td colspan="1" align="center"><apex:outputText /></td>
+                      <td colspan="1" align="center"><apex:outputText /></td>
+                      <td colspan="1" align="center"><apex:outputText /></td>
+                      <!--<td colspan="1" align="center"><apex:outputText /></td>-->
+                      
+                  </tr>
+                  
+                  <tr>
+                      <td colspan="1"><b>
+                          <apex:outputLabel value="Opportunity Name" /></b>
+                      </td>
+                      <td colspan="1">
+                          <apex:outputField value="{!opp.Name}" />
+                      </td>
+                      <td colspan="1" align="center" bgcolor="#b3daff"><apex:inputcheckbox selected="true" disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/></td>
+                      <td colspan="1" align="center"><apex:outputText /></td>
+                      <td colspan="1" align="center"><apex:outputText /></td>
+                      <td colspan="1" align="center"><apex:outputText /></td>
+                      <!--<td colspan="1" align="center"><apex:outputText /></td>-->
+                     
+                  </tr>
+                  
+                  <tr>
+                      <td colspan="1"><b>
+                          <apex:outputLabel value="{!$ObjectType.Opportunity.fields.StageName.label}" /></b>
+                      </td>
+                      <td colspan="1">
+                          <apex:outputField value="{!opp.StageName}" />
+                      </td>
+                      <td colspan="1" align="center" bgcolor="#b3daff"><apex:inputcheckbox selected="true" disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/></td>
+                      <td colspan="1" align="center"><apex:outputText /></td>
+                      <td colspan="1" align="center"><apex:outputText /></td>
+                      <td colspan="1" align="center"><apex:outputText /></td>
+                      <!--<td colspan="1" align="center"><apex:outputText /></td>-->
+                     
+                  </tr>
+                  
+                  <tr>
+                      <td colspan="1"><b>
+                          <apex:outputLabel value="{!$ObjectType.Opportunity.fields.Market_Segment__c.label}" /></b>
+                      </td>
+                      <td colspan="1">
+                          <apex:outputField value="{!opp.Market_Segment__c}" />
+                      </td>
+                      <td colspan="1" align="center" bgcolor="#b3daff"><apex:inputcheckbox selected="true" disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/></td>
+                      <td colspan="1" align="center"><apex:outputText /></td>
+                      <td colspan="1" align="center"><apex:outputText /></td>
+                      <td colspan="1" align="center" bgcolor="#b3daff"><apex:inputcheckbox selected="true" disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/></td>
+                      <!--<td colspan="1" align="center"><apex:outputText /></td>-->
+                      
+                  </tr>
+                  
+                  <tr>
+                      <td colspan="1"><b>
+                          <apex:outputLabel value="{!$ObjectType.Opportunity.fields.Process_Geometry__c.label}" /></b>
+                      </td>
+                      <td colspan="1">
+                          <apex:outputField value="{!opp.Process_Geometry__c}" />
+                      </td>
+                      <td colspan="1" align="center" bgcolor="#b3daff"><apex:inputcheckbox selected="true" disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/></td>
+                      <td colspan="1" align="center" bgcolor="#b3daff"><apex:inputcheckbox selected="true" disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/></td>
+                      <td colspan="1" align="center" bgcolor="#b3daff"><apex:inputcheckbox disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/></td>
+                      <td colspan="1" align="center"><apex:outputText /></td>
+                      <!--<td colspan="1" align="center"><apex:outputText /></td>-->
+                      
+                  </tr>
+                  
+                  <tr>
+                      <td colspan="1"><b>
+                          <apex:outputLabel value="{!$ObjectType.Opportunity.fields.Process_Family__c.label}" /></b>
+                      </td>
+                      <td colspan="1">
+                          <apex:outputField value="{!opp.Process_Family__c}" />
+                      </td>
+                      <td colspan="1" align="center" bgcolor="#b3daff"><apex:inputcheckbox selected="true" disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/></td>
+                      <td colspan="1" align="center" bgcolor="#b3daff"><apex:inputcheckbox selected="true" disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/></td>
+                      <td colspan="1" align="center" bgcolor="#b3daff"><apex:inputcheckbox disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/></td>
+                      <td colspan="1" align="center"><apex:outputText /></td>
+                      <!--<td colspan="1" align="center"><apex:outputText /></td>-->
+                      
+                  </tr>
+                 
+                  <tr>
+                      <td colspan="1"><b>
+                          <apex:outputLabel value="{!$ObjectType.Opportunity.fields.Target_Process_Node__c.label}" /></b>
+                      </td>
+                      <td colspan="1">
+                          <apex:outputField value="{!opp.Target_Process_Node__c}" />
+                      </td>
+                      <td colspan="1" align="center" bgcolor="#b3daff"><apex:inputcheckbox selected="true" disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/></td>
+                      <td colspan="1" align="center" bgcolor="#b3daff"><apex:inputcheckbox selected="true" disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/></td>
+                      <td colspan="1" align="center" bgcolor="#b3daff"><apex:inputcheckbox disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/></td>
+                      <td colspan="1" align="center"><apex:outputText /></td>
+                      <!--<td colspan="1" align="center"><apex:outputText /></td>-->
+                      
+                  </tr>
+                  
+                  <tr>
+                      <td colspan="1"><b>
+                          <apex:outputLabel value="{!$ObjectType.Opportunity.fields.Opportunity_Obstacles__c.label}" /></b>
+                      </td>
+                      <td colspan="1">
+                          <apex:outputField value="{!opp.Opportunity_Obstacles__c}" />
+                      </td>
+                      <td colspan="1" align="center" bgcolor="#b3daff"><apex:inputcheckbox selected="true" disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/></td>
+                      <td colspan="1" align="center" bgcolor="#b3daff"><apex:inputcheckbox selected="true" disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/></td>
+                      <td colspan="1" align="center" bgcolor="#b3daff"><apex:inputcheckbox disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/></td>
+                      <td colspan="1" align="center"><apex:outputText /></td>
+                      <!--<td colspan="1" align="center"><apex:outputText /></td>-->
+                      
+                  </tr>
+                  
+                  <tr>
+                      <td colspan="1"><b>
+                          <apex:outputLabel value="{!$ObjectType.Opportunity.fields.Production_Confidence__c.label}" /></b>
+                      </td>
+                      <td colspan="1">
+                          <apex:outputField value="{!opp.Production_Confidence__c}" />
+                      </td>
+                      <td colspan="1" align="center" bgcolor="#b3daff"><apex:inputcheckbox disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/></td>
+                      <td colspan="1" align="center"><apex:outputText /></td>
+                      <td colspan="1" align="center" bgcolor="#b3daff"><apex:inputcheckbox disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/></td>
+                      <td colspan="1" align="center"><apex:outputText /></td>
+                      <!--<td colspan="1" align="center"><apex:outputText /></td>-->
+                      
+                  </tr>
+                  
+                  <tr>
+                      <td colspan="1"><b>
+                          <apex:outputLabel value="{!$ObjectType.Opportunity.fields.Opportunity_Sourcing_Type__c.label}" /></b>
+                      </td>
+                      <td colspan="1">
+                          <apex:outputField value="{!opp.Opportunity_Sourcing_Type__c}" />
+                      </td>
+                      <td colspan="1" align="center" bgcolor="#b3daff"><apex:inputcheckbox disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/></td>
+                      <td colspan="1" align="center"><apex:outputText /></td>
+                      <td colspan="1" align="center"><apex:outputText /></td>
+                      <td colspan="1" align="center" bgcolor="#b3daff"><apex:inputcheckbox selected="true" disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/></td>
+                      <!--<td colspan="1" align="center"><apex:outputText /></td>-->
+                      
+                  </tr>
+                  
+                  <tr>     
+                      <td colspan="1"><b>
+                          <apex:outputLabel value="{!$ObjectType.Opportunity.fields.Fab_Split__c.label}" /></b>
+                      </td>   
+                      <td colspan="1">
+                          <apex:outputField value="{!opp.Fab_Split__c}" />
+                      </td>
+                      <td colspan="1" align="center" bgcolor="#b3daff"><apex:inputcheckbox disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/></td>
+                      <td colspan="1" align="center"><apex:outputText /></td>
+                      <td colspan="1" align="center"><apex:outputText /></td>
+                      <td colspan="1" align="center" bgcolor="#b3daff"><apex:inputcheckbox selected="true" disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/></td>
+                      <!--<td colspan="1" align="center"><apex:outputText /></td>-->
+                      
+                  </tr>
+                  
+                  <tr>
+                      <td colspan="1"><b>
+                          <apex:outputLabel value="{!$ObjectType.Opportunity.fields.Fab_Assignment_1__c.label}" /></b>
+                      </td>  
+                      <td colspan="1">
+                          <apex:outputField value="{!opp.Fab_Assignment_1__c}" />
+                      </td>
+                      <td colspan="1" align="center" bgcolor="#b3daff"><apex:inputcheckbox selected="true" disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/></td>
+                      <td colspan="1" align="center"><apex:outputText /></td>
+                      <td colspan="1" align="center" bgcolor="#b3daff"><apex:inputcheckbox disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/></td>
+                      <td colspan="1" align="center"><apex:outputText /></td>
+                      <!--<td colspan="1" align="center"><apex:outputText /></td>-->
+                      
+                  </tr>
+                  
+                  <tr>
+                      <td colspan="1"><b>
+                          <apex:outputLabel value="{!$ObjectType.Opportunity.fields.Process_Platform__c.label}" /></b>
+                      </td>
+                      <td colspan="1">
+                          <apex:outputField value="{!opp.Process_Platform__c}" />
+                      </td>
+                      <td colspan="1" align="center" bgcolor="#b3daff"><apex:inputcheckbox disabled="true"/>&nbsp;<apex:inputcheckbox disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/></td>
+                      <td colspan="1" align="center"><apex:outputText /></td>
+                      <td colspan="1" align="center" bgcolor="#b3daff"><apex:inputcheckbox disabled="true"/>&nbsp;<apex:inputcheckbox disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/></td>
+                      <td colspan="1" align="center"><apex:outputText /></td>
+                      <!--<td colspan="1" align="center"><apex:outputText /></td>-->
+                      
+                  </tr>
+                  
+                  <tr>
+                      <td colspan="1"><b>
+                          <apex:outputLabel value="{!$ObjectType.Opportunity.fields.Approved_GMPL_BX009_DW__c.label}" /></b>
+                      </td>  
+                      <td colspan="1">
+                          <apex:outputField value="{!opp.Approved_GMPL_BX009_DW__c}" />
+                      </td>
+                      <td colspan="1" align="center" bgcolor="#b3daff"><apex:inputcheckbox selected="true" disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/></td>
+                      <td colspan="1" align="center" bgcolor="#b3daff"><apex:inputcheckbox selected="true" disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/></td>
+                      <td colspan="1" align="center" bgcolor="#b3daff"><apex:inputcheckbox disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/></td>
+                      <td colspan="1" align="center"><apex:outputText /></td>
+                      <!--<td colspan="1" align="center"><apex:outputText /></td>-->
+                      
+                  </tr>
+                  
+                  <tr>
+                      <td colspan="1"><b>
+                          <apex:outputLabel value="{!$ObjectType.Opportunity.fields.GF_Target_Share__c.label}" /></b>
+                      </td>  
+                      <td colspan="1">
+                          <apex:outputField value="{!opp.GF_Target_Share__c}" />
+                      </td>
+                      <td colspan="1" align="center" bgcolor="#b3daff"><apex:inputcheckbox disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/></td>
+                      <td colspan="1" align="center"><apex:outputText /></td>
+                      <td colspan="1" align="center"><apex:outputText /></td>
+                      <td colspan="1" align="center" bgcolor="#b3daff"><apex:inputcheckbox selected="true" disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/></td>
+                      <!--<td colspan="1" align="center"><apex:outputText /></td>-->
+                      
+                  </tr>
+                  
+                  <tr>
+                      <td colspan="1"><b>
+                          <apex:outputLabel value="{!$ObjectType.Opportunity.fields.X1st_Product_TO_Date__c.label}" /></b>
+                      </td>  
+                      <td colspan="1">
+                          <apex:outputField value="{!opp.X1st_Product_TO_Date__c}" />
+                      </td>
+                      <td colspan="1" align="center" bgcolor="#b3daff"><apex:inputcheckbox disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/></td>
+                      <td colspan="1" align="center"><apex:outputText /></td>
+                      <td colspan="1" align="center" bgcolor="#b3daff"><apex:inputcheckbox disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/></td>
+                      <td colspan="1" align="center"><apex:outputText /></td>
+                      <!--<td colspan="1" align="center"><apex:outputText /></td>-->
+                      
+                  </tr>
+                  
+                  <tr>
+                      <td colspan="1"><b>
+                          <apex:outputLabel value="{!$ObjectType.Opportunity.fields.X1st_Product_Production_Date__c.label}" /></b>
+                      </td>  
+                      <td colspan="1">
+                          <apex:outputField value="{!opp.X1st_Product_Production_Date__c}" />
+                      </td>
+                      <td colspan="1" align="center" bgcolor="#b3daff"><apex:inputcheckbox selected="true" disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/></td>
+                      <td colspan="1" align="center"><apex:outputText /></td>
+                      <td colspan="1" align="center"><apex:outputText /></td>
+                      <td colspan="1" align="center"><apex:outputText /></td>
+                      <!--<td colspan="1" align="center"><apex:outputText /></td>-->
+                      
+                  </tr>
+                  
+                  <tr>
+                      <td colspan="1"><b>
+                          <apex:outputLabel value="{!$ObjectType.Opportunity.fields.Years_of_Production__c.label}" /></b>
+                      </td>  
+                      <td colspan="1">
+                          <apex:outputField value="{!opp.Years_of_Production__c}" />
+                      </td>
+                      <td colspan="1" align="center" bgcolor="#b3daff"><apex:inputcheckbox selected="true" disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/></td>
+                      <td colspan="1" align="center"><apex:outputText /></td>
+                      <td colspan="1" align="center" bgcolor="#b3daff"><apex:inputcheckbox disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/></td>
+                      <td colspan="1" align="center"><apex:outputText /></td>
+                      <!--<td colspan="1" align="center"><apex:outputText /></td>-->
+                      
+                  </tr>
+                  
+                  <tr>
+                      <td colspan="1"><b>
+                          <apex:outputLabel value="{!$ObjectType.Opportunity.fields.Describe_Product_Development_Plan__c.label}" /></b>
+                      </td>  
+                      <td colspan="1">
+                          <apex:outputField value="{!opp.Describe_Product_Development_Plan__c}" />
+                      </td>
+                      <td colspan="1" align="center" bgcolor="#b3daff"><apex:inputcheckbox disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/></td>
+                      <td colspan="1" align="center"><apex:outputText /></td>
+                      <td colspan="1" align="center" bgcolor="#b3daff"><apex:inputcheckbox disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/></td>
+                      <td colspan="1" align="center"><apex:outputText /></td>
+                      <!--<td colspan="1" align="center"><apex:outputText /></td>-->
+                     
+                  </tr>
+                  
+                  <tr>
+                      <td colspan="1"><b>
+                          <apex:outputLabel value="{!$ObjectType.Opportunity.fields.Is_GF_Committed_to_Process__c.label}" /></b>
+                      </td>  
+                      <td colspan="1">
+                          <apex:outputField value="{!opp.Is_GF_Committed_to_Process__c}" />
+                      </td>
+                      <td colspan="1" align="center" bgcolor="#b3daff"><apex:inputcheckbox selected="true" disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/></td>
+                      <td colspan="1" align="center"><apex:outputText /></td>
+                      <td colspan="1" align="center" bgcolor="#b3daff"><apex:inputcheckbox disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/></td>
+                      <td colspan="1" align="center"><apex:outputText /></td>
+                      <!--<td colspan="1" align="center"><apex:outputText /></td>-->
+                      
+                  </tr>
+                  
+                  <tr>
+                      <td colspan="1"><b>
+                          <apex:outputLabel value="{!$ObjectType.Opportunity.fields.Customer_Decision_Maker__c.label}" /></b>
+                      </td>  
+                      <td colspan="1">
+                          <apex:outputField value="{!opp.Customer_Decision_Maker__c}" />
+                      </td>
+                      <td colspan="1" align="center" bgcolor="#b3daff"><apex:inputcheckbox disabled="true"/>&nbsp;<apex:inputcheckbox disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/></td>
+                      <td colspan="1" align="center"><apex:outputText /></td>
+                      <td colspan="1" align="center"><apex:outputText /></td>
+                      <td colspan="1" align="center"><apex:outputText /></td>
+                      <!--<td colspan="1" align="center"><apex:outputText /></td>-->
+                      
+                  </tr>
+                  
+                  <tr>
+                      <td colspan="1"><b>
+                          <apex:outputLabel value="{!$ObjectType.Opportunity.fields.Paste_Commitment_Text_from_Customer__c.label}" /></b>
+                      </td>  
+                      <td colspan="1">
+                          <apex:outputField value="{!opp.Paste_Commitment_Text_from_Customer__c}" />
+                      </td>
+                      <td colspan="1" align="center" bgcolor="#b3daff"><apex:inputcheckbox disabled="true"/>&nbsp;<apex:inputcheckbox disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/></td>
+                      <td colspan="1" align="center"><apex:outputText /></td>
+                      <td colspan="1" align="center" bgcolor="#b3daff"><apex:inputcheckbox disabled="true"/>&nbsp;<apex:inputcheckbox disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/></td>
+                      <td colspan="1" align="center"><apex:outputText /></td>
+                      <!--<td colspan="1" align="center"><apex:outputText /></td>-->
+                      
+                  </tr>
+                  
+                  <tr>
+                      <td colspan="1"><b>
+                          <apex:outputLabel value="{!$ObjectType.Opportunity.fields.Informal_Quote__c.label}" /></b>
+                      </td>  
+                      <td colspan="1">
+                          <apex:outputField value="{!opp.Informal_Quote__c}" />
+                      </td>
+                      <td colspan="1" align="center" bgcolor="#b3daff"><apex:inputcheckbox disabled="true"/>&nbsp;<apex:inputcheckbox disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/></td>
+                      <td colspan="1" align="center"><apex:outputText /></td>
+                      <td colspan="1" align="center" bgcolor="#b3daff"><apex:inputcheckbox disabled="true"/>&nbsp;<apex:inputcheckbox disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/></td>
+                      <td colspan="1" align="center"><apex:outputText /></td>
+                      <!--<td colspan="1" align="center"><apex:outputText /></td>-->
+                      
+                  </tr>
+                  
+                  <tr>
+                      <td colspan="1"><b>
+                          <apex:outputLabel value="{!$ObjectType.Opportunity.fields.Does_entered_ASP_Align_with_Quote__c.label}" /></b>
+                      </td>  
+                      <td colspan="1">
+                          <apex:outputField value="{!opp.Does_entered_ASP_Align_with_Quote__c}" />
+                      </td>
+                      <td colspan="1" align="center" bgcolor="#b3daff"><apex:inputcheckbox disabled="true"/>&nbsp;<apex:inputcheckbox disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/></td>
+                      <td colspan="1" align="center"><apex:outputText /></td>
+                      <td colspan="1" align="center"><apex:outputText /></td>
+                      <td colspan="1" align="center"><apex:outputText /></td>
+                      <!--<td colspan="1" align="center" bgcolor="#b3daff"><apex:inputcheckbox disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/></td>-->
+                      
+                  </tr>
+                  
+                  <tr>
+                      <td colspan="1"><b>
+                          <apex:outputLabel value="{!$ObjectType.Opportunity.fields.Quote__c.label}" /></b>
+                      </td>  
+                      <td colspan="1">
+                          <apex:outputField value="{!opp.Quote__c}" />
+                      </td>
+                      <td colspan="1" align="center" bgcolor="#b3daff"><apex:inputcheckbox disabled="true"/>&nbsp;<apex:inputcheckbox disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/></td>
+                      <td colspan="1" align="center"><apex:outputText /></td>
+                      <td colspan="1" align="center"><apex:outputText /></td>
+                      <td colspan="1" align="center"><apex:outputText /></td>
+                      <!--<td colspan="1" align="center" bgcolor="#b3daff"><apex:inputcheckbox disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/></td>-->
+                      
+                  </tr>
+                  <tr>
+                      <td colspan="1"><b>
+                          <apex:outputLabel value="{!$ObjectType.Opportunity.fields.Opportunity_Health__c.label}" /></b>
+                      </td>  
+                      <td colspan="1">
+                          <apex:outputField value="{!opp.Opportunity_Health__c}" />
+                      </td>
+                      <td colspan="1" align="center" bgcolor="#b3daff"><apex:inputcheckbox disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/></td>
+                      <td colspan="1" align="center"><apex:outputText /></td>
+                      <td colspan="1" align="center"><apex:outputText /></td>
+                      <td colspan="1" align="center"><apex:outputText /></td>
+                      <!--<td colspan="1" align="center"><apex:outputText /></td>-->
+                  </tr>
+                  <tr>
+                      <td colspan="1"><b>
+                          <apex:outputLabel value="{!$ObjectType.Opportunity.fields.Deliverable_Type__c.label}" /></b>
+                      </td>  
+                      <td colspan="1">
+                          <apex:outputField value="{!opp.Deliverable_Type__c}" />
+                      </td>
+                      <td colspan="1" align="center" bgcolor="#b3daff"><apex:inputcheckbox selected="true" disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/></td>
+                      <td colspan="1" align="center"><apex:outputText /></td>
+                      <td colspan="1" align="center"><apex:outputText /></td>
+                      <td colspan="1" align="center"><apex:outputText /></td>
+                      <!--<td colspan="1" align="center"><apex:outputText /></td>-->                      
+                  </tr>
+                  <tr>
+                      <td colspan="1"><b>
+                          <apex:outputLabel value="Quarterly Revenues (verify ASP and Vols)" /></b>
+                      </td>  
+                      <td colspan="1">
+                          <apex:outputField value="{!opp.Design_Win_w_NWR_Revenue__c}" />
+                      </td>
+                      <td colspan="1" align="center" bgcolor="#b3daff"><apex:inputcheckbox selected="true" disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/></td>
+                      <td colspan="1" align="center"><apex:outputText /></td>
+                      <td colspan="1" align="center" bgcolor="#b3daff"><apex:inputcheckbox disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/></td>
+                      <td colspan="1" align="center"><apex:outputText /></td>
+                      <!--<td colspan="1" align="center"><apex:outputText /></td>-->                      
+                  </tr>
+                  <tr>
+                      <td colspan="1"><b>
+                          <apex:outputLabel value="Application and Socket Def" /></b>
+                      </td>  
+                      <td colspan="1">
+                          <apex:outputField value="{!opp.Application_and_Socket_Def__c}" />
+                      </td>
+                      <td colspan="1" align="center" bgcolor="#b3daff"><apex:inputcheckbox selected="true" disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/></td>
+                      <td colspan="1" align="center" bgcolor="#b3daff"><apex:inputcheckbox selected="true" disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/><apex:inputcheckbox selected="true" disabled="true"/></td>
+                      <td colspan="1" align="center"><apex:outputText /></td>
+                      <td colspan="1" align="center" bgcolor="#b3daff"><apex:inputcheckbox selected="true" disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/></td>
+                      <!--<td colspan="1" align="center"><apex:outputText /></td>-->                      
+                  </tr>
+                  <tr>
+                      <td colspan="1"><b>
+                          <apex:outputLabel value="{!$ObjectType.Opportunity.fields.Estimated_Die_X_dim_mm__c.label}" /></b>
+                      </td>  
+                      <td colspan="1">
+                          <apex:outputField value="{!opp.Estimated_Die_X_dim_mm__c}"/>
+                      </td>
+                      <td colspan="1" align="center" bgcolor="#b3daff"><apex:inputcheckbox selected="true" disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/></td>
+                      <td colspan="1" align="center" bgcolor="#b3daff"><apex:inputcheckbox selected="true" disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/><apex:inputcheckbox selected="true" disabled="true"/></td>
+                      <td colspan="1" align="center"><apex:outputText /></td>
+                      <td colspan="1" align="center" bgcolor="#b3daff"><apex:inputcheckbox selected="true" disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/></td>
+                      <!--<td colspan="1" align="center"><apex:outputText /></td>-->                      
+                  </tr>    
+                <tr>
+                      <td colspan="1"><b>
+                          <apex:outputLabel value="{!$ObjectType.Opportunity.fields.Estimated_Die_Y_dim_mm__c.label}" /></b>
+                      </td>  
+                      <td colspan="1">
+                          <apex:outputField value="{!opp.Estimated_Die_Y_dim_mm__c}"/>
+                      </td>
+                      <td colspan="1" align="center" bgcolor="#b3daff"><apex:inputcheckbox selected="true" disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/></td>
+                      <td colspan="1" align="center" bgcolor="#b3daff"><apex:inputcheckbox selected="true" disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/><apex:inputcheckbox selected="true" disabled="true"/></td>
+                      <td colspan="1" align="center"><apex:outputText /></td>
+                      <td colspan="1" align="center" bgcolor="#b3daff"><apex:inputcheckbox selected="true" disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/></td>
+                      <!--<td colspan="1" align="center"><apex:outputText /></td>-->                      
+                </tr>
+                <tr>
+                      <td colspan="1"><b>
+                          <apex:outputLabel value="#die/target device (Handset, Tablet, Laptop, CPE, Small Cell, Sat comm Terminal etc.)" /></b>
+                      </td>  
+                      <td colspan="1">
+                          <apex:outputField value="{!opp.die_target_device__c}"/>
+                      </td>
+                      <td colspan="1" align="center" bgcolor="#b3daff"><apex:inputcheckbox disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/></td>
+                      <td colspan="1" align="center" bgcolor="#b3daff"><apex:inputcheckbox disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/><apex:inputcheckbox selected="true" disabled="true"/></td>
+                      <td colspan="1" align="center"><apex:outputText /></td>
+                      <td colspan="1" align="center" bgcolor="#b3daff"><apex:inputcheckbox selected="true" disabled="true"/>&nbsp;<apex:inputcheckbox selected="true" disabled="true"/></td>
+                      <!--<td colspan="1" align="center"><apex:outputText /></td>-->                     
+                </tr>
+            </table> 
+            <br/>
+            </apex:pageBlock>
+             <apex:pageBlock id="ccedit" mode="view" rendered="{!NOT(isedit2)}">
+            <apex:pageBlockButtons location="top"  >
+                <apex:commandButton action="{!edit2}" value="Edit Control Points" rerender="fm" rendered="{!(($Profile.Name =='System Administrator'||$Profile.Name =='GF System Admin'||$Profile.Name =='GF Sales User') || hasAccess)}" />
+                
+                
+            </apex:pageBlockButtons>
+                 
+            <apex:pageBlockSection title="Control Point 1 - Stage 0 to Stage 1" columns="2" collapsible="true" rendered="{!((opp.StageName == '0.Pre-Discovery') || prediscovery)}">  <!-- display ony for internal user- render only on Stage0-->
+  
+                <apex:outputfield value="{!opp.AM_CP1__c}"/>
+                <apex:outputfield value="{!opp.FAE_CP1__c}"/> 
+                        
+                
+            </apex:pageBlockSection>
+            
+             <apex:pageBlockSection title="Control Point 2 - Stage 1 to Stage 2" columns="2"  collapsible="true"> <!-- display ony for both users- render only on Stage Discovery-->
+                
+                <apex:outputfield value="{!opp.AM_CP2__c}"/>
+                <apex:outputfield value="{!opp.FAE_CP2__c}"/> 
+                <apex:outputfield value="{!opp.PLM_CP2__c}"/> 
+                <apex:outputfield value="{!opp.MarketSegment_CP2__c}"/>
+            </apex:pageBlockSection>
+            
+             <apex:pageBlockSection title="Control Point 3 - Stage 4 Pre-Design Win Submission" columns="2"  collapsible="true" rendered="{!showCP3}"> <!-- display ony for both users- render only on Stage Decision-->
+
+
+
+                <apex:outputfield value="{!opp.AM_CP3__c}"/>
+                <apex:outputfield value="{!opp.FAE_CP3__c}"/> 
+                <apex:outputfield value="{!opp.PLM_CP3__c}"/> 
+                <apex:outputfield value="{!opp.MarketSegment_CP3__c}"/>
+                <!--<apex:outputfield value="{!opp.Finance_Check_CP3__c}" label="Pricing" />-->
+            </apex:pageBlockSection>
+            <apex:pageBlockSection title="Control Point PLM and Seg Mktg Approvers" collapsible="false"/>
+            <br/> 
+            <apex:outputPanel >
+            <apex:outputPanel >
+            <table border="1" cellspacing="0" cellPadding="5" width="100%"  >
+              <tr>
+                    <td bgcolor="#ddb929"><b> Product Line </b> </td>
+                    <td bgcolor="#ddb929"><b> Assigned PLM </b> </td>
+                    <td bgcolor="#ddb929"><b> Market Segment </b> </td>
+                    <td bgcolor="#ddb929"><b> Assigned Segment Marketing </b> </td>
+              </tr>
+              <tr>
+                <td>
+                  <apex:outputField value="{!opp.Product_Line__c}" />
+                </td>
+                <td>
+                  <apex:outputField value="{!opp.Assigned_PLM__c}" />
+                </td>
+                <td>
+                  <apex:outputField value="{!opp.Market_Segment__c}" />
+                </td>
+                <td>
+                  <apex:outputField value="{!opp.Assigned_Segment_Marketing__c}" />
+                </td>
+              </tr>
+            </table>
+            </apex:outputPanel>
+            </apex:outputPanel>
+        </apex:pageBlock> 
+        <apex:pageBlock id="cc" rendered="{!isedit2}">
+            <apex:pageBlockButtons location="top" >
+                <apex:commandButton action="{!doSave2}" value="Save Control Points" rerender="fm"/>
+                <apex:commandButton action="{!doCancel2}" value="Cancel" rerender="fm" />
+            </apex:pageBlockButtons>
+            <apex:pageBlockSection title="Control Point 1" columns="2" collapsible="true" rendered="{!((opp.StageName == '0.Pre-Discovery') || prediscovery)}">  <!-- display ony for internal user- render only on Stage0-->
+
+                <apex:inputfield value="{!opp.AM_CP1__c}" rendered="{!NOT(opp.AM_CP1__c)}"/>
+                <apex:outputField value="{!opp.AM_CP1__c}" rendered="{!opp.AM_CP1__c}"/>
+                <apex:inputfield value="{!opp.FAE_CP1__c}" rendered="{!NOT(opp.FAE_CP1__c)}"/>
+                <apex:outputField value="{!opp.FAE_CP1__c}" rendered="{!opp.FAE_CP1__c}"/> 
+                               
+            </apex:pageBlockSection>
+            
+             <apex:pageBlockSection title="Control Point 2 - Stage 1 to Stage 2" columns="2"  collapsible="true"> <!-- display ony for both users- render only on Stage Discovery-->
+                
+                <apex:inputfield value="{!opp.AM_CP2__c}" rendered="{!NOT(opp.AM_CP2__c)}"/>
+                <apex:outputField value="{!opp.AM_CP2__c}" rendered="{!opp.AM_CP2__c}"/>
+                <apex:inputfield value="{!opp.FAE_CP2__c}"  rendered="{!NOT(opp.FAE_CP2__c)}"/> 
+                <apex:outputField value="{!opp.FAE_CP2__c}" rendered="{!opp.FAE_CP2__c}"/>
+                <apex:inputfield value="{!opp.PLM_CP2__c}" rendered="{!NOT(opp.PLM_CP2__c)}" />
+                <apex:outputField value="{!opp.PLM_CP2__c}" rendered="{!opp.PLM_CP2__c}"/>
+                <apex:inputfield value="{!opp.MarketSegment_CP2__c}" rendered="{!NOT(opp.MarketSegment_CP2__c)}"/>
+                <apex:outputField value="{!opp.MarketSegment_CP2__c}" rendered="{!opp.MarketSegment_CP2__c}"/>  
+            </apex:pageBlockSection>
+            
+             <apex:pageBlockSection title="Control Point 3 - Stage 4 Pre-Design Win Submission" columns="2"  collapsible="true" rendered="{!showCP3}"> <!-- display ony for both users- render only on Stage Decision-->
+
+                <apex:inputfield value="{!opp.AM_CP3__c}" rendered="{!NOT(opp.AM_CP3__c)}"/>
+                <apex:outputField value="{!opp.AM_CP3__c}" rendered="{!opp.AM_CP3__c}"/>
+                <apex:inputfield value="{!opp.FAE_CP3__c}" rendered="{!NOT(opp.FAE_CP3__c)}"/>
+                <apex:outputField value="{!opp.FAE_CP3__c}" rendered="{!opp.FAE_CP3__c}"/>
+                <apex:inputfield value="{!opp.PLM_CP3__c}" rendered="{!NOT(opp.PLM_CP3__c)}"/>
+                <apex:outputField value="{!opp.PLM_CP3__c}" rendered="{!opp.PLM_CP3__c}"/>
+                <apex:inputfield value="{!opp.MarketSegment_CP3__c}" rendered="{!NOT(opp.MarketSegment_CP3__c)}"/>
+                <apex:outputField value="{!opp.MarketSegment_CP3__c}" rendered="{!opp.MarketSegment_CP3__c}"/>
+                <!--<apex:inputfield value="{!opp.Finance_Check_CP3__c}" label="Pricing" rendered="{!NOT(opp.Finance_Check_CP3__c)}" />
+                <apex:outputField value="{!opp.Finance_Check_CP3__c}" label="Pricing" rendered="{!opp.Finance_Check_CP3__c}"/>-->
+            </apex:pageBlockSection> 
+            <apex:pageBlockSection title="Control Point PLM and Seg Mktg Approvers" collapsible="false"/>
+            <br/> 
+            <apex:outputPanel >
+            <apex:outputPanel >
+            <table border="1" cellspacing="0" cellPadding="5" width="100%"  >
+              <tr>
+                    <td bgcolor="#ddb929"><b> Product Line </b> </td>
+                    <td bgcolor="#ddb929"><b> Assigned PLM </b> </td>
+                    <td bgcolor="#ddb929"><b> Market Segment </b> </td>
+                    <td bgcolor="#ddb929"><b> Assigned Segment Marketing </b> </td>
+              </tr>
+              <tr>
+                <td>
+                  <apex:outputField value="{!opp.Product_Line__c}" />
+                </td>
+                <td>
+                  <apex:outputField value="{!opp.Assigned_PLM__c}" />
+                </td>
+                <td>
+                  <apex:outputField value="{!opp.Market_Segment__c}" />
+                </td>
+                <td>
+                  <apex:outputField value="{!opp.Assigned_Segment_Marketing__c}" />
+                </td>
+              </tr>
+            </table>
+            </apex:outputPanel>
+            </apex:outputPanel>
+        </apex:pageBlock>
+        
+        
+    </apex:form>
+</apex:page>

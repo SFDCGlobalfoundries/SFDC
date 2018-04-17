@@ -1,0 +1,161 @@
+<!--<apex:page controller="MCMCostReportController" renderAs="pdf" >
+    <!--contentType="application/vnd.ms-excel#SalesForceExport.xls" 
+    <apex:include pageName="MCMCostReport" />
+</apex:page>-->
+<apex:page controller="MCMCostReportController" tabStyle="MCM_Reporting_Data__c" cache="false" showHeader="false" sidebar="false" renderAs="pdf">    
+    <head>
+        <style type="text/css">
+            .emptyColumnContent {
+            display: none;
+            }
+        </style>    
+    </head>
+    
+<script>
+    function backToMCM(){
+        backToMCMPage();
+        return true;
+   }
+</script>
+    <apex:sectionHeader title="Multi-Chip Module Cost Report" subtitle="{!deviceName}"/> 
+    <apex:pageblock >
+        <center>
+            <apex:pageBlockButtons location="both">
+                <apex:outputLabel value="Download as PDF" styleClass="btn" onclick="window.open('/apex/expMCMToPDF?mcmId={!currMCM.Id}&rendertype=pdf','_blank')"/>
+                <apex:outputLabel value="Download as Excel" styleClass="btn" onclick="window.open('/apex/expMCMToExcel?mcmId={!currMCM.Id}&rendertype=excel','_blank')"/>
+                <apex:outputLabel value="Back to MCM" styleClass="btn" onclick="backToMCM();"/>
+               
+            </apex:pageBlockButtons>
+            
+        </center>  
+        <apex:form >
+        <apex:actionFunction action="{!redirectToMCMDetail}" name="backToMCMPage"/>
+            </apex:form>
+        <apex:panelGrid columns="2" style="padding-top:20px;padding-bottom:10px">
+            <apex:outputPanel layout="block" style="width:280px">
+                <apex:outputLabel value="MCM Quarterly Volume" style="font-weight:bold"/>
+            </apex:outputPanel>           
+            
+        </apex:panelGrid>
+        <apex:pageBlockTable value="{!qtrVolumeData.costReportRows}" var="row" cellpadding="2px" style="width:100%;table-layout:auto;font-size:11px;">   
+            <!-- setting header for apex:column under apex:repeat will not work -->
+            <!-- workaround is to create another list of string for the headers -->
+            <!-- and define it in another apex:repeat                           -->
+            <apex:repeat value="{!row.quarterYearCosts}" var="value">
+                <apex:column headerValue="" style="width:250px"> 
+                    <apex:outputText value="{!value}"/>
+                    
+                </apex:column>
+                {!value}    
+            </apex:repeat>
+            
+            <!--Define the headers here and hide the empty cells that are created -->                  
+            <apex:repeat value="{!qtrVolumeData.quarterYearHeaders}" var="h">                        
+                <apex:column styleClass="emptyColumnContent">  
+                    <apex:facet name="header">
+                        <apex:outputPanel layout="block" style="{!IF(h = 'YEAR-QTR','width:150px','width:60px')}">
+                            {!h}
+                        </apex:outputPanel>
+                    </apex:facet> 
+                </apex:column>
+            </apex:repeat>                                      
+        </apex:pageBlockTable> 
+        
+        <apex:repeat value="{!confRecCount}" var="index">
+            <apex:panelGrid columns="2" style="padding-top:20px;padding-bottom:10px">
+                <apex:outputPanel layout="block" style="width:800px">
+                    <apex:outputLabel value="{!confProcessTechName[index]}" style="font-weight:bold"/>
+                </apex:outputPanel>           
+            </apex:panelGrid>
+            
+            <apex:pageBlockTable value="{!lstCostDataConf[index].costReportRows}" var="row" cellpadding="2px" style="width:100%;table-layout:auto;font-size:11px;">   
+                <!-- setting header for apex:column under apex:repeat will not work -->
+                <!-- workaround is to create another list of string for the headers -->
+                <!-- and define it in another apex:repeat                           -->
+                <apex:repeat value="{!row.quarterYearCosts}" var="value">
+                    <apex:column headerValue="" style="width:250px"> 
+                        <apex:outputText value="{!value}"/>
+                        
+                    </apex:column>
+                    {!value}    
+                </apex:repeat>
+                
+                <!--Define the headers here and hide the empty cells that are created -->                  
+                <apex:repeat value="{!costDataBefore.quarterYearHeaders}" var="h">                        
+                    <apex:column styleClass="emptyColumnContent">  
+                        <apex:facet name="header">
+                            <apex:outputPanel layout="block" style="{!IF(h = 'YEAR-QTR','width:150px','width:60px')}">
+                                {!h}
+                            </apex:outputPanel>
+                        </apex:facet> 
+                    </apex:column>
+                </apex:repeat>                                      
+            </apex:pageBlockTable>
+        </apex:repeat>
+        
+        <apex:panelGrid columns="2" style="padding-top:20px;padding-bottom:10px">
+            <apex:outputPanel layout="block" style="width:280px">
+                <apex:outputLabel value="Cost Before Applying Yield (Quarterly)" style="font-weight:bold"/>
+            </apex:outputPanel>           
+            
+        </apex:panelGrid>
+        <apex:pageBlockTable value="{!costDataBefore.costReportRows}" var="row" cellpadding="2px" style="width:100%;table-layout:auto;font-size:11px;">   
+            <!-- setting header for apex:column under apex:repeat will not work -->
+            <!-- workaround is to create another list of string for the headers -->
+            <!-- and define it in another apex:repeat                           -->
+            <apex:repeat value="{!row.quarterYearCosts}" var="value">
+                <apex:column headerValue="" style="width:250px"> 
+                    <apex:outputText value="{!value}"/>
+                    
+                </apex:column>
+                {!value}    
+            </apex:repeat>
+            
+            <!--Define the headers here and hide the empty cells that are created -->                  
+            <apex:repeat value="{!costDataBefore.quarterYearHeaders}" var="h">                        
+                <apex:column styleClass="emptyColumnContent">  
+                    <apex:facet name="header">
+                        <apex:outputPanel layout="block" style="{!IF(h = 'YEAR-QTR','width:150px','width:60px')}">
+                            {!h}
+                        </apex:outputPanel>
+                    </apex:facet> 
+                </apex:column>
+            </apex:repeat>                                      
+        </apex:pageBlockTable> 
+        
+        
+        
+        <apex:panelGrid columns="2" style="padding-top:20px;padding-bottom:10px">
+            <apex:outputPanel layout="block" style="width:280px">
+                <apex:outputLabel value="Cost After Applying Yield (Quarterly)" style="font-weight:bold"/>
+            </apex:outputPanel>           
+            
+        </apex:panelGrid>
+        <apex:pageBlockTable value="{!costDataAfter.costReportRows}" var="row" cellpadding="2px" style="width:100%;table-layout:auto;font-size:11px;">   
+            <!-- setting header for apex:column under apex:repeat will not work -->
+            <!-- workaround is to create another list of string for the headers -->
+            <!-- and define it in another apex:repeat                           -->
+            <apex:repeat value="{!row.quarterYearCosts}" var="value">
+                <apex:column headerValue="" style="width:250px"> 
+                    <apex:outputText value="{!value}"/>
+                    
+                </apex:column>
+                {!value}    
+            </apex:repeat>
+            
+            <!--Define the headers here and hide the empty cells that are created -->                  
+            <apex:repeat value="{!costDataBefore.quarterYearHeaders}" var="h">                        
+                <apex:column styleClass="emptyColumnContent">  
+                    <apex:facet name="header">
+                        <apex:outputPanel layout="block" style="{!IF(h = 'YEAR-QTR','width:150px','width:60px')}">
+                            {!h}
+                        </apex:outputPanel>
+                    </apex:facet> 
+                </apex:column>
+            </apex:repeat>                                      
+        </apex:pageBlockTable> 
+        
+        
+        
+    </apex:pageblock>
+</apex:page>

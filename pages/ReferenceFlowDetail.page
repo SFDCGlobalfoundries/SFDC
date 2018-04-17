@@ -1,0 +1,78 @@
+<!--
+    Author: Ariz Solito
+    Description: This is the reference flow detail page.
+    History: 
+        ASolito                 - Page creation.
+        ARoy        07042014    - code modified to add the Open text section.
+        ARoy        07162014    - code modified to use the description field from tech file instead of specification object. 
+        ARoy        08072014    - code modified to add button for document provisioning
+-->
+<apex:page controller="ReferenceFlowDetailCntrlr" sidebar="false" showHeader="false" cache="false">
+    <apex:pageMessages />        
+    <c:JqueryLibrary />
+    <apex:pageBlock id="pageBlockId"
+                    mode="maindetail" 
+                    tabStyle="Product2" 
+                    rendered="{!hasNDAAccess}">
+        <apex:form >
+            <apex:sectionHeader title="{!IF(isReferenceFlow,'Reference flow','White paper')}"
+                                    subtitle="{!recordDetail.design.name}"/>
+            <apex:pageBlockSection title="{!IF(isReferenceFlow,'Reference flow details','White paper details')}">   
+                <apex:outputField value="{!recordDetail.design.name}"/>
+                <apex:outputField value="{!recordDetail.tech.Document_Title__c}"/>
+                <apex:outputField value="{!recordDetail.tech.Lifecycle__c}"/>
+                <apex:outputField value="{!recordDetail.tech.Doc_Rev__c}"/>
+                <apex:outputField value="{!recordDetail.tech.Description__c}"/>            
+                <apex:outputField value="{!recordDetail.design.PDK_Version__c}" rendered="{!NOT(isWhitePaper)}"/>            
+                <apex:outputField value="{!recordDetail.tech.Design_Manual__c}" rendered="{!NOT(isWhitePaper)}"/>            
+                <apex:outputField value="{!recordDetail.tech.EDA_Tool_Supported__c}"/>                        
+                <apex:outputField value="{!recordDetail.tech.IP_Vendor__c}"/>                                    
+                <apex:outputField value="{!recordDetail.tech.PT_Number__c}"/>                                                
+                <apex:outputField value="{!recordDetail.tech.Compatible_PT__c}"/>                                                            
+                <apex:outputField value="{!recordDetail.tech.Technology_Geometry__c}"/>            
+                <apex:outputField value="{!recordDetail.tech.Technology_Type__c}"/>                        
+            </apex:pageBlockSection>
+            <apex:pageBlockSection title="{!IF(isReferenceFlow,'Reference flow documents','White paper documents')}" columns="1">
+                <apex:outputPanel layout="block" style="text-align:center">
+                    <!--<apex:commandButton action="{!sendNotification}" value="Request for Document Provisioning" rendered="{!NOT(isDocProvisioned)}" />-->
+                    <apex:outputLabel onclick="emailSendAction()" id="docProv" value="Request for Document Provisioning" rendered="{!NOT(isDocProvisioned)}" styleClass="btn" /> 
+                    <apex:actionFunction name="emailNotification" action="{!sendNotification}" reRender="pageBlockId" oncomplete="unblockPage();"/>
+                </apex:outputPanel>    
+                <apex:outputPanel layout="block" style="overflow:auto;width:100%">
+                    <c:ReferenceFlowDetailComponent OpenTextLoginServerURL="{!OpenTextLoginServerURL}" refUrl="{!refFlowUrl}"/>
+                </apex:outputPanel>
+            </apex:pageBlockSection>
+        </apex:form>
+        <script>
+            function emailSendAction(){
+                blockPage();
+                emailNotification();                                
+                return false;
+            } 
+            
+            function unblockPage(){  
+                $.unblockUI();
+                var retMsg = '{!emailProvRetMsg}';
+                if(retMsg == "success"){
+                    alert("Email has been sent to FAE and AM for reference flow/white paper provisioning.");
+                }else if(retMsg == "error"){
+                    alert("Error occurred while email send to FAE and AM for reference flow/white paper provisioning.");    
+                } 
+            } 
+            
+            function blockPage(){   
+               $.blockUI({ message: '<img src="/img/loading32.gif" /><h1> Work In Progress..Please Wait..</h1>',   
+                                css: {   
+                                     border: 'none',   
+                                     padding: '15px',   
+                                     '-webkit-border-radius': '10px',   
+                                     '-moz-border-radius': '10px',   
+                                     opacity: .9  
+                                 }   
+               });   
+               return false;  
+            } 
+         
+        </script>
+    </apex:pageBlock>   
+</apex:page>

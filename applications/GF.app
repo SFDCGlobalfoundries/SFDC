@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomApplication xmlns="http://soap.sforce.com/2006/04/metadata">
+    <defaultLandingTab>standard-home</defaultLandingTab>
+    <formFactors>Large</formFactors>
+    <label>GF</label>
+    <tab>standard-Account</tab>
+    <tab>standard-Contact</tab>
+    <tab>standard-Opportunity</tab>
+    <tab>Account_Short_Name__c</tab>
+    <tab>Account_Team_Proxy__c</tab>
+    <tab>HCM_Employee__c</tab>
+    <tab>IntegrationLog__c</tab>
+    <tab>Target_Process_Technology__c</tab>
+    <tab>Active_Users_for_Analytics__c</tab>
+    <tab>Non_Wafer_Revenue__c</tab>
+    <tab>Opportunity_Program_Team_Member__c</tab>
+    <tab>Signatory__c</tab>
+    <tab>Account_Hierarchy__c</tab>
+    <tab>BX041_IP__c</tab>
+    <tab>Base_IP__c</tab>
+    <tab>Monthly_Revenue__c</tab>
+    <tab>Apttus_Config2__ProductAttributeValue__c</tab>
+    <tab>Lot_Prefix__c</tab>
+    <tab>Deleted_Record__c</tab>
+    <tab>Reticle_Datawarehouse__c</tab>
+    <tab>ROS_Cycle__c</tab>
+    <tab>FAB__c</tab>
+    <tab>PO_Lead_Time</tab>
+    <tab>GR_Masterlist__c</tab>
+    <tab>GR_Layer__c</tab>
+    <tab>GF_ErrorLogger__c</tab>
+</CustomApplication>

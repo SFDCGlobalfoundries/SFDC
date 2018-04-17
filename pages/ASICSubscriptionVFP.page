@@ -1,0 +1,128 @@
+<!-- 
+    Type Name:  ASICSubscriptionVFP.page
+    Author: UCM Team 
+    Created Date: 03/09/2017
+    Reason: 
+    Change History:
+    Author: 
+    Modified Date: 
+    Reason: 
+-->
+<apex:page standardController="Bug__c"  extensions="ASICSubscriptionVFCExt" id="page" >
+ <apex:form id="frm">
+        <apex:pageMessages id="errorMessage" escape="false"/>
+        <apex:outputpanel >
+            <apex:actionstatus id="status">
+                <apex:facet name="start">
+                    <div class="waitingSearchDiv" id="el_loading" style="background-color: #fbfbfb;
+                           height: 100%;opacity:0.65;width:100%;"> 
+                        <div class="waitingHolder" style="top: 74.2px; width: 91px;">
+                            <img class="waitingImage" src="/img/loading.gif" title="Please Wait..." />
+                            <span class="waitingDescription">Please Wait...</span>
+                        </div>
+                    </div>
+                </apex:facet>
+            </apex:actionstatus>
+        </apex:outputpanel>
+  <apex:pageBlock title="Subscription:Enter a combination of fields" id="tb2">
+        <apex:pageBlockSection title="Problem Identification(Problem Type and Sub-Types)" id="subscriptionSection" columns="1" showHeader="true" collapsible="false">
+            <apex:pageBlockSectionItem id="problemType">
+                         <apex:outputLabel value="{!$ObjectType.Bug__c.fields.Problem_Type__c.Label}" />
+                            <apex:outputPanel styleClass="requiredInput" layout="block" >
+                                <div class="requiredBlock"></div>
+                                <apex:selectList id="problemType" value="{!problemType}" size="1">  
+                                <apex:actionSupport status="status" event="onchange" action="{!retrieveProblemType}" rerender="subTypeA,problemSection,frm"/>                             
+                                    <apex:selectOptions value="{!listProblemTypeOptions}"/>
+                                </apex:selectList>
+                           </apex:outputPanel>
+            </apex:pageBlockSectionItem>        
+        
+            <apex:pageBlockSectionItem id="subTypeA" >
+                        <apex:outputLabel value="{!$ObjectType.Bug__c.fields.Sub_Type_A__c.Label}" />
+                        <apex:outputPanel styleClass="requiredInput" layout="block" >
+                            <apex:outputPanel styleClass="requiredBlock" layout="block"/>
+                            <apex:selectList id="subTypeAVal" value="{!subTypeA}" size="1">
+                             <apex:actionSupport status="status" event="onchange" action="{!retrieveSubTypeA}" rerender="subTypeB, problemSection,frm"/>   
+                                <apex:selectOptions value="{!listSubTYpeAOptions}"/>
+                            </apex:selectList>
+                        </apex:outputPanel>
+            </apex:pageBlockSectionItem> 
+           
+            <apex:pageBlockSectionItem id="subTypeB" >
+                    <apex:outputLabel value="{!$ObjectType.Bug__c.fields.Sub_Type_B__c.Label}" />
+                    <apex:selectList id="subTypeBVal" value="{!subTypeB}" size="1" >
+                     <apex:actionSupport status="status" event="onchange" action="{!retrieveSubTypeB}" rerender="subTypeC, problemSection,frm"/>   
+                        <apex:selectOptions value="{!listSubTYpeBOptions}"/>
+                    </apex:selectList>
+            </apex:pageBlockSectionItem>
+            
+           <apex:pageBlockSectionItem id="subTypeC">
+                    <apex:outputLabel value="{!$ObjectType.Bug__c.fields.Sub_Type_C__c.Label}" />
+                    <apex:selectList id="subTypeCVal" value="{!subTypeC}" size="1" >
+                       <apex:actionSupport status="status" event="onchange" action="{!retrieveSubTypeC}" rerender="subTypD, problemSection,frm"/>
+                        <apex:selectOptions value="{!listSubTYpeCOptions}"/>
+                    </apex:selectList>
+           </apex:pageBlockSectionItem>
+           
+            <apex:pageBlockSectionItem id="subTypeD">
+                    <apex:outputLabel value="{!$ObjectType.Bug__c.fields.Sub_Type_D__c.Label}" />
+                    <apex:selectList id="subTypeDVal" value="{!subTypeD}" size="1" >
+                        <apex:selectOptions value="{!listSubTYpeDOptions}"/>
+                    </apex:selectList>
+            </apex:pageBlockSectionItem> 
+                
+        </apex:pageBlockSection> 
+
+        
+        <apex:pageBlockButtons location="bottom">
+                <apex:commandButton value="Search"  action="{!bugSearch}" reRender="tbl,errorMessage" />
+                <apex:commandButton value="Clear All" action="{!doCancel}" reRender="frm,errorMessage,tb1"/>
+                
+            </apex:pageBlockButtons>
+            
+          </apex:pageBlock>
+          
+          
+    
+      <apex:pageblock id="tbl" title="Recent ASIC Requests">                           
+            <apex:pageblockTable value="{!buglistvar}" var="b" rendered="{!(buglistvar.size != 0)}" >
+                <apex:repeat var="f" value="{!$ObjectType.Bug_Default_Owner_Team__c.FieldSets.BugSubscriptionFields}">
+                             <apex:column headerValue="{!f.label}">
+                                <apex:outputfield value="{!b[f]}"/>
+                             </apex:column>
+                </apex:repeat>
+            </apex:pageblockTable>
+            <apex:pageBlockButtons rendered="{!(buglistvar.size != 0)}"  location="top">
+                        <apex:commandButton value="Subscribe"  action="{!subscribed}" reRender="frm,tb2" />
+                        <apex:commandButton value="UnSubscribe" action="{!unSubsrcibed}" reRender="frm,tb2" />
+            </apex:pageBlockButtons>
+            <apex:outputpanel rendered="{!(buglistvar.size = 0)}" >
+                  <apex:outputText value="No search executed"  />                                    
+            </apex:outputpanel>
+    </apex:pageblock>
+          
+        <apex:pageBlock id="ACP">     
+            <apex:pageBlockSection title="Subscribe To Customer Project" showHeader="true" collapsible="false">
+                <apex:pageBlockSectionItem id="cstProject">
+                    <apex:outputLabel value="{!$ObjectType.Bug__c.fields.Customer_Project__c.Label}"/>
+                    
+                                    <apex:selectList id="customerProject" value="{!cstProject}" size="1" multiselect="false"> 
+                                         <apex:actionSupport event="onchange" reRender="cstbutton,frm" action="{!checkRequired}"/>                              
+                                        <apex:selectOptions value="{!listCustomerProject1}"/>
+                                        <apex:selectOptions value="{!listCustomerProject2}"/>
+                                      
+                                    </apex:selectList>
+                 
+                </apex:pageBlockSectionItem>
+            </apex:pageBlockSection>   
+
+            <apex:pageBlockButtons location="bottom" id="cstbutton">                
+                <apex:commandButton value="Subscribe" action="{!cstBugSearch}" reRender="frm,errorMessage,tb1,ACP,cstProject"  disabled="{!isRequiredFlag}"/>
+                <apex:commandButton value="UnSubscribe" action="{!cstUnSubsrcibed}" reRender="frm,errorMessage,tb1,ACP,cstProject" disabled="{!isRequiredFlag}"/>
+            </apex:pageBlockButtons>            
+        </apex:pageBlock>
+    
+    
+  
+</apex:form>
+</apex:page>

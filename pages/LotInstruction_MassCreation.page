@@ -1,0 +1,188 @@
+<apex:page standardController="Lot_Instruction__c" recordSetVar="unused" extensions="LotInstruction_MassInsertController">
+ 
+    <style type="text/css">
+        .headerRow .TableTitle {
+            background-color: #D6ECFF !important;
+            font-size:100% !important; 
+        }
+        .dateFormat{
+             visibility:hidden;
+             display:none;
+        }
+        .tab {
+            position: relative;
+            left: 2em;
+        }
+    </style>
+ <apex:sectionHeader title="{!lotReqName}" subtitle="Mass Insertion of Lot Instruction"/>
+
+ <apex:form id="frm">
+ 
+ <apex:actionFunction reRender="pb" name="addNewRowCall" action="{!addNewRow}"/>
+ 
+ <apex:pageBlock mode="Edit" id="pb">
+    <apex:PageMessages id="pageMessages"/>
+    <apex:variable value="{!-1}" var="rowNumber" id="varPanel"/>
+    <apex:pageblockButtons >
+        <apex:commandButton action="{!Save}" value="Save"/>
+        <apex:commandButton onclick="window.open('/{!LotReqId}','_parent');return false;" value="Cancel" />
+    </apex:pageblockButtons>
+    
+    <apex:pageMessage severity="INFO">
+        <b><font color="red">The search result will be filtered based on the following parameters:</font></b><br/>
+        <span class="tab">1. <b>Account</b> and <b>Fab</b> values on the <i>Lot Service Request : </i><b>{!lotReqName}</b></span><br/>
+        <span class="tab">2. <b>Text to Search</b> based on the <b>Field to Search</b> on this page</span><br/>
+        <span class="tab">3. Lots which are <b>yet to be Shipped</b>.</span><br/>
+    </apex:pageMessage>
+    <br/>
+    <apex:pageBlockSection >
+        <apex:outputText value="{!AccountName}" label="Account"/>
+        <apex:outputText value="{!FabName}" label="Fab Group"/>
+        <apex:outputText value="{!AccountShortName}" label="Account Short Name"/>
+    </apex:pageBlockSection>
+    
+    <apex:pageBlockSection columns="3">
+        <apex:selectList value="{!fieldToSearch}" multiselect="false" size="1" label="Field To Search">
+            <apex:selectOptions value="{!items}"/>
+        </apex:selectList>
+        <apex:inputText value="{!textToSearch}" label="Text To Search"/>
+        
+        <apex:actionStatus id="mySaveStatus1">
+         <apex:facet name="stop">
+             <apex:commandButton value="Search Lots" action="{!searchLots}" rerender="MfgLotSection,MfgLotSection,myButtons,pageMessages" status="mySaveStatus1"/>
+         </apex:facet>
+         <apex:facet name="start">
+             <apex:outputPanel >
+                   <apex:image value="/img/loading32.gif" style="height: 15px;"/>
+                   <apex:commandButton value="Processing..." status="mySaveStatus1" disabled="true"/>
+             </apex:outputPanel>
+           </apex:facet>
+        </apex:actionStatus>
+        
+    </apex:pageBlockSection>
+    
+    <apex:outputPanel id="MfgLotSection">
+        
+        <apex:pageBlockSection title="Manufacturing Lot Search" columns="1" rendered="{!showMfgLotTable}">
+             Manufacturing Lots(Total List Size: {!total_size})
+            <apex:pageBlockTable id="pageBlockTable" value="{!lstMfgLotWrapper}" var="a" border="2px;">
+                
+                <apex:column headerClass="TableTitle">                               
+                  <apex:facet name="header">Select</apex:facet>
+                  <apex:inputcheckbox value="{!a.radioButton}"/>
+                </apex:column>
+                 <apex:column headerClass="TableTitle">                               
+                      <apex:facet name="header">Customer Device Id</apex:facet>
+                      <apex:outputField value="{!a.mfgLotRec.Customer_Device_Id__c}"/>           
+                </apex:column>
+                <apex:column headerClass="TableTitle">                               
+                      <apex:facet name="header">Manufacturing Lot</apex:facet>
+                      <apex:outputField value="{!a.mfgLotRec.name}"/>                         
+                </apex:column>
+                 <apex:column headerClass="TableTitle">                               
+                      <apex:facet name="header">Wafer Quantity in Lot</apex:facet>
+                      <apex:outputField value="{!a.mfgLotRec.Current_Wafer_Quantity_In_Lot__c}"/>           
+                </apex:column>
+                <apex:column headerClass="TableTitle">                               
+                      <apex:facet name="header">Remaining Mask Count</apex:facet>
+                      <apex:outputField value="{!a.mfgLotRec.Remaining_Mask_Count__c}"/>           
+                </apex:column>
+                <apex:column headerClass="TableTitle">                               
+                      <apex:facet name="header">PO#</apex:facet>
+                      <apex:outputField value="{!a.mfgLotRec.Purchase_Order_Number__c}"/>           
+                </apex:column>
+                <apex:column headerClass="TableTitle">                               
+                      <apex:facet name="header">SO#</apex:facet>
+                      <apex:outputField value="{!a.mfgLotRec.Sales_Order_Number__c}"/>           
+                </apex:column>
+                <apex:column headerClass="TableTitle">                               
+                      <apex:facet name="header">Fab Group</apex:facet>
+                      <apex:outputField value="{!a.mfgLotRec.Fab_Group__c}"/>                                                                              
+                </apex:column>
+                <apex:column headerClass="TableTitle" >                               
+                      <apex:facet name="header">Geometry</apex:facet>
+                      <apex:outputField value="{!a.mfgLotRec.Geometry__c}"/>
+                </apex:column>
+                <apex:column headerClass="TableTitle">                               
+                      <apex:facet name="header">Current CSD</apex:facet>
+                      <apex:outputField value="{!a.mfgLotRec.Current_Scheduled_Date_CSD__c }"/>           
+                </apex:column>
+                <apex:column headerClass="TableTitle">                               
+                      <apex:facet name="header">Current CRD</apex:facet>
+                      <apex:outputField value="{!a.mfgLotRec.Current_Customer_Request_Date_CRD__c}"/>           
+                </apex:column>
+                
+               
+               
+                <!-- <apex:column headerClass="TableTitle">                               
+                      <apex:facet name="header">Ship to Customer Date</apex:facet>
+                      <apex:outputField value="{!a.mfgLotRec.Last_Ship_Date__c}"/>
+                </apex:column> -->
+                
+                
+            </apex:pageBlockTable>
+            
+            <apex:outputPanel id="myButtons">
+                <apex:commandButton action="{!Beginning}" title="Beginning" value="<<" disabled="{!disablePrevious}" reRender="MfgLotSection,myButtons"/>
+                <apex:commandButton action="{!Previous}" title="Previous" value="<" disabled="{!disablePrevious}" reRender="MfgLotSection,myButtons"/>       
+                <apex:commandButton action="{!Next}" title="Next" value=">" disabled="{!disableNext}" reRender="MfgLotSection,myButtons"/>
+                <apex:commandButton action="{!End}" title="End" value=">>" disabled="{!disableNext}" reRender="MfgLotSection,myButtons"/>       
+            </apex:outputPanel>
+            
+            <apex:pageBlockSection id="buttonSection">
+                <apex:commandButton value="Create Lot Instruction Rows" action="{!createRows}" rerender="varPanel,lotInstSection,MfgLotSection,pageMessages"/>
+            </apex:pageBlockSection>
+            
+        </apex:pageBlockSection>
+    </apex:outputPanel>
+    
+    <apex:outputPanel id="lotInstSection">
+        <apex:pageBlockSection columns="1" title="Information" rendered="{!showLotInstructionTable}">
+            <apex:pageBlockTable id="pageBlockTable" value="{!lstLotInstructionWrapper}" var="a" border="2px;">
+                <apex:column headerClass="TableTitle" style="text-align:center">                               
+                          <apex:facet name="header">Lot Request</apex:facet>
+                          <apex:outputField value="{!a.lotInstrn.Lot_Request__c}"/>      
+                          <apex:variable var="rowNumber" value="{!rowNumber + 1}" />        
+                </apex:column>
+                <apex:column headerClass="TableTitle" style="text-align:center">                               
+                          <apex:facet name="header">Manufacturing Lot</apex:facet>
+                          <apex:outputField value="{!a.lotInstrn.Manufacturing_Lot__c}"/>                                                                              
+                </apex:column>
+                <apex:column headerClass="TableTitle" style="text-align:center">                               
+                          <apex:facet name="header">Current CSD</apex:facet>
+                          <apex:outputText value="{0, date, M'/'d'/'yyyy}">
+                              <apex:param value="{!a.currentCSD}" /> 
+                          </apex:outputText>
+                </apex:column>
+                <apex:column headerClass="TableTitle" style="text-align:center">                               
+                          <apex:facet name="header">New CRD (CSR)</apex:facet>
+                          <apex:inputField value="{!a.lotInstrn.Submitted_Customer_Request_Date_CRD__c}"/>                                                                              
+                </apex:column>
+                <!-- Commenting as per UAT- 21-Jul-15
+                <apex:column headerClass="TableTitle" style="text-align:center">                               
+                          <apex:facet name="header">Expedite Type Requested (CSR)</apex:facet>
+                          <apex:inputField value="{!a.lotInstrn.Expedite_Type_To_Meet_CRD_CSR__c}"/>
+                </apex:column>
+                <apex:column headerClass="TableTitle" style="text-align:center">                               
+                          <apex:facet name="header">Submitted for Review (CSR)</apex:facet>
+                          <apex:inputField value="{!a.lotInstrn.Submitted_for_Review_CSR__c}"/>                                                                              
+                </apex:column>
+                <apex:column headerClass="TableTitle" style="text-align:center">                               
+                          <apex:facet name="header">Comments (CSR)</apex:facet>
+                          <apex:inputField value="{!a.lotInstrn.Comments_CSR__c}"/>                                                                              
+                </apex:column>
+                -->
+                <!--04-Aug-15 -- Commenting this button as not working 
+                <apex:column style="text-align:center">
+                    <apex:commandButton action="{!removeNewObject}" value="Delete Row" reRender="varPanel,pageBlockTable" rendered="{!a.checkbox}">
+                        <apex:param name="p1" value="{!rowNumber}" assignTo="{!numberOfRowToRemove}"/>
+                    </apex:commandButton>
+                </apex:column>
+                -->
+            </apex:pageBlockTable>
+        </apex:pageBlockSection> 
+    </apex:outputPanel>
+ </apex:pageblock>
+</apex:form>
+
+</apex:page>

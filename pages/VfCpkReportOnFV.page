@@ -1,0 +1,189 @@
+<apex:page controller="ClsCpkReportOnFV" showHeader="false" sidebar="false">
+   <style>
+   	.pbSubheader {
+            background-color: #B7B7B7;
+            font-weight: bold;
+            font-size: 91%;
+            padding: 2px 2px 2px 5px;
+            margin-top: 15px;
+            overflow: hidden;
+            margin-bottom: 2px;
+            color: #222222 !important;
+     }
+    .ui-menu{ position: absolute; width: 100px; }      
+    .firstColumn { text-align:left; }
+    .middleColumn { text-align:center; }
+    .lastColumn { text-align:right; }
+    .prevNextLinks a {
+        color: rgb(51, 51, 51);
+        text-decoration: none;
+    }       
+    .prevNextLinks {
+        color: rgb(168, 168, 168);
+    }
+    .prevNext {
+        margin: 0px 3px;
+    }
+    .first1 {
+        background-image: url("{!$Resource.ROS_Pagination_Image}");
+        background-repeat: no-repeat;
+        background-position: 0px 1px;
+        width: 9px;
+        height: 10px;
+    }
+    .next {
+        background-image: url("{!$Resource.ROS_Pagination_Image}");
+        background-repeat: no-repeat;
+        background-position: -17px 1px;
+        width: 9px;
+        height: 10px;
+    }
+    .prev{
+        background-image: url("{!$Resource.ROS_Pagination_Image}");
+        background-repeat: no-repeat;
+        background-position: -10px 1px;
+        margin: 0px;
+        padding: 0px;
+        width: 9px;
+        height: 10px;
+    }    
+    .firstoff{
+        background-image: url("{!$Resource.ROS_Pagination_Image}");
+        background-repeat: no-repeat;
+        background-position: 0px -10px;
+        width: 9px;
+        height: 10px;
+    }   
+    .prevoff {
+        background-image: url("{!$Resource.ROS_Pagination_Image}");
+        background-repeat: no-repeat;
+        background-position: -10px -10px;
+        margin: 0px;
+        padding: 0px;
+        width: 9px;
+        height: 10px;
+    }
+    .last1 {
+        background-image: url("{!$Resource.ROS_Pagination_Image}");
+        background-repeat: no-repeat;
+        background-position: -27px 1px;
+        width: 9px;
+        height: 10px;
+    }
+    .nextoff{
+        background-image: url("{!$Resource.ROS_Pagination_Image}");
+        background-repeat: no-repeat;
+        background-position: -17px -10px;
+        width: 9px;
+        height: 10px;
+    }
+    .lastoff {
+        background-image: url("{!$Resource.ROS_Pagination_Image}");
+        background-repeat: no-repeat;
+        background-position: -27px -10px;
+        width: 9px;
+        height: 10px;
+    }
+    
+    </style>
+    <apex:form >
+        <c:loadingPanel ></c:loadingPanel>
+        <apex:pageBlock >
+            <apex:pageBlockSection title="CPK Reports" columns="1" collapsible="false">
+                <apex:pageBlockSection columns="5">
+                    <apex:selectList value="{!selectedFab}" size="1" label="FAB">
+                        <apex:selectOptions value="{!fabOptions}"/>
+                    </apex:selectList>
+                    <apex:selectList value="{!selectedGeometry}" size="1" label="Geometry">
+                        <apex:selectOptions value="{!geometryOptions}"/>
+                    </apex:selectList>
+                    <apex:selectList value="{!selectedTechnology}" size="1" label="Technology">
+                        <apex:selectOptions value="{!technologyOptions}"/>
+                    </apex:selectList>
+                   	<apex:commandButton value="Search" action="{!Search}" reRender="cpkTable,buttonPanel,pageMessages" status="LoadingStatusSpinner"/>
+                </apex:pageBlockSection>
+                <apex:pageBlockTable value="{!cpkReportAccessList}" id="cpkTable"  var="cpk" title="CPK Reports" columns="7">
+                    <apex:column >
+			            <apex:facet name="header">{!$ObjectType.CPK_Report__c.fields.Name.label}</apex:facet>
+			             <apex:commandLink action="{!onClickRedirect}"> 
+			              {!cpk.CPK_Report__r.Name}
+			              <apex:param name="cpkId" assignTo="{!cpkId}" value="{!cpk.CPK_Report__r.Id}"/>
+			              </apex:commandLink>
+			          </apex:column>
+			          <apex:column >
+			            <apex:facet name="header">{!$ObjectType.CPK_Report__c.fields.FABS__c.label}</apex:facet>
+			               {!cpk.CPK_Report__r.Fab_Assign__c }
+			          </apex:column>
+			          <apex:column >
+			            <apex:facet name="header">{!$ObjectType.CPK_Report__c.fields.Geometry__c.label}</apex:facet>
+			              {!cpk.CPK_Report__r.Geometry__c}
+			          </apex:column>
+			          <apex:column >
+			            <apex:facet name="header">{!$ObjectType.CPK_Report__c.fields.Technology__c.label}</apex:facet>
+			               {!cpk.CPK_Report__r.Technology__c}
+			          </apex:column>
+			          <apex:column >
+			            <apex:facet name="header">{!$ObjectType.CPK_Report__c.fields.Process_Descriptions__c.label}</apex:facet>
+			               {!cpk.CPK_Report__r.Process_Descriptions__c}
+			          </apex:column>
+			          <apex:column >
+			            <apex:facet name="header">{!$ObjectType.CPK_Report__c.fields.Report_Month__c.label}</apex:facet>
+			               {!cpk.CPK_Report__r.Report_Month__c}
+			          </apex:column>
+			          <apex:column >
+			            <apex:facet name="header">{!$ObjectType.CPK_Report__c.fields.Release_Date__c.label}</apex:facet>
+			          	<apex:outputText value="{0,date,MM'/'dd'/'yyyy}">
+					       <apex:param value="{!cpk.CPK_Report__r.Release_Date__c}" />
+					   	</apex:outputText>
+					  </apex:column>
+                </apex:pageBlockTable>
+                <apex:pageMessages id="pageMessages"></apex:pageMessages>
+                <apex:outputPanel id="buttonPanel">  
+                    <div class="bottomNav">
+                        <apex:panelGrid width="100%" columns="4" columnClasses="firstColumn, middleColumn, lastColumn">
+                            <apex:outputPanel > {!displayRecordStart} - {!displayRecordEnd} of {!recordCount}</apex:outputPanel>
+                            <apex:panelGroup styleClass="prevNextLinks">
+                                <apex:outputPanel styleClass="prevNext" rendered="{!DisablePrevious}">
+                                    <img class="firstoff" alt="First Page" src="/s.gif"></img>
+                                </apex:outputPanel>
+                                <apex:outputPanel styleClass="prevNext" rendered="{!DisablePrevious}">
+                                    <img class="prevoff" alt="Previous" src="/s.gif"></img>
+                                    Previous
+                                </apex:outputPanel>
+                                <apex:outputPanel styleClass="prevNext" rendered="{!Not(DisablePrevious)}">
+                                    <apex:commandLink action="{!goToFirstPage}" status="LoadingStatusSpinner" title="First" reRender="cpkTable,buttonPanel,LoadingStatusSpinner">
+                                        <img src="/s.gif" title="First Page" alt="First Page" class="first1"/>
+                                    </apex:commandLink>
+                                </apex:outputPanel>
+                                <apex:outputPanel styleClass="prevNext" rendered="{!NOT(DisablePrevious)}">
+                                    <apex:commandLink action="{!goToPreviousPage}" status="LoadingStatusSpinner" title="Previous" reRender="cpkTable,buttonPanel,LoadingStatusSpinner">
+                                        <img src="/s.gif" title="Previous Page" alt="Previous" class="prev"/>
+                                        Previous
+                                    </apex:commandLink>
+                                </apex:outputPanel>
+                                <apex:outputPanel styleClass="prevNext" rendered="{!DisableNext}">
+                                    Next
+                                   <img class="nextoff" alt="Next" src="/s.gif"></img>
+                                </apex:outputPanel>
+                                <apex:outputPanel styleClass="prevNext" rendered="{!DisableNext}">
+                                  <img class="lastoff" alt="Last Page" src="/s.gif"></img>
+                                </apex:outputPanel>
+                                <apex:outputPanel styleClass="prevNext" rendered="{!Not(DisableNext)}">
+                                   <apex:commandLink action="{!goToNextPage}" status="LoadingStatusSpinner" title="Next" reRender="cpkTable,buttonPanel,LoadingStatusSpinner">
+                                       Next <img src="/s.gif" title="Next" alt="Next" class="next"/>
+                                     </apex:commandLink>
+                                </apex:outputPanel>
+                                <apex:outputPanel styleClass="prevNext" rendered="{!NOT(disableNext)}">
+                                   <apex:commandLink action="{!goToLastPage}" status="LoadingStatusSpinner" title="Next" reRender="cpkTable,buttonPanel,LoadingStatusSpinner">
+                                        <img src="/s.gif" title="Last Page" alt="Last Page" class="last1"/>
+                                    </apex:commandLink>
+                                </apex:outputPanel>
+                            </apex:panelGroup>
+                            <apex:outputPanel >Page {!pageNumber} of {!totalPageCount}</apex:outputPanel>
+                        </apex:panelGrid>
+                    </div>
+                </apex:outputPanel>
+            </apex:pageBlockSection>
+        </apex:pageBlock>
+    </apex:form>
+</apex:page>

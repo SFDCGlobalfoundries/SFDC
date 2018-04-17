@@ -1,0 +1,55 @@
+<apex:component controller="RMA_CAR_and_Invoice_Details_For_STM"
+	access="global">
+	<apex:attribute name="RMARecordId" type="String"
+		Description="RMA Record Id" assignTo="{!rmaRecId}" />
+	<table border="1" cellpadding="3">
+		<tr>
+			<th>Invoice#</th>
+			<th>Invoice Date</th>
+			<th>PO#</th>
+			<th>Lot#</th>
+			<th>Wfr Qty</th>
+			<th>Wfr Id</th>
+			<th>Unit Price($)</th>
+		</tr>
+		<apex:repeat value="{!lstRMAReturnInvoice}" var="invoice">
+			<tr>
+				<td><apex:outputField value="{!invoice.Invoice_Number__c}" /></td>
+				<td><apex:outputField value="{!invoice.Invoice_Date__c}" /></td>
+				<td><apex:outputField value="{!invoice.Purchase_Order_Number__c}" /></td>
+				<td><apex:outputField value="{!invoice.Lot_Number__c}" /></td>
+				<td><apex:outputField value="{!invoice.Total_Wfr_Qty_after_validation__c}"
+						rendered="{!OR(invoice.RMA__r.Workflow_Stage__c == 'Pending for Fab Validation',
+                                              invoice.RMA__r.Workflow_Stage__c == 'Pending for Turnkey/ Sub-con Validation',
+                                              invoice.RMA__r.Workflow_Stage__c == 'Pending for Non Fab Category Validation')
+                                           && invoice.RMA__r.RMA_Category__c   != 'Failure Analysis'}" />
+					<apex:outputField value="{!invoice.Wafer_Quantity__c}"
+						rendered="{!OR(BEGINS(invoice.RMA__r.Workflow_Stage__c,'Pending for Receipt'),invoice.RMA__r.Workflow_Stage__c == 'Closed RMA') && invoice.RMA__r.RMA_Category__c=='Failure Analysis'}" />
+					<apex:outputField value="{!invoice.Final_RMA_Wfr_Qty_To_Issue_CN_SO__c}"
+						rendered="{!OR(OR(BEGINS(invoice.RMA__r.Workflow_Stage__c,'Pending for Regional'),
+                                                  BEGINS(invoice.RMA__r.Workflow_Stage__c,'Pending for Receipt'),
+                                                  BEGINS(invoice.RMA__r.Workflow_Stage__c,'Pending for Finance'),
+                                                  BEGINS(invoice.RMA__r.Workflow_Stage__c,'Pending for CN Issue'))
+                                               && invoice.RMA__r.RMA_Category__c != 'Failure Analysis',
+                                              invoice.RMA__r.Workflow_Stage__c == 'Closed RMA')}" />
+				</td>
+				<td><apex:outputField value="{!invoice.Wafer_Id_Fab_Validated__c}"
+						rendered="{!OR(invoice.RMA__r.Workflow_Stage__c == 'Pending for Fab Validation',
+                                              invoice.RMA__r.Workflow_Stage__c == 'Pending for Turnkey/ Sub-con Validation',
+                                              invoice.RMA__r.Workflow_Stage__c == 'Pending for Non Fab Category Validation')
+                                           && invoice.RMA__r.RMA_Category__c   != 'Failure Analysis'}" />
+					<apex:outputField value="{!invoice.Wafer_Id_CSR_Submission__c}"
+						rendered="{!OR(BEGINS(invoice.RMA__r.Workflow_Stage__c,'Pending for Receipt'),invoice.RMA__r.Workflow_Stage__c == 'Closed RMA') && invoice.RMA__r.RMA_Category__c=='Failure Analysis'}" />
+					<apex:outputField value="{!invoice.Wafer_Id_Regional_Personnel_Recommended__c}"
+						rendered="{!OR(OR(BEGINS(invoice.RMA__r.Workflow_Stage__c,'Pending for Regional'),
+                                                  BEGINS(invoice.RMA__r.Workflow_Stage__c,'Pending for Receipt'),
+                                                  BEGINS(invoice.RMA__r.Workflow_Stage__c,'Pending for Finance'),
+                                                  BEGINS(invoice.RMA__r.Workflow_Stage__c,'Pending for CN Issue'))
+                                               && invoice.RMA__r.RMA_Category__c != 'Failure Analysis',
+                                              invoice.RMA__r.Workflow_Stage__c == 'Closed RMA')}" />
+				</td>
+				<td><apex:outputField value="{!invoice.Wafer_Die_Unit_Price__c}" /></td>
+			</tr>
+		</apex:repeat>
+	</table>
+</apex:component>

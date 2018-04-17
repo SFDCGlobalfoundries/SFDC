@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomApplication xmlns="http://soap.sforce.com/2006/04/metadata">
+    <defaultLandingTab>standard-home</defaultLandingTab>
+    <formFactors>Large</formFactors>
+    <label>FAE</label>
+    <tab>standard-Chatter</tab>
+    <tab>standard-CollaborationGroup</tab>
+    <tab>standard-File</tab>
+    <tab>standard-Idea</tab>
+    <tab>standard-Knowledge</tab>
+    <tab>standard-Case</tab>
+    <tab>Bug__c</tab>
+    <tab>standard-Account</tab>
+    <tab>standard-Contact</tab>
+    <tab>standard-Opportunity</tab>
+    <tab>Opportunity_Program__c</tab>
+    <tab>Device__c</tab>
+    <tab>standard-Dashboard</tab>
+    <tab>standard-report</tab>
+    <tab>Team_Room__c</tab>
+    <tab>PDK__c</tab>
+    <tab>PDK_Design_Documents</tab>
+    <tab>Process_Technology__c</tab>
+    <tab>Visitation_Record__c</tab>
+    <tab>GMPL_BX009__c</tab>
+    <tab>standard-Lead</tab>
+    <tab>Non_Wafer_Revenue__c</tab>
+    <tab>TASKRAY__TaskRay</tab>
+    <tab>standard-JigsawSearch</tab>
+    <tab>Device_Gap__c</tab>
+    <tab>Wavier_Collaborator__c</tab>
+    <tab>ASIC_News_Alert__c</tab>
+</CustomApplication>

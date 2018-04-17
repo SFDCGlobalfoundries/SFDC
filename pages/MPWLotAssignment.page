@@ -1,0 +1,426 @@
+<!--
+* Author: Anil Kumar
+* Company: JK Technosoft
+* Project: MPW
+* Description: Used for splitted Manufacturing Lot Assignments to Prime Die
+* History:
+*    Anil Kumar 25/04/2016  - Created
+-->
+<apex:page title="Manufacturing Lot Assignment" controller="MPWLotAssignmentController" showHeader="true" sidebar="true">
+    <apex:includeScript value="{!URLFOR($Resource.MPWAssignment, '/MPWAssignment/jquery-1.12.4.js')}" />
+    <apex:includeScript value="{!URLFOR($Resource.MPWAssignment, '/MPWAssignment/jquery-ui.js')}" />
+    
+    <apex:stylesheet value="{!URLFOR($Resource.MPWAssignment, '/MPWAssignment/jquery-ui.css')}" />
+    <apex:stylesheet value="{!URLFOR($Resource.MPWAssignment, '/MPWAssignment/MPWLotAssignmentCSS.css')}" />
+    <apex:includeScript value="{!URLFOR($Resource.MPWAssignment, '/MPWAssignment/MPWLotAssignmentJS.js')}" />
+    
+    <style>
+        .datePicker{
+            display:none;
+            z-index:-4;
+        }
+        .mpw-popup {
+            width: 90%;
+            left: 5%;
+        }
+        .mpw-dateFormat .dateFormat {
+            display: none;
+        }
+        .mpw-error {
+            padding: 2px 1px !important;
+        }
+        .mpw-search .mpw-error {
+            padding: 5px !important;
+        }
+        .mpw-loading {
+            color: white !important;
+        }
+    </style>
+    
+    <script>
+        // Datepicker Popups calender to Choose date.
+        function datepick() {
+            $(".datepicker").click(function() {
+                $(this).datepicker().datepicker( "show" )
+            });
+        }
+        function validateDate(overrideDt, baselineDt, elem) {
+            var dtTemp = $(elem).val();
+            var dt = new Date(dtTemp);
+            $(elem).removeClass('mpw-date-error');
+            $(elem).removeClass('mpw-error');
+            $(elem).attr('title','');
+            if(Object.prototype.toString.call(dt) === "[object Date]" ) {
+                var dtTodayTemp = new Date();
+                var dtToday = new Date(dtTodayTemp.toDateString());
+                if(overrideDt == null || overrideDt == '') {
+                    if(dt < dtToday) {
+                        $(elem).addClass('mpw-date-error');
+                        $(elem).attr('title','Override Date should be greater or equal to today.');
+                    }
+                }
+                else {
+                    var dtOverrideDtTemp = new Date(overrideDt);
+                    var dtOverrideDt = new Date(dtOverrideDtTemp.toDateString());
+                    if(dt.getTime() != dtOverrideDt.getTime() && dt < dtToday) {
+                        $(elem).addClass('mpw-date-error');
+                        $(elem).attr('title','Override Date should be greater or equal to today.');
+                    }
+                }
+            }
+        }
+        function validateOverrideDate() {
+            $('.mpw-date-error').each(function() {
+                var parentElem = $(this).parent().parent().parent().find('.mpw-popup-chkbox');
+                if($(parentElem).is(':checked')) {
+                    $(this).addClass('mpw-error');
+                }
+                else {
+                    $(this).removeClass('mpw-error');
+                }
+            });
+        }
+    </script>
+    
+    <div class="mpw-main" >
+        <apex:outputpanel id="err" >
+            <apex:pageMessages />
+        </apex:outputpanel>
+        
+        <apex:form id="frm" >
+            <apex:actionfunction name="saveLotAssignmentAF" action="{!saveLotAssignment}" rerender="op1, err" oncomplete="stopLoading();" ></apex:actionfunction>
+            <apex:actionfunction name="searchMfgLotAF" action="{!loadMfgLot}" rerender="frm, err" oncomplete="stopLoading();initPopupDrag();" >
+                <apex:param name="param1" value="" assignTo="{!strSearchTxtLot}" />
+                <apex:param name="param2" value="" assignTo="{!strSearchTxtDevice}" />
+            </apex:actionfunction>
+            <apex:actionfunction name="loadPopupMPWWIPLotAF" action="{!loadPopupMPWWIPLot}" rerender="popup, err" oncomplete="stopLoading();showPopup('{!strMfgLot}');datepick();" >
+                <apex:param name="param1" value="" assignTo="{!strMfgLot}" />
+                <apex:param name="param2" value="" assignTo="{!strMfgLotId}" />
+                <apex:param name="param3" value="" assignTo="{!strParentLot}" />
+                <apex:param name="param4" value="" assignTo="{!strMPWTrain}" />
+            </apex:actionfunction>
+            
+            <div class="mpw-loading-background"></div>
+            <div class="mpw-loading" >
+                <img src="/img/loading32.gif" title="/img/loading32.gif" /><br/><br/>
+                <span>Please Wait...</span>
+            </div>
+            
+            <div class="mpw-popup-background"></div>
+            <div class="mpw-popup" >
+                <div class="mpw-popup-close" onclick="hidePopup();" title="Close" >+</div>
+                <h3 class="mpw-popup-title" >
+                    <span>Select Prime Dies - <span id="mfglotid" ></span></span>
+                </h3>
+                <apex:outputpanel id="popup" >
+                    <div class="mpw-popup-content" >
+                        <div style="padding:10px 20px 20px 20px;">
+                            <apex:outputpanel rendered="{!lstPopupMPWWIPLot.size > 0}" > 
+                                <table >
+                                    <tr style="text-align: left;font-weight: bold;" >
+                                        <td>
+                                            Assignment Name&nbsp;<div style="color:red;font-size: 18px;display: inline-block;">|</div>
+                                            <apex:inputtext styleClass="mpw-popup-save-assign" value="{!strAssignmentName}" />
+                                        </td>
+                                        <td style="padding-left: 15px;" >
+                                            Notification Interval (Days)&nbsp;<div style="color:red;font-size: 18px;display: inline-block;">|</div>
+                                            <apex:inputtext styleClass="mpw-popup-notification-input" value="{!intAssignmentInterval}" />
+                                        </td>
+                                        <td style="padding-left: 15px;padding-top: 3px;" >
+                                            <input type="button" class="mpw-popup-save-button" title="Save Assignment" onclick="validateOverrideDate();saveAssignment(this);" value="Save Assignment" />
+                                        </td>
+                                    </tr>
+                                </table>
+                                <table style="font-size: 11px;width: 100%;" >
+                                    <tr>
+                                        <td style="text-align:left;" ><span style="display:none;color: red;" class="mpw-popup-error-msg" >Please provide required information.</span></td>
+                                        <td style="text-align:right;font-weight: bold;" >Records Found: {!lstPopupMPWWIPLot.size}</td>
+                                    </tr>
+                                </table>
+                                <div style="overflow: auto;height: 50vh;"> 
+                                    <table class="mpw-popup-table" >
+                                        <thead>
+                                            <tr style="border-bottom: 1px solid #CEC9C9;border-top: 1px solid #CEC9C9;" >
+                                                <th rowspan="2" style="text-align: left;border-left: 1px solid #D4D4D4;width: 10px;" >
+                                                    <input type="checkbox" onclick="selectAll(this);" class="mpw-popup-chkbox-all" />
+                                                </th> 
+                                                <th rowspan="2" class="mpw-disable-select" style="text-align: left;cursor: pointer;" onclick="sortColumn(1);" >MPW Prime Die</th>
+                                                <th rowspan="2" class="mpw-disable-select" onclick="sortColumn(2);" style="cursor: pointer;" >MPW Form#</th>
+                                                <th rowspan="2" class="mpw-disable-select" onclick="sortColumn(3);" style="cursor: pointer;" >Company</th>
+                                                <th rowspan="2" class="mpw-disable-select" onclick="sortColumn(4);" style="cursor: pointer;" >MPW Train</th>
+                                                <th rowspan="2" class="mpw-disable-select" onclick="sortColumn(5);" style="cursor: pointer;" >Process Type</th>
+                                                <th colspan="2" >Bare Die Shipment Forecast Date</th>
+                                                <th colspan="2" >Current Scheduled Date</th>
+                                                <th rowspan="2" >MPW MES Part ID</th>
+                                                <th rowspan="2" style="border-right: 1px solid #D4D4D4;" >Assignment Type</th>
+                                            </tr>
+                                            <tr style="border-bottom: 1px solid #CEC9C9;border-top: 1px solid #CEC9C9;" >
+                                                <th ><div style="width: 80px;" >Baseline</div></th>
+                                                <th >Override</th>
+                                                <th ><div style="width: 80px;" >Baseline</div></th>
+                                                <th >Override</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody style="border-bottom: 1px solid #CEC9C9;" >
+                                            <apex:repeat value="{!lstPopupMPWWIPLot}" var="mpwwip" >
+                                                <tr id="{!mpwwip.objMfgLotMPWWIPLot.MPW_Prime_Die__r.Id}" >
+                                                    <td style="text-align: left;border-left: 1px solid #D4D4D4;" >
+                                                        <apex:inputcheckbox value="{!mpwwip.isSelected}" styleClass="mpw-popup-chkbox" 
+                                                            onclick="validateSelectAll(this, '{!mpwwip.objMfgLotMPWWIPLot.MPW_Prime_Die__r.Id}');" />
+                                                    </td>
+                                                    <td style="text-align: left;" data-value="{!mpwwip.objMfgLotMPWWIPLot.MPW_Prime_Die__r.Prime_Die_Name__c}" >
+                                                        <a href="/{!mpwwip.objMfgLotMPWWIPLot.MPW_Prime_Die__r.Id}" target="_blank" >{!mpwwip.objMfgLotMPWWIPLot.MPW_Prime_Die__r.Prime_Die_Name__c}</a>
+                                                    </td>
+                                                    <td data-value="{!mpwwip.objMfgLotMPWWIPLot.MPW_Prime_Die__r.MPW_Form__r.Name}" >
+                                                        <a href="/{!mpwwip.objMfgLotMPWWIPLot.MPW_Prime_Die__r.MPW_Form__r.Id}" target="_blank" >{!mpwwip.objMfgLotMPWWIPLot.MPW_Prime_Die__r.MPW_Form__r.Name}</a>
+                                                    </td>
+                                                    <td data-value="{!mpwwip.objMfgLotMPWWIPLot.MPW_Prime_Die__r.Account_Name__c}" >
+                                                        {!mpwwip.objMfgLotMPWWIPLot.MPW_Prime_Die__r.Account_Name__c}
+                                                    </td>
+                                                    <td data-value="{!mpwwip.objMfgLotMPWWIPLot.MPW_Prime_Die__r.MPW_Train__c}" >
+                                                        {!mpwwip.objMfgLotMPWWIPLot.MPW_Prime_Die__r.MPW_Train__c}
+                                                    </td>
+                                                    <td data-value="{!mpwwip.objMfgLotMPWWIPLot.MPW_Prime_Die__r.Process_Type__c}" >
+                                                        {!mpwwip.objMfgLotMPWWIPLot.MPW_Prime_Die__r.Process_Type__c}
+                                                    </td>
+                                                    <td >
+                                                        <apex:outputText value="{0,date,dd MMM, YYYY}" > 
+                                                            <apex:param value="{!mpwwip.objMfgLotMPWWIPLot.Bare_Die_Shipment_Forecast_Date_BL__c}" /> 
+                                                        </apex:outputText>
+                                                    </td>
+                                                    <td class="mpw-dateFormat" >
+                                                        <apex:inputfield styleClass="datepicker" value="{!mpwwip.objMfgLotMPWWIPLot.Bare_Die_Shipment_Forecast_Date_OR__c}" onchange="validateDate('{!mpwwip.objMfgLotMPWWIPLot.Bare_Die_Shipment_Forecast_Date_OR__c}', '{!mpwwip.objMfgLotMPWWIPLot.Bare_Die_Shipment_Forecast_Date_BL__c}', this);" />
+                                                    </td>
+                                                    <td >
+                                                        <apex:outputText value="{0,date,dd MMM, YYYY}" > 
+                                                            <apex:param value="{!mpwwip.objMfgLotMPWWIPLot.Current_Scheduled_Date_CSD__c}" /> 
+                                                        </apex:outputText>
+                                                    </td>
+                                                    <td class="mpw-dateFormat" >
+                                                        <apex:inputfield styleClass="datepicker" value="{!mpwwip.objMfgLotMPWWIPLot.Current_Scheduled_Date_CSD_OR__c}" onchange="validateDate('{!mpwwip.objMfgLotMPWWIPLot.Current_Scheduled_Date_CSD_OR__c}', '{!mpwwip.objMfgLotMPWWIPLot.Current_Scheduled_Date_CSD__c}', this);" />
+                                                    </td>
+                                                    <td >
+                                                        <apex:inputfield styleClass="mpw-popup-partid {!if(mpwwip.isSelected, 'mpw-popup-required-input','')}" value="{!mpwwip.objMfgLotMPWWIPLot.MPW_MES_Part_ID__c}" style="width: 100px;" />
+                                                    </td>
+                                                    <td style="border-right: 1px solid #D4D4D4;" >
+                                                        <apex:inputfield styleClass="mpw-popup-assignmenttype {!if(mpwwip.isSelected, 'mpw-popup-required-input','')}"  value="{!mpwwip.objMfgLotMPWWIPLot.Assignment_Type__c}" />
+                                                    </td>
+                                                </tr>
+                                            </apex:repeat>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </apex:outputpanel> 
+                            <apex:outputpanel rendered="{!lstPopupMPWWIPLot.size == 0}" > 
+                                <span style="color: red;" >No Prime Die found for MPW Train: {!strMPWTrain}</span> 
+                            </apex:outputpanel> 
+                        </div>
+                    </div>
+                    <script>
+                        $('.datepicker').click(function(){
+                            $(".datepicker").datepicker({
+                                dateFormat: "m/d/yy",
+                                changeMonth: true,
+                                changeYear: true,
+                                showOtherMonths: true,
+                                selectOtherMonths: true
+                            });
+                        });
+                    </script>
+                </apex:outputpanel> 
+            </div>
+            
+            <div class="mpw-main-title-icon" >
+                <img src="/img/icon/factory32.png" style="" title="Manufacturing Lot Assignment" />
+            </div>
+            <div class="mpw-main-title" >Manufacturing Lot Assignment</div>
+            <div class="mpw-main-summary" >
+                <a href="/apex/MPWLotAssignmentSummary" target="_self" style="text-decoration: none;" >Manufacturing Lot Assignment Summary</a>
+            </div>
+            
+            <table width="100%" class="mpw-search" >
+                <tr >
+                    <td style="width: 200px;" >
+                        <input class="mpw-search-input-lot" placeholder="Manufacturing Lot Id" value="{!strSearchTxtLot}" onkeypress="handleSearchMfgLot(event);" title="Enter exact Manufacturing Lot Id or Parent Lot Id" />
+                    </td>
+                    <td style="width: 20px;vertical-align: middle;font-weight: bold;" >OR</td>
+                    <td style="width: 200px;" >
+                        <input class="mpw-search-input-device" placeholder="MES Device ID" value="{!strSearchTxtDevice}" onkeypress="handleSearchMfgLot(event);" title="Enter partial or exact MES Device ID" />
+                    </td>
+                    <td style="width: 150px;" >
+                        <input type="button" class="mpw-search-button" onclick="searchMfgLot();" value="Search" />
+                    </td>
+                    <td >
+                        <apex:inputtext styleClass="mpw-mpwtrain-input" html-placeholder="Enter MPW Train" value="{!strMPWTrain}" onblur="removeMPWTrainError();" />
+                    </td>
+                    <td style="text-align: right;font-size: 11px;font-weight: bold;vertical-align: middle;" >Records Found: {!lstMgfLot.size}</td>
+                </tr>
+            </table>
+            
+            <apex:outputpanel rendered="{!lstMgfLot.size > 0}" >
+                <div style="text-align: right;font-size: 10px;font-weight: bold;margin-right: 10px;" >
+                    <span style="cursor: pointer;" onclick="expandAll();" >Expand All</span>&nbsp;|&nbsp;
+                    <span style="cursor: pointer;" onclick="collapseAll();">Collapse All</span> 
+                </div>
+            </apex:outputpanel>
+            
+            <apex:outputpanel id="op1" >
+                <table class="mpw-content-table" >
+                    <apex:repeat value="{!lstMgfLot}" var="mfg" >
+                        <tr>
+                            <td>
+                                <div class="mpw-mfg-row {!IF(mfg.objParentMfgLot.strMfgLot == strParentLot, 'active', '')}" >
+                                    <h3 class="mpw-mfg-row-title" onclick="toggleMfgRow(this);" >
+                                        <span class="mpw-mfg-row-title-icon" ></span>
+                                        <span>{!mfg.objParentMfgLot.strMfgLot}</span>
+                                        <span style="float: right;padding: 2px 5px;margin-top: -2px;background: white;border-radius: 50%;" >
+                                            <apex:outputtext value="{!mfg.lstChildMfgLot.size+2}" 
+                                            rendered="{!IF(AND(mfg.objParentMfgLot.objMfgLot.Id != NULL, mfg.objMfgLot.objMfgLot.Id != NULL), true, false)}" />
+                                            <apex:outputtext value="{!mfg.lstChildMfgLot.size+1}" 
+                                            rendered="{!IF(AND(mfg.objParentMfgLot.objMfgLot.Id != NULL, mfg.objMfgLot.objMfgLot.Id == NULL), true, false)}" />
+                                            <apex:outputtext value="{!mfg.lstChildMfgLot.size+1}" 
+                                            rendered="{!IF(AND(mfg.objParentMfgLot.objMfgLot.Id == NULL, mfg.objMfgLot.objMfgLot.Id != NULL), true, false)}" />
+                                        </span>
+                                    </h3>
+                                    <div style="background: white;" class="mpw-mfg-row-content" >
+                                        <div style="padding:10px;">
+                                            <table class="mpw-mfg-row-table mfg-table" >
+                                                <thead>
+                                                    <tr style="border-bottom: 1px solid #CEC9C9;border-top: 1px solid #CEC9C9;" >
+                                                        <th style="text-align: left;border-left: 1px solid #D4D4D4;width: 150px;" >Manufacturing<br/>Lot Name</th> 
+                                                        <th style="text-align: left;" >Prime Dies</th>
+                                                        <th style="text-align: left;width: 100px;" ><span style="visibility: hidden;" >Select Prime Dies</span></th>
+                                                        <th >Parent<br/>Lot Id</th>
+                                                        <th >Device ID<br/>(MES)</th>
+                                                        <th >Process<br/>Name</th>
+                                                        <th >Geometry</th>
+                                                        <th >Technology<br/>Type</th>
+                                                        <th >Fab Group</th>
+                                                        <th >Sales Order<br/>Number</th>
+                                                        <th >Lot Start<br/>Date</th>
+                                                        <th >Start Lot<br/>Quantity</th>
+                                                        <th >Current Wafer<br/>Quantity In Lot</th>
+                                                        <th >Current Mask<br/>Layer</th>
+                                                        <th >Total Mask<br/>Count</th>
+                                                        <th >Current Scheduled<br/>Date(CSD)</th>
+                                                        <th style="border-right: 1px solid #D4D4D4;width: 100px;" >Ship To<br/>Location</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody style="border-bottom: 1px solid #CEC9C9;" >
+                                                    <tr style="{!IF(mfg.objParentMfgLot.objMfgLot.Id != NULL, 'display: table-row;', 'display: none;')}" >
+                                                        <td style="text-align: left;border-left: 1px solid #D4D4D4;" >
+                                                            <a href="/{!mfg.objParentMfgLot.objMfgLot.Id}" target="_blank" >{!mfg.objParentMfgLot.objMfgLot.Manufacturing_Lot_Id__c}</a>
+                                                        </td>
+                                                        <td style="text-align: left;" >
+                                                            <apex:repeat value="{!mfg.objParentMfgLot.lstMPWWIPLot}" var="mpwwip" rows="1" first="0" >
+                                                                <a href="/{!mpwwip.MPW_Prime_Die__c}" target="_blank" >{!mpwwip.MPW_Prime_Die__r.Prime_Die_Name__c}</a>
+                                                            </apex:repeat>
+                                                            <apex:repeat value="{!mfg.objParentMfgLot.lstMPWWIPLot}" var="mpwwip" first="1" >
+                                                                <br/><a href="/{!mpwwip.MPW_Prime_Die__c}" target="_blank" >{!mpwwip.MPW_Prime_Die__r.Prime_Die_Name__c}</a>
+                                                            </apex:repeat>
+                                                        </td>
+                                                        <td >
+                                                            <a style="text-decoration: underline;cursor: pointer;"     onclick="loadPopupMPWWIPLot('{!mfg.objParentMfgLot.objMfgLot.Manufacturing_Lot_Id__c}', '{!mfg.objParentMfgLot.objMfgLot.Id}', '{!mfg.objParentMfgLot.strMfgLot}');" >Select Prime Dies</a>
+                                                        </td>
+                                                        <td >{!mfg.objParentMfgLot.objMfgLot.Parent_Lot_Id__c}</td>
+                                                        <td >{!mfg.objParentMfgLot.objMfgLot.Device_ID_MES__c}</td>
+                                                        <td >{!mfg.objParentMfgLot.objMfgLot.Process_Name__c}</td>
+                                                        <td >{!mfg.objParentMfgLot.objMfgLot.Geometry__c}</td>
+                                                        <td >{!mfg.objParentMfgLot.objMfgLot.Technology_Type__c}</td>
+                                                        <td >{!mfg.objParentMfgLot.objMfgLot.Fab_Group__c}</td>
+                                                        <td >{!mfg.objParentMfgLot.objMfgLot.Sales_Order_Number__c}</td>
+                                                        <td >{!mfg.objParentMfgLot.objMfgLot.Lot_Start_Date__c}</td>
+                                                        <td >{!mfg.objParentMfgLot.objMfgLot.Start_Lot_Quantity__c}</td>
+                                                        <td >{!mfg.objParentMfgLot.objMfgLot.Current_Wafer_Quantity_In_Lot__c}</td>
+                                                        <td >{!mfg.objParentMfgLot.objMfgLot.Current_Mask_Layer_Being_Processed__c}</td>
+                                                        <td >{!mfg.objParentMfgLot.objMfgLot.Total_Mask_Count__c}</td>
+                                                        <td >
+                                                            <apex:outputText value="{0,date,dd MMM, YYYY}"> 
+                                                                <apex:param value="{!mfg.objParentMfgLot.objMfgLot.Current_Scheduled_Date_CSD__c}" /> 
+                                                            </apex:outputText>
+                                                        </td>
+                                                        <td style="border-right: 1px solid #D4D4D4;" >{!mfg.objParentMfgLot.objMfgLot.Ship_To_Location__c}</td>
+                                                    </tr>
+                                                    <tr style="{!IF(mfg.objMfgLot.objMfgLot.Id != NULL, 'display: table-row;', 'display: none;')}" >
+                                                        <td style="text-align: left;border-left: 1px solid #D4D4D4;" >
+                                                            <a href="/{!mfg.objMfgLot.objMfgLot.Id}" target="_blank" >{!mfg.objMfgLot.objMfgLot.Manufacturing_Lot_Id__c}</a>
+                                                        </td>
+                                                        <td style="text-align: left;" >
+                                                            <apex:repeat value="{!mfg.objMfgLot.lstMPWWIPLot}" var="mpwwip" rows="1" first="0" >
+                                                                <a href="/{!mpwwip.MPW_Prime_Die__c}" target="_blank" >{!mpwwip.MPW_Prime_Die__r.Prime_Die_Name__c}</a>
+                                                            </apex:repeat>
+                                                            <apex:repeat value="{!mfg.objMfgLot.lstMPWWIPLot}" var="mpwwip" first="1" >
+                                                                <br/><a href="/{!mpwwip.MPW_Prime_Die__c}" target="_blank" >{!mpwwip.MPW_Prime_Die__r.Prime_Die_Name__c}</a>
+                                                            </apex:repeat>
+                                                        </td>
+                                                        <td >
+                                                            <a style="text-decoration: underline;cursor: pointer;"     onclick="loadPopupMPWWIPLot('{!mfg.objMfgLot.objMfgLot.Manufacturing_Lot_Id__c}', '{!mfg.objMfgLot.objMfgLot.Id}', '{!mfg.objParentMfgLot.strMfgLot}');" >Select Prime Dies</a>
+                                                        </td>
+                                                        <td >{!mfg.objMfgLot.objMfgLot.Parent_Lot_Id__c}</td>
+                                                        <td >{!mfg.objMfgLot.objMfgLot.Device_ID_MES__c}</td>
+                                                        <td >{!mfg.objMfgLot.objMfgLot.Process_Name__c}</td>
+                                                        <td >{!mfg.objMfgLot.objMfgLot.Geometry__c}</td>
+                                                        <td >{!mfg.objMfgLot.objMfgLot.Technology_Type__c}</td>
+                                                        <td >{!mfg.objMfgLot.objMfgLot.Fab_Group__c}</td>
+                                                        <td >{!mfg.objMfgLot.objMfgLot.Sales_Order_Number__c}</td>
+                                                        <td >{!mfg.objMfgLot.objMfgLot.Lot_Start_Date__c}</td>
+                                                        <td >{!mfg.objMfgLot.objMfgLot.Start_Lot_Quantity__c}</td>
+                                                        <td >{!mfg.objMfgLot.objMfgLot.Current_Wafer_Quantity_In_Lot__c}</td>
+                                                        <td >{!mfg.objMfgLot.objMfgLot.Current_Mask_Layer_Being_Processed__c}</td>
+                                                        <td >{!mfg.objMfgLot.objMfgLot.Total_Mask_Count__c}</td>
+                                                        <td >
+                                                            <apex:outputText value="{0,date,dd MMM, YYYY}"> 
+                                                                <apex:param value="{!mfg.objMfgLot.objMfgLot.Current_Scheduled_Date_CSD__c}" /> 
+                                                            </apex:outputText>
+                                                        </td>
+                                                        <td style="border-right: 1px solid #D4D4D4;" >{!mfg.objMfgLot.objMfgLot.Ship_To_Location__c}</td>
+                                                    </tr>
+                                                    <apex:repeat value="{!mfg.lstChildMfgLot}" var="smfg" > 
+                                                        <tr>
+                                                            <td style="text-align: left;border-left: 1px solid #D4D4D4;" >
+                                                                <a href="/{!smfg.objMfgLot.Id}" target="_blank" >{!smfg.objMfgLot.Manufacturing_Lot_Id__c}</a>
+                                                            </td>
+                                                            <td style="text-align: left;" >
+                                                                <apex:repeat value="{!smfg.lstMPWWIPLot}" var="mpwwip" rows="1" first="0" >
+                                                                    <a href="/{!mpwwip.MPW_Prime_Die__c}" target="_blank" >{!mpwwip.MPW_Prime_Die__r.Prime_Die_Name__c}</a>
+                                                                </apex:repeat>
+                                                                <apex:repeat value="{!smfg.lstMPWWIPLot}" var="mpwwip" first="1" >
+                                                                    <br/><a href="/{!mpwwip.MPW_Prime_Die__c}" target="_blank" >{!mpwwip.MPW_Prime_Die__r.Prime_Die_Name__c}</a>
+                                                                </apex:repeat>
+                                                            </td>
+                                                            <td >    
+                                                                <a style="text-decoration: underline;cursor: pointer;"  onclick="loadPopupMPWWIPLot('{!smfg.objMfgLot.Manufacturing_Lot_Id__c}', '{!smfg.objMfgLot.Id}', '{!mfg.objParentMfgLot.strMfgLot}');" >Select Prime Dies</a>
+                                                            </td>
+                                                            <td >{!smfg.objMfgLot.Parent_Lot_Id__c}</td>
+                                                            <td >{!smfg.objMfgLot.Device_ID_MES__c}</td>
+                                                            <td >{!smfg.objMfgLot.Process_Name__c}</td>
+                                                            <td >{!smfg.objMfgLot.Geometry__c}</td>
+                                                            <td >{!smfg.objMfgLot.Technology_Type__c}</td>
+                                                            <td >{!smfg.objMfgLot.Fab_Group__c}</td>
+                                                            <td >{!smfg.objMfgLot.Sales_Order_Number__c}</td>
+                                                            <td >{!smfg.objMfgLot.Lot_Start_Date__c}</td>
+                                                            <td >{!smfg.objMfgLot.Start_Lot_Quantity__c}</td>
+                                                            <td >{!smfg.objMfgLot.Current_Wafer_Quantity_In_Lot__c}</td>
+                                                            <td >{!smfg.objMfgLot.Current_Mask_Layer_Being_Processed__c}</td>
+                                                            <td >{!smfg.objMfgLot.Total_Mask_Count__c}</td>
+                                                            <td >
+                                                                <apex:outputText value="{0,date,dd MMM, YYYY}"> 
+                                                                    <apex:param value="{!smfg.objMfgLot.Current_Scheduled_Date_CSD__c}" /> 
+                                                                </apex:outputText>
+                                                            </td>
+                                                            <td style="border-right: 1px solid #D4D4D4;" >{!smfg.objMfgLot.Ship_To_Location__c}</td>
+                                                        </tr>
+                                                    </apex:repeat>
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>  
+                            </td>
+                        </tr>
+                    </apex:repeat>
+                </table>
+            </apex:outputpanel> 
+        </apex:form>
+    </div>
+</apex:page>

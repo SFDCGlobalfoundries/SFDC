@@ -1,0 +1,103 @@
+<!--
+  Author: Abhita Bansal
+  Description: This is the Home Visualforce page of Wafer allocation
+  History:
+  ABansal     11/11/2014 - code creation
+  ABansal     23/11/2014 - Add the Code for the Seach and Save Functionality
+  ABansal     25/11/2014 - Add the code for Inline Editing
+  ABansal     28/11/2014 - Update the Code on Edit Functionality for Inline Editing
+  SNair       29/11/2014 - updated logic for search and save.
+  SNair       01/12/2014 - updated logic for search and save.
+  ABansal     08/12/2014 - update the Code for Fab 5JV
+  ABansal     12/15/2014 - Added the render in Save Button and removed
+-->
+
+<apex:page id="thepage" standardController="Wafer_Allocation__c" extensions="WaferAllocationExtension" tabStyle="Wafer_Allocation__tab">
+
+    <apex:form id="theform" >
+    
+        <apex:sectionHeader title="{!$ObjectType.Wafer_Allocation__c.label}" subtitle="Home"/>
+        
+        <apex:pageMessages id="info" />
+        
+            <apex:pageBlock id="searchblock" title="Search for Wafer Allocation Record">
+                <apex:pageBlockButtons location="bottom">
+                    <apex:commandButton value="Search" action="{!Search}" />
+                    <apex:commandButton action="{!Create}" value="Create" rendered="{!showCreateButton == true && validUser == true}"/>
+                    <apex:commandButton value="Reset" action="{!Reset}"/>
+                </apex:pageBlockButtons>
+                
+                <apex:panelGrid columns="2" width="100%" style="text-align:left;margin-left:40px;">
+                    <apex:pageBlockSection >
+                        <apex:inputField id="fab" value="{!waferAllocation.Fab__c}" style="margin-left:13px;">
+                            <apex:actionSupport event="onchange" action="{!displayProgramAndModuleField}" reRender="searchblock"/>
+                        </apex:inputField>    
+                    </apex:pageBlockSection>
+                    
+                    <apex:pageBlockSection >
+                        <apex:inputField value="{!waferAllocation.Year__c}" style="margin-left:4px;"/>
+                    </apex:pageBlockSection>
+                    
+                    <apex:pageblockSection id="module" rendered="{!showModuleField}">
+                        <apex:outputLabel value="Module" for="moduleId1" style="margin-left:10px;"/>
+                        <apex:selectList size="1" value="{!module}" id="moduleId" style="margin-left:-107px;">
+                            <apex:selectOptions value="{!moduleVal}" id="moduleId1"/>
+                            <apex:actionSupport event="onchange" reRender="program"/>
+                        </apex:selectList>
+                    </apex:pageblockSection> 
+                    
+                    <apex:pageblockSection id="program" rendered="{!showProgramField}">
+                        <apex:outputLabel value="Program" for="programId" style="margin-left:55px;"/>
+                        <apex:selectList size="1" value="{!program}" id="programId" style="margin-left:-212px;">
+                            <apex:selectOptions value="{!programVal}"/>
+                        </apex:selectList>
+                    </apex:pageblockSection> 
+                </apex:panelGrid>  
+                 
+            </apex:pageBlock>
+
+            <apex:outputPanel id="searchresult" rendered="{!showResult}">
+            
+                <apex:pageBlock title="Search Results">
+                <apex:outputPanel id="tableBlock" >
+                    <apex:pageBlockTable value="{!waferAllocationList}" var="wafer" >
+                        <apex:column headerValue="Action">
+                            <apex:commandLink value="Edit" action="{!EditPage}" id="editButton">
+                                <apex:param name="WaferAllocationIdParam" value="{!wafer.Id}" assignTo="{!waferAllocationId}"/>
+                            </apex:commandLink>
+                            <apex:outputLabel value=" | "/>
+                            <apex:commandLink value="View" action="{!ViewPage}">
+                                <apex:param name="WaferAllocationIdParam" value="{!wafer.Id}" assignTo="{!waferAllocationId}"/>
+                            </apex:commandLink>
+                        </apex:column>
+                        <apex:column value="{!wafer.Fab__c}"/>
+                        <apex:column value="{!wafer.Year__c}"/>
+                        <apex:column value="{!wafer.Month__c}"/>
+                        <apex:column value="{!wafer.Module1__c}" rendered="{!showModuleField}"/>
+                        <apex:column value="{!wafer.Program1__c}" rendered="{!showProgramField}"/>
+                        <!--<apex:column value="{!wafer.Wafer_Quantity_Allocated__c}"/>-->
+                        <apex:column >
+                            <apex:outputField value="{!wafer.Wafer_Quantity_Allocated__c}" id="waferQuantity" >  
+                                <apex:inlineEditSupport event="ondblClick" showOnEdit="saveButton, cancelButton" hideOnEdit="editButton"/>
+                            </apex:outputField>
+                            <apex:facet name="header">Wafer Quantity Allocated</apex:facet>
+                        </apex:column>
+                        <apex:column >
+                            <apex:outputField value="{!wafer.Remaining_Quantity__c}" id="waferRemQuantity" >  
+                                <!--<apex:inlineEditSupport event="ondblClick" showOnEdit="saveButton, cancelButton" hideOnEdit="editButton"/>-->
+                            </apex:outputField>
+                            <apex:facet name="header">Remaining Quantity</apex:facet>
+                        </apex:column>
+                         <apex:column value="{!wafer.CreatedById}" />
+                        <apex:column value="{!wafer.LastModifiedById}" />
+                       
+                        </apex:pageBlockTable>
+                        </apex:outputPanel>
+                    <apex:pageBlockButtons > 
+                          <apex:commandButton value="Save" action="{!SaveButton}" id="saveButton" style="display:none"/>
+                          <!--<apex:commandButton value="Cancel" action="{!cancel}" id="cancelButton" />-->
+            </apex:pageBlockButtons> 
+                </apex:pageBlock>
+            </apex:outputPanel>
+    </apex:form>    
+</apex:page>

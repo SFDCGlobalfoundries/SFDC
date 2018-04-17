@@ -1,0 +1,110 @@
+<apex:page controller="OppTeamMemberController" sidebar="false" tabstyle="Opportunity_Program_Team_Member__c" id="thePage">
+    <apex:sectionHeader title="{!OppProgramName}" subtitle="Opportunity Program Team Members"/>
+    <c:loadingPanel ></c:loadingPanel>
+    <apex:form id="frm">
+        <apex:actionFunction reRender="pb" name="addNewRowCall" action="{!addNewRow}"/>
+     
+        <apex:pageBlock mode="Edit" id="pb">
+            <apex:pageblockButtons >
+                <apex:commandButton action="{!Save}" value="Save" id="save" onclick="return confirmDelete();" rendered="{!editPer}"/>
+                <apex:commandButton onclick="addNewRowCall();return false;"  value="Add New Member" rendered="{!editPer}"/>
+                <apex:commandButton onclick="window.open('/{!contentIds}','_parent');return false;" value="{!IF(editPer,'Cancel','Return')}" />
+            </apex:pageblockButtons>
+         
+            <apex:pageMessages />
+    
+            <apex:outputText style="font-weight:bold;color:red;" value="You have read-only permission for this Opportunity Program ({0})" rendered="{!IF((editPer),false,true)}" >
+                <apex:param value="{!OppProgramName}"/>
+            </apex:outputText> 
+            
+            <apex:pageBlockSection columns="1" title="Information"/>
+            <apex:pageBlockTable value="{!OppProgramTMModelList}" var="OppPrgmTM" id="pbTable">
+                <apex:column >
+                    <apex:facet name="header">Team Member</apex:facet>
+                    <apex:outputLabel value="{!OppPrgmTM.OPTM.User__r.Name}" rendered="{!OppPrgmTM.OPTM.id!=''}"/>
+                    <apex:inputField styleClass="hideDropdown" value="{!OppPrgmTM.OPTM.User__c}" rendered="{!OppPrgmTM.OPTM.id=''}"/>
+                </apex:column>
+                <apex:column >
+                    <apex:facet name="header">Team Role</apex:facet>
+                    <apex:outputLabel value="{!OppPrgmTM.OPTM.Team_Role__c}" rendered="{!(OppPrgmTM.OPTM.Core_Team_Member__c=true || editPer=false)}"/>
+                    <apex:inputField id="test1" value="{!OppPrgmTM.OPTM.Team_Role__c}" rendered="{!(OppPrgmTM.OPTM.Core_Team_Member__c=false && editPer=true)}">
+                        <apex:actionSupport event="onchange" reRender="isFAEcolumn,pbTable" status="LoadingStatusSpinner"/>
+                    </apex:inputField>
+                </apex:column>
+                <apex:column >
+                    <apex:facet name="header">Opportunity Program Access</apex:facet>
+                    <apex:outputLabel value="{!OppPrgmTM.OPTM.Opportunity_Program_Access__c}" rendered="{!(OppPrgmTM.OPTM.Core_Team_Member__c=true || editPer=false)}"/>
+                    <apex:inputField value="{!OppPrgmTM.OPTM.Opportunity_Program_Access__c}" rendered="{!(OppPrgmTM.OPTM.Core_Team_Member__c=false && editPer=true)}"/>
+                </apex:column>
+                <apex:column >
+                    <apex:facet name="header">Device Access</apex:facet>
+                    <apex:outputLabel value="{!OppPrgmTM.OPTM.Device_Access__c}" rendered="{!(OppPrgmTM.OPTM.Core_Team_Member__c=true || editPer=false)}"/>
+                    <apex:inputField value="{!OppPrgmTM.OPTM.Device_Access__c}" rendered="{!(OppPrgmTM.OPTM.Core_Team_Member__c=false && editPer=true)}"/>
+                </apex:column>
+                <apex:column >
+                    <apex:facet name="header">Core Team Member</apex:facet>
+                    <apex:outputText rendered="{!OppPrgmTM.OPTM.Core_Team_Member__c=true}">
+                        <apex:inputCheckbox value="{!OppPrgmTM.OPTM.Core_Team_Member__c}" disabled="TRUE"/>
+                    </apex:outputText>
+                </apex:column>
+                <apex:column id="isFAEcolumn">
+                    <apex:facet name="header">Is FAE ?</apex:facet>
+                    <apex:inputCheckbox id="faeCheckbox" value="{!OppPrgmTM.OPTM.Is_FAE__c}" disabled="{!OppPrgmTM.OPTM.Core_Team_Member__c}"
+                        rendered="{!OppPrgmTM.OPTM.Team_Role__c == 'Account Manager' || OppPrgmTM.OPTM.Team_Role__c == 'Primary Account Manager'}"/>
+                </apex:column>
+                <apex:column id="isDelete">
+                    <apex:facet name="header">Flag for Delete</apex:facet>
+                    <apex:outputText rendered="{!(OppPrgmTM.OPTM.Core_Team_Member__c=false&&OppPrgmTM.OPTM.id!='')}" id="labelId">
+                        <apex:inputCheckbox id="deleteFlag" value="{!OppPrgmTM.OPTM.Flag_for_Delete__c}" disabled="{!IF((editPer),false,true)}"/>
+                    </apex:outputText>
+                </apex:column>
+            </apex:pageBlockTable>
+            <script>
+                <!-- Function for disabling the Save Button To prevent multiple form submission-->            
+                function disableOnSubmit(input) {
+                    setTimeout('disableAfterTimeout(\'' + input.id + '\');', 50);
+                }
+                function disableAfterTimeout(id) {
+                    var toDisable = document.getElementById( id );
+                    toDisable.disabled = 'disabled';
+                    toDisable.className = 'btnDisabled';
+                    toDisable.value = "Saving..."
+                }            
+                
+                
+                function confirmDelete(){
+                    var j=0;
+                    var chkbx = document.getElementsByTagName("input");
+                    for(var i=0;i<chkbx.length;i++){
+                        if(chkbx[i].type=="checkbox" && chkbx[i].name.endsWith("deleteFlag")){
+                            if(!(chkbx[i].disabled) && chkbx[i].checked)
+                            {
+                                j++;
+                            }
+                        }
+                    }
+                    if(j>0){
+                        var x = confirm("Are you sure you want to delete the flag for delete data?");
+                        if (x){
+                            return true;
+                        }else{
+                            return false;
+                        }
+                    }
+                }  
+                
+                function removeOption(){
+                   var select = document.getElementsByTagName('select');
+                   for(var j=0;j<select.length;j++){
+                       for (var i=0;i<select[j].length;  i++) {
+                          if (select[j].options[i].value=='CustomerSuccessUserLookup') {
+                            select[j].remove(i);
+                          }
+                       }
+                   }
+                }
+                window.onload=removeOption();
+            </script>  
+        </apex:pageblock>
+    </apex:form>
+</apex:page>

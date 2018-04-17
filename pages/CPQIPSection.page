@@ -1,0 +1,231 @@
+<!-----------------------------------------------------------------------------------------------------------------------------------
+Page:          CPQIPSection
+-------------------------------------------------------------------------------------------------------------------------------------
+Author:        Prosenjit Saha
+Created Date:  08/25/2014
+Reason:        Displays All the IPs in the Proposal/Configuraiton detail page.
+------------------------------------------------------------------------------------------------------------------------------------->
+<apex:page standardController="Apttus_Proposal__Proposal__c"
+           extensions="CPQIPSectionController"
+           sidebar="false"
+           showHeader="false"
+           docType="html-5.0"
+           applyHtmlTag="false"
+           id="pg">
+    <apex:stylesheet value="{!URLFOR($Resource.Configurator, 'Configurator/cssfiles/Configurator.css')}" /> 
+    <script>
+        function generatePDFConfig(){
+            var configid = '{!ConfigurationDetails}';
+            var urlconfig = '{!$CurrentPage.URL}';
+            if(urlconfig.indexOf("GlobalfoundryView") > -1){
+                window.open('/GlobalfoundryView/apex/IPApprovalSectionExport?id='+configid+'&generate=pdf' );
+            }
+            else{
+                window.open('/apex/IPApprovalSectionExport?id='+configid+'&generate=pdf' );
+            }
+            
+        }        
+        function generateXCLConfig(){
+            var configid = '{!ConfigurationDetails}';
+            var urlconfig = '{!$CurrentPage.URL}';
+            if(urlconfig.indexOf("GlobalfoundryView") > -1){
+                window.open('/GlobalfoundryView/apex/IPApprovalSectionExport?id='+configid+'&generate=excel' );
+            }
+            else{
+                window.open('/apex/IPApprovalSectionExport?id='+configid+'&generate=excel' );
+            }
+            
+        }
+        function generateIPdevice(){
+            var configid = '{!ConfigurationDetails}';
+            
+            window.open('/apex/CPQIPReport?id='+configid+'&generate=Vf' );           
+            
+        }
+        function requestNewIPConfig(){
+            var IPReqPrefix = '{!IPRequestPrefix}' ;
+            window.open('/'+IPReqPrefix+'/e' );
+        }
+        
+    </script>
+    <apex:outputPanel rendered="{!ProposalLineItems.size == 0}">
+        <div style='display: block; text-align:center !important;' >
+            <!-- <input type="button" name="requestNewIP" value="Request New IP" id="submit" onclick="requestNewIPConfig()"/> -->
+        </div> 
+    </apex:outputPanel>
+    <apex:pagemessage severity="info" 
+                      title="No configuration done to show IP data"
+                      detail="Please configure a Process Technology to view IP available." 
+                      rendered="{!ProposalLineItems.size == 0}"/>
+    
+    <apex:form id="frm" rendered="{!ProposalLineItems.size != 0}">  
+        <apex:actionFunction name="royaltyEditModeOn" reRender="frm" action="{!royaltyEditModeOn}" id="refresh" oncomplete="hideOverLay();"/>
+        <apex:actionFunction name="saveRoyalty" action="{!saveRoyalty}" reRender="frm"  oncomplete="hideOverLay();"/>
+        <apex:actionFunction name="cancelSave" action="{!royaltyCancel}" reRender="frm"  oncomplete="hideOverLay();"/>    
+        <apex:outputPanel rendered="{!MapIPnamesLink != NULL}">
+            <!--- changed on 24th Sept,2014 -->
+            <div style='display: block; text-align:center !important;' >
+                   <!--   <input type="button" name="generatePDF" value="Generate PDF" id="submit" onclick="generatePDFConfig()"/> 
+                    <input type="button" name="generateXCL" value="Generate Excel" id="submit" onclick="generateXCLConfig()"/> -->
+                    <div class="slds-button-group" role="group" style='display:inline-flex;'>
+					    <button type="button" name="generatePDF" value="Generate PDF" id="submit1" onclick="generatePDFConfig()" class="slds-button slds-button--neutral">Generate PDF</button>
+					    <button type="button" name="generateXCL" value="Generate Excel" id="submit1" onclick="generateXCLConfig()" class="slds-button slds-button--neutral">Generate Excel</button>
+					    <apex:outputpanel layout="none" rendered="{!!royaltyEditMode && isASICIPs && editAccessRoyalty}">
+                          <button type='button' class="slds-button slds-button--brand" style='border: 1px solid #f3f5f7;color: #fff;' onclick='showOverLay();royaltyEditModeOn();'>Edit Royalty</button> 
+                       </apex:outputpanel>
+                       <apex:outputpanel layout="none" rendered="{!royaltyEditMode  && isASICIPs && editAccessRoyalty}">
+                          <button type='button' class="slds-button slds-button--brand" style='border: 1px solid #f3f5f7;color: #fff;' onclick='showOverLay();saveRoyalty();'>Save Royalty</button> 
+                       </apex:outputpanel>
+                        <apex:outputpanel layout="none" rendered="{!royaltyEditMode  && isASICIPs && editAccessRoyalty}">
+                          <button type='button' class="slds-button slds-button--brand" style='border: 1px solid #f3f5f7;color: #fff;' onclick='showOverLay();cancelSave();'>Cancel</button> 
+                       </apex:outputpanel>
+					</div>
+                    <!--  <input type="button" name="requestNewIP" value="Request New IP" id="submit" onclick="requestNewIPConfig()"/> -->
+            </div> 
+            
+            <apex:actionStatus id="saveTrip" stopText="">
+                <apex:facet name="start">
+                    <div>
+                          <div class="popupBackground" />
+                          <div class="PopupPanel">
+                              <table border="0" width="100%" height="100%">
+                                  <tr>
+                                      <td align="center"><b>Loading... Please Wait...</b></td>
+                                  </tr>
+                                  <tr>
+                                      <td align="center"><img src="{!URLFOR($Resource.ChecklistResouces, 'ChecklistResouces/Processing.gif')}"/></td>
+                                  </tr>
+                              </table>
+                          </div>
+                      </div>
+                  </apex:facet>
+              </apex:actionStatus> 
+            <apex:pageBlock mode="maindetail" 
+                            id="DisplayIP"
+                            rendered="{!MapIPnamesLink != null}">
+                         
+                <apex:actionRegion >
+                <div style='display: block; overflow-x:auto;overflow-y:auto;height: 190px;width: 99%;' id="tableSection">
+                    <div class='datagrid1'>
+                        <table class='slds-table slds-table--bordered slds-no-row-hover slds-table--cell-buffer'>
+                            <thead>
+                               <tr>
+                                   <apex:repeat value="{!ColumnList}" 
+                                                var="f">
+                                         <th rowspan="2" style="{!IF(f !='Approved' && f != 'Change IP DK Ver' && f != 'Customization' && f != 'Accepted' && f != 'Design Kit Description' && f != 'Device' && f != 'Qty' && f != 'Finance' && f != '3rd Prty Srcd', '','display:none;')}">{!f}</th> 
+                                         <th rowspan="2" style="{!IF(f =='Approved' && CheckAccess && f != 'Change IP DK Ver' && f != 'Customization' && f != 'Accepted' && f != 'Design Kit Description' && f != 'Device' && f != 'Qty' && f != 'Finance' && f != '3rd Prty Srcd', '','display:none;')}">{!f}</th> 
+                                     </apex:repeat>
+                                     <!--Start-->                                     
+                                     
+                                     <th rowspan="2">Design Kit Description</th>
+                                     <!--<th rowspan="2">LBID</th>-->
+                                     <th rowspan="2">Device</th>
+                                     <th rowspan="2" style="{!IF(isASICIPs,'','display:none;')}">3rd Prty Srcd</th>
+                                     <th rowspan="2" style="{!IF(isASICIPs,'','display:none;')}">Qty</th>
+                                     <th rowspan="2" style="{!IF(isASICIPs,'','display:none;')}">Finance</th>
+                                     <th rowspan="2">Customization</th>
+                                     <th rowspan="2">Accepted</th>
+                                     <!--<th rowspan="2">Customization <br/>Reviewed</th>-->
+                                     <th rowspan="2">Action</th>                                     
+                                     <!--End-->
+                               </tr>
+                              
+                            </thead>
+                            <apex:repeat value="{!MapIPnamesLink}"
+                                         var="IPname">
+                                <tr class="dataRow">
+                                    
+                                    <apex:repeat value="{!ColumnList}" 
+                                                 var="f">
+                                        <th class="dataCell"
+                                            style="{!IF(f ='IP Lifecycle Stage',
+                                                        IF(CONTAINS(IPValueMap [IPname+ColumnValues [f]],'Silicon Char Report Qualified'),
+                                                              'background-color:#00ff80 ; width:50px; ', 
+                                                              IF(CONTAINS(IPValueMap [IPname+ColumnValues [f]],'Full Design Kit Qualified'),
+                                                                  'background-color:#009d28 ; width:50px;' , 
+                                                                  ''
+                                                              )
+                                                        ), ''
+                                                        
+                                                        )}">
+                                            <apex:outputPanel rendered="{!f == 'IP Design Kit'}">
+                                                <a href="{!IF(Contains(IPname,'IPE'),'/','/apex/View_PT_IP_Details?Entity=IP&Id=')}{!IF(Contains(IPname,'IPE'),IPElementsMap[IPname],MapIPnamesLink[IPname])}"
+                                                   target="_blank"
+                                                   style="{!IF(CONTAINS($CurrentPage.URL,'GlobalfoundryView'),'display:none;','')}">
+                                                    {!IPValueMap [IPname+f]} 
+                                                </a>
+                                                <a href="{!IF(Contains(IPname,'IPE'),'/GlobalfoundryView/','/GlobalfoundryView/apex/View_PT_IP_Details?Entity=IP&Id=')}{!IF(Contains(IPname,'IPE'),IPElementsMap[IPname],MapIPnamesLink[IPname])}"
+                                                   target="_blank"
+                                                   style="{!IF(CONTAINS($CurrentPage.URL,'GlobalfoundryView'),'','display:none;')}">
+                                                    {!IPValueMap [IPname+f]} 
+                                                </a>
+                                            </apex:outputPanel>
+                                            <apex:outputText value="{!IPValueMap [IPname+ColumnValues [f]]}" rendered="{!f != 'IP Design Kit' && f !='Approved' && f!='Change IP DK Ver' && f != 'Customization' && f != 'Accepted' && f != 'Customization Reviewed' && f != 'Design Kit Description' && f != 'Device' && f != 'Qty' && f != 'Finance' && f != '3rd Prty Srcd'}" ></apex:outputText>    
+                                            
+                                            <apex:outputPanel rendered="{! f != 'IP Design Kit' && f =='Approved' && CheckAccess && f!='Change IP DK Ver' && f != 'Customization' && f != 'Accepted' && f != 'Customization Reviewed' && f != 'Design Kit Description' && f != 'Device' && f != 'Qty' && f != 'Finance' && f != '3rd Prty Srcd'}" >
+                                                <apex:inputCheckbox value="{!IPValueMap [IPname+ColumnValues [f]]}" />  
+                                            </apex:outputPanel>
+                                            <!--Start--->
+                                            
+                                            <apex:outputPanel rendered="{!f == 'Design Kit Description'}" style="white-space: pre-wrap">                                                
+                                                <apex:outputText value="{!IPValueMap [IPname+ColumnValues [f]]}" escape="false"/>
+                                            </apex:outputPanel>
+                                            <!--<apex:outputPanel rendered="{!f == 'LBID'}">                                                
+                                                <apex:outputText value="{!IPValueMap [IPname+ColumnValues [f]]}" />
+                                            </apex:outputPanel>-->
+                                            <apex:outputPanel rendered="{!f == 'Device'}" style="white-space: pre-wrap" >                                                
+                                                <apex:outputText value="{!IPValueMap [IPname+ColumnValues [f]]}" escape="false"/>
+                                            </apex:outputPanel>
+                                            <apex:outputPanel rendered="{!f == '3rd Prty Srcd' && isASICIPs}" style="white-space: pre-wrap" >
+                                                <apex:outputtext value="{!IPValueMap [IPname+ColumnValues [f]]}" rendered="{!!royaltyEditMode}"/>
+                                            </apex:outputPanel>
+                                            <apex:outputPanel rendered="{!f == 'Qty' && isASICIPs}" style="white-space: pre-wrap" >                                                
+                                                <apex:inputtext value="{!IPValueMap [IPname+ColumnValues [f]]}" rendered="{!royaltyEditMode}"/>
+                                                <apex:outputtext value="{!IPValueMap [IPname+ColumnValues [f]]}" rendered="{!!royaltyEditMode}"/>
+                                            </apex:outputPanel>
+                                            <apex:outputPanel rendered="{!f == 'Finance' && isASICIPs}" style="white-space: pre-wrap" >                                                
+                                                <apex:selectList id="choosefees" value="{!IPValueMap [IPname+ColumnValues [f]]}" size="1" rendered="{!royaltyEditMode}">
+                                                    <apex:selectOption itemValue="" itemLabel="--None--"/>
+                                                    <apex:selectOption itemValue="Royalty Fees" itemLabel="Royalty Fees"/>
+                                                    <apex:selectOption itemValue="Service Fees" itemLabel="Service Fees"/>
+                                                    <apex:selectOption itemValue="License Fees" itemLabel="License Fees"/>
+                                                    <apex:selectOption itemValue="EULA Free" itemLabel="EULA Free"/>
+                                                    <apex:selectOption itemValue="Other" itemLabel="Other"/>
+                                                </apex:selectList>
+                                                <apex:outputtext value="{!IPValueMap [IPname+ColumnValues [f]]}" rendered="{!!royaltyEditMode}"/>
+                                            </apex:outputPanel>
+                                            
+                                            <apex:outputPanel rendered="{!f == 'Customization'}">                                                
+                                                <apex:inputcheckbox label="IP Customization" value="{!IPValueMap [IPname+ColumnValues [f]]}" disabled="true"/>
+                                            </apex:outputPanel> 
+                                            
+                                            <apex:outputPanel rendered="{!f == 'Accepted'}">                                                
+                                                <apex:outputText value="{!IPValueMap [IPname+ColumnValues [f]]}" escape="false"/>
+                                            </apex:outputPanel>
+                                            
+                                            <!--<apex:outputPanel rendered="{!f == 'Customization Reviewed'}">                                                
+                                                <apex:outputText value="{!IPValueMap [IPname+ColumnValues [f]]}" escape="false"/>
+                                            </apex:outputPanel>-->
+                                            
+                                            <apex:outputPanel rendered="{!f == 'Change IP DK Ver' && (checkInternalUser || (NOT(checkInternalUser) && IPValueMap [IPname+ColumnValues ['Customization']] == 'false'))}">
+                                                <input type="button" name="Change IP DK Ver" value="Change IP DK Ver" id="submit" 
+                                                    onclick="window.open('/apex/CPIPDesignCustom?id={!MapIPnamesLink[IPname]}&ipn={!IPValueMap [IPname+'IP Design Kit']}&pnum={!ConfigurationDetails.Process_Technology__c}&ptGeometry={!ConfigurationDetails.Process_Technology_Geometry__c}&propId={!IPPropLineItemMap[IPname]}','_parent');" 
+                                                    style="{!IF(CONTAINS($CurrentPage.URL,'GlobalfoundryView'),'display:none;','')}"/>
+                                                <input type="button" name="Change IP DK Ver" value="Change IP DK Ver" id="submit" 
+                                                    onclick="window.open('/GlobalfoundryView/apex/CPIPDesignCustom?id={!MapIPnamesLink[IPname]}&ipn={!IPValueMap [IPname+'IP Design Kit']}&pnum={!ConfigurationDetails.Process_Technology__c}&ptGeometry={!ConfigurationDetails.Process_Technology_Geometry__c}&propId={!IPPropLineItemMap[IPname]}','_parent');" 
+                                                    style="{!IF(CONTAINS($CurrentPage.URL,'GlobalfoundryView'),'','display:none;')}"/>
+                                            </apex:outputPanel>
+                                            <!--End-->                                                                                                                                        
+                                        </th> 
+                                    </apex:repeat>
+                                </tr>
+                            </apex:repeat> 
+                     
+                        </table>
+                    </div>
+                </div>
+                </apex:actionRegion>
+            </apex:pageblock>
+        </apex:outputPanel>
+    </apex:form>
+</apex:page>

@@ -1,0 +1,219 @@
+<apex:page standardController="RMA_Return_Invoice__c" extensions="RMA_Invoice_Extension" id="GenericReport" sidebar="false" title="RMA Invoice Insert/Update">
+    <apex:stylesheet value="/sCSS/21.0/sprites/1297816277000/Theme3/default/gc/versioning.css" />
+    <apex:includeScript value="{!URLFOR($Resource.ROS_JQuery_Deafult, '/jquery-ui-1.10.3.custom/js/jquery-1.9.1.js')}"/>
+    
+    <style>
+       .style1{
+           font-family: Arial;
+           font-size: 91%;
+           font-weight: bold; 
+           text-align: right;
+           color: #4A4A56;
+       }
+       .bPageBlock .pbTitle{
+            white-space: nowrap;
+            width: 1%;
+        }
+    </style>
+    <apex:sectionHeader title="Insert/Update Return Wafers" subtitle="{!RMAnumber}"/>
+    <c:loadingPanel ></c:loadingPanel>
+    <apex:form id="theForm">
+        <apex:pageMessages id="pageMessageId" escape="false"></apex:pageMessages>
+           
+        <apex:pageBlock id="pbId" mode="maindetail">
+            <apex:pageBlockButtons location="top" style="text-align:center;">
+                <apex:commandButton action="{!ReturnToRMA}" value="Return to RMA" style="align:center"/>                
+            </apex:pageBlockButtons>
+             
+            <apex:pageBlockSection title="Select Invoice" collapsible="false" columns="5">
+                <apex:inputText value="{!lotNumber}" label="Lot Number"/>
+                <apex:inputText value="{!invoiceNumber}" label="Invoice Number"/>
+                <apex:pageBlockSectionItem helpText="Please seperate search items with ';'."><!--rendered="{!AND(isFab9or10,rmaBy=='Wafer')}"-->
+                    <apex:outputLabel value="Wafer Id(s)" />
+                    <apex:inputText value="{!waferIds}" />
+                </apex:pageBlockSectionItem>
+                <apex:commandButton action="{!SearchInvoice}" value="Search" id="searchButton" 
+                    rerender="pbId,pageMessageId" status="LoadingStatusSpinner"/>
+            </apex:pageBlockSection><br/>
+            
+            <apex:outputPanel id="panel1">
+                <apex:pageBlockSection showHeader="false" columns="1" id="InvoiceSection" rendered="{!!fetchDisable}">
+                    <apex:pageBlockTable value="{!InvoiceWrapperRecords}" var="wrap" id="InvoiceTable">
+                        <apex:column headerValue="Select">
+                            <apex:facet name="header">Select</apex:facet>
+                            <apex:inputCheckbox value="{!wrap.isChecked}" styleClass="mutex"/>
+                            <script>
+                                $("input.mutex").click(function() {
+                                    var myCb = this;
+                                    $("input.mutex").each(function() {
+                                        if (this != myCb) {
+                                            this.checked = false;
+                                        }
+                                    });
+                                });
+                            </script>
+                        </apex:column>
+                        <apex:column value="{!wrap.invoiceRec.Lot_Name__c}"/>
+                        <apex:column value="{!wrap.invoiceRec.Invoice_Number__c}"/>
+                        <apex:column value="{!wrap.invoiceRec.Invoice_Date__c}"/>
+                        <apex:column value="{!wrap.invoiceRec.Purchase_Order_Number__c }"/>
+                        <apex:column value="{!wrap.invoiceRec.Wafer_Id__c}" width="40%" rendered="{!rmaBy !='Module'}"/>
+                    </apex:pageBlockTable>
+                    
+                    <apex:panelGrid columns="8">
+                        <apex:commandButton status="fetchStatus" reRender="pbId" value="First" action="{!first}" disabled="{!!hasPrevious}" title="First Page"/> 
+                        <apex:commandButton status="fetchStatus" reRender="pbId" value="Previous" action="{!previous}" disabled="{!!hasPrevious}" title="Previous Page"/> 
+                        <apex:commandButton status="fetchStatus" reRender="pbId" value="Next" action="{!next}" disabled="{!!hasNext}" title="Next Page"/> 
+                        <apex:commandButton status="fetchStatus" reRender="pbId" value="Last" action="{!last}" disabled="{!!hasNext}" title="Last Page"/> 
+                        <apex:outputText >{!(pageNumber * size)+1-size}-{!IF((pageNumber * size) > noOfRecords, noOfRecords, (pageNumber * size))} of {!noOfRecords}
+                        </apex:outputText>  
+                        <apex:outputPanel >                      
+                            <apex:actionStatus id="fetchStatus" >
+                                <apex:facet name="start" >
+                                  <img src="/img/loading.gif" />                    
+                                </apex:facet>
+                            </apex:actionStatus>
+                        </apex:outputPanel> 
+                        <apex:commandButton id="fetchButtonId" value="Select" action="{!FetchDetail}" status="LoadingStatusSpinner"
+                            rerender="pageMessageId,panel2,panel1" disabled="{!fetchDisable}"/>
+                    </apex:panelGrid>
+                </apex:pageBlockSection>
+            </apex:outputPanel>
+            
+            <apex:outputPanel id="panel2">
+                <apex:pageBlockSection title="Details for selected Invoice" columns="2" rendered="{!displayInvDetail}" 
+                                       id="InvDetailSecId" collapsible="false">
+                    <apex:outputField value="{!selectedInvWrap.invoiceRec.Lot_Name__c}"/>
+                    <apex:outputField value="{!selectedInvWrap.invoiceRec.Invoice_Number__c}"/>
+                    <apex:inputCheckbox value="{!selectedInvWrap.isIntercompany}" disabled="true" label="Intercompany ?"/>
+                    <apex:outputField value="{!selectedInvWrap.invoiceRec.Purchase_Order_Number__c }"/>
+                    <apex:outputField value="{!selectedInvWrap.invoiceRec.Invoice_Date__c}"/>
+                    <apex:outputField value="{!selectedInvWrap.invoiceRec.Process_Name__c}"/>
+                    <apex:outputField value="{!selectedInvWrap.invoiceRec.Part_Number__c}"/>
+                    <apex:outputField value="{!selectedInvWrap.invoiceRec.Bill_Quantity__c}"/>
+                    
+                    <apex:pageBlockSectionItem rendered="{!rmaBy !='Module' && (rmaBy != 'Die' || selectedInvWrap.invoiceRec.Item_Type__c == 'SD')}" >
+                        Select Wafer Id
+                        <c:MultiselectPicklist leftLabel="Available Wafers" 
+                                                leftOption="{!leftOptions}"
+                                                rightLabel="Selected Wafers"
+                                                rightOption="{!rightOptions}"
+                                                size="15"
+                                                width="120px"/>
+                    </apex:pageBlockSectionItem>
+                    
+                    <apex:outputField value="{!selectedInvWrap.invoiceRec.Unit_Selling_Price__c}" rendered="{!rmaBy != 'Die'}"/>
+                    <apex:outputField value="{!selectedInvWrap.invoiceRec.GDPW__c}" rendered="{!rmaBy == 'Die'}"/>
+                    <apex:outputField value="{!selectedInvWrap.invoiceRec.Die_Selling_Price__c}" rendered="{!rmaBy == 'Die'}"/>
+                    <apex:inputText value="{!scrapLimit}" label="Scrap Limit"/>
+                    
+                    <apex:inputText value="{!adjustedPrice}" label="Adjusted Price (if applicable)" rendered="{!reasonCode != 'R81'}"/>
+                    <apex:pageBlockSectionItem rendered="{!reasonCode == 'R81'}">
+                        <apex:outputLabel value="Existing Form Factor Price" />
+                        <apex:outputPanel >
+                            <div class="requiredInput">
+                                <div class="requiredBlock"></div>
+                                <apex:inputText value="{!adjustedPrice}"/>
+                            </div>
+                        </apex:outputPanel>
+                    </apex:pageBlockSectionItem>
+                    
+                    <apex:inputText value="{!waferYield}" label="Wafer Yield"/>
+                    <apex:inputText value="{!DieQuantity}" label="Die Quantity" rendered="{!rmaBy == 'Die'}"/>
+                    <apex:inputText value="{!modQuantity}" label="Module Quantity" rendered="{!rmaBy == 'Module'}"/>
+                    <apex:outputField value="{!selectedInvWrap.invoiceRec.Item_Type__c}"/>
+                    <apex:pageBlockSectionItem rendered="{!reasonCode == 'R81'}">
+                        <apex:outputLabel value="{!$ObjectType.RMA_Return_Invoice__c.fields.Existing_Form_Factor__c.label}" />
+                        <apex:outputPanel >
+                            <div class="requiredInput">
+                                <div class="requiredBlock"></div>
+                                <apex:selectList value="{!selFormFactor}" size="1">
+                                    <apex:selectOptions value="{!FormFactors}"/>
+                                </apex:selectList>
+                            </div>
+                        </apex:outputPanel>
+                    </apex:pageBlockSectionItem>
+                    <apex:pageBlockSectionItem rendered="{!reasonCode == 'R81'}">
+                        <apex:outputLabel value="{!$ObjectType.RMA_Return_Invoice__c.fields.Existing_Form_Factor_Quantity__c.label}" />
+                        <apex:outputPanel >
+                            <div class="requiredInput">
+                                <div class="requiredBlock"></div>
+                                <apex:inputText value="{!existingFormFactorQty}"/>
+                            </div>
+                        </apex:outputPanel>
+                    </apex:pageBlockSectionItem>
+                    
+                </apex:pageBlockSection>
+                <apex:outputPanel rendered="{!displayInvDetail}">
+                    <div style="text-align:center;width:100%">
+                        <apex:commandButton action="{!InsertReturnInvoice}" value="Insert/Update Line Item" status="LoadingStatusSpinner"
+                                id="InsertButton" rerender="pageMessageId,panel2,panel3"/>
+                    </div>
+                </apex:outputPanel>
+            </apex:outputPanel>
+            
+            <apex:outputPanel id="panel3">
+                <apex:pageBlockSection title="Existing Return Invoices" columns="1" collapsible="false">
+                    <apex:pageMessage severity="INFO" rendered="{!lstReturnInvoice.size==0}">No Associated Invoices</apex:pageMessage>
+                    <apex:pageBlockTable value="{!lstReturnInvoice}" var="rec" rendered="{!NOT(lstReturnInvoice.size==0)}">
+                        <apex:column headerValue="Action" styleClass="actionColumn">
+                            <apex:commandLink value="Edit" action="{!EditReturnInvoice}" rerender="panel1,panel2" status="LoadingStatusSpinner" 
+                                    rendered="{!rec.CreatedById == $User.Id}">
+                                <apex:param name="RItoDelete" value="{!rec.Id}" assignTo="{!RItoDelete}"/>
+                            </apex:commandLink>
+                            <apex:outputLabel value=" | " rendered="{!rec.CreatedById == $User.Id}"/>
+                            <apex:commandLink value="Del" action="{!DeleteReturnInvoice}" rerender="pbId" status="LoadingStatusSpinner" 
+                                    rendered="{!rec.CreatedById == $User.Id}">
+                                <apex:param name="RItoDelete" value="{!rec.Id}" assignTo="{!RItoDelete}"/>
+                            </apex:commandLink>
+                        </apex:column>
+                        <apex:column value="{!rec.Invoice_Number__c}"/>
+                        <apex:column value="{!rec.Invoice_Date__c}"/>
+                        <apex:column value="{!rec.Purchase_Order_Number__c}"/>
+                        <apex:column value="{!rec.Lot_Number__c}"/>
+                        <apex:column value="{!rec.Device__c}"/>
+                        <apex:column value="{!rec.Process__c}"/>
+                        <apex:column rendered="{!rmaBy == 'Die'}">
+                            <apex:facet name="header">Die Quantity<br/>(CSR Submission)</apex:facet>
+                            <apex:outputField value="{!rec.Die_Quantity__c}" />
+                        </apex:column>
+                        <apex:column rendered="{!rmaBy == 'Module'}">
+                            <apex:facet name="header">Module Quantity<br/>(CSR Submission)</apex:facet>
+                            <apex:outputField value="{!rec.Module_Quantity__c}" />
+                        </apex:column>
+                        <apex:column value="{!rec.GDPW__c}"         rendered="{!rmaBy == 'Die'}"/>
+                        <apex:column rendered="{!rmaBy != 'Die' && rmaBy != 'Module'}">
+                            <apex:facet name="header">Quantity</apex:facet>
+                            <apex:outputField value="{!rec.Wafer_Quantity__c}" />
+                        </apex:column>
+                        <apex:column rendered="{!rmaBy != 'Module' && (rec.Fab_Group__c != 'FAB 9' && rec.Fab_Group__c != 'FAB 10' && rec.Fab_Group__c != 'ALTIS')}">
+                            <apex:facet name="header">Wafer Id<br/>(CSR Submission)</apex:facet>
+                            <apex:outputField value="{!rec.Wafer_Id_CSR_Submission__c}" rendered="{!rmaBy !='Module' && (rmaBy != 'Die' || rec.Invoice__r.Item_Type__c == 'SD')}"/>
+                        </apex:column>
+                        <apex:column rendered="{!rmaBy != 'Module' && (rec.Fab_Group__c == 'FAB 9' || rec.Fab_Group__c == 'FAB 10' || rec.Fab_Group__c == 'ALTIS')}">
+                            <apex:facet name="header">Wafer Id<br/>(CSR Submission)</apex:facet>
+                            <apex:outputField value="{!rec.Wafer_Id_Fab_9_10_CSR_Submission__c}" rendered="{!rmaBy !='Module' && (rmaBy != 'Die' || rec.Invoice__r.Item_Type__c == 'SD')}"/>
+                        </apex:column>
+                        <apex:column value="{!rec.Scrap_Limit__c}"/>
+                        <apex:column value="{!rec.Wafer_Yield__c}"/>
+                        <apex:column value="{!rec.Invoice__r.Item_Type__c}"/>
+                        <!--
+                        <apex:column >
+                            <apex:facet name="header">Wafer/Die<br/>Unit Price</apex:facet>
+                            <apex:outputField value="{!rec.Wafer_Die_Unit_Price__c}"/>                                                                              
+                        </apex:column>
+                        <apex:column >
+                            <apex:facet name="header">Adjusted<br/>Unit Price</apex:facet>
+                            <apex:outputField value="{!rec.Adjusted_Unit_Price__c}"/>                                                                              
+                        </apex:column>
+                        <apex:column >
+                            <apex:facet name="header">Total Price<br/>(CSR Submission)</apex:facet>
+                            <apex:outputText value="{!rec.Total_Price__c}"/>                                                                              
+                        </apex:column> -->
+                    </apex:pageBlockTable>
+                </apex:pageBlockSection>
+            </apex:outputPanel>
+            
+        </apex:pageBlock>
+    </apex:form>
+</apex:page>

@@ -1,0 +1,250 @@
+<!--
+    Author: Ariz Solito
+    Description: This serves as the visualforce page for the Device List page in FV portal.
+    History: 
+        ARoy    11132013    - Modified page to add pagination. 
+        Asolito 02182014    - Added sorting functionality
+        PSaha   05122014    - Added Configuration link related to IP declaration. 
+-->
+<apex:page sidebar="false" showHeader="false" controller="DeviceListController">      
+
+        <apex:includeScript value="{!$Resource.JqueryD}"/>
+        <apex:includeScript value="{!$Resource.JqueryDatatable}"/>
+        <apex:Stylesheet value="{!$Resource.JqueryDatatableCSS}"/>
+        
+        <script>
+            j$ = jQuery.noConflict();
+            j$(document).ready( function () {
+             addSearchBox();
+            });
+            function addSearchBox(){
+            j$('[id$="devTable"]').DataTable({
+              "order": [[ 3, "desc" ]], "iDisplayLength":500
+            });
+            }
+        </script>
+    <style>
+        .header {
+            font-weight:bold;
+        } 
+        .hand {
+            cursor: pointer; 
+            cursor: hand;
+        }   
+        .colDiv {
+            float: left;            
+        }          
+        .dataTables_length,.dataTables_info,.dataTables_paginate{
+        display:none;
+}
+      .dataTables_filter{
+       float:left!important;
+      padding:5px 5px 5px 5px;
+}       
+    </style>
+    <apex:form >
+        <apex:actionfunction name="sort" action="{!sort}" rerender="devPageBlock" status="status">     
+            <apex:param name="sortcol" assignTo="{!sortCol}" value=""/>
+            <apex:param name="sorttype" assignTo="{!sortType}" value=""/>            
+        </apex:actionfunction>
+    <apex:pageBlock id="devPageBlock">
+        <apex:pageBlockButtons style="width:100%">         
+            <apex:commandButton action="{!Beginning}" title="Beginning" value="First" status="status" disabled="{!disablePrevious}" reRender="devPageBlock" oncomplete="addSearchBox();"/>
+            <apex:commandButton action="{!Previous}" title="Previous" value="Prev" status="status" disabled="{!disablePrevious}" reRender="devPageBlock" oncomplete="addSearchBox();"/>        
+            <apex:commandButton action="{!Next}" title="Next" value="Next" status="status" disabled="{!disableNext}" reRender="devPageBlock" oncomplete="addSearchBox();"/>
+            <apex:commandButton action="{!End}" title="End" value="Last" status="status" disabled="{!disableNext}" reRender="devPageBlock" oncomplete="addSearchBox();"/>
+            <apex:actionStatus id="status" startText="Please wait..."/>                                                                                     
+        </apex:pageBlockButtons>  
+        <apex:pageBlockTable value="{!deviceWrapperList}" var="d" style="font-size:10px" headerClass="header" id="devTable" width="100%">
+            <apex:column >
+                <apex:facet name="header">
+                    <apex:outputPanel layout="block">
+                        <apex:outputLabel value="Device Id" onclick="sort('name','{!IF(ISBLANK(sortType),'asc',IF(sortType == 'desc','asc','desc'))}');" styleclass="hand colDiv"/>
+                        <apex:image value="/img/sort_asc_arrow.gif" rendered="{!AND(sortCol == 'name',sortType =='asc')}" styleClass="colDiv"/>
+                        <apex:image value="/img/sort_desc_arrow.gif" rendered="{!AND(sortCol == 'name',sortType =='desc')}" styleClass="colDiv"/>
+                    </apex:outputPanel>
+                </apex:facet>               
+                <apex:outputLink value="/{!d.deviceInfo.id}" target="_parent">{!d.deviceId}</apex:outputLink>                
+            </apex:column>                  
+            <apex:column >                
+                 <apex:facet name="header">
+                    <apex:outputPanel layout="block">
+                        <apex:outputLabel onclick="sort('customer_tapeout_date__c','{!IF(ISBLANK(sortType),'asc',IF(sortType == 'desc','asc','desc'))}');" styleclass="hand colDiv">
+                            Customer <br/> Tapeout Date 
+                        </apex:outputLabel>
+                        <apex:image value="/img/sort_asc_arrow.gif" rendered="{!AND(sortCol == 'customer_tapeout_date__c',sortType =='asc')}" styleClass="colDiv"/>
+                        <apex:image value="/img/sort_desc_arrow.gif" rendered="{!AND(sortCol == 'customer_tapeout_date__c',sortType =='desc')}" styleClass="colDiv"/>
+                    </apex:outputPanel>
+                 </apex:facet>             
+                 <apex:outputText value="{!d.custTapeoutDate}"/>
+            </apex:column>
+            <apex:column >
+                <apex:facet name="header">
+                    <apex:outputPanel layout="block">
+                        <apex:outputLabel value="Geometry" onclick="sort('geometry__c','{!IF(ISBLANK(sortType),'asc',IF(sortType == 'desc','asc','desc'))}');" styleclass="hand colDiv"/> 
+                        <apex:image value="/img/sort_asc_arrow.gif" rendered="{!AND(sortCol == 'geometry__c',sortType =='asc')}" styleClass="colDiv"/>
+                        <apex:image value="/img/sort_desc_arrow.gif" rendered="{!AND(sortCol == 'geometry__c',sortType =='desc')}" styleClass="colDiv"/>
+                    </apex:outputPanel>                    
+                </apex:facet>
+                <apex:outputText value="{!d.geometry}"/>
+            </apex:column>                
+            <apex:column >
+                <apex:facet name="header">
+                    <apex:outputPanel layout="block">
+                        <apex:outputLabel value="Process Family" onclick="sort('process_family__c','{!IF(ISBLANK(sortType),'asc',IF(sortType == 'desc','asc','desc'))}');" styleclass="hand colDiv"/>                         
+                        <apex:image value="/img/sort_asc_arrow.gif" rendered="{!AND(sortCol == 'process_family__c',sortType =='asc')}" styleClass="colDiv"/>
+                        <apex:image value="/img/sort_desc_arrow.gif" rendered="{!AND(sortCol == 'process_family__c',sortType =='desc')}" styleClass="colDiv"/>
+                    </apex:outputPanel>                    
+                </apex:facet>
+                <apex:outputText value="{!d.processFamily}"/>
+            </apex:column>
+            <apex:column >
+                <apex:facet name="header">
+                    <apex:outputPanel layout="block">
+                        <apex:outputLabel value="Status" onclick="sort('status__c','{!IF(ISBLANK(sortType),'asc',IF(sortType == 'desc','asc','desc'))}');" styleclass="hand colDiv"/>                         
+                        <apex:image value="/img/sort_asc_arrow.gif" rendered="{!AND(sortCol == 'status__c',sortType =='asc')}" styleClass="colDiv"/>
+                        <apex:image value="/img/sort_desc_arrow.gif" rendered="{!AND(sortCol == 'status__c',sortType =='desc')}" styleClass="colDiv"/>
+                    </apex:outputPanel>                    
+                </apex:facet>
+                <apex:outputText value="{!d.status}"/>
+            </apex:column>
+            <apex:column >
+                <apex:facet name="header">
+                    <apex:outputPanel layout="block">
+                        <apex:outputLabel value="Stage" onclick="sort('stage__c','{!IF(ISBLANK(sortType),'asc',IF(sortType == 'desc','asc','desc'))}');" styleclass="hand colDiv"/>                         
+                        <apex:image value="/img/sort_asc_arrow.gif" rendered="{!AND(sortCol == 'stage__c',sortType =='asc')}" styleClass="colDiv"/>
+                        <apex:image value="/img/sort_desc_arrow.gif" rendered="{!AND(sortCol == 'stage__c',sortType =='desc')}" styleClass="colDiv"/>
+                    </apex:outputPanel>                    
+                </apex:facet>
+                <apex:outputText value="{!d.stage}"/>
+            </apex:column>
+            <apex:column >
+                <apex:facet name="header">
+                    <apex:outputPanel layout="block">
+                        <apex:outputLabel value="Fab" onclick="sort('fab__c','{!IF(ISBLANK(sortType),'asc',IF(sortType == 'desc','asc','desc'))}');" styleclass="hand colDiv"/>                         
+                        <apex:image value="/img/sort_asc_arrow.gif" rendered="{!AND(sortCol == 'fab__c',sortType =='asc')}" styleClass="colDiv"/>
+                        <apex:image value="/img/sort_desc_arrow.gif" rendered="{!AND(sortCol == 'fab__c',sortType =='desc')}" styleClass="colDiv"/>
+                    </apex:outputPanel>                    
+                </apex:facet>
+                <apex:outputText value="{!d.fab}"/>
+            </apex:column>
+            <apex:column rendered="{!checkLink=='ExpControl'}">
+                <apex:facet name="header">Export Control<br/>Form</apex:facet>               
+                <apex:outputLink value="/apex/ExportControlEdit?deviceid={!d.ExptCntrlId}&type=list" rendered="{!NOT(ISBLANK(d.ExptCntrlId))}" target="_parent">Edit Export Control Form</apex:outputLink>
+            </apex:column>
+            <apex:column rendered="{!checkLink=='ExpControl'}">
+                <apex:facet name="header">Export Control<br/>Status</apex:facet>               
+                <apex:outputtext value="{!d.ExptCntrlStatus}" rendered="{!NOT(ISBLANK(d.ExptCntrlStatus))}" />
+            </apex:column>
+            <apex:column rendered="{!checkLink=='IPDeclaration'}">
+                 <apex:facet name="header">IP Declaration<br/>Form</apex:facet>                               
+                <apex:outputLink value="/apex/IPDeclarationEdit?id={!d.IpDecId}&type=list" rendered="{!NOT(ISBLANK(d.IpDecId))}" target="_parent">Edit IP Declaration Form</apex:outputLink>                
+            </apex:column>
+            <apex:column rendered="{!checkLink=='SFFGeneration'}">
+                 <apex:facet name="header">Generate<br/>Standard<br/>Frame</apex:facet>                               
+                <apex:outputText value="{!d.deviceInfo.Generate_Standard_Frame__c}" rendered="{!IF( d.deviceInfo.Generate_Standard_Frame__c!=Null,true,false)}" />              
+            </apex:column>
+            <apex:column rendered="{!checkLink=='SFFGeneration'}">
+                 <apex:facet name="header">Frame<br/>URL</apex:facet>                               
+                <apex:outputLink value="/apex/SFFGFramedetails?id={!d.deviceInfo.Id}" rendered="{!IF(d.deviceInfo.Tapeout_Type__c=='Single Product' && ISBLANK(d.SFFGId) && d.deviceInfo.Stage__c=='Design In' && d.deviceInfo.Generate_Standard_Frame__c=='Yes',true,false)}" target="_parent">Frame Link</apex:outputLink>
+                <apex:outputLink value="/apex/SFFGFramedetails?id={!d.deviceInfo.Id}" rendered="{!IF(d.deviceInfo.Tapeout_Type__c=='Single Product' && Not(ISBLANK(d.SFFGId)) && d.deviceInfo.Generate_Standard_Frame__c=='Yes',true,false)}" target="_parent">Frame Link</apex:outputLink>                
+            </apex:column>
+            <apex:column rendered="{!checkLink=='SFFGeneration'}">
+                 <apex:facet name="header">Frame<br/>Status</apex:facet>                               
+                <apex:outputText value="{!d.SFFGSTatus}" rendered="{!IF(d.deviceInfo.Tapeout_Type__c=='Single Product' && Not(ISBLANK(d.SFFGId))  && d.deviceInfo.Generate_Standard_Frame__c=='Yes',true,false)}" />
+                <apex:outputText value="Draft" rendered="{!IF(d.deviceInfo.Tapeout_Type__c=='Single Product' && ISBLANK(d.SFFGId) && d.deviceInfo.Stage__c=='Design In' && d.deviceInfo.Generate_Standard_Frame__c=='Yes',true,false)}" />                
+            </apex:column>
+            <apex:column rendered="{!checkLink=='IPDeclaration'}">
+                <apex:facet name="header">
+                    <apex:outputPanel layout="block">
+                        <apex:outputLabel onclick="sort('ip_declaration_status__c','{!IF(ISBLANK(sortType),'asc',IF(sortType == 'desc','asc','desc'))}');" styleclass="hand colDiv">   
+                            IP Declaration<br/>Status
+                        </apex:outputLabel>
+                        <apex:image value="/img/sort_asc_arrow.gif" rendered="{!AND(sortCol == 'ip_declaration_status__c',sortType =='asc')}" styleClass="colDiv"/>
+                        <apex:image value="/img/sort_desc_arrow.gif" rendered="{!AND(sortCol == 'ip_declaration_status__c',sortType =='desc')}" styleClass="colDiv"/>
+                    </apex:outputPanel>                    
+                </apex:facet>
+                <apex:outputText value="{!d.IPDecStatus}"/>               
+            </apex:column> 
+            <!-- Changed here PSaha 05122014 Added Configuration link related to IP declaration -->   
+            <apex:column rendered="{!checkLink=='IPDeclaration'}">
+                <apex:facet name="header"> Configuration  <br/> Used 
+                </apex:facet>
+                <apex:outputLink value="/{!d.configID}"  target="_parent">{!d.ConfigurationName}</apex:outputLink>            
+            </apex:column>  
+            <apex:column rendered="{!checkLink=='MyDeviceRequirement'}">
+                 <apex:facet name="header">CDRS(Bx041)</apex:facet>                               
+                <apex:outputLink value="/{!d.bx041ID}" rendered="{!NOT(ISBLANK(d.bx041ID ))}" target="_parent">View CDRS</apex:outputLink> 
+                <apex:outputLink value="/apex/BX041_Create_Page?retURL=%2F{!d.deviceInfo.id}" rendered="{!ISBLANK(d.bx041ID ) && (d.stage = 'Solutioning' || d.stage = 'Design In')}" target="_parent">New CDRS</apex:outputLink>                
+            </apex:column>
+            <apex:column rendered="{!checkLink=='MyDeviceRequirement'}">
+                <apex:facet name="header">
+                    <apex:outputPanel layout="block">
+                        <apex:outputLabel value="CDRS Status" onclick="sort('BX041_Status__c','{!IF(ISBLANK(sortType),'asc',IF(sortType == 'desc','asc','desc'))}');" styleclass="hand colDiv"/>                         
+                        <apex:image value="/img/sort_asc_arrow.gif" rendered="{!AND(sortCol == 'BX041_Status__c',sortType =='asc')}" styleClass="colDiv"/>
+                        <apex:image value="/img/sort_desc_arrow.gif" rendered="{!AND(sortCol == 'BX041_Status__c',sortType =='desc')}" styleClass="colDiv"/>
+                    </apex:outputPanel>                    
+                </apex:facet>
+                <apex:outputText value="{!d.cdrsStatus}"/>
+            </apex:column>            
+            <apex:column >
+                <apex:facet name="header">
+                    <apex:outputPanel layout="block">
+                        <apex:outputLabel value="MPW" onclick="sort('mpw','{!IF(ISBLANK(sortType),'asc',IF(sortType == 'desc','asc','desc'))}');" styleclass="hand colDiv"/>                         
+                        <apex:image value="/img/sort_asc_arrow.gif" rendered="{!AND(sortCol == 'mpw',sortType =='asc')}" styleClass="colDiv"/>
+                        <apex:image value="/img/sort_desc_arrow.gif" rendered="{!AND(sortCol == 'mpw',sortType =='desc')}" styleClass="colDiv"/>
+                    </apex:outputPanel>                    
+                </apex:facet>
+                <apex:outputText value="{!d.MPW}"/>
+            </apex:column>
+            <apex:column >                          
+                <apex:facet name="header">
+                    <apex:outputPanel layout="block">
+                        <apex:outputLabel onclick="sort('pre_PTRF_validation_status__c','{!IF(ISBLANK(sortType),'asc',IF(sortType == 'desc','asc','desc'))}');" styleclass="hand colDiv">
+                            Tapeout<br/>Readiness
+                        </apex:outputLabel>
+                        <apex:image value="/img/sort_asc_arrow.gif" rendered="{!AND(sortCol == 'pre_PTRF_validation_status__c',sortType =='asc')}" styleClass="colDiv"/>
+                        <apex:image value="/img/sort_desc_arrow.gif" rendered="{!AND(sortCol == 'pre_PTRF_validation_status__c',sortType =='desc')}" styleClass="colDiv"/>
+                    </apex:outputPanel>                    
+                </apex:facet>
+                <apex:outputText value="{!d.tapeoutReadiness}"/>
+            </apex:column>
+            <apex:column >                 
+                 <apex:facet name="header">
+                    <apex:outputPanel layout="block">
+                        <apex:outputLabel onclick="sort('actual_tapeout_date_GMT__c','{!IF(ISBLANK(sortType),'asc',IF(sortType == 'desc','asc','desc'))}');" styleclass="hand colDiv">
+                            Actual Tapeout <br/> Date
+                        </apex:outputLabel>
+                        <apex:image value="/img/sort_asc_arrow.gif" rendered="{!AND(sortCol == 'actual_tapeout_date_GMT__c',sortType =='asc')}" styleClass="colDiv"/>
+                        <apex:image value="/img/sort_desc_arrow.gif" rendered="{!AND(sortCol == 'actual_tapeout_date_GMT__c',sortType =='desc')}" styleClass="colDiv"/>
+                    </apex:outputPanel>                    
+                </apex:facet>
+                <apex:outputText value="{!d.actualTapeoutDate}"/>
+            </apex:column>
+            <apex:column >
+                <apex:facet name="header">
+                    <apex:outputPanel layout="block">
+                        <apex:outputLabel onclick="sort('device_mask_set_title__c','{!IF(ISBLANK(sortType),'asc',IF(sortType == 'desc','asc','desc'))}');" styleclass="hand colDiv">                        
+                        Mask Set <br/> Title
+                        </apex:outputLabel>
+                        <apex:image value="/img/sort_asc_arrow.gif" rendered="{!AND(sortCol == 'device_mask_set_title__c',sortType =='asc')}" styleClass="colDiv"/>
+                        <apex:image value="/img/sort_desc_arrow.gif" rendered="{!AND(sortCol == 'device_mask_set_title__c',sortType =='desc')}" styleClass="colDiv"/>
+                    </apex:outputPanel>                    
+                </apex:facet>
+                <apex:outputText value="{!d.maskSetTitle}"/>
+            </apex:column>
+            <apex:column >
+                <apex:facet name="header">
+                    <apex:outputPanel layout="block">
+                        <apex:outputLabel value="Created" onclick="sort('createdDate','{!IF(ISBLANK(sortType),'asc',IF(sortType == 'desc','asc','desc'))}');" styleclass="hand colDiv"/>                        
+                        <apex:image value="/img/sort_asc_arrow.gif" rendered="{!AND(sortCol == 'createdDate',sortType =='asc')}" styleClass="colDiv"/>
+                        <apex:image value="/img/sort_desc_arrow.gif" rendered="{!AND(sortCol == 'createdDate',sortType =='desc')}" styleClass="colDiv"/>
+                    </apex:outputPanel>                    
+                </apex:facet>
+                <apex:outputText value="{!d.createdDate}"/>
+            </apex:column>
+            <apex:facet name="footer">Showing Page # {!pageNumber} of {!totalPages}</apex:facet>
+        </apex:pageBlockTable>        
+    </apex:pageBlock>
+    </apex:form>
+</apex:page>

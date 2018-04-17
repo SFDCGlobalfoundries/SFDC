@@ -1,0 +1,252 @@
+<!--
+    Author: Zymark Ambat
+    Description: This page is used for NPCPortalListController.
+    History: 
+        ZAmbat      11202013    - Page creation.
+        ZAmbat      04032014    - Updated code as per CASE 7400.
+        ZAmbat      01122015    - Updated code as per CASE 38012.
+        DBiswal     03022015    - Updated code to display New Part Id Column.
+-->
+
+<apex:page id="NPCList" controller="NPCPortalListController" showHeader="false" sidebar="false">
+    <style>
+        .colDiv {
+            float: left;            
+        }  
+        .hand {
+            cursor: pointer; 
+            cursor: hand;
+        } 
+        .next {
+            background-image: url(/img/paginationArrows.gif);
+            background-repeat: no-repeat;
+            background-position: -17px 1px;
+            width: 9px;
+            height: 10px;
+        }
+        
+        .nextoff {
+            background-image: url(/img/paginationArrows.gif);
+            background-repeat: no-repeat;
+            background-position: -17px -10px;
+            width: 9px;
+            height: 10px;
+        }
+        
+        .prev {
+            background-image: url(/img/paginationArrows.gif);
+            background-repeat: no-repeat;
+            background-position: -10px 1px;
+            margin: 0;
+            padding: 0;
+            width: 9px;
+            height: 10px;
+        }
+        
+        .prevoff {
+            background-image: url(/img/paginationArrows.gif);
+            background-repeat: no-repeat;
+            background-position: -10px -10px;
+            margin: 0;
+            padding: 0;
+            width: 9px;
+            height: 10px;
+        }
+    </style>
+    
+    <script>
+        function goToNewNPCPage(userId) {
+            top.location.href = '/GlobalfoundryView/apex/NPCFormVF?userId=' + userId;
+        }
+        
+        function goToNPCRecordPage(id) {
+            top.location.href = '/GlobalfoundryView/apex/NPCFormReadOnlyVF?id=' + id;
+        }
+        
+        function goToDeviceRecordPage(id) {
+            top.location.href = '/GlobalfoundryView/' + id;
+        }
+        
+        function goToEditPage(id) {
+            top.location.href = '/GlobalfoundryView/apex/NPCFormVF?id=' + id + '&retURL=%2F' + id;
+        }
+    </script>
+    
+    <apex:form id="form1">
+        <!-- Filter Block -->
+        <apex:pageBlock id="filterblock">
+            <apex:pageBlockButtons location="bottom">
+                <apex:commandButton value="Search" action="{!retrieveNPCList}" />
+                <apex:commandButton value="Clear" action="{!clearAllFilters}" />
+            </apex:pageBlockButtons>    
+                
+            <apex:pageBlockSection title="Filters" columns="2" collapsible="false">
+                <apex:pageBlockSectionItem >
+                    <apex:outputLabel value="Search for" />
+                    <apex:selectList value="{!searchForNPC}" size="1">
+                        <apex:selectOptions value="{!SearchFor}" />
+                    </apex:selectList>
+                </apex:pageBlockSectionItem>
+                <apex:pageBlockSectionItem />
+                <apex:pageBlockSectionItem >
+                    <apex:outputLabel value="SFDC Reference Device" />
+                    <apex:inputText value="{!referenceDevice}" />
+                </apex:pageBlockSectionItem>
+                <apex:pageBlockSectionItem >
+                    <apex:outputLabel value="NPC Form ID" />
+                    <apex:inputText value="{!npcFormName}" />
+                </apex:pageBlockSectionItem>
+                <apex:inputField value="{!npcFilter.Reason_for_New_Part__c}" />
+                <apex:inputField value="{!npcFilter.Tapeout_Required__c}" />
+                <apex:inputField value="{!npcFilter.New_Part_ID__c}" />
+                <apex:inputField value="{!npcFilter.NPC_Form_Status__c}" />
+                <apex:pageBlockSectionItem >
+                    <apex:outputLabel value="Fab" />
+                    <apex:selectList value="{!npcFilter.Fab__c}" size="1">
+                        <apex:selectOptions value="{!Fabs}" />
+                    </apex:selectList>
+                </apex:pageBlockSectionItem>
+            </apex:pageBlockSection>
+        </apex:pageBlock>
+    
+        <apex:actionfunction name="sort" action="{!sort}" rerender="mainblock" status="status">     
+            <apex:param name="sortfield" assignTo="{!sortField}" value=""/>
+            <apex:param name="sorttype" assignTo="{!sortType}" value=""/>            
+        </apex:actionfunction>
+        
+        <apex:pageBlock id="mainblock">
+            <apex:pageBlockButtons location="top">
+                <apex:commandButton value="New NPC Form" onclick="goToNewNPCPage('{!userId}');"  rerender="mainblock" status="status"/>
+                <apex:commandButton value="First" action="{!first}" disabled="{!NOT(HasPrevious)}"  rerender="mainblock" status="status"/>
+                <apex:commandButton value="Prev" action="{!previous}" disabled="{!NOT(HasPrevious)}" rerender="mainblock" status="status" />
+                <apex:commandButton value="Next" action="{!next}" disabled="{!NOT(HasNext)}"  rerender="mainblock" status="status"/>
+                <apex:commandButton value="Last" action="{!last}" disabled="{!NOT(HasNext)}"  rerender="mainblock" status="status"/>
+                <apex:actionStatus id="status" startText="Please wait..."/>
+            </apex:pageBlockButtons>
+                                      
+            <apex:pageBlockTable id="npcTable" value="{!currPage}" var="n" rendered="{!IF(totalNoOfRecords > 0, true, false)}">
+                <apex:column >
+                    <apex:facet name="header">
+                        &nbsp;
+                    </apex:facet>
+                    <apex:outputLink onclick="goToEditPage('{!n.npcForm.Id}');" rendered="{!n.isEditable}">
+                        Edit
+                    </apex:outputLink>
+                    <apex:outputText value="" rendered="{!NOT(n.isEditable)}" />
+                </apex:column>
+                
+                <apex:column >
+                    <apex:facet name="header">
+                        <apex:outputPanel layout="block">
+                            <apex:outputLabel value="{!$ObjectType.New_Part_Creation_Form__c.fields.Name.label}" styleClass="hand colDiv" onclick="sort('name','{!IF(ISBLANK(sortType),'asc',IF(sortType == 'desc','asc','desc'))}');"/>
+                            <apex:image value="/img/sort_asc_arrow.gif" rendered="{!AND(sortField = 'name',sortType =='asc')}" styleClass="colDiv"/>
+                            <apex:image value="/img/sort_desc_arrow.gif" rendered="{!AND(sortField = 'name',sortType =='desc')}" styleClass="colDiv"/>
+                        </apex:outputPanel>
+                    </apex:facet>
+                    <!-- apex:outputLink onclick="goToNPCRecordPage('{!n.npcForm.Id}');" target="_blank" -->
+                    <apex:outputLink value="/apex/NPCFormReadOnlyVF?id={!n.npcForm.Id}" target="_blank">
+                        {!n.npcForm.Name}
+                    </apex:outputLink>
+                </apex:column>
+                
+                <apex:column >
+                    <apex:facet name="header">
+                        <apex:outputPanel layout="block">
+                            <apex:outputLabel value="{!$ObjectType.New_Part_Creation_Form__c.fields.New_Part_ID__c.label}" styleClass="hand colDiv" onclick="sort('New_Part_ID__c','{!IF(ISBLANK(sortType),'asc',IF(sortType == 'desc','asc','desc'))}');"/>
+                            <apex:image value="/img/sort_asc_arrow.gif" rendered="{!AND(sortField = 'New_Part_ID__c',sortType ='asc')}" styleClass="colDiv"/>
+                            <apex:image value="/img/sort_desc_arrow.gif" rendered="{!AND(sortField = 'New_Part_ID__c',sortType ='desc')}" styleClass="colDiv"/>
+                        </apex:outputPanel>
+                    </apex:facet>             
+                    {!n.npcForm.New_Part_ID__c}
+                </apex:column>
+                
+                <apex:column >
+                    <apex:facet name="header">
+                        <apex:outputPanel layout="block">
+                            <apex:outputLabel value="{!$ObjectType.New_Part_Creation_Form__c.fields.Originating_Device__c.label}" styleClass="hand colDiv" onclick="sort('originating_device__c','{!IF(ISBLANK(sortType),'asc',IF(sortType == 'desc','asc','desc'))}');"/>
+                            <apex:image value="/img/sort_asc_arrow.gif" rendered="{!AND(sortField = 'originating_device__c',sortType ='asc')}" styleClass="colDiv"/>
+                            <apex:image value="/img/sort_desc_arrow.gif" rendered="{!AND(sortField = 'originating_device__c',sortType ='desc')}" styleClass="colDiv"/>
+                        </apex:outputPanel>
+                    </apex:facet>                 
+                    <apex:outputLink onclick="goToDeviceRecordPage('{!n.npcForm.Originating_Device__c}');" rendered="{!n.hasAccessToDevice}">
+                        {!n.npcForm.Originating_Device__r.Name}
+                    </apex:outputLink>
+                    <apex:outputText value="{!n.npcForm.Originating_Device__r.Name}" rendered="{!NOT(n.hasAccessToDevice)}" />
+                </apex:column>
+                
+                <apex:column >
+                    <apex:facet name="header">
+                        <apex:outputPanel layout="block">
+                            <apex:outputLabel value="{!$ObjectType.New_Part_Creation_Form__c.fields.Fab__c.label}" styleClass="hand colDiv" onclick="sort('fab__c','{!IF(ISBLANK(sortType),'asc',IF(sortType == 'desc','asc','desc'))}');"/>
+                            <apex:image value="/img/sort_asc_arrow.gif" rendered="{!AND(sortField = 'fab__c',sortType ='asc')}" styleClass="colDiv"/>
+                            <apex:image value="/img/sort_desc_arrow.gif" rendered="{!AND(sortField = 'fab__c',sortType ='desc')}" styleClass="colDiv"/>
+                        </apex:outputPanel>
+                    </apex:facet>            
+                    {!n.npcForm.Fab__c}
+                </apex:column>
+                
+                <apex:column >
+                    <apex:facet name="header">
+                        <apex:outputPanel layout="block">
+                            <apex:outputLabel value="{!$ObjectType.New_Part_Creation_Form__c.fields.NPC_Form_Status__c.label}" styleClass="hand colDiv" onclick="sort('npc_form_status__c','{!IF(ISBLANK(sortType),'asc',IF(sortType == 'desc','asc','desc'))}');"/>
+                            <apex:image value="/img/sort_asc_arrow.gif" rendered="{!AND(sortField = 'npc_form_status__c',sortType ='asc')}" styleClass="colDiv"/>
+                            <apex:image value="/img/sort_desc_arrow.gif" rendered="{!AND(sortField = 'npc_form_status__c',sortType ='desc')}" styleClass="colDiv"/>
+                        </apex:outputPanel>                  
+                    </apex:facet>                          
+                    {!n.npcForm.NPC_Form_Status__c}
+                </apex:column>
+                
+                <apex:column >
+                    <apex:facet name="header">
+                        <apex:outputPanel layout="block">
+                            <apex:outputLabel value="{!$ObjectType.New_Part_Creation_Form__c.fields.Reason_for_New_Part__c.label}" styleClass="hand colDiv" onclick="sort('reason_for_new_part__c','{!IF(ISBLANK(sortType),'asc',IF(sortType == 'desc','asc','desc'))}');"/>
+                            <apex:image value="/img/sort_asc_arrow.gif" rendered="{!AND(sortField = 'reason_for_new_part__c',sortType ='asc')}" styleClass="colDiv"/>
+                            <apex:image value="/img/sort_desc_arrow.gif" rendered="{!AND(sortField = 'reason_for_new_part__c',sortType ='desc')}" styleClass="colDiv"/>
+                        </apex:outputPanel>
+                    </apex:facet>                  
+                    {!n.npcForm.Reason_for_New_Part__c}
+                </apex:column>
+                
+                <apex:column >
+                    <apex:facet name="header">
+                        <apex:outputPanel layout="block">
+                            <apex:outputLabel value="{!$ObjectType.New_Part_Creation_Form__c.fields.Tapeout_Required__c.label}" styleClass="hand colDiv" onclick="sort('tapeout_required__c','{!IF(ISBLANK(sortType),'asc',IF(sortType == 'desc','asc','desc'))}');"/>
+                            <apex:image value="/img/sort_asc_arrow.gif" rendered="{!AND(sortField = 'tapeout_required__c',sortType ='asc')}" styleClass="colDiv"/>
+                            <apex:image value="/img/sort_desc_arrow.gif" rendered="{!AND(sortField = 'tapeout_required__c',sortType ='desc')}" styleClass="colDiv"/>
+                        </apex:outputPanel>
+                    </apex:facet>             
+                    {!n.npcForm.Tapeout_Required__c}
+                </apex:column>
+                
+                <apex:facet name="footer">
+                    Showing Page # {!currentPageNo} of {!totalNoOfPages}
+                </apex:facet>
+            </apex:pageBlockTable>          
+            <!-- apex:outputPanel id="controlPanel" layout="inline" rendered="{!IF(totalNoOfRecords > 0, true, false)}">
+                <apex:commandLink action="{!previous}" rendered="{!HasPrevious}" style="text-decoration: none; color: #333;">
+                    <img src="/s.gif" title="Previous" alt="Previous" class="prev" />Previous
+                </apex:commandLink>
+                <apex:outputPanel layout="inline" rendered="{!NOT(HasPrevious)}">
+                    <img src="/s.gif" alt="Previous" class="prevoff" />
+                    <apex:outputText style="color: #a8a8a8;" value="Previous" />
+                </apex:outputPanel>
+                
+                &nbsp;&nbsp;&nbsp;
+                <apex:outputText value="     {!fromNo} - {!toNo} of {!totalNoOfRecords}     " />
+                &nbsp;&nbsp;&nbsp;
+                
+                <apex:commandLink action="{!next}" rendered="{!HasNext}" style="text-decoration: none; color: #333;">
+                    Next<img src="/s.gif" title="Next" alt="Next" class="next" />
+                </apex:commandLink>
+                <apex:outputPanel layout="inline" rendered="{!NOT(HasNext)}" style="color: #a8a8a8;">
+                    <apex:outputText style="color: #a8a8a8;" value="Next" />
+                    <img src="/s.gif" alt="Next" class="nextoff" />
+                </apex:outputPanel>
+            </apex:outputPanel -->
+
+            <apex:outputPanel layout="inline" rendered="{!IF(totalNoOfRecords <= 0, true, false)}">
+                No records found.
+            </apex:outputPanel>
+        </apex:pageBlock>
+    </apex:form>
+</apex:page>

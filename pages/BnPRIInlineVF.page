@@ -1,0 +1,71 @@
+<!--
+Author        : Poulami Saha
+Date Created  : 18/08/2016
+Description   : This page is used as inline vf page in RFQ page layout to upload and display finance related document.
+-->
+
+<apex:page standardController="Request_Information__c" extensions="BnP_Extattachfile" action="{!displatAttachment}">
+    <apex:form enctype="multipart/form-data" id="theTabPanel">
+        <apex:includeScript value="https://ajax.googleapis.com/ajax/libs/jquery/1.10.1/jquery.min.js" />
+        <apex:includeScript value="https://ajax.googleapis.com/ajax/libs/jqueryui/1.11.3/jquery-ui.min.js" />
+        <script>
+        $(function(){
+            // script that triggers the click of the standard
+            // choose file button 
+            $('#CustomChooseFileButton').click( function(e) {
+                $('input[type="file"]').click();});
+            // script to hide the blinking cursor
+            $('input[type="text"]').mousedown(function(e) { 
+                e.preventDefault();
+                $(this).blur();
+                return false;
+            });
+        });
+         </script>
+        <apex:pageMessages />
+        <apex:pageBlock title="Attach Finance File">
+            <apex:pageBlockButtons location="top">
+                <apex:actionRegion >
+                  <apex:commandButton value="Add Attachment" action="{!attachfile}" rendered="{!IsAttachVisible}" reRender="theTabPanel"/>
+                </apex:actionRegion>
+                <apex:commandButton value="Save" action="{!saveApplicant}" rendered="{!IsSaveVisible}" />
+            </apex:pageBlockButtons>
+            <apex:pageBlockSection showHeader="false" rendered="{!AttachfileFields}">
+                <div class = "ChooseFileContainer">
+                    <apex:inputFile value="{!objAttachment.body}" filename="{!objAttachment.name}" contentType="{!objAttachment.ContentType}" style="padding-left:65px; display:none;" />
+                    <a id="CustomChooseFileButton" type="text" size="23" name="CustomChooseFileButton" class="OverlayButton" href="#">Select Finance Related File</a>
+                </div>
+                <apex:pageBlockSectionItem >
+                  <apex:outputLabel value="File Description" for="description"/>
+                  <apex:inputTextarea value="{!objAttachment.description}" id="description"/>
+                </apex:pageBlockSectionItem>
+                <apex:inputField value="{!bnpFinDoc.Document_Business_Type__c}"/>
+            </apex:pageBlockSection>
+        </apex:pageBlock>
+        <apex:pageBlock title="Finance Attachment">
+            <apex:pageBlockTable value="{!wrapperList}" var="o" rendered="{!NOT(ISNULL(wrapperList))}">
+                <apex:column >
+                    <apex:facet name="header">File Name</apex:facet>
+                    <a href="/{!o.attRec.id}" target="_blank">{!o.attRec.Name}</a>
+                </apex:column>
+                <apex:column >
+                    <apex:facet name="header">File Type</apex:facet>
+                    {!o.attRec.ContentType}
+                </apex:column>
+                <apex:column >
+                    <apex:facet name="header">Description</apex:facet>
+                    {!o.attRec.Description}
+                </apex:column>
+                <apex:column >
+                    <apex:facet name="header">File Size</apex:facet>
+                    {!o.attRec.BodyLength}
+                </apex:column>
+                <apex:column >
+                    <apex:facet name="header">Document Business Type </apex:facet>
+                    {!o.bnpFinAttRec.Document_Business_Type__c}
+                </apex:column>
+            </apex:pageBlockTable>
+            <apex:outputLabel value="No records to display" rendered="{!(ISNULL(wrapperList))}" styleClass="noRowsHeader"></apex:outputLabel>
+        </apex:pageBlock>
+    </apex:form>
+</apex:page>

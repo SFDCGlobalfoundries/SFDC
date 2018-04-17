@@ -1,0 +1,2128 @@
+<!--
+    Author: Zymark Ambat
+    Description: This page is used for NPC Form submission.
+    History: 
+        ZAmbat      06202013    - Page creation.
+        ZAmbat      10012013    - Updated page as per TASK-299.
+        ZAmbat      11132013    - updated code to disable SFDC Reference Device, Reason for New Part and Tapeout Required when NPC was rejected.
+        ZAmbat      11142013    - updated code to use custom Account Lookup to see all the Accounts.
+        ZAmbat      11222013    - updated code to gray out SFDC Reference Device field in Portal.
+        ZAmbat      12172013    - updated page to enable input for secure device and automotive upon edit by GF CE.
+        Nbustillos  01032014    - change logic to pass account Id to NPCDeviceLookupVF instead of Account name.
+                                  This is to prevent issue of duplicate account name. Case #00004430. 
+        ARoy        01062014    - updated code to add Mask Layers when MES Reference Id is not present. Fix for Case 00004080.
+        ARoy        01282014    - Updated the code to allow Reason for New Part field editable for NPC Form Status = 'Pending Resubmission' (Case - 00005103)
+        ZAmbat      01282014    - Updated code as per CASE 4515.
+        ZAmbat      02202014    - Updated code to include actionsupport on Reason for New Part field.
+        ZAmbat      03042014    - Updated code to add new field - Require_To_Create_The_New_Part__c (CASE 4882).
+        ZAmbat      04032014    - Updated code as per CASE 7400.
+        ZAmbat      04042014    - Updated code as per CASE 8489.
+        ZAmbat      06102014    - Updated code as per CASE 16179.
+        ZAmbat      07092014    - Updated code as per CASE 27667.
+        ZAmbat      07242014    - Updated code to enable Current Forecast Tapeout Date with Fab 1 and Fab 8.
+        ZAmbat      08122014    - Updated code as per CASE 31810.
+        ZAmbat      08192014    - Updated code as per CASE 32408.
+        ZAmbat      12022014    - Updated code as per CASE 7573.
+        DBiswal     12042014    - Updated code to display clone editing page.        
+        Vijay       12012014    - added the errorPopup outputPanel to show validation messages and redirect to device detail page.
+        DBiswal     01132015    - Updated code to make Secure Device and Automotive Device fields read-only.
+        DBiswal     01202015    - Updated code for Reason for New Part field value 'BackgrindThicknessChange'.
+        DBiswal     03052015    - Updated code for Reason for New Part new field value 'ShortLoop Flow'.
+        SNune       09232015    - Updated code to fix Case 00047410
+-->
+
+<!-- apex:page id="NPCFormVF" controller="NPCFormController" sidebar="{!IF(NOT(isFromPortal), true, false)}" showHeader="{!IF(NOT(isFromPortal), true, false)}" tabStyle="New_Part_Creation_Form__c" -->
+<apex:page id="NPCFormVF" controller="NPCFormController" sidebar="true" showHeader="true" tabStyle="New_Part_Creation_Form__c">
+    <apex:includeScript value="{!URLFOR($Resource.jquery, 'js/jquery-1.8.3.js')}" />
+    <style type="text/css">
+        .showHide {
+            display: none;
+        }
+        
+        .mainTbl {
+            width: 85%;
+            border: none;
+            border-collapse: collapse;
+        }
+        
+        .mainTbl td {
+            padding-top: 5px;
+            padding-bottom: 5px;
+        }
+        
+        .imgclass:hover {  
+            background-image: url(/img/help/helpOrbs.gif);  
+            background-repeat: no-repeat;  
+            width: 16px;  
+            height: 15px;     
+            background-position: right;  
+         
+        }  
+        
+        .imgclass {  
+            background-image: url(/img/help/helpOrbs.gif);  
+            background-repeat: no-repeat;  
+            width: 16px;  
+            height: 15px;  
+        }  
+        
+        .helpTextStyle {
+            text-decoration: none;
+            position: absolute;
+            width: 15em;
+            z-index: 12;
+            background-color: #fefdb9;
+            padding: 2px 5px;
+            border: 1px solid orange;
+            text-align: left;
+            white-space: normal;
+            font-weight: normal;
+            color: #000;
+        }
+        
+        .picklistArrowRight {
+            background: transparent url(/img/alohaSkin/combobox_arrows_sprite.gif) no-repeat;
+            background-position: left top;
+            width: 24px;
+            height: 20px;
+            margin: 0 2px;
+        }
+        
+        .picklistArrowLeft {
+            background: transparent url(/img/alohaSkin/combobox_arrows_sprite.gif) no-repeat;
+            background-position: left -60px;
+            width: 24px;
+            height: 20px;
+            margin: 0 2px;
+        }
+        
+        a:hover .picklistArrowRight {
+            background-position: left -20px;
+        }
+        
+        a:hover .picklistArrowLeft {
+            background-position: left -80px;
+        }
+        
+        .errorDtlPopup{
+            background-color: white;
+            border-width: 2px;
+            border-style: solid;
+            z-index: 9999;
+            left: 50%;
+            padding:10px;
+            position: absolute;
+            width: 500px;
+            margin-left: -250px;
+            top:100px;
+        }
+        .popupBackground{
+            background-color:black;
+            opacity: 0.20;
+            filter: alpha(opacity = 20);
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            z-index: 9998;
+        }
+        
+    </style>
+    
+    <script type="text/javascript">
+        function validateAttachment() {
+      
+      
+            var inputFiles = document.getElementsByTagName("input");
+            for (var z=0; z<inputFiles.length; z++) {
+                if (inputFiles[z].type == "file") {
+                    if (inputFiles[z].files[0]) {
+                        if (inputFiles[z].files[0].size > (1024 * 1024 * 5)) {
+                            alert("Each file attachment should not exceed 5MB.");
+                            return false;
+                        }
+                    }
+                }
+            }
+            
+            return true;
+        }
+       
+
+        function showImage(id) {
+            document.getElementById(id).style.display = "inline";
+        }
+        
+        function hideImage(id) {
+            document.getElementById(id).style.display = "none";
+        }
+        
+        function clearInputFile(id) {
+            if (navigator.userAgent.indexOf("MSIE") != -1) {
+                document.getElementById(id).parentNode.replaceChild(document.getElementById(id).cloneNode(true), document.getElementById(id)); 
+            } else {
+                document.getElementById(id).value = null;
+            }
+        }
+        
+        function showHelpText(id) {
+            document.getElementById(id).style.display = "block";
+            document.getElementById(id).style.opacity = 0.99;
+        }
+
+        <!-- Prajnith Remove Device reactivation picklist -->
+        $(document).ready(function(){
+            removeReActivation();
+        });
+                    
+        <!-- Added by ravi for Device reactivation picklist after device population -->
+        function removeReActivation(){ 
+                console.log('test');
+                if('{!isFromPortal}' == 'true'){
+                    $('select.RemoveDeviceReact option[value="Device Reactivation"]').remove();       
+                }
+        } 
+        
+        function hideHelpText(id) {
+            document.getElementById(id).style.display = "none";
+            document.getElementById(id).style.opacity = -0.2;
+        }
+        
+        function openLookup(baseURL, width, modified, searchParam) {
+            var originalbaseURL = baseURL;
+            var originalwidth = width;
+            var originalmodified = modified;
+            var originalsearchParam = searchParam;
+            var isCustomLookup = false;
+            var lookupType = baseURL.substr(baseURL.length - 3, 3);
+            
+            if (modified == '1') {
+                baseURL = baseURL + searchParam;
+            }
+            
+            if (baseURL.indexOf("GlobalfoundryView") != -1) {
+                var urlArr = baseURL.split("&");
+                var txtId = '';
+                
+                if(urlArr.length > 2) {
+                    urlArr = urlArr[1].split('=');
+                    txtId = urlArr[1];
+                }
+                
+                // Custom Lookup to be used
+                if (lookupType == "001") {
+                    if (baseURL.indexOf("GlobalfoundryView") != -1) {
+                        baseURL = "/GlobalfoundryView/apex/NPCAccountLookupVF?txt=" + txtId;
+                    } else {
+                        baseURL = "/apex/NPCAccountLookupVF?txt=" + txtId;
+                    }
+                } else {
+                    if (baseURL.indexOf("GlobalfoundryView") != -1) {
+                        baseURL = "/GlobalfoundryView/apex/NPCDeviceLookupVF?txt=" + txtId;
+                    } else {
+                        baseURL = "/apex/NPCDeviceLookupVF?txt=" + txtId;
+                    }
+                }
+                
+                baseURL = baseURL + "&frm=" + escapeUTF("{!$Component.form1}");
+                
+                // Get selected account
+                var acctValue;
+                if (baseURL.indexOf("GlobalfoundryView") != -1) {
+                    //acctValue = document.getElementById("NPCFormVF:form1:BlkEdit:account3").innerHTML;
+                    acctValue = document.getElementById("NPCFormVF:form1:BlkEdit:account3Id").value;
+                } else {
+                    // For review with Zaih
+                    acctValue = document.getElementById("NPCFormVF:form1:BlkEdit:account1").value;
+                }
+                
+                baseURL = baseURL + "&acct=" + acctValue;
+                
+                if (modified == '1') {
+                    baseURL = baseURL + "&lksearch=" + searchParam;
+                }
+                
+                isCustomLookup = true;
+            }
+            
+            if (isCustomLookup == true) {
+                openPopup(baseURL, "lookup", 350, 580, "width=" + width + ",height=580, toolbar=no, status=no, directories=no, menubar=no, resizable=yes, scrollable=no", true);
+            } else {
+                if (modified == '1') {
+                    originalbaseURL = originalbaseURL + originalsearchParam;
+                }
+                
+                openPopup(originalbaseURL, "lookup", 350, 480, "width=" + originalwidth + ",height=480, toolbar=no, status=no, directories=no, menubar=no, resizable=yes, scrollable=no", true);
+            }
+        }
+        
+        function preventEnter(e) {
+            if (e.keyCode == 13) {
+                return false;
+            }
+        }
+        
+        function refreshDiv() {
+            refreshMaskDiv();
+        }
+                               
+        function disableDeviceReactivation(){
+                $('[id$=Rectile_LocationInput1]').hide();
+                $('[id$=notgrpid]').hide();
+                $('[id$=comid]').hide();    
+                $('[id$=rfnpid]').hide();                    
+                $('[id$=nrfnpid]').hide();    
+                $('[id$=ngroupid]').hide();   
+                $('[id$=isreticleid]').hide();
+                $('[id$=Risk_Waiver]').hide();
+                $('[id$=PID_Status]').hide();                                                                                                                                                                                    
+            }
+        function EnableDeviceReactivation(){
+                $('[id$=Rectile_LocationInput1]').show();
+                $('[id$=notgrpid]').show();
+                $('[id$=comid]').show();  
+                $('[id$=isreticleid]').show();
+                $('[id$=Risk_Waiver]').show();
+                $('[id$=PID_Status]').show();                                  
+                                  
+            }
+        
+        function rebindAction() {
+            $("[id$='reasonInput']").change(function(){
+            disableDeviceReactivation();
+                if($("[id$='reasonInput']").val() == 'Others') {
+                    $("#requireToCreateTheNewPartPanel").show();
+                    $("#requireToCreateTheNewPartPanel1").hide();
+                    $("#customerNameChangePanel").hide();
+                    $("#currentForecastTapeoutDatePanel").hide();
+                    $("#newFabPanel").hide();                     
+                } else if($("[id$='reasonInput']").val() == 'CustomerNameChange') {
+                    $("#customerNameChangePanel").hide();
+
+                    $("#requireToCreateTheNewPartPanel1").show();
+                    $("#currentForecastTapeoutDatePanel").hide();
+                    $("#newFabPanel").hide();       
+                } else if($("[id$='reasonInput']").val() == 'Fab to Fab Transfer') {        
+                    $("#customerNameChangePanel").hide();   
+                    $("#requireToCreateTheNewPartPanel1").hide();                   
+                    $("#requireToCreateTheNewPartPanel").hide();        
+                    if ($("[id$='tapeoutInput']").val() == 'Yes') {        
+                        $("#currentForecastTapeoutDatePanel").show();  
+                    } else {
+                        $("#currentForecastTapeoutDatePanel").hide();
+                    }       
+                    $("#newFabPanel").show();
+                } else if($("[id$='reasonInput']").val() == 'Change in PID') {        
+                    $("#customerNameChangePanel").hide(); 
+                    $("#requireToCreateTheNewPartPanel1").hide();
+                    $("#requireToCreateTheNewPartPanel").hide();        
+                    if ($("[id$='tapeoutInput']").val() == 'Yes') {        
+                        $("#currentForecastTapeoutDatePanel").show();  
+                    } else {
+                        $("#currentForecastTapeoutDatePanel").hide();
+                    }       
+                    $("#newFabPanel").hide();                     
+                } else if($("[id$='reasonInput']").val() == 'Retrofit') {
+                    $("#customerNameChangePanel").hide();
+                    $("#requireToCreateTheNewPartPanel1").hide();
+                    $("#requireToCreateTheNewPartPanel").hide();
+                    if ($("[id$='tapeoutInput']").val() == 'Yes') {        
+                        $("#currentForecastTapeoutDatePanel").show();  
+                    } else {
+                        $("#currentForecastTapeoutDatePanel").hide();
+                    }
+                    $("#newFabPanel").hide();                     
+                } else if($("[id$='reasonInput']").val() == 'Retrofit + Add ROM Code' || $("[id$='reasonInput']").val() == 'Add ROM Code') {
+                    $("#customerNameChangePanel").hide();
+                    $("#requireToCreateTheNewPartPanel1").hide();
+                    $("#requireToCreateTheNewPartPanel").hide();
+                    if ($("[id$='tapeoutInput']").val() == 'Yes') {        
+                        $("#currentForecastTapeoutDatePanel").show();  
+                    } else {
+                        $("#currentForecastTapeoutDatePanel").hide();
+                    }
+                    $("#newFabPanel").hide();
+                } else if($("[id$='reasonInput']").val() == 'New Probe Card Flow') {
+                    $("#customerNameChangePanel").hide();
+                    $("#requireToCreateTheNewPartPanel1").hide();
+                    $("#requireToCreateTheNewPartPanel").hide();
+                    if ($("[id$='tapeoutInput']").val() == 'Yes') {        
+                        $("#currentForecastTapeoutDatePanel").show();  
+                    } else {
+                        $("#currentForecastTapeoutDatePanel").hide();
+                    }
+                    $("#newFabPanel").hide();                     
+                } else if($("[id$='reasonInput']").val() == 'BackgrindThicknessChange') {
+                    $("#customerNameChangePanel").hide();
+                    $("#requireToCreateTheNewPartPanel1").hide();
+                    $("#requireToCreateTheNewPartPanel").hide();
+                    if ($("[id$='tapeoutInput']").val() == 'Yes') {        
+                        $("#currentForecastTapeoutDatePanel").show();  
+                    } else {
+                        $("#currentForecastTapeoutDatePanel").hide();
+                    }
+                    $("#newFabPanel").hide();                     
+                } else if($("[id$='reasonInput']").val() == 'StartingMaterialChange') {
+                    $("#customerNameChangePanel").hide();
+                    $("#requireToCreateTheNewPartPanel1").hide();
+                    $("#requireToCreateTheNewPartPanel").hide();
+                    if ($("[id$='tapeoutInput']").val() == 'Yes') {        
+                        $("#currentForecastTapeoutDatePanel").show();  
+                    } else {
+                        $("#currentForecastTapeoutDatePanel").hide();
+                    }
+                    $("#newFabPanel").hide();                     
+                } else if($("[id$='reasonInput']").val() == 'ShortLoop Flow') {
+                    $("#customerNameChangePanel").hide();
+                    $("#requireToCreateTheNewPartPanel1").hide();
+                    $("#requireToCreateTheNewPartPanel").hide();
+                    if ($("[id$='tapeoutInput']").val() == 'Yes') {        
+                        $("#currentForecastTapeoutDatePanel").show();  
+                    } else {
+                        $("#currentForecastTapeoutDatePanel").hide();
+                    }
+                    $("#newFabPanel").hide();                     
+
+                } else if($("[id$='reasonInput']").val() == 'Device Reactivation') {
+                    $("#rfnpid").show();
+                    $("#nrfnpid").hide();
+                    $("#maskDiv").hide();
+                    $("#yeardisp").show();
+                    $("#changerow2").show();
+                    $("#changerow").hide();
+                    $("#changerow1").hide();
+                    $("#mskidval").hide();
+                    $("#repeatAttachh").hide();
+                    $("#PID_Status").show();
+                    $("#riskattach").show();
+                    $("#Risk_Waiver").show();
+                    $("#nreattach").show();
+                    $("#ISREAVIl").show();
+                    $("#NRE25K").show();
+                    $("#customerNameChangePanel").hide();
+                    $("#requireToCreateTheNewPartPanel").hide();
+                    $("#tapeoutPanel").hide();
+                    $("#tapeoutPanel111").hide();
+                    $("#requireToCreateTheNewPartPanel1").hide();
+                    $("#currentForecastTapeoutDatePanel").hide();
+                    $("#newFabPanel").hide();
+                    EnableDeviceReactivation();
+               } else {
+
+
+                    disableDeviceReactivation();
+                    $("#requireToCreateTheNewPartPanel").hide();
+                    $("#requireToCreateTheNewPartPanel1").hide();
+                    $("#customerNameChangePanel").hide();
+                    $("#currentForecastTapeoutDatePanel").hide();   
+                    $("#newFabPanel").hide();                     
+                }
+            });
+        }
+        
+        //select all checkboxes
+        function selectAllCheckboxes(obj,receivedInputID){
+            var inputCheckBox = document.getElementsByTagName("input");                  
+            for(var i=0; i<inputCheckBox.length; i++){          
+                if(inputCheckBox[i].id.indexOf(receivedInputID)!=-1){                                     
+                    inputCheckBox[i].checked = obj.checked;
+                }
+            }
+
+        }       
+    
+    </script>
+    
+    <script>
+        $(document).ready(function(){
+            var currentURL = window.location.pathname;
+            if (currentURL.indexOf("GlobalfoundryView") != -1) {
+                $("[id$='baseDevicePortal']").attr('readonly', 'true');
+            }
+            
+            if ($("[id$='baseDevicePortal']").val() == ''){ 
+                $("[id$='baseDevicePortal']").val("Click lookup icon...");
+            }
+
+            disableDeviceReactivation();
+
+            if($("[id$='reasonInput']").val() == 'Others') {
+                $("#rfnpid").hide();
+                $("#nrfnpid").show();
+                $("#cid").hide();
+                $("#yeardisp").hide();
+                $("#ngroupid").hide();
+                $("#autodev").hide();
+                $("#changerow2").hide(); 
+                $("#PID_Status").hide();
+                $("#riskattach").hide();
+                $("#Risk_Waiver").hide();
+                $("#nreattach").hide();
+                
+                $("#NRE25K").hide();
+                $("#requireToCreateTheNewPartPanel").show();
+                $("#requireToCreateTheNewPartPanel1").hide();
+                $("#customerNameChangePanel").hide();
+                $("#currentForecastTapeoutDatePanel").hide();
+                $("#newFabPanel").hide();                 
+            } else if($("[id$='reasonInput']").val() == 'CustomerNameChange') {
+                $("#rfnpid").hide();
+                $("#nrfnpid").show();
+                $("#cid").hide();
+                $("#yeardisp").hide();
+                $("#ngroupid").hide();
+                $("#autodev").hide();
+                $("#changerow2").hide();
+                $("#PID_Status").hide();
+                $("#riskattach").hide();
+                $("#Risk_Waiver").hide();
+                $("#nreattach").hide();
+                
+                $("#NRE25K").hide();
+                $("#customerNameChangePanel").show();
+                $("#requireToCreateTheNewPartPanel1").show();
+                $("#requireToCreateTheNewPartPanel").hide();
+                $("#currentForecastTapeoutDatePanel").hide();
+                $("#newFabPanel").hide(); 
+            } else if($("[id$='reasonInput']").val() == 'Fab to Fab Transfer') {       
+                $("#rfnpid").hide();
+                $("#nrfnpid").show();
+                $("#cid").hide();
+                $("#yeardisp").hide();
+                $("#ngroupid").hide();
+                $("#autodev").hide();
+                $("#changerow2").hide();
+                $("#PID_Status").hide();
+                $("#riskattach").hide();
+                $("#Risk_Waiver").hide();
+                $("#nreattach").hide();
+                
+                $("#NRE25K").hide();
+                $("#customerNameChangePanel").hide(); 
+                $("#requireToCreateTheNewPartPanel1").hide();
+                $("#requireToCreateTheNewPartPanel").hide();        
+                if ($("[id$='tapeoutInput']").val() == 'Yes') {        
+                    $("#currentForecastTapeoutDatePanel").show();  
+                } else {
+                    $("#currentForecastTapeoutDatePanel").hide();
+                }       
+                $("#newFabPanel").show();                                
+            } else if($("[id$='reasonInput']").val() == 'Retrofit' || $("[id$='reasonInput']").val() == 'Retrofit + Add ROM Code' || $("[id$='reasonInput']").val() == 'Add ROM Code' || $("[id$='reasonInput']").val() == 'Change in PID' || $("[id$='reasonInput']").val() == 'BackgrindThicknessChange' || $("[id$='reasonInput']").val() == 'StartingMaterialChange' || $("[id$='reasonInput']").val() == 'ShortLoop Flow') {
+                $("#rfnpid").hide();
+                $("#nrfnpid").show();
+                $("#cid").hide();
+                $("#yeardisp").hide();
+                $("#ngroupid").hide();
+                $("#autodev").hide();
+                $("#changerow2").hide();
+                $("#PID_Status").hide();
+                $("#riskattach").hide();
+                $("#Risk_Waiver").hide();
+                $("#nreattach").hide();
+                
+                $("#NRE25K").hide();
+                $("#customerNameChangePanel").hide();
+                $("#requireToCreateTheNewPartPanel1").hide();
+                $("#requireToCreateTheNewPartPanel").hide();
+                if ($("[id$='tapeoutInput']").val() == 'Yes') {        
+                    $("#currentForecastTapeoutDatePanel").show();  
+                } else {
+                    $("#currentForecastTapeoutDatePanel").hide();
+                }
+                $("#newFabPanel").hide();                                                
+            } else if($("[id$='reasonInput']").val() == 'New Probe Card Flow') {
+                $("#rfnpid").hide();
+                $("#nrfnpid").show();
+                $("#cid").hide();
+                $("#yeardisp").hide();
+                $("#ngroupid").hide();
+                $("#autodev").hide();
+                $("#changerow2").hide();
+                $("#PID_Status").hide();
+                $("#riskattach").hide();
+                $("#Risk_Waiver").hide();
+                $("#nreattach").hide();
+                
+                $("#NRE25K").hide();
+                $("#customerNameChangePanel").hide();
+                $("#requireToCreateTheNewPartPanel1").hide();
+                $("#requireToCreateTheNewPartPanel").hide();
+                if ($("[id$='tapeoutInput']").val() == 'Yes') {        
+                    $("#currentForecastTapeoutDatePanel").show();  
+                } else {
+                    $("#currentForecastTapeoutDatePanel").hide();
+                }
+                $("#newFabPanel").hide();                                                
+            } else {
+                if ($("[id$='reasonOutput']").text() == 'Others') {
+                    $("#requireToCreateTheNewPartPanel").show();
+                    $("#requireToCreateTheNewPartPanel1").hide();
+                    $("#customerNameChangePanel").hide();
+                    $("#currentForecastTapeoutDatePanel").hide();
+                    $("#newFabPanel").hide();                                                    
+                } else if ($("[id$='reasonOutput']").text() == 'CustomerNameChange') {
+                    $("#rfnpid").hide();
+                    $("#nrfnpid").show();
+                    $("#cid").hide();
+                    $("#yeardisp").hide();
+                    $("#ngroupid").hide();
+                    $("#autodev").hide();
+                    $("#changerow2").hide();
+                    $("#PID_Status").hide();
+                    $("#riskattach").hide();
+                    $("#Risk_Waiver").hide();
+                    $("#nreattach").hide();
+                    
+                    $("#NRE25K").hide();
+                    $("#customerNameChangePanel").show();
+                    $("#requireToCreateTheNewPartPanel1").show();
+                    $("#requireToCreateTheNewPartPanel").hide();
+                    $("#currentForecastTapeoutDatePanel").hide();
+                    $("#newFabPanel").hide();      
+                } else if ($("[id$='reasonOutput']").text() == 'Fab to Fab Transfer') {         
+                    $("#rfnpid").hide();
+                    $("#nrfnpid").show();
+                    $("#cid").hide();
+                    $("#yeardisp").hide();
+                    $("#ngroupid").hide();
+                    $("#autodev").hide();
+                    $("#changerow2").hide();
+                    $("#PID_Status").hide();
+                    $("#riskattach").hide();
+                    $("#Risk_Waiver").hide();
+                    $("#nreattach").hide();
+                    
+                    $("#NRE25K").hide();
+                    $("#customerNameChangePanel").hide();       
+                    $("#requireToCreateTheNewPartPanel").hide(); 
+                    $("#requireToCreateTheNewPartPanel1").hide();                   
+                    if ($("[id$='tapeoutOutput']").text() == 'Yes') {        
+                        $("#currentForecastTapeoutDatePanel").show();  
+                    } else {
+                        $("#currentForecastTapeoutDatePanel").hide();
+                    }      
+                    $("#newFabPanel").show();                     
+                } else if ($("[id$='reasonOutput']").text() == 'Retrofit' || $("[id$='reasonOutput']").text() == 'Retrofit + Add ROM Code' || $("[id$='reasonOutput']").text() == 'Add ROM Code' || $("[id$='reasonOutput']").text() == 'Change in PID' || $("[id$='reasonOutput']").val() == 'BackgrindThicknessChange' || $("[id$='reasonOutput']").val() == 'StartingMaterialChange' || $("[id$='reasonOutput']").val() == 'ShortLoop Flow') {
+                    $("#rfnpid").hide();
+                    $("#nrfnpid").show();
+                    $("#cid").hide();
+                    $("#yeardisp").hide();
+                    $("#ngroupid").hide();
+                    $("#autodev").hide();
+                    $("#changerow2").hide();
+                    $("#PID_Status").hide();
+                    $("#riskattach").hide();
+                    $("#Risk_Waiver").hide();
+                    $("#nreattach").hide();
+                    
+                    $("#NRE25K").hide();
+                    $("#customerNameChangePanel").hide();
+                    $("#requireToCreateTheNewPartPanel1").hide();
+                    $("#requireToCreateTheNewPartPanel").hide();
+                    if ($("[id$='tapeoutOutput']").text() == 'Yes') {        
+                        $("#currentForecastTapeoutDatePanel").show();  
+                    } else {
+                        $("#currentForecastTapeoutDatePanel").hide();
+                    }
+                    $("#newFabPanel").hide();                     
+                } else if($("[id$='reasonOutput']").val() == 'New Probe Card Flow') {
+                    $("#rfnpid").hide();
+                    $("#nrfnpid").show();
+                    $("#cid").hide();
+                    $("#yeardisp").hide();
+                    $("#ngroupid").hide();
+                    $("#autodev").hide();
+                    $("#changerow2").hide();
+                    $("#PID_Status").hide();
+                    $("#riskattach").hide();
+                    $("#Risk_Waiver").hide();
+                    $("#nreattach").hide();
+                    
+                    $("#NRE25K").hide();
+                    $("#customerNameChangePanel").hide();
+                    $("#requireToCreateTheNewPartPanel1").hide();
+                    $("#requireToCreateTheNewPartPanel").hide();
+                    if ($("[id$='tapeoutOutput']").text() == 'Yes') {        
+                        $("#currentForecastTapeoutDatePanel").show();  
+                    } else {
+                        $("#currentForecastTapeoutDatePanel").hide();
+                    }
+                    $("#newFabPanel").hide();                     
+                }
+                else if($("[id$='reasonOutput']").text() == 'Device Reactivation') {
+                    $("#rfnpid").show();
+                    $("#nrfnpid").hide();
+                    $("#maskDiv").hide();
+                    $("#cid").show();
+                    $("#yeardisp").show();
+                    $("#ngroupid").show();
+                    $("#autodev").show();
+                    $("#changerow2").show();
+                    $("#changerow").hide();
+                    $("#changerow1").hide();
+                    $("#mskidval").hide();
+                    $("#repeatAttachh").hide();
+                    $("#PID_Status").show();
+                    $("#riskattach").show();
+                    $("#Risk_Waiver").show();
+                    $("#nreattach").show();
+                    $("#ISREAVIl").show();
+                    $("#NRE25K").show();
+                    $("#customerNameChangePanel").hide();
+                    $("#requireToCreateTheNewPartPanel").hide();
+                    $("#tapeoutPanel").hide();
+                    $("#tapeoutInput").hide();
+                    $("#tapeoutPanel111").hide();
+                    $("#requireToCreateTheNewPartPanel1").hide();
+                    $("#currentForecastTapeoutDatePanel").hide();
+                    $("#newFabPanel").hide();
+                    EnableDeviceReactivation();                    
+               }
+                else if($("[id$='reasonInput']").val() == 'Device Reactivation') {
+                    $("#rfnpid").show();
+                    $("#nrfnpid").hide();
+                    $("#maskDiv").hide();
+                    $("#cid").show();
+                    $("#yeardisp").show();
+                    $("#ngroupid").show();
+                    $("#autodev").show();
+                    $("#changerow2").show();
+                    $("#changerow").hide();
+                    $("#changerow1").hide();
+                    $("#mskidval").hide();
+                    $("#repeatAttachh").hide();
+                    $("#PID_Status").show();
+                    $("#riskattach").show();
+                    $("#Risk_Waiver").show();
+                    $("#nreattach").show();
+                    $("#ISREAVIl").show();
+                    $("#NRE25K").show();
+                    $("#customerNameChangePanel").hide();
+                    $("#requireToCreateTheNewPartPanel").hide();
+                    $("#tapeoutPanel").hide();
+                    $("#tapeoutInput").hide();
+                    $("#tapeoutPanel111").hide();
+                    $("#requireToCreateTheNewPartPanel1").hide();
+                    $("#currentForecastTapeoutDatePanel").hide();
+                    $("#newFabPanel").hide();
+                    EnableDeviceReactivation();                    
+               } else {
+                    disableDeviceReactivation();
+                    $("#requireToCreateTheNewPartPanel").hide();
+                    $("#requireToCreateTheNewPartPanel1").hide();
+                    $("#customerNameChangePanel").hide();
+                    $("#currentForecastTapeoutDatePanel").hide();     
+                    $("#newFabPanel").hide(); 
+                   $("#yeardisp").hide();                                                      
+                }
+            }
+            
+            $("[id$='reasonInput']").change(function(){
+                disableDeviceReactivation();            
+                if($("[id$='reasonInput']").val() == 'Others') {
+                    $("#rfnpid").hide();
+                    $("#nrfnpid").show();
+                    $("#cid").hide();
+                    $("#yeardisp").hide();
+                    $("#ngroupid").hide();
+                    $("#autodev").hide();
+                    $("#changerow2").hide();
+                    $("#changerow").show();
+                    $("#changerow1").show();
+                    $("#mskidval").show();
+                    $("#repeatAttachh").show();
+                    $("#PID_Status").hide();
+                    $("#riskattach").hide();
+                    $("#Risk_Waiver").hide();
+                    $("#nreattach").hide();
+                    
+                    $("#NRE25K").hide();
+                    $("#requireToCreateTheNewPartPanel").show();
+                    $("#currentForecastTapeoutDatePanel").hide();
+                    $("#requireToCreateTheNewPartPanel1").hide();
+                    $("#customerNameChangePanel").hide();
+                    $("#newFabPanel").hide();                     
+                } else if($("[id$='reasonInput']").val() == 'CustomerNameChange') {
+                    $("#rfnpid").hide();
+                    $("#nrfnpid").show();
+                    $("#cid").hide();
+                    $("#yeardisp").hide();
+                    $("#ngroupid").hide();
+                    $("#autodev").hide();
+                    $("#changerow2").hide();
+                    $("#changerow").show();
+                    $("#changerow1").show();
+                    $("#mskidval").show();
+                    $("#repeatAttachh").show();
+                    $("#PID_Status").hide();
+                    $("#riskattach").hide();
+                    $("#Risk_Waiver").hide();
+                    $("#nreattach").hide();
+                    
+                    $("#NRE25K").hide();
+                    $("#customerNameChangePanel").show();
+                    $("#requireToCreateTheNewPartPanel1").show();
+                    $("#requireToCreateTheNewPartPanel").hide();
+                    $("#currentForecastTapeoutDatePanel").hide();
+                    $("#newFabPanel").hide();       
+                 } else if($("[id$='reasonInput']").val() == 'Fab to Fab Transfer') {        
+                    $("#rfnpid").hide();
+                    $("#nrfnpid").show();
+                    $("#cid").hide();
+                    $("#yeardisp").hide();
+                    $("#ngroupid").hide();
+                    $("#autodev").hide();
+                    $("#changerow2").hide();
+                    $("#changerow").show();
+                    $("#changerow1").show();
+                    $("#mskidval").show();
+                    $("#repeatAttachh").show();
+                    $("#PID_Status").hide();
+                    $("#riskattach").hide();
+                    $("#Risk_Waiver").hide();
+                    $("#nreattach").hide();
+                    
+                    $("#NRE25K").hide();
+                    $("#customerNameChangePanel").hide(); 
+                    $("#requireToCreateTheNewPartPanel1").hide();
+                    $("#requireToCreateTheNewPartPanel").hide();
+                    if ($("[id$='tapeoutInput']").val() == 'Yes') {        
+                        $("#currentForecastTapeoutDatePanel").show();  
+                    } else {
+                        $("#currentForecastTapeoutDatePanel").hide();
+                    }     
+                    $("#newFabPanel").show();  
+                } else if($("[id$='reasonInput']").val() == 'Change in PID') {
+                    $("#rfnpid").hide();
+                    $("#nrfnpid").show();
+                    $("#cid").hide();
+                    $("#yeardisp").hide();
+                    $("#ngroupid").hide();
+                    $("#autodev").hide();
+                    $("#changerow2").hide();
+                    $("#changerow").show();
+                    $("#changerow1").show();
+                    $("#mskidval").show();
+                    $("#repeatAttachh").show();
+                    $("#PID_Status").hide();
+                    $("#riskattach").hide();
+                    $("#Risk_Waiver").hide();
+                    $("#nreattach").hide();
+                    
+                    $("#NRE25K").hide();
+                    $("#customerNameChangePanel").hide();
+                    $("#requireToCreateTheNewPartPanel1").hide();
+                    $("#requireToCreateTheNewPartPanel").hide();
+                    if ($("[id$='tapeoutInput']").val() == 'Yes') {        
+                        $("#currentForecastTapeoutDatePanel").show();  
+                    } else {
+                        $("#currentForecastTapeoutDatePanel").hide();
+                    }
+                    $("#newFabPanel").hide();                    
+                } else if($("[id$='reasonInput']").val() == 'Retrofit') {
+                    $("#rfnpid").hide();
+                    $("#nrfnpid").show();
+                    $("#cid").hide();
+                    $("#yeardisp").hide();
+                    $("#ngroupid").hide();
+                    $("#autodev").hide();
+                    $("#changerow2").hide();
+                    $("#changerow").show();
+                    $("#changerow1").show();
+                    $("#mskidval").show();
+                    $("#repeatAttachh").show();
+                    $("#PID_Status").hide();
+                    $("#riskattach").hide();
+                    $("#Risk_Waiver").hide();
+                    $("#nreattach").hide();
+                    
+                    $("#NRE25K").hide();
+                    $("#customerNameChangePanel").hide();
+                    $("#requireToCreateTheNewPartPanel1").hide();
+                    $("#requireToCreateTheNewPartPanel").hide();
+                    if ($("[id$='tapeoutInput']").val() == 'Yes') {        
+                        $("#currentForecastTapeoutDatePanel").show();  
+                    } else {
+                        $("#currentForecastTapeoutDatePanel").hide();
+                    }
+                    $("#newFabPanel").hide();                     
+                } else if($("[id$='reasonInput']").val() == 'Retrofit + Add ROM Code' || $("[id$='reasonInput']").val() == 'Add ROM Code') {
+                    $("#rfnpid").hide();
+                    $("#nrfnpid").show();
+                    $("#cid").hide();
+                    $("#yeardisp").hide();
+                    $("#ngroupid").hide();
+                    $("#autodev").hide();
+                    $("#changerow2").hide();
+                    $("#changerow").show();
+                    $("#changerow1").show();
+                    $("#mskidval").show();
+                    $("#repeatAttachh").show();
+                    $("#PID_Status").hide();
+                    $("#riskattach").hide();
+                    $("#Risk_Waiver").hide();
+                    $("#nreattach").hide();
+                    
+                    $("#NRE25K").hide();
+                    $("#customerNameChangePanel").hide();
+                    $("#requireToCreateTheNewPartPanel1").hide();
+                    $("#requireToCreateTheNewPartPanel").hide();
+                    if ($("[id$='tapeoutInput']").val() == 'Yes') {        
+                        $("#currentForecastTapeoutDatePanel").show();  
+                    } else {
+                        $("#currentForecastTapeoutDatePanel").hide();
+                    }
+                    $("#newFabPanel").hide();                     
+                } else if($("[id$='reasonInput']").val() == 'New Probe Card Flow') {
+                    $("#rfnpid").hide();
+                    $("#nrfnpid").show();
+                    $("#cid").hide();
+                    $("#yeardisp").hide();
+                    $("#ngroupid").hide();
+                    $("#autodev").hide();
+                    $("#changerow2").hide();
+                    $("#changerow").show();
+                    $("#changerow1").show();
+                    $("#mskidval").show();
+                    $("#repeatAttachh").show();
+                    $("#PID_Status").hide();
+                    $("#riskattach").hide();
+                    $("#Risk_Waiver").hide();
+                    $("#nreattach").hide();
+                    
+                    $("#NRE25K").hide();
+                    $("#customerNameChangePanel").hide();
+                    $("#requireToCreateTheNewPartPanel1").hide();
+                    $("#requireToCreateTheNewPartPanel").hide();
+                    if ($("[id$='tapeoutInput']").val() == 'Yes') {        
+                        $("#currentForecastTapeoutDatePanel").show();  
+                    } else {
+                        $("#currentForecastTapeoutDatePanel").hide();
+                    }
+                    $("#newFabPanel").hide();                     
+                } else if($("[id$='reasonInput']").val() == 'BackgrindThicknessChange') {
+                    $("#rfnpid").hide();
+                    $("#nrfnpid").show();
+                    $("#cid").hide();
+                    $("#yeardisp").hide();
+                    $("#ngroupid").hide();
+                    $("#autodev").hide();
+                    $("#changerow2").hide();
+                    $("#changerow").show();
+                    $("#changerow1").show();
+                    $("#mskidval").show();
+                    $("#repeatAttachh").show();
+                    $("#PID_Status").hide();
+                    $("#riskattach").hide();
+                    $("#Risk_Waiver").hide();
+                    $("#nreattach").hide();
+                    
+                    $("#NRE25K").hide();
+                    $("#customerNameChangePanel").hide();
+                    $("#requireToCreateTheNewPartPanel1").hide();
+                    $("#requireToCreateTheNewPartPanel").hide();
+                    if ($("[id$='tapeoutInput']").val() == 'Yes') {        
+                        $("#currentForecastTapeoutDatePanel").show();  
+                    } else {
+                        $("#currentForecastTapeoutDatePanel").hide();
+                    }
+                    $("#newFabPanel").hide();                     
+                } else if($("[id$='reasonInput']").val() == 'StartingMaterialChange') {
+                    $("#rfnpid").hide();
+                    $("#nrfnpid").show();
+                    $("#cid").hide();
+                    $("#yeardisp").hide();
+                    $("#ngroupid").hide();
+                    $("#autodev").hide();
+                    $("#changerow2").hide();
+                    $("#changerow").show();
+                    $("#changerow1").show();
+                    $("#mskidval").show();
+                    $("#repeatAttachh").show();
+                    $("#PID_Status").hide();
+                    $("#riskattach").hide();
+                    $("#Risk_Waiver").hide();
+                    $("#nreattach").hide();
+                    
+                    $("#NRE25K").hide();
+                    $("#customerNameChangePanel").hide();
+                    $("#requireToCreateTheNewPartPanel1").hide();
+                    $("#requireToCreateTheNewPartPanel").hide();
+                    if ($("[id$='tapeoutInput']").val() == 'Yes') {        
+                        $("#currentForecastTapeoutDatePanel").show();  
+                    } else {
+                        $("#currentForecastTapeoutDatePanel").hide();
+                    }
+                    $("#newFabPanel").hide();                     
+                } else if($("[id$='reasonInput']").val() == 'ShortLoop Flow') {
+                    $("#rfnpid").hide();
+                    $("#nrfnpid").show();
+                    $("#cid").hide();
+                    $("#yeardisp").hide();
+                    $("#ngroupid").hide();
+                    $("#autodev").hide();
+                    $("#changerow2").hide();
+                    $("#changerow").show();
+                    $("#changerow1").show();
+                    $("#mskidval").show();
+                    $("#repeatAttachh").show();
+                    $("#PID_Status").hide();
+                    $("#riskattach").hide();
+                    $("#Risk_Waiver").hide();
+                    $("#nreattach").hide();
+                    
+                    $("#NRE25K").hide();
+                    $("#customerNameChangePanel").hide();
+                    $("#requireToCreateTheNewPartPanel1").hide();
+                    $("#requireToCreateTheNewPartPanel").hide();
+                    if ($("[id$='tapeoutInput']").val() == 'Yes') {        
+                        $("#currentForecastTapeoutDatePanel").show();  
+                    } else {
+                        $("#currentForecastTapeoutDatePanel").hide();
+                    }
+                    $("#newFabPanel").hide();                     
+                } else if($("[id$='reasonInput']").val() == 'Device Reactivation') {
+                    $("#rfnpid").show();
+                    $("#nrfnpid").hide();
+                    $("#maskDiv").hide();
+                    $("#cid").show();
+                    $("#yeardisp").show();
+                    $("#ngroupid").show();
+                    $("#autodev").show();
+                    $("#changerow2").show();
+                    $("#changerow").hide();
+                    $("#changerow1").hide();
+                    $("#mskidval").hide();
+                    $("#repeatAttachh").hide();
+                    $("#PID_Status").show();
+                    $("#riskattach").show();
+                    $("#Risk_Waiver").show();
+                    $("#nreattach").show();
+                    $("#ISREAVIl").show();
+                    $("#NRE25K").show();
+                    $("#customerNameChangePanel").hide();
+                    $("#requireToCreateTheNewPartPanel").hide();
+                    $("#tapeoutPanel").hide();
+                    $("#tapeoutInput").hide();
+                    $("#tapeoutPanel111").hide();
+                    $("#requireToCreateTheNewPartPanel1").hide();
+                    $("#currentForecastTapeoutDatePanel").hide();
+                    $("#newFabPanel").hide(); 
+                    EnableDeviceReactivation();                          
+                } else {
+                    $("#requireToCreateTheNewPartPanel").hide();
+                    $("#customerNameChangePanel").hide();
+                    $("#currentForecastTapeoutDatePanel").hide();
+                    $("#newFabPanel").hide();
+                    $("#NRE25K").hide(); 
+                    disableDeviceReactivation();                                        
+
+                }
+            });
+        });  
+    </script>
+    
+    <script>
+        function tapeoutInputChange() {
+                  
+            if($("[id$='reasonInput']").val() == 'Others') {
+                $("#requireToCreateTheNewPartPanel").show();
+                $("#currentForecastTapeoutDatePanel").hide();
+                $("#requireToCreateTheNewPartPanel1").hide();
+                $("#customerNameChangePanel").hide();
+                $("#newFabPanel").hide();                     
+            } else if($("[id$='reasonInput']").val() == 'CustomerNameChange') {
+                $("#customerNameChangePanel").show();
+                $("#requireToCreateTheNewPartPanel1").show();
+                $("#requireToCreateTheNewPartPanel").hide();
+                $("#currentForecastTapeoutDatePanel").hide();
+                $("#newFabPanel").hide();       
+             } else if($("[id$='reasonInput']").val() == 'Fab to Fab Transfer') {        
+                $("#customerNameChangePanel").hide();   
+                $("#requireToCreateTheNewPartPanel1").hide();
+                $("#requireToCreateTheNewPartPanel").hide();
+                if ($("[id$='tapeoutInput']").val() == 'Yes') {        
+                    $("#currentForecastTapeoutDatePanel").show();  
+                } else {
+                    $("#currentForecastTapeoutDatePanel").hide();
+                }     
+                $("#newFabPanel").show();  
+            } else if($("[id$='reasonInput']").val() == 'Change in PID') {
+                $("#customerNameChangePanel").hide();
+                $("#requireToCreateTheNewPartPanel1").hide();
+                $("#requireToCreateTheNewPartPanel").hide();
+                if ($("[id$='tapeoutInput']").val() == 'Yes') {        
+                    $("#currentForecastTapeoutDatePanel").show();  
+                } else {
+                    $("#currentForecastTapeoutDatePanel").hide();
+                }
+                $("#newFabPanel").hide();                    
+            } else if($("[id$='reasonInput']").val() == 'Retrofit') {
+                $("#customerNameChangePanel").hide();
+                $("#requireToCreateTheNewPartPanel1").hide();
+                $("#requireToCreateTheNewPartPanel").hide();
+                if ($("[id$='tapeoutInput']").val() == 'Yes') {        
+                    $("#currentForecastTapeoutDatePanel").show();  
+                } else {
+                    $("#currentForecastTapeoutDatePanel").hide();
+                }
+                $("#newFabPanel").hide();                     
+            } else if($("[id$='reasonInput']").val() == 'Retrofit + Add ROM Code' || $("[id$='reasonInput']").val() == 'Add ROM Code') {
+                $("#customerNameChangePanel").hide();
+                $("#requireToCreateTheNewPartPanel1").hide();
+                $("#requireToCreateTheNewPartPanel").hide();
+                if ($("[id$='tapeoutInput']").val() == 'Yes') {        
+                    $("#currentForecastTapeoutDatePanel").show();  
+                } else {
+                    $("#currentForecastTapeoutDatePanel").hide();
+                }
+                $("#newFabPanel").hide();                     
+            } else if($("[id$='reasonInput']").val() == 'New Probe Card Flow') {
+                $("#customerNameChangePanel").hide();
+                $("#requireToCreateTheNewPartPanel1").hide();
+                $("#requireToCreateTheNewPartPanel").hide();
+                if ($("[id$='tapeoutInput']").val() == 'Yes') {        
+                    $("#currentForecastTapeoutDatePanel").show();  
+                } else {
+                    $("#currentForecastTapeoutDatePanel").hide();
+                }
+                $("#newFabPanel").hide();                     
+            } else if($("[id$='reasonInput']").val() == 'BackgrindThicknessChange') {
+                $("#customerNameChangePanel").hide();
+                $("#requireToCreateTheNewPartPanel1").hide();
+                $("#requireToCreateTheNewPartPanel").hide();
+                if ($("[id$='tapeoutInput']").val() == 'Yes') {        
+                    $("#currentForecastTapeoutDatePanel").show();  
+                } else {
+                    $("#currentForecastTapeoutDatePanel").hide();
+                }
+                $("#newFabPanel").hide();                     
+            } else if($("[id$='reasonInput']").val() == 'StartingMaterialChange') {
+                $("#customerNameChangePanel").hide();
+                $("#requireToCreateTheNewPartPanel1").hide();
+                $("#requireToCreateTheNewPartPanel").hide();
+                if ($("[id$='tapeoutInput']").val() == 'Yes') {        
+                    $("#currentForecastTapeoutDatePanel").show();  
+                } else {
+                    $("#currentForecastTapeoutDatePanel").hide();
+                }
+                $("#newFabPanel").hide();                     
+            } else if($("[id$='reasonInput']").val() == 'ShortLoop Flow') {
+                $("#customerNameChangePanel").hide();
+                $("#requireToCreateTheNewPartPanel1").hide();
+                $("#requireToCreateTheNewPartPanel").hide();
+                if ($("[id$='tapeoutInput']").val() == 'Yes') {        
+                    $("#currentForecastTapeoutDatePanel").show();  
+                } else {
+                    $("#currentForecastTapeoutDatePanel").hide();
+                }
+                $("#newFabPanel").hide();                     
+            } else if($("[id$='reasonInput']").val() == 'Device Reactivation') {
+                    $("#rfnpid").show();
+                    $("#nrfnpid").hide();
+                    $("#maskDiv").hide();
+                    $("#cid").show();
+                    $("#yeardisp").show();
+                    $("#ngroupid").show();
+                    $("#changerow2").show();
+                    $("#changerow").hide();
+                    $("#changerow1").hide();
+                    $("#mskidval").hide();
+                    $("#repeatAttachh").hide();
+                    $("#PID_Status").show();
+                    $("#riskattach").show();
+                    $("#Risk_Waiver").show();
+                    $("#nreattach").show();
+                    $("#ISREAVIl").show();
+                    $("#NRE25K").show();
+                    $("#customerNameChangePanel").hide();
+                    $("#requireToCreateTheNewPartPanel").hide();
+                    $("#tapeoutPanel").hide();
+                    $("#tapeoutInput").hide();
+                    $("#requireToCreateTheNewPartPanel1").hide();
+                    $("#currentForecastTapeoutDatePanel").hide();
+                    $("#newFabPanel").hide();       
+         } else {
+
+                $("#requireToCreateTheNewPartPanel").hide();
+                $("#customerNameChangePanel").hide();
+                $("#currentForecastTapeoutDatePanel").hide();
+                $("#newFabPanel").hide();                     
+            }
+        }
+        function redirectToDevice(redirectUrl){
+            window.location.href = redirectUrl;
+        }
+    
+    function validateECNDate(e){
+        try {
+            var dateRange = {!$Label.ECN_Date_Range};
+            var errorMsg = "{!$Label.ECN_Date_Error_Message}";
+            
+            var enteredDate = new Date($(e).val().split('/')[2], $(e).val().split('/')[0] - 1, $(e).val().split('/')[1]);
+
+            var today = new Date();
+            today.setDate(today.getDate() + parseInt(dateRange));
+
+            if(enteredDate <= today){
+                alert(errorMsg);
+                $(e).val('');
+            }
+        }
+        catch(err) {
+        
+        }
+    }
+    </script>
+    
+    <apex:sectionHeader title="NPC Form Edit" subtitle="New NPC Form" help="https://help.salesforce.com/htviewhelpdoc?id=co_edit.htm&siteLang=en_US" />
+    <apex:pageMessages id="errorSection" rendered="{!!isError}"/> 
+    
+    <apex:outputPanel id="errorPopup"> 
+        <apex:outputPanel styleClass="popupBackground" layout="block" rendered="{!isError}"/> 
+           <apex:outputPanel styleClass="errorDtlPopup" layout="block" rendered="{!isError}">
+               <apex:pageMessages id="popupErrorSection" />
+              <center><input type="button" name="ok" class="btn" value="Ok" onclick="redirectToDevice('{!URLFOR($Action.Device__c.View, device.Id)}');" /></center>
+              
+           </apex:outputPanel> 
+    </apex:outputPanel>
+    <apex:form id="form1">
+        <apex:pageBlock mode="Edit" title="NPC Form Edit" id="BlkEdit">
+            <div class="pbSubheader brandTertiaryBgr first tertiaryPalette" id="head_1_ep">
+                <span class="pbSubExtra">
+                    <span class="requiredLegend brandTertiaryFgr">
+                        <span class="requiredExampleOuter">
+                            <span class="requiredExample">&nbsp;</span>
+                        </span>
+                        <span class="requiredMark"></span>
+                        <span  class="requiredText"> = Required Information</span>
+                    </span>
+                </span>
+                <h3>New Part Creation Form<span class="titleSeparatingColon">:</span></h3>
+            </div>
+            
+            <apex:pageBlockButtons location="both" id="buttonsBlock">
+                <apex:commandButton value="Save" action="{!save}" onclick="return validateAttachment();" disabled="{!disableSaveAddAttachment}" />
+                <!-- apex:commandButton value="Cancel" action="{!IF(isEdit, URLFOR($Action.New_Part_Creation_Form__c.View, npcForm.Id), IF(fromDevicePage, URLFOR($Action.Device__c.View, deviceId), URLFOR($Action.New_Part_Creation_Form__c.Tab, $ObjectType.New_Part_Creation_Form__c)))}" immediate="true" rendered="{!NOT(isFromPortal)}" / -->
+                <apex:commandButton value="Cancel" action="{!cancel}" immediate="true" />
+                <apex:commandButton id="addAttachbutton" value="Add Attachment" action="{!addMore}" immediate="true" disabled="{!disableSaveAddAttachment}" />
+            </apex:pageBlockButtons>            
+
+
+        
+            <table class="mainTbl" cols="5">
+                <tr><td colspan="5">&nbsp;</td></tr>
+                <!-- NPC Edit -->
+                <apex:outputPanel rendered="{!AND(isEdit, NOT(isClone))}">
+                    <tr>
+                        <td width="30%" class="labelCol" style="vertical-align: middle;">
+                            {!$ObjectType.New_Part_Creation_Form__c.fields.Name.label}
+                        </td>
+                        <td width="20%" style="vertical-align: middle;">
+                            <apex:outputText value="{!npcForm.Name}" />
+                        </td>
+                        <td width="4%">&nbsp;</td>
+                        <td width="24%" class="labelCol" style="vertical-align: middle;">
+                            {!$ObjectType.New_Part_Creation_Form__c.fields.NPC_Form_Status__c.label}
+                        </td>
+                        <td width="22%" style="vertical-align: middle;">
+                            <apex:outputText value="{!npcForm.NPC_Form_Status__c}" />
+                        </td>
+                    </tr>
+                </apex:outputPanel>
+                <!-- NPC Edit -->
+                
+                <!-- From Device page -->
+                <apex:outputPanel rendered="{!AND(OR(fromDevicePage, isEdit), NOT(isFromPortal))}">
+                    <tr>
+                        <td width="30%" class="labelCol" style="vertical-align: middle;">
+                            {!$ObjectType.New_Part_Creation_Form__c.fields.Account__c.label}
+                        </td>
+                        <td width="20%" style="vertical-align: middle;">
+                            <apex:outputText id="account" value="{!device.Account__r.Name}" />
+                        </td>
+                        <td width="4%">&nbsp;</td>
+                        <td width="24%" class="labelCol" style="vertical-align: middle;">
+                            {!$ObjectType.New_Part_Creation_Form__c.fields.Account_Short_Name__c.label}
+                        </td>
+                        <td width="22%" style="vertical-align: middle;">
+                            <apex:outputText value="{!device.Account_Short_Name__c}" />
+                        </td>
+                    </tr>
+                    <tr>
+                        <td width="30%" class="labelCol" style="vertical-align: middle;">
+                            {!$ObjectType.New_Part_Creation_Form__c.fields.Originating_Device__c.label}
+                            <span class="helpButton" id="New_Part_Creation_Form__c.{!$ObjectType.New_Part_Creation_Form__c.fields.Originating_Device__c}-_help">
+                                <img src="/s.gif" alt=""  class="helpOrb" title="" />
+                                <script>sfdcPage.setHelp('New_Part_Creation_Form__c.{!$ObjectType.New_Part_Creation_Form__c.fields.Originating_Device__c}', '{!$ObjectType.New_Part_Creation_Form__c.fields.Originating_Device__c.inlineHelpText}');</script>
+                            </span>
+                        </td>
+                        <td width="20%" style="vertical-align: middle;">
+                            <apex:outputText id="baseDevice" value="{!device.Name}" />
+                        </td>
+                        <td width="4%">&nbsp;</td>
+                        <td width="24%" class="labelCol" style="vertical-align: middle;">
+                            {!$ObjectType.Device__c.fields.Fab__c.label}
+                        </td>
+                        <td width="22%" style="vertical-align: middle;">
+                            <apex:outputText id="fab1" value="{!npcForm.Fab__c}" />
+                        </td>
+                    </tr>
+                </apex:outputPanel>
+                <!-- From Device page -->
+                
+                <!-- From NPC Form Tab -->
+                <apex:outputPanel rendered="{!AND(NOT(fromDevicePage), NOT(isEdit), NOT(isFromPortal))}">
+                    <tr>
+                        <td width="30%" class="labelCol" style="vertical-align: middle;">
+                            {!$ObjectType.New_Part_Creation_Form__c.fields.Account__c.label}
+                        </td>
+                        <td width="20%" style="vertical-align: middle;">
+                            <apex:outputPanel id="accountPanel">
+                                <apex:inputField id="account1" value="{!npcForm.Account__c}" required="true" />
+                            </apex:outputPanel>
+                        </td>
+                        <td width="4%">&nbsp;</td>
+                        <td width="24%" class="labelCol" style="vertical-align: middle;">
+                            {!$ObjectType.New_Part_Creation_Form__c.fields.Account_Short_Name__c.label}
+                        </td>
+                        <td width="22%" style="vertical-align: middle;">
+                            <apex:outputText id="shortname1" value="{!device.Account_Short_Name__c}" />
+                        </td>
+                    </tr>
+                    <tr>
+                        <td width="30%" class="labelCol" style="vertical-align: middle;">
+                            {!$ObjectType.New_Part_Creation_Form__c.fields.Originating_Device__c.label}
+                            <span class="helpButton" id="New_Part_Creation_Form__c.{!$ObjectType.New_Part_Creation_Form__c.fields.Originating_Device__c}-_help">
+                                <img src="/s.gif" alt=""  class="helpOrb" title="" />
+                                <script>sfdcPage.setHelp('New_Part_Creation_Form__c.{!$ObjectType.New_Part_Creation_Form__c.fields.Originating_Device__c}', '{!$ObjectType.New_Part_Creation_Form__c.fields.Originating_Device__c.inlineHelpText}');</script>
+                            </span>
+                        </td>
+                        <td width="20%" style="vertical-align: middle;">
+                            <apex:actionRegion >
+                                <apex:inputField value="{!npcForm.Originating_Device__c}" onkeypress="return preventEnter(event);" required="true">
+                                    <apex:actionSupport event="onchange" action="{!retrieveDeviceDetails}" oncomplete="rebindAction();" status="retrieveStatus1" rerender="errorPopup, accountPanel, refIdPanel, maskDiv, maskAlertMsg, fab2, errorSection, secureDevice, shortname1, newPartId, automotiveDevice, maskSetTitle1, maskSetTitle2, reasonPanel, tapeoutPanel, buttonsBlock, secureDevice1, automotiveDevice1, yeardisp" />
+                                </apex:inputField>
+                                <apex:actionStatus startText="Loading..." stopText="" id="retrieveStatus1" layout="inline" onstart="showImage('div1');" onstop="hideImage('div1');" />
+                                <div id="div1" class="showHide">
+                                    <apex:image value="{!$Resource.LoadingGIF}" width="18" height="18" /> 
+                                </div>
+                           </apex:actionRegion>
+                        </td>
+                        <td width="4%">&nbsp;</td>
+                        <td width="24%" class="labelCol" style="vertical-align: middle;">
+                            {!$ObjectType.Device__c.fields.Fab__c.label}
+                        </td>
+                        <td width="22%" style="vertical-align: middle;">
+                            <apex:outputText id="fab2" value="{!npcForm.Fab__c}" />
+                        </td>
+                    </tr>
+                </apex:outputPanel>
+                <!-- From NPC Form Tab -->  
+                
+                <!-- From Portal -->
+                <apex:outputPanel rendered="{!isFromPortal}" id="panelPortal">
+                    <tr>
+                        <td width="30%" class="labelCol" style="vertical-align: middle;">
+                            {!$ObjectType.New_Part_Creation_Form__c.fields.Account__c.label}
+                        </td>
+                        <td width="20%" style="vertical-align: middle;">
+                            <apex:outputText id="account3" value="{!accountName}" />
+                            <apex:inputHidden id="account3Id" value="{!npcform.Account__c}"/> 
+                            <div style="display: none;">
+                                <apex:inputField id="account2" value="{!npcform.Account__c}" />
+                            </div>
+                        </td>
+                        <td width="4%">&nbsp;</td>
+                        <td width="24%" class="labelCol" style="vertical-align: middle;">
+                            {!$ObjectType.New_Part_Creation_Form__c.fields.Account_Short_Name__c.label}
+                        </td>
+                        <td width="22%" style="vertical-align: middle;">
+                            <apex:outputText id="shortname2" value="{!device.Account_Short_Name__c}" />
+                        </td>
+                    </tr>
+                    <tr>
+                        <td width="30%" class="labelCol" style="vertical-align: middle;">
+                            {!$ObjectType.New_Part_Creation_Form__c.fields.Originating_Device__c.label}
+                            <img src="/s.gif" class="imgclass" onmouseover="showHelpText('divSFDCReferenceDevice');" onmouseout="hideHelpText('divSFDCReferenceDevice');" />
+                        </td>
+                        <td width="20%" style="vertical-align: middle;">
+                            <apex:actionRegion id="portalActionRegion">
+                                <apex:inputField value="{!npcForm.Originating_Device__c}" id="baseDevicePortal">
+                                    <apex:actionSupport id="portalActionSupport" event="onchange" oncomplete="rebindAction();removeReActivation();" action="{!retrieveDeviceDetails}" status="retrieveStatus2" rerender="refIdPanel, maskDiv, maskDivparent,maskAlertMsg, fab3, errorSection, secureDevice, shortname2, newPartId, automotiveDevice, maskSetTitle1, maskSetTitle2, tapeoutPanel, buttonsBlock, reasonPanel, secureDevice1, automotiveDevice1" />
+                                </apex:inputField>
+                                <apex:actionStatus startText="Loading..." stopText="" id="retrieveStatus2" layout="inline" onstart="showImage('div1');" onstop="hideImage('div1');" />
+                                <div id="div1" class="showHide">
+                                    <apex:image value="{!$Resource.LoadingGIF}" width="18" height="18" /> 
+                                </div>
+                            </apex:actionRegion>
+                        </td>
+                        <td width="4%">&nbsp;</td>
+                        <td width="24%" class="labelCol" style="vertical-align: middle;">
+                            {!$ObjectType.Device__c.fields.Fab__c.label}
+                        </td>
+                        <td width="22%" style="vertical-align: middle;">
+                            <apex:outputText id="fab3" value="{!npcForm.Fab__c}" />
+                        </td>
+                    </tr>
+                </apex:outputPanel>
+                <!-- From Portal -->
+
+                <tr>
+                    <td class="labelCol" style="vertical-align: middle;">
+                        {!$ObjectType.New_Part_Creation_Form__c.fields.Reason_for_New_Part__c.label}
+                        <apex:outputPanel layout="inline" rendered="{!NOT(isFromPortal)}">
+                            <span class="helpButton" id="New_Part_Creation_Form__c.{!$ObjectType.New_Part_Creation_Form__c.fields.Reason_for_New_Part__c}-_help">
+                                <img src="/s.gif" alt=""  class="helpOrb" title="" />
+                                <script>sfdcPage.setHelp('New_Part_Creation_Form__c.{!$ObjectType.New_Part_Creation_Form__c.fields.Reason_for_New_Part__c}', '{!$ObjectType.New_Part_Creation_Form__c.fields.Reason_for_New_Part__c.inlineHelpText}');</script>
+                            </span>
+                        </apex:outputPanel>
+                        
+                        <apex:outputPanel layout="inline" rendered="{!isFromPortal}">
+                            <img src="/s.gif" class="imgclass" onmouseover="showHelpText('divReasonForNewPart');" onmouseout="hideHelpText('divReasonForNewPart');" />
+                        </apex:outputPanel>
+                    </td>
+                    <td style="vertical-align: middle;">
+                        <apex:outputPanel id="reasonPanel">
+                            <apex:actionRegion >
+                            <!-- apex:inputField id="reasonInput" value="{!npcForm.Reason_for_New_Part__c}" required="true" rendered="{!IF(AND(device.Fab__c != 'FAB 1', device.Fab__c != 'FAB 8'), true, false)}" />
+                                <apex:outputField id="reasonOutput" value="{!npcForm.Reason_for_New_Part__c}" rendered="{!IF(OR(device.Fab__c == 'FAB 1', device.Fab__c == 'FAB 8'), true, false)}" / -->                              
+                                <apex:inputField styleClass="RemoveDeviceReact" id="reasonInput" value="{!npcForm.Reason_for_New_Part__c}" required="true"   rendered="{!IF(OR(AND(device.Fab__c != 'FAB 1', device.Fab__c != 'FAB 8', AND(OR(npcForm.NPC_Form_Status__c == '', npcForm.NPC_Form_Status__c == null, npcForm.NPC_Form_Status__c == 'Draft', npcForm.NPC_Form_Status__c == 'Pending Submission', npcForm.NPC_Form_Status__c == 'Pending Resubmission'), NOT(hasDevice))),AND(isClone,device.Fab__c != 'FAB 1', device.Fab__c != 'FAB 8')), true, false)}">
+                                    <apex:actionSupport oncomplete="reasonselectselect12();" event="onchange" action="{!retrieveReferenceIds}" status="retrieveStatus1a" rerender="refIdPanel, maskDiv, maskDivparent, maskAlertMsg, newPartId, errorSection, requireToCreateTheNewPartInput,requireToCreateTheNewPartInput1, newFabInput, buttonsBlock" />
+                                </apex:inputField>
+                                <apex:outputField id="reasonOutput" value="{!npcForm.Reason_for_New_Part__c}" rendered="{!IF(AND(OR(device.Fab__c == 'FAB 1', device.Fab__c == 'FAB 8', OR(AND(npcForm.NPC_Form_Status__c != '', npcForm.NPC_Form_Status__c != null, npcForm.NPC_Form_Status__c != 'Draft', npcForm.NPC_Form_Status__c != 'Pending Submission', npcForm.NPC_Form_Status__c != 'Pending Resubmission'), hasDevice))), true, false)}" /> 
+                            </apex:actionRegion>
+                       </apex:outputPanel> 
+                    </td>
+                    <td>&nbsp;</td>
+                    <div id="rerenderptr">
+                    <td class="labelCol" style="vertical-align: middle;">
+                       <apex:outputLabel value="{!$ObjectType.New_Part_Creation_Form__c.fields.Tapeout_Required__c.label}" id="AutomotiveGradeLabel1"/>
+                        <apex:outputPanel layout="inline" rendered="{!NOT(isFromPortal)}" id="hlptxtpan">
+                            <span class="helpButton" id="New_Part_Creation_Form__c.{!$ObjectType.New_Part_Creation_Form__c.fields.Tapeout_Required__c}-_help">
+                                <img src="/s.gif" alt=""  class="helpOrb" title="" />
+                                <script>sfdcPage.setHelp('New_Part_Creation_Form__c.{!$ObjectType.New_Part_Creation_Form__c.fields.Tapeout_Required__c}', '{!$ObjectType.New_Part_Creation_Form__c.fields.Tapeout_Required__c.inlineHelpText}');</script>
+                            </span>
+                        </apex:outputPanel>
+                        
+                        <apex:outputPanel layout="inline" rendered="{!isFromPortal}" id="x11">
+                            <img src="/s.gif" class="imgclass" onmouseover="showHelpText('divTapeoutRequired');" onmouseout="hideHelpText('divTapeoutRequired');" />
+                        </apex:outputPanel> 
+                    </td>
+                    <td style="vertical-align: middle;">
+                        <apex:outputPanel id="tapeoutPanel">
+                            <!-- apex:inputField id="tapeoutInput" value="{!npcForm.Tapeout_Required__c}" required="true" rendered="{!IF(AND(device.Fab__c != 'FAB 1', device.Fab__c != 'FAB 8'), true, false)}" />
+                            <apex:outputField id="tapeoutOutput" value="{!npcForm.Tapeout_Required__c}" rendered="{!IF(OR(device.Fab__c == 'FAB 1', device.Fab__c == 'FAB 8'), true, false)}" / -->
+                            <apex:inputField id="tapeoutInput" onchange="tapeoutInputChange();" value="{!npcForm.Tapeout_Required__c}" required="true" rendered="{!IF(OR(AND(device.Fab__c != 'FAB 1', device.Fab__c != 'FAB 8', AND(OR(npcForm.NPC_Form_Status__c == '', npcForm.NPC_Form_Status__c == null, npcForm.NPC_Form_Status__c == 'Draft', npcForm.NPC_Form_Status__c == 'Pending Submission', npcForm.NPC_Form_Status__c == 'Pending Resubmission'), NOT(hasDevice))),AND(isClone,device.Fab__c != 'FAB 1', device.Fab__c != 'FAB 8')), true, false)}" />
+                            <apex:outputField id="tapeoutOutput" value="{!npcForm.Tapeout_Required__c}" rendered="{!IF(AND(OR(device.Fab__c == 'FAB 1', device.Fab__c == 'FAB 8', OR(AND(npcForm.NPC_Form_Status__c != '', npcForm.NPC_Form_Status__c != null, npcForm.NPC_Form_Status__c != 'Draft', npcForm.NPC_Form_Status__c != 'Pending Submission', npcForm.NPC_Form_Status__c != 'Pending Resubmission'), hasDevice))), true, false)}" />                             
+                        </apex:outputPanel>
+                    </td>
+                    <script>
+                        $(document).ready(function(){
+                          reasonselectselect12();
+                        });
+                        function reasonselectselect12(){
+                                if($('[id$=reasonInput]').val() == "Device Reactivation" || $("[id$='reasonOutput']").text() == 'Device Reactivation'){                               
+                                    $('[id$=maskDiv]').hide();
+                                    $('[id$=AutomotiveGradeLabel1]').hide();
+                                    $('[id$=tapeoutInput]').hide();
+                                    $('[id$=testid]').hide(); 
+                                    $('[id$=tapeoutOutput]').hide();
+                                    $('[id$=divTapeoutRequired]').hide();
+                                    $('[id$=tapeoutPanel]').hide();
+                                     $('[id$=hlptxtpan]').hide(); 
+                                     $('[id$=rerendergrade]').hide();  
+                                     $('[id$=addAttachbutton]').hide();                                                                         
+                                  <!--  $('[id$=tapeoutInput]').attr('required', false);-->
+                                }
+                                else{
+                                    $('[id$=maskDiv]').show();
+                                    $('[id$=AutomotiveGrade]').val('');
+                                    $('[id$=AutomotiveGradeLabel1]').show();
+                                    $('[id$=tapeoutInput]').show();
+                                    $('[id$=testid]').show();                                                                                                                                                                                                         
+                                    $('[id$=tapeoutOutput]').show();
+                                    //$('[id$=divTapeoutRequired]').show();
+                                    $('[id$=tapeoutPanel]').show();
+                                    $('[id$=hlptxtpan]').show();
+                                    $('[id$=addAttachbutton]').show(); 
+                                    $('[id$=ny1]').val('');
+                                    $('[id$=ny2]').val('');
+                                    $('[id$=ny3]').val('');
+                                    $('[id$=pa1]').val('');
+                                    $('[id$=pa2]').val('');
+                                    $('[id$=pa3]').val(''); 
+                                    $('[id$=Rectile_LocationInput1]').val(''); 
+                                    $('[id$=notgrpid]').val(''); 
+                                    $('[id$=comid]').val('');                                     
+                                    $('[id$=maincomments]').val('');                                                                         
+                                    
+                                                                        
+                                                                       
+                                                                                                                                                                                                                                                        
+                                   <!-- $('[id$=tapeoutInput]').attr('required', true);-->
+                                }
+                            }
+                    </script>
+                    </div>
+                                      
+                </tr>
+
+                <tr id="requireToCreateTheNewPartPanel">
+                    <td class="labelCol" style="vertical-align: middle;">
+                        {!$ObjectType.New_Part_Creation_Form__c.fields.Require_To_Create_The_New_Part__c.label}
+                        <apex:outputPanel layout="inline" rendered="{!NOT(isFromPortal)}">
+                            <span class="helpButton" id="New_Part_Creation_Form__c.{!$ObjectType.New_Part_Creation_Form__c.fields.Require_To_Create_The_New_Part__c}-_help">
+                                <img src="/s.gif" alt=""  class="helpOrb" title="" />
+                                <script>sfdcPage.setHelp('New_Part_Creation_Form__c.{!$ObjectType.New_Part_Creation_Form__c.fields.Require_To_Create_The_New_Part__c}', '{!$ObjectType.New_Part_Creation_Form__c.fields.Require_To_Create_The_New_Part__c.inlineHelpText}');</script>
+                            </span>
+                        </apex:outputPanel>
+                        
+                        <apex:outputPanel layout="inline" rendered="{!isFromPortal}">
+                            <img src="/s.gif" class="imgclass" onmouseover="showHelpText('divRequireToCreateTheNewPart');" onmouseout="hideHelpText('divRequireToCreateTheNewPart');" />
+                        </apex:outputPanel>
+                    </td>
+                    <td style="vertical-align: middle;">
+                     <apex:inputField id="requireToCreateTheNewPartInput" required="true" value="{!npcForm.Require_To_Create_The_New_Part__c}" rendered="{!IF(OR(AND(device.Fab__c != 'FAB 1', device.Fab__c != 'FAB 8', AND(OR(npcForm.NPC_Form_Status__c == '', npcForm.NPC_Form_Status__c == null, npcForm.NPC_Form_Status__c == 'Draft', npcForm.NPC_Form_Status__c == 'Pending Submission', npcForm.NPC_Form_Status__c == 'Pending Resubmission'), NOT(hasDevice))),AND(isClone,device.Fab__c != 'FAB 1', device.Fab__c != 'FAB 8')), true, false)}" />
+                     <apex:outputField id="requireToCreateTheNewPartOutput" value="{!npcForm.Require_To_Create_The_New_Part__c}" rendered="{!IF(AND(OR(device.Fab__c == 'FAB 1', device.Fab__c == 'FAB 8', OR(AND(npcForm.NPC_Form_Status__c != '', npcForm.NPC_Form_Status__c != null, npcForm.NPC_Form_Status__c != 'Draft', npcForm.NPC_Form_Status__c != 'Pending Submission', npcForm.NPC_Form_Status__c != 'Pending Resubmission'), hasDevice))), true, false)}" />
+            </td>       
+                    <td>&nbsp;</td>         
+                     <td>&nbsp;</td>         
+                    <td>&nbsp;</td>         
+                 </tr> 
+
+<tr id="requireToCreateTheNewPartPanel1">
+                    <td class="labelCol" style="vertical-align: middle;">
+                        {!$ObjectType.New_Part_Creation_Form__c.fields.ECN_Change_Date__c.label}
+                        <apex:outputPanel layout="inline" rendered="{!NOT(isFromPortal)}">
+                            <span class="helpButton" id="New_Part_Creation_Form__c.{!$ObjectType.New_Part_Creation_Form__c.fields.ECN_Change_Date__c}-_help">
+                                <img src="/s.gif" alt=""  class="helpOrb" title="" />
+                                <script>sfdcPage.setHelp('New_Part_Creation_Form__c.{!$ObjectType.New_Part_Creation_Form__c.fields.ECN_Change_Date__c}', '{!$ObjectType.New_Part_Creation_Form__c.fields.ECN_Change_Date__c.inlineHelpText}');</script>
+                            </span>
+                        </apex:outputPanel>
+                        
+                        <apex:outputPanel layout="inline" rendered="{!isFromPortal}">
+                            <img src="/s.gif" class="imgclass" onmouseover="showHelpText('divRequireToCreateTheNewPart');"  />
+                        </apex:outputPanel>
+                    </td>
+                    <td style="vertical-align: middle;">
+                     <apex:inputField id="requireToCreateTheNewPartInput1" value="{!npcForm.ECN_Change_Date__c}" onchange="validateECNDate(this)" rendered="{!IF(OR(AND(device.Fab__c != 'FAB 1', device.Fab__c != 'FAB 8', AND(OR(npcForm.NPC_Form_Status__c == '', npcForm.NPC_Form_Status__c == null, npcForm.NPC_Form_Status__c == 'Draft', npcForm.NPC_Form_Status__c == 'Pending Submission', npcForm.NPC_Form_Status__c == 'Pending Resubmission'), NOT(hasDevice))),isClone), true, false)}"  />
+                     <apex:outputField id="requireToCreateTheNewPartOutput1" value="{!npcForm.ECN_Change_Date__c}"  rendered="{!IF(AND(OR(device.Fab__c == 'FAB 1', device.Fab__c == 'FAB 8', OR(AND(npcForm.NPC_Form_Status__c != '', npcForm.NPC_Form_Status__c != null, npcForm.NPC_Form_Status__c != 'Draft', npcForm.NPC_Form_Status__c != 'Pending Submission', npcForm.NPC_Form_Status__c != 'Pending Resubmission'), hasDevice)), NOT(isClone)), true, false)}" />
+                    </td>       
+                    <td>&nbsp;</td>         
+                     <td>&nbsp;</td>         
+                    <td>&nbsp;</td>         
+                 </tr>       
+                         
+                 <tr id="newFabPanel">       
+                     <td class="labelCol" style="vertical-align: middle;">       
+                         {!$ObjectType.New_Part_Creation_Form__c.fields.New_Fab__c.label}        
+                     </td>       
+                     <td style="vertical-align: middle;">        
+                         <!-- apex:inputField id="newFabInput" required="true" value="{!npcForm.New_Fab__c}" rendered="{!IF(AND(device.Fab__c != 'FAB 1', device.Fab__c != 'FAB 8', AND(OR(npcForm.NPC_Form_Status__c == '', npcForm.NPC_Form_Status__c == null, npcForm.NPC_Form_Status__c == 'Draft', npcForm.NPC_Form_Status__c == 'Pending Submission', npcForm.NPC_Form_Status__c == 'Pending Resubmission'), NOT(hasDevice))), true, false)}" / -->        
+                         <div class="requiredInput">
+                             <div id="requiredBlockDiv" class="requiredBlock"></div>
+                             <apex:selectList id="newFabInput" size="1" value="{!npcForm.New_Fab__c}" rendered="{!IF(OR(AND(device.Fab__c != 'FAB 1', device.Fab__c != 'FAB 8', AND(OR(npcForm.NPC_Form_Status__c == '', npcForm.NPC_Form_Status__c == null, npcForm.NPC_Form_Status__c == 'Draft', npcForm.NPC_Form_Status__c == 'Pending Submission', npcForm.NPC_Form_Status__c == 'Pending Resubmission'), NOT(hasDevice))),isClone), true, false)}">        
+                                 <apex:selectOptions value="{!FabList}" />       
+                             </apex:selectList>
+                         </div>                               
+                         <apex:outputField id="newFabOutput" value="{!npcForm.New_Fab__c}" rendered="{!IF(AND(OR(device.Fab__c == 'FAB 1', device.Fab__c == 'FAB 8', OR(AND(npcForm.NPC_Form_Status__c != '', npcForm.NPC_Form_Status__c != null, npcForm.NPC_Form_Status__c != 'Draft', npcForm.NPC_Form_Status__c != 'Pending Submission', npcForm.NPC_Form_Status__c != 'Pending Resubmission'), hasDevice)), NOT(isClone)), true, false)}" />                     
+                    </td>
+                    <td>&nbsp;</td>
+                    <td>&nbsp;</td>
+                    <td>&nbsp;</td>
+                </tr>
+                
+                <tr id="customerNameChangePanel">
+                    <td class="labelCol" style="vertical-align: middle;">
+                        {!$ObjectType.New_Part_Creation_Form__c.fields.New_Customer_Name__c.label}
+                    </td>
+                    <td style="vertical-align: middle;">
+                        <apex:actionRegion >
+                            <apex:selectList style="width: 250px;" value="{!npcForm.New_Customer_Name__c}" size="1" multiselect="false" rendered="{!IF(OR(AND(device.Fab__c != 'FAB 1', device.Fab__c != 'FAB 8', AND(OR(npcForm.NPC_Form_Status__c == '', npcForm.NPC_Form_Status__c == null, npcForm.NPC_Form_Status__c == 'Draft', npcForm.NPC_Form_Status__c == 'Pending Submission', npcForm.NPC_Form_Status__c == 'Pending Resubmission'), NOT(hasDevice))),isClone), true, false)}">
+                                <apex:selectOptions value="{!listAccountNames1}" />
+                                <apex:selectOptions value="{!listAccountNames2}" rendered="{!IF(listAccountNames2.size > 0, true, false)}" />
+                                <apex:selectOptions value="{!listAccountNames3}" rendered="{!IF(listAccountNames3.size > 0, true, false)}" />
+                                <apex:actionSupport event="onchange" rerender="newCustomerShortName" status="retrieveStatusSN" />
+                            </apex:selectList>
+                            <apex:outputField value="{!npcForm.New_Customer_Name__c}" rendered="{!IF(AND(OR(device.Fab__c == 'FAB 1', device.Fab__c == 'FAB 8', OR(AND(npcForm.NPC_Form_Status__c != '', npcForm.NPC_Form_Status__c != null, npcForm.NPC_Form_Status__c != 'Draft', npcForm.NPC_Form_Status__c != 'Pending Submission', npcForm.NPC_Form_Status__c != 'Pending Resubmission'), hasDevice)), NOT(isClone)), true, false)}" />
+                            <apex:actionStatus startText="Loading..." stopText="" id="retrieveStatusSN" layout="inline" onstart="showImage('divSN');" onstop="hideImage('divSN');" />
+                            <div id="divSN" class="showHide">
+                                <apex:image value="{!$Resource.LoadingGIF}" width="18" height="18" /> 
+                            </div>
+                        </apex:actionRegion>
+                    </td>
+                    <td>&nbsp;</td>
+                    <td class="labelCol" style="vertical-align: middle;">
+                        {!$ObjectType.New_Part_Creation_Form__c.fields.New_Customer_Short_Name__c.label}
+                    </td>
+                    <td style="vertical-align: middle;">
+                        <apex:outputText id="newCustomerShortName" value="{!AccountShortName}" />
+                    </td>
+                </tr>
+                
+                <tr id="changerow">
+
+                    <td class="labelCol" style="vertical-align: middle;">
+                        {!$ObjectType.New_Part_Creation_Form__c.fields.Reference_Id__c.label}
+                        <apex:outputPanel layout="inline" rendered="{!NOT(isFromPortal)}">
+                            <span class="helpButton" id="New_Part_Creation_Form__c.{!$ObjectType.New_Part_Creation_Form__c.fields.Reference_Id__c}-_help">
+                                <img src="/s.gif" alt=""  class="helpOrb" title="" />
+                                <script>sfdcPage.setHelp('New_Part_Creation_Form__c.{!$ObjectType.New_Part_Creation_Form__c.fields.Reference_Id__c}', '{!$ObjectType.New_Part_Creation_Form__c.fields.Reference_Id__c.inlineHelpText}');</script>
+                            </span>
+                        </apex:outputPanel>
+                        
+                        <apex:outputPanel layout="inline" rendered="{!isFromPortal}">
+                            <img src="/s.gif" class="imgclass" onmouseover="showHelpText('divMESReferenceId');" onmouseout="hideHelpText('divMESReferenceId');" />
+                        </apex:outputPanel>
+                    </td>
+                    <td style="vertical-align: middle;">
+                        <apex:outputPanel layout="inline" id="refIdPanel" rendered="{!IF(AND(NOT(isGFCE), npcForm.NPC_Form_Status__c != 'Pending Mask Layer Addition by FE',npcForm.Reason_for_New_Part__c != 'Pending Mask Layer Addition by FE'), true, false)}">
+                            <apex:actionRegion >
+                                <apex:selectList value="{!npcForm.Reference_Id__c}" size="1" disabled="{!IF(OR(device.Fab__c == 'FAB 1', device.Fab__c == 'FAB 8'), true, false)}">
+                                    <apex:selectOptions value="{!listReferenceIds}" />
+                                    <apex:actionSupport event="onchange" action="{!retrieveMaskDetails}" rerender="maskDiv, maskAlertMsg, newPartId, errorSection" status="retrieveStatus1a" />
+                                </apex:selectList>
+                                <apex:commandButton value="Search" action="{!advancedSearchReferenceIds}" rerender="refIdPanel, maskDiv, maskAlertMsg, newPartId, errorSection" disabled="{!disableButton}" status="retrieveStatus1a" rendered="{!IF(AND(device.Fab__c != 'FAB 1', device.Fab__c != 'FAB 8'), true, false)}" />
+                                <apex:actionStatus startText="Loading..." stopText="" id="retrieveStatus1a" layout="inline" onstart="showImage('div2');" onstop="hideImage('div2');" />
+                                <div id="div2" class="showHide">
+                                    <apex:image value="{!$Resource.LoadingGIF}" width="18" height="18" /> 
+                                </div>
+                            </apex:actionRegion>
+                        </apex:outputPanel>
+                        <apex:outputField value="{!npcForm.Reference_Id__c}" rendered="{!IF(OR(isGFCE, npcForm.NPC_Form_Status__c == 'Pending Mask Layer Addition by FE'), true, false)}" />
+                    </td>
+                    <td>&nbsp;</td>
+                    <td class="labelCol" style="vertical-align: middle;">
+                        {!$ObjectType.New_Part_Creation_Form__c.fields.New_Part_ID__c.label}
+                    </td>
+                    <td style="vertical-align: middle;">
+                        <apex:inputField value="{!npcForm.New_Part_ID__c}" id="newPartId" onkeypress="return preventEnter(event);" rendered="{!IF(OR(AND(OR(npcForm.NPC_Form_Status__c == '', npcForm.NPC_Form_Status__c == null, npcForm.NPC_Form_Status__c == 'Draft', npcForm.NPC_Form_Status__c == 'Pending Submission', npcForm.NPC_Form_Status__c == 'Pending Resubmission'), NOT(hasDevice)),isClone), true, false)}" />
+                        <apex:outputField value="{!npcForm.New_Part_ID__c}" rendered="{!IF(AND(OR(AND(npcForm.NPC_Form_Status__c != '', npcForm.NPC_Form_Status__c != null, npcForm.NPC_Form_Status__c != 'Draft', npcForm.NPC_Form_Status__c != 'Pending Submission', npcForm.NPC_Form_Status__c != 'Pending Resubmission'), hasDevice), NOT(isClone)), true, false)}" />
+                    </td>
+                </tr>
+                
+                <tr id="changerow1">
+
+                    <td class="labelCol" style="vertical-align: middle;">
+                        {!$ObjectType.New_Part_Creation_Form__c.fields.Secure_Device__c.label}
+                    </td>
+                    <td style="vertical-align: middle;">
+                        <apex:inputField value="{!npcForm.Secure_Device__c}" id="secureDevice" rendered="{!IF(isAdmin, true, false)}" />
+                        <apex:outputField value="{!npcForm.Secure_Device__c}" id="secureDevice1" rendered="{!IF(NOT(isAdmin), true, false)}" />                       
+
+
+                    </td>
+                    <td>&nbsp;</td>
+                    <td class="labelCol" style="vertical-align: middle;">
+                        {!$ObjectType.New_Part_Creation_Form__c.fields.Automotive_Device__c.label}
+                    </td>
+                    <td style="vertical-align: middle;">
+                        <apex:inputField value="{!npcForm.Automotive_Device__c}" id="automotiveDevice" onchange="automotiveDeviceselect();"/>
+
+
+
+
+                    </td>
+                </tr>
+                <!-- dipak 08092016 start-->
+                <tr >
+
+
+                    <!--<td class="labelCol" style="vertical-align: middle;">
+                        {!$ObjectType.New_Part_Creation_Form__c.fields.Reference_Id__c.label}
+                        <apex:outputPanel layout="inline" rendered="{!NOT(isFromPortal)}">
+                            <span class="helpButton" id="New_Part_Creation_Form__c.{!$ObjectType.New_Part_Creation_Form__c.fields.Reference_Id__c}-_help">
+                                <img src="/s.gif" alt=""  class="helpOrb" title="" />
+                                <script>sfdcPage.setHelp('New_Part_Creation_Form__c.{!$ObjectType.New_Part_Creation_Form__c.fields.Reference_Id__c}', '{!$ObjectType.New_Part_Creation_Form__c.fields.Reference_Id__c.inlineHelpText}');</script>
+                            </span>
+                        </apex:outputPanel>
+                        
+                        <apex:outputPanel layout="inline" rendered="{!isFromPortal}">
+                            <img src="/s.gif" class="imgclass" onmouseover="showHelpText('divMESReferenceId');" onmouseout="hideHelpText('divMESReferenceId');" />
+                        </apex:outputPanel>
+                    </td>
+                    <td style="vertical-align: middle;">
+                        <apex:outputPanel layout="inline" id="refIdPanel111" rendered="{!IF(AND(NOT(isGFCE), npcForm.NPC_Form_Status__c != 'Pending Mask Layer Addition by FE',npcForm.Reason_for_New_Part__c != 'Pending Mask Layer Addition by FE'), true, false)}">
+                            <apex:actionRegion >
+                                <apex:selectList value="{!npcForm.Reference_Id__c}" size="1" disabled="{!IF(OR(device.Fab__c == 'FAB 1', device.Fab__c == 'FAB 8'), true, false)}">
+                                    <apex:selectOptions value="{!listReferenceIds}" />
+                                    <apex:actionSupport event="onchange" action="{!retrieveMaskDetails}" rerender="maskDiv, maskAlertMsg, newPartId, errorSection" status="retrieveStatus1a" />
+                                </apex:selectList>
+                                <apex:commandButton value="Search" action="{!advancedSearchReferenceIds}" rerender="refIdPanel, maskDiv, maskAlertMsg, newPartId, errorSection" disabled="{!disableButton}" status="retrieveStatus1a" rendered="{!IF(AND(device.Fab__c != 'FAB 1', device.Fab__c != 'FAB 8'), true, false)}" />
+                                <apex:actionStatus startText="Loading..." stopText="" id="retrieveStatus1aa" layout="inline" onstart="showImage('div2');" onstop="hideImage('div2');" />
+                                <div id="div2" class="showHide">
+                                    <apex:image value="{!$Resource.LoadingGIF}" width="18" height="18" /> 
+                                </div>
+                            </apex:actionRegion>
+                        </apex:outputPanel>
+                        <apex:outputField value="{!npcForm.Reference_Id__c}" rendered="{!IF(OR(isGFCE, npcForm.NPC_Form_Status__c == 'Pending Mask Layer Addition by FE'), true, false)}" />
+                    </td>
+                    <td>&nbsp;</td>-->                                       
+                   </tr>     
+                <tr id="ISREAVIl">
+                    <td class="labelCol" style="vertical-align: middle;">                      
+
+                        {!$ObjectType.New_Part_Creation_Form__c.fields.Mask_Set_Title__c.label}
+                    </td>
+                    <td style="vertical-align: middle;">                        
+
+
+                        <apex:outputField value="{!npcForm.Mask_Set_Title__c}" id="maskSetTitle1" rendered="{!IF(OR(AND(OR(npcForm.NPC_Form_Status__c == '', npcForm.NPC_Form_Status__c == null, npcForm.NPC_Form_Status__c == 'Draft', npcForm.NPC_Form_Status__c == 'Pending Submission', npcForm.NPC_Form_Status__c == 'Pending Resubmission'), NOT(hasDevice), device.Fab__c != 'FAB 1', device.Fab__c != 'FAB 8'), AND(isGFCE, NOT(hasDevice)), AND(isClone,device.Fab__c != 'FAB 1', device.Fab__c != 'FAB 8')), true, false)}" />
+                        <apex:outputField value="{!npcForm.Mask_Set_Title__c}" id="maskSetTitle2" rendered="{!IF(AND(OR(AND(npcForm.NPC_Form_Status__c != '', npcForm.NPC_Form_Status__c != null, npcForm.NPC_Form_Status__c != 'Draft', npcForm.NPC_Form_Status__c != 'Pending Submission', npcForm.NPC_Form_Status__c != 'Pending Resubmission'), hasDevice, device.Fab__c == 'FAB 1', device.Fab__c == 'FAB 8'), NOT(AND(isGFCE, NOT(hasDevice)))), true, false)}" />
+                    </td>
+                    <td>&nbsp;</td>
+                    <td id="isreticleid" class="labelCol" style="vertical-align: middle;">
+                        {!$ObjectType.New_Part_Creation_Form__c.fields.Is_reticle_available__c.label}
+                        <apex:outputPanel layout="inline" rendered="{!NOT(isFromPortal)}">
+                            <span class="helpButton" id="New_Part_Creation_Form__c.{!$ObjectType.New_Part_Creation_Form__c.fields.Is_reticle_available__c}-_help">
+                                <img src="/s.gif" alt=""  class="helpOrb" title="" />
+                                <script>sfdcPage.setHelp('New_Part_Creation_Form__c.{!$ObjectType.New_Part_Creation_Form__c.fields.Is_reticle_available__c}', '{!$ObjectType.New_Part_Creation_Form__c.fields.Require_To_Create_The_New_Part__c.inlineHelpText}');</script>
+                                
+                            </span>
+                        </apex:outputPanel>
+                        
+                        <apex:outputPanel layout="inline" rendered="{!isFromPortal}">
+                            <img src="/s.gif" class="imgclass" onmouseover="showHelpText('divRequireToCreateTheNewPart');" onmouseout="hideHelpText('divRequireToCreateTheNewPart');" />
+                        </apex:outputPanel>
+                    </td>
+                    <td style="vertical-align: middle;">
+                            <div class="requiredInput">
+                            <div id="requiredBlockDiv" class="requiredBlock"></div>                            
+                            <apex:inputField id="Rectile_LocationInput1"   value="{!npcForm.Is_reticle_available__c}" onchange="isreticleselect12();" />                                               
+                            </div>                                                                     
+                    </td>
+                    <!-- dipak 08092016 end-->
+                    <div id="rerendergrade">
+                        <td>&nbsp;</td><!--Updated FROM GOPI-->
+                        <td class="labelCol" style="vertical-align: middle;">
+                             <apex:outputLabel value="{!$ObjectType.New_Part_Creation_Form__c.fields.Automotive_Grade__c.label}" id="AutomotiveGradeLabel"/>
+                        </td>
+                        <td style="vertical-align: middle;">
+                            <div class="requiredInput">
+                            <div id="requiredBlockDiv" class="requiredBlock"></div>
+                            <apex:inputField id="AutomotiveGrade" value="{!npcForm.Automotive_Grade__c}"/>
+                            </div>
+                        </td>
+                    <script>
+                        $(document).ready(function(){
+                          automotiveDeviceselect();
+                        });
+                        function automotiveDeviceselect(){
+                                if($('[id$=automotiveDevice]').val() == "Yes"){
+                                    $('[id$=AutomotiveGradeLabel]').show();
+                                    $('[id$=AutomotiveGrade]').show();
+                                    $('[id$=AutomotiveGrade]').attr('required', true);
+                                }
+                                else{
+                                    $('[id$=AutomotiveGrade]').val('');
+                                    $('[id$=AutomotiveGradeLabel]').hide();
+                                    $('[id$=AutomotiveGrade]').hide();
+                                    $('[id$=AutomotiveGrade]').attr('required', false);
+                                }
+                            }
+                    </script>
+                        </div> 
+                    <td>&nbsp;</td>
+                    <td>&nbsp;</td>
+                    <td>&nbsp;</td>
+                </tr>               
+                 <tr id="Risk_Waiver">                        
+                   <td></td> <td>&nbsp;</td><td>&nbsp;</td>
+                    <td class="labelCol" style="vertical-align: middle;">
+                        {!$ObjectType.Process__c.fields.Name.label}                       
+                    </td>
+                    <td style="vertical-align: middle;">
+                     <apex:outputText id="baseDevice12" value="{!device.Assigned_Process_ID__r.Name}" />
+                    </td>         
+                 </tr>                                  
+                <tr id="PID_Status">
+                  <td></td><td>&nbsp;</td>         
+                     <td>&nbsp;</td>         
+                   
+                    <td class="labelCol" style="vertical-align: middle;">
+                        {!$ObjectType.New_Part_Creation_Form__c.fields.PID_Status__c.label}
+                        <apex:outputPanel layout="inline" rendered="{!NOT(isFromPortal)}">
+                            <!-- <span class="helpButton" id="New_Part_Creation_Form__c.{!$ObjectType.New_Part_Creation_Form__c.fields.PID_Status__c}-_help">
+                                <img src="/s.gif" alt=""  class="helpOrb" title="" />                          
+                                <script>sfdcPage.setHelp('New_Part_Creation_Form__c.{!$ObjectType.New_Part_Creation_Form__c.fields.PID_Status__c}', '{!$ObjectType.New_Part_Creation_Form__c.fields.Require_To_Create_The_New_Part__c.inlineHelpText}');</script>
+                            </span>
+                            -->
+                        </apex:outputPanel>
+                        
+                        <apex:outputPanel layout="inline" rendered="{!isFromPortal}">
+                            <img src="/s.gif" class="imgclass" onmouseover="showHelpText('divRequireToCreateTheNewPart');" onmouseout="hideHelpText('divRequireToCreateTheNewPart');" />
+                        </apex:outputPanel>
+                    </td>
+                    <td style="vertical-align: middle;">
+                     <apex:outputText id="baseDevice121" value="{!NpcForm.PID_Status__c}" />
+                    </td>                    
+                    <td>&nbsp;</td>         
+                     <td>&nbsp;</td>         
+                    <td>&nbsp;</td>         
+                 </tr>
+                 <!-- dipak 08092016 end-->
+
+
+                <tr id="currentForecastTapeoutDatePanel">
+                    <td class="labelCol" style="vertical-align: middle;">
+                        {!$ObjectType.New_Part_Creation_Form__c.fields.Current_Forecast_Tapeout_Date__c.label}
+                    </td>
+                    <td style="vertical-align: middle;">
+                        <div class="requiredInput">
+                            <div id="requiredBlockDiv" class="requiredBlock"></div>
+                            &nbsp;<!-- apex:inputField id="currentForecastTapeoutDateInput" value="{!npcForm.Current_Forecast_Tapeout_Date__c}" rendered="{!IF(AND(device.Fab__c != 'FAB 1', device.Fab__c != 'FAB 8', AND(OR(npcForm.NPC_Form_Status__c == '', npcForm.NPC_Form_Status__c == null, npcForm.NPC_Form_Status__c == 'Draft', npcForm.NPC_Form_Status__c == 'Pending Submission', npcForm.NPC_Form_Status__c == 'Pending Resubmission'), NOT(hasDevice))), true, false)}" / -->
+                            <apex:inputField id="currentForecastTapeoutDateInput" value="{!npcForm.Current_Forecast_Tapeout_Date__c}" rendered="{!IF(OR(AND(AND(OR(npcForm.NPC_Form_Status__c == '', npcForm.NPC_Form_Status__c == null, npcForm.NPC_Form_Status__c == 'Draft', npcForm.NPC_Form_Status__c == 'Pending Submission', npcForm.NPC_Form_Status__c == 'Pending Resubmission'), NOT(hasDevice))), isClone), true, false)}" />
+                        </div>
+                        <apex:outputField value="{!npcForm.Current_Forecast_Tapeout_Date__c}" rendered="{!IF(AND(OR(AND(npcForm.NPC_Form_Status__c != '', npcForm.NPC_Form_Status__c != null, npcForm.NPC_Form_Status__c != 'Draft', npcForm.NPC_Form_Status__c != 'Pending Submission', npcForm.NPC_Form_Status__c != 'Pending Resubmission'), hasDevice), NOT(isClone)), true, false)}" />
+                    </td>
+                    <td>&nbsp;</td>
+                    <td>&nbsp;</td>
+                    <td>&nbsp;</td>
+                </tr>
+                
+                <tr>
+                    <td colspan="5">&nbsp;</td>
+                </tr>
+                
+                <tr>
+                    <td class="labelCol" style="vertical-align: middle;">
+                        <apex:outputText value="{!$ObjectType.New_Part_Creation_Form__c.fields.Reason_for_editing__c.label}" rendered="{!isGFCE}"/>
+                    </td>
+                    <td colspan="4">
+                        <apex:inputField value="{!npcForm.Reason_for_editing__c}" required="true" rendered="{!isGFCE}" />
+                    </td>
+                </tr>                              
+                
+                <tr id="mskidval">
+
+                    <td style="vertical-align: middle;text-align:left;color:red;" class="labelCol" colspan="5">
+                        <apex:outputPanel id="maskAlertMsg">
+                            <apex:outputText value="Mask IDs are not available in the MES system" rendered="{!listMask.size==0 && isMaskAlert}"/>                
+                        </apex:outputPanel>
+                    </td>
+                </tr>
+            <!-- Dipak 22112016 Start-->
+                <tr >
+
+
+                    <td class="labelCol" style="vertical-align: middle;" id="nrfnpid">
+                      {!$ObjectType.New_Part_Creation_Form__c.fields.Comments__c.label}                                                                                           
+                    </td>
+                    <td class="labelCol" style="vertical-align: middle;" id="rfnpid">
+                      Reason for Reactivation*                   
+                    </td>
+                    <td colspan="4">
+                        <apex:inputField value="{!npcForm.Comments__c}" id="maincomments" style="width: 80%" rendered="{!IF(NOT(isGFCE), true, false)}"/>
+                        <apex:outputField value="{!npcForm.Comments__c}" rendered="{!IF(isGFCE, true, false)}"/>
+                    </td>
+                </tr>    
+                              
+            <!-- Dipak 22112016 End-->    
+                <!-- dipak 09092016 start-->
+                <tr id="ngroupid">
+                 <td class="labelCol" style="vertical-align: middle;">
+                        {!$ObjectType.New_Part_Creation_Form__c.fields.Notification_Group__c.label}
+                        <apex:outputPanel layout="inline" rendered="{!NOT(isFromPortal)}">
+                            <span class="helpButton" id="New_Part_Creation_Form__c.{!$ObjectType.New_Part_Creation_Form__c.fields.Notification_Group__c}-_help">
+                                <img src="/s.gif" alt=""  class="helpOrb" title="" />
+                                <script>sfdcPage.setHelp('New_Part_Creation_Form__c.{!$ObjectType.New_Part_Creation_Form__c.fields.Notification_Group__c}', '{!$ObjectType.New_Part_Creation_Form__c.fields.Notification_Group__c.inlineHelpText}');</script>
+                            </span>
+                        </apex:outputPanel>
+                        
+                        <apex:outputPanel layout="inline" rendered="{!isFromPortal}">
+                            <img src="/s.gif" class="imgclass" onmouseover="showHelpText('divNotificationGroup');" onmouseout="hideHelpText('divNotificationGroup');" />
+                        </apex:outputPanel>
+                    </td>
+                    <td style="vertical-align: middle;">
+                        <apex:inputField value="{!npcForm.Notification_Group__c}" id="notgrpid" style="width:450px" />
+                      <!--  <apex:outputField value="{!npcForm.Notification_Group__c}" />-->
+                    </td>
+                </tr>
+                <tr id="cid">
+                 <td class="labelCol" style="vertical-align: middle;">
+                        {!$ObjectType.New_Part_Creation_Form__c.fields.Comments1__c.label}
+                    </td>
+                    <td style="vertical-align: middle;">
+                        <apex:inputField value="{!npcForm.Comments1__c}" id="comid" style="width:400px" />
+                      <!--  <apex:outputField value="{!npcForm.Notification_Group__c}" />-->
+                    </td>
+                </tr>
+                           
+
+                <apex:outputPanel rendered="{!IF(OR(isFromPortal == true, isEditFromPortal == true), true, false)}">
+                    <tr>
+                        <td class="labelCol" style="vertical-align: middle;">
+                            Additional Customer Recipient(s)
+                            <img src="/s.gif" class="imgclass" onmouseover="showHelpText('divAdditionalRecipients');" onmouseout="hideHelpText('divAdditionalRecipients');" />
+                        </td>
+                        <td colspan="4">
+                            <apex:actionRegion >
+                                <apex:panelGrid columns="3" id="recipientsPanel">
+                                    <apex:panelGroup layout="block">
+                                        <center><apex:outputText value="Available" style="font-weight: bold;" /><br/></center>
+                                        <apex:selectList id="leftPicklist" value="{!unselectedRecipients}" multiselect="true" style="width: 200px" size="8">
+                                            <apex:selectOptions value="{!UnselectedRecipientsList}" />
+                                        </apex:selectList>
+                                    </apex:panelGroup>
+                                    
+                                    <apex:panelGroup >
+                                        <br /><br /><br /><br />
+                                        <apex:commandLink action="{!selectValues}" title="Add" style="text-decoration: none;" reRender="recipientsPanel, errorSection">
+                                            <apex:image value="/s.gif" alt="Add" styleClass="picklistArrowRight" style="cursor: pointer;" title="Add" />
+                                        </apex:commandLink>
+                                        <br /><br />
+                                        <apex:commandLink action="{!unselectValues}" title="Remove" style="text-decoration: none;" reRender="recipientsPanel, errorSection">
+                                            <apex:image value="/s.gif" alt="Remove" styleClass="picklistArrowLeft" style="cursor: pointer;" title="Remove" />
+                                        </apex:commandLink>
+                                    </apex:panelGroup>
+                                    
+                                    <apex:panelGroup layout="block">
+                                        <center><apex:outputText value="Selected" style="font-weight: bold;" /><br/></center>
+                                        <apex:selectList id="rightPicklist" value="{!selectedRecipients}" multiselect="true" style="width: 200px" size="8">
+                                            <apex:selectOptions value="{!SelectedRecipientsList}" />
+                                        </apex:selectList>
+                                    </apex:panelGroup>    
+                                </apex:panelGrid>
+                            </apex:actionRegion>
+                        </td>
+                    </tr>
+                </apex:outputPanel>
+                 
+                <apex:repeat id="repeatAttach" value="{!listAttachments}" var="a">
+                    <tr id="repeatAttachh">
+
+                        <td class="labelCol" style="vertical-align: middle;">
+                            {!a.label}
+                        </td>
+                        <td colspan="4">
+                            <apex:actionRegion id="attachRegion">
+                                <input type="button" class="btn" value="Remove" onclick="clearInputFile('{!a.Id}');" />
+                                <apex:inputFile value="{!a.attachment.body}" filename="{!a.attachment.name}" id="attach" />
+                            </apex:actionRegion>
+                        </td>
+                    </tr>
+                </apex:repeat>
+                <tr>
+                    <td>
+                        &nbsp;
+                    </td>
+                    <td>
+                        <span id="inputFileLocation"></span>
+                    </td>
+                </tr>
+                <tr><td>&nbsp;</td></tr>
+            </table>
+         <!-- Dipak 14092016 Start-->
+         <div id="yeardisp"  style="padding-left: 40px;width:100px;">
+         <apex:pageBlockSection rendered="{!IF(AND(OR(device.Fab__c != 'FAB 1', device.Fab__c != 'FAB 8')), true, false)}" columns="2">
+         <apex:pageBlockTable id="year1" value="{!npcForm}" var="npcForm3">
+          <apex:facet name="header">Past 3 years ACTUAL Loading (Wafers /Year)</apex:facet>
+          <apex:column >
+              <apex:facet name="header">{!last3}</apex:facet>   
+                <div class="requiredInput">
+                <div id="requiredBlockDiv" class="requiredBlock"></div>
+                     <apex:inputField style="width: 75px"  value="{!npcForm3.Past_3_Years_1__c}" id="pa1"/> 
+                </div>
+                                                 
+          </apex:column>
+          <apex:column >
+              <apex:facet name="header">{!last2}</apex:facet>              
+                <div class="requiredInput">
+                <div id="requiredBlockDiv" class="requiredBlock"></div>
+                          <apex:inputField style="width: 75px" value="{!npcForm3.Past_3_Years_2__c}" id="pa2"/> 
+                </div>                               
+          </apex:column>
+          <apex:column >
+              <apex:facet name="header">{!last1}</apex:facet>           
+                <div class="requiredInput">
+                <div id="requiredBlockDiv" class="requiredBlock"></div>
+                               <apex:inputField style="width: 75px" value="{!npcForm3.Past_3_Years_3__c}" id="pa3"/>                     
+                </div>                   
+          </apex:column>  
+         </apex:pageBlockTable>
+        <apex:pageBlockTable id="year" value="{!npcForm}" var="npcForm2">                    
+           <apex:facet name="header">Next 3 years Forecast (Wafers /Year)</apex:facet>
+           <apex:column >
+              <apex:facet name="header">{!next1}</apex:facet>
+                <div class="requiredInput">
+                <div id="requiredBlockDiv" class="requiredBlock"></div>
+                    <apex:inputField style="width: 75px" value="{!npcForm2.Next_3_Years_1__c}" id="ny1"/>                      
+                </div>                          
+          </apex:column> 
+          <apex:column >
+              <apex:facet name="header">{!next2}</apex:facet>
+                <div class="requiredInput">
+                <div id="requiredBlockDiv" class="requiredBlock"></div>
+                    <apex:inputField style="width: 75px" value="{!npcForm2.Next_3_Years_2__c}"  id="ny2"/>                                                                
+                </div>
+          </apex:column>
+          <apex:column >
+              <apex:facet name="header">{!next3}</apex:facet>
+                <div class="requiredInput">
+                <div id="requiredBlockDiv" class="requiredBlock"></div>
+                 <apex:inputField style="width: 75px" value="{!npcForm2.Next_3_Years_3__c}" id="ny3"/>                                                                                    
+                </div>                        
+          </apex:column>   
+         </apex:pageBlockTable> 
+        </apex:pageBlockSection>
+        <script>
+                        $(document).ready(function(){
+              isreticleselect12();
+                        });
+                        
+            function isreticleselect12(){
+                if($('[id$=Rectile_LocationInput1]').val() == "NO"){
+                    $("[id$=ny1]").prop("disabled",true);
+                    $("[id$=ny2]").prop("disabled",true);
+                    $("[id$=ny3]").prop("disabled",true);
+                    $("[id$=pa1]").prop("disabled",true);
+                    $("[id$=pa2]").prop("disabled",true);
+                    $("[id$=pa3]").prop("disabled",true);                                         
+                    }
+                  else{
+                   $("[id$=ny1]").prop("disabled",false);
+                   $("[id$=ny2]").prop("disabled",false);
+                   $("[id$=ny3]").prop("disabled",false);
+                   $("[id$=pa1]").prop("disabled",false);
+                   $("[id$=pa2]").prop("disabled",false);
+                   $("[id$=pa3]").prop("disabled",false);                   
+                   
+                                }
+                            }
+            </script>
+      </div>
+      <!-- Dipak 14092016 End-->
+      <!-- Dipak 15112016 Start-->
+             
+
+ <apex:actionRegion >
+               <apex:outputPanel ID="maskDivparent">
+                <apex:outputPanel rendered="{!IF(AND(device.Fab__c != 'FAB 1', device.Fab__c != 'FAB 8', listMask.size>0,npcForm.Reason_for_New_Part__c != 'Change in PID', npcForm.Reason_for_New_Part__c != 'CustomerNameChange'), true, false)}" id="maskDiv" style="{!ShowMaskDiv}">
+                     <!-- apex:pageBlockTable id="maskTable" value="{!listMask}" var="m" style="width: 85%; margin-right: auto; margin-left: auto;" rendered="{!IF(AND(device.Fab__c != 'FAB 1', device.Fab__c != 'FAB 8', listMask.size>0), true, false)}" --> 
+                    <apex:pageBlockTable id="maskTable" value="{!listMask}" var="m" style="width: 85%; margin-right: auto; margin-left: auto;" rendered="{!IF(AND(device.Fab__c != 'FAB 1', device.Fab__c != 'FAB 8', listMask.size>0, NOT($Setup.CSRUsers__c.Is_CSR_User__c), npcForm.Reason_for_New_Part__c != 'New Probe Card Flow', npcForm.Reason_for_New_Part__c != 'ShortLoop Flow'), true, false)}">            
+                        <apex:column value="{!m.Layer__c}">
+                            <apex:facet name="header">Layer</apex:facet>
+                        </apex:column>
+                        <apex:column value="{!m.Original_Mask__c}">
+                            <apex:facet name="header">Mask</apex:facet>
+                        </apex:column>
+                        <apex:column >
+                            <apex:facet name="header">Modified Mask</apex:facet>
+
+
+
+
+
+                            <!-- apex:inputText value="{!m.Modified_Mask__c}" rendered="{!IF(OR(ISBLANK(npcForm.NPC_Form_Status__c), npcForm.NPC_Form_Status__c == 'Pending Submission', npcForm.NPC_Form_Status__c == 'Pending Resubmission', AND(npcForm.NPC_Form_Status__c == 'Pending CE Approval', isGFCE)), true, false)}" />
+                            <apex:outputText value="{!m.Modified_Mask__c}" rendered="{!IF(AND(NOT(ISBLANK(npcForm.NPC_Form_Status__c)), npcForm.NPC_Form_Status__c != 'Pending Submission', npcForm.NPC_Form_Status__c != 'Pending Resubmission', NOT(AND(npcForm.NPC_Form_Status__c == 'Pending CE Approval', isGFCE))), true, false)}" / -->
+                            
+                         <!--   <apex:inputText value="{!m.Modified_Mask__c}" rendered="{!IF(AND(OR(ISBLANK(npcForm.NPC_Form_Status__c), npcForm.NPC_Form_Status__c == 'Pending Submission', npcForm.NPC_Form_Status__c == 'Pending Resubmission', AND(npcForm.NPC_Form_Status__c == 'Pending CE Approval', isGFCE)), OR(AND(OR(ISBLANK(npcForm.Reason_for_New_Part__c), npcForm.Reason_for_New_Part__c == 'Retrofit'), CONTAINS(m.Original_Mask__c, '-')), AND(npcForm.Reason_for_New_Part__c == 'Add ROM Code', NOT(CONTAINS(m.Original_Mask__c, '-'))), npcForm.Reason_for_New_Part__c == 'Retrofit + Add ROM Code', npcForm.Reason_for_New_Part__c == 'CustomerNameChange', npcForm.Reason_for_New_Part__c == 'StartingMaterial Change', npcForm.Reason_for_New_Part__c == 'STF Reactivation', npcForm.Reason_for_New_Part__c == 'Others', npcForm.Fab__c == 'FAB 3E')), true, false)}" />
+                            <apex:outputText value="{!m.Modified_Mask__c}" rendered="{!IF(OR(AND(NOT(ISBLANK(npcForm.NPC_Form_Status__c)), npcForm.NPC_Form_Status__c != 'Pending Submission', npcForm.NPC_Form_Status__c != 'Pending Resubmission', NOT(AND(npcForm.NPC_Form_Status__c == 'Pending CE Approval', isGFCE))), OR(AND(OR(ISBLANK(npcForm.Reason_for_New_Part__c), npcForm.Reason_for_New_Part__c == 'Retrofit'), NOT(CONTAINS(m.Original_Mask__c, '-')), npcForm.Fab__c != 'FAB 3E'), AND(npcForm.Reason_for_New_Part__c == 'Add ROM Code', CONTAINS(m.Original_Mask__c, '-'), npcForm.Fab__c != 'FAB 3E'))), true, false)}" /> -->
+                            <!-- Yash 34001--->                                                                                          
+                           <apex:inputText value="{!m.Modified_Mask__c}"  rendered="{!IF(AND(OR( ISBLANK(npcForm.NPC_Form_Status__c),npcForm.NPC_Form_Status__c == 'Pending Submission', npcForm.NPC_Form_Status__c == 'Pending Resubmission', AND(npcForm.NPC_Form_Status__c == 'Pending CE Approval', isGFCE)), OR(AND(OR(ISBLANK(npcForm.Reason_for_New_Part__c), npcForm.Reason_for_New_Part__c == '',npcForm.Reason_for_New_Part__c == 'Retrofit'), OR(CONTAINS(m.Original_Mask__c, '-'),(CONTAINS(m.Original_Mask__c, '+')))), AND(npcForm.Reason_for_New_Part__c == 'Add ROM Code', AND (NOT(CONTAINS(m.Original_Mask__c, '-')),NOT(CONTAINS(m.Original_Mask__c, '+')))), npcForm.Reason_for_New_Part__c == 'Retrofit', npcForm.Reason_for_New_Part__c == 'Retrofit + Add ROM Code', npcForm.Reason_for_New_Part__c == 'CustomerNameChange', npcForm.Reason_for_New_Part__c == 'StartingMaterialChange',npcForm.Reason_for_New_Part__c == 'BackgrindThicknessChange', npcForm.Reason_for_New_Part__c == 'STF Reactivation', npcForm.Reason_for_New_Part__c == 'ShortLoop Flow', npcForm.Reason_for_New_Part__c == 'Others', npcForm.Fab__c == 'FAB 3E')), true, false)}"/>
+                           <apex:outputText value="{!m.Modified_Mask__c}" rendered="{!IF(OR(AND(NOT(ISBLANK(npcForm.NPC_Form_Status__c)),npcForm.NPC_Form_Status__c != 'Pending Submission', npcForm.NPC_Form_Status__c != 'Pending Resubmission', NOT(AND(npcForm.NPC_Form_Status__c == 'Pending CE Approval', isGFCE))), OR(AND(OR(ISBLANK(npcForm.Reason_for_New_Part__c), npcForm.Reason_for_New_Part__c == 'Retrofit'), AND(NOT(CONTAINS(m.Original_Mask__c, '-')),NOT(CONTAINS(m.Original_Mask__c, '+'))), NOT(CONTAINS(npcForm.Reason_for_New_Part__c, 'Retrofit')), npcForm.Fab__c != 'FAB 3E'), AND(npcForm.Reason_for_New_Part__c == 'Add ROM Code', or(CONTAINS(m.Original_Mask__c, '-'),CONTAINS(m.Original_Mask__c, '+')), npcForm.Fab__c != 'FAB 3E'))), true, false)}" />                                                      
+
+
+                        </apex:column>
+                    </apex:pageBlockTable>
+                    
+                    <!-- apex:pageBlockTable id="maskTable1" value="{!maskWrappers}" var="m" style="width: 85%; margin-right: auto; margin-left: auto;" rendered="{!IF(AND(device.Fab__c != 'FAB 1', device.Fab__c != 'FAB 8',maskWrappers.size<>0), true, false)}" -->
+                    <apex:pageBlockTable id="maskTable1" value="{!maskWrappers}" var="m" style="width: 85%; margin-right: auto; margin-left: auto;" rendered="{!IF(AND(device.Fab__c != 'FAB 1', device.Fab__c != 'FAB 8', maskWrappers.size<>0, NOT($Setup.CSRUsers__c.Is_CSR_User__c), npcForm.Reason_for_New_Part__c != 'New Probe Card Flow', npcForm.Reason_for_New_Part__c != 'ShortLoop Flow'), true, false)}">                    
+
+                        <apex:column >
+                            <apex:facet name="header">Layer</apex:facet>
+                            <apex:selectList value="{!m.mask.Layer__c}" multiselect="false" size="1" disabled="{!IF(OR(NOT(ISBLANK(npcForm.NPC_Form_Status__c)), npcForm.NPC_Form_Status__c != 'Pending Submission', npcForm.NPC_Form_Status__c != 'Pending Resubmission', NOT(AND(npcForm.NPC_Form_Status__c == 'In Execution', isRejected)), NOT(AND(npcForm.NPC_Form_Status__c == 'Pending CE Approval', isGFCE))), false,true )}" rendered="{!maskLayerOptions.size>0}">
+                                <apex:selectOptions value="{!maskLayerOptions}"/>
+                            </apex:selectList>
+                            <apex:inputText value="{!m.mask.Layer__c}"  rendered="{!IF(AND(OR(NOT(ISBLANK(npcForm.NPC_Form_Status__c)), npcForm.NPC_Form_Status__c != 'Pending Submission', npcForm.NPC_Form_Status__c != 'Pending Resubmission', NOT(AND(npcForm.NPC_Form_Status__c == 'In Execution', isRejected)), NOT(AND(npcForm.NPC_Form_Status__c == 'Pending CE Approval', isGFCE))),maskLayerOptions.size==0), true, false)}" />
+                            <apex:outputText value="{!m.mask.Layer__c}" rendered="{!IF(AND(AND(NOT(ISBLANK(npcForm.NPC_Form_Status__c)), npcForm.NPC_Form_Status__c != 'Pending Submission', npcForm.NPC_Form_Status__c != 'Pending Resubmission', NOT(AND(npcForm.NPC_Form_Status__c == 'In Execution', isRejected)), NOT(AND(npcForm.NPC_Form_Status__c == 'Pending CE Approval', isGFCE))),maskLayerOptions.size==0), true, false)}" />
+                        </apex:column>
+                        <apex:column >
+                            <apex:facet name="header">Modified Mask</apex:facet>
+                            <apex:inputText value="{!m.mask.Modified_Mask__c}" rendered="{!IF(OR(ISBLANK(npcForm.NPC_Form_Status__c), npcForm.NPC_Form_Status__c == 'Pending Submission', npcForm.NPC_Form_Status__c == 'Pending Resubmission', npcForm.NPC_Form_Status__c == 'Pending Mask Layer Addition by FE', AND(npcForm.NPC_Form_Status__c == 'In Execution', isRejected), AND(npcForm.NPC_Form_Status__c == 'Pending CE Approval', isGFCE)), true, false)}" />
+                            <apex:outputText value="{!m.mask.Modified_Mask__c}" rendered="{!IF(AND(NOT(ISBLANK(npcForm.NPC_Form_Status__c)), npcForm.NPC_Form_Status__c != 'Pending Submission', npcForm.NPC_Form_Status__c != 'Pending Resubmission', npcForm.NPC_Form_Status__c != 'Pending Mask Layer Addition by FE', NOT(AND(npcForm.NPC_Form_Status__c == 'In Execution', isRejected)), NOT(AND(npcForm.NPC_Form_Status__c == 'Pending CE Approval', isGFCE))), true, false)}" />                  
+                        </apex:column>
+                        <apex:column rendered="{!If(OR(npcForm.Reason_for_New_Part__c != 'New Probe Card Flow', npcForm.Reason_for_New_Part__c != 'ShortLoop Flow'), true, false)}">
+                            <apex:facet name="header">Action</apex:facet>
+                            <apex:commandButton value="Remove Mask" action="{!delWrapper}" rerender="maskTable1">
+                               <apex:param name="toDelIdent" value="{!m.ident}" assignTo="{!toDelIdent}"/> 
+                            </apex:commandButton>
+                        </apex:column>
+                    </apex:pageBlockTable>
+                    
+                    <!-- DBiswal 03052015 Start -->
+                    <apex:pageBlockTable id="maskTable2" value="{!maskWrappers}" var="m" style="width: 85%; margin-right: auto; margin-left: auto;" rendered="{!IF(AND(device.Fab__c != 'FAB 1', device.Fab__c != 'FAB 8', maskWrappers.size<>0, NOT($Setup.CSRUsers__c.Is_CSR_User__c), OR(npcForm.Reason_for_New_Part__c == 'New Probe Card Flow', npcForm.Reason_for_New_Part__c == 'ShortLoop Flow')), true, false)}">                    
+                        <apex:column width="50px,50px" rendered="{!If(OR(npcForm.Reason_for_New_Part__c == 'New Probe Card Flow', npcForm.Reason_for_New_Part__c == 'ShortLoop Flow'), true, false)}">
+                            <apex:facet name="header">
+                                <apex:inputCheckbox onclick="selectAllCheckboxes(this,'inputId')"/>
+                            </apex:facet>
+                            <apex:inputCheckbox value="{!m.isSelected }" id="inputId">
+                            </apex:inputCheckbox>
+                        </apex:column>
+                        <apex:column >
+                            <apex:facet name="header">Layer</apex:facet>
+                            <apex:selectList value="{!m.mask.Layer__c}" multiselect="false" size="1" disabled="{!IF(OR(NOT(ISBLANK(npcForm.NPC_Form_Status__c)), npcForm.NPC_Form_Status__c != 'Pending Submission', npcForm.NPC_Form_Status__c != 'Pending Resubmission', NOT(AND(npcForm.NPC_Form_Status__c == 'In Execution', isRejected)), NOT(AND(npcForm.NPC_Form_Status__c == 'Pending CE Approval', isGFCE))), false,true )}" rendered="{!IF(AND(maskLayerOptions.size>0, AND(OR(npcForm.Reason_for_New_Part__c == 'New Probe Card Flow', npcForm.Reason_for_New_Part__c == 'ShortLoop Flow'), npcForm.Reference_Id__c == 'NotAvailable')),True, False)}">
+                                <apex:selectOptions value="{!maskLayerOptions}"/>
+                            </apex:selectList>
+                            <apex:inputText value="{!m.mask.Layer__c}" disabled="{!If(m.mask.Layer__c != null, true, false)}" rendered="{!IF(AND(OR(NOT(ISBLANK(npcForm.NPC_Form_Status__c)), npcForm.NPC_Form_Status__c != 'Pending Submission', npcForm.NPC_Form_Status__c != 'Pending Resubmission', NOT(AND(npcForm.NPC_Form_Status__c == 'In Execution', isRejected)), NOT(AND(npcForm.NPC_Form_Status__c == 'Pending CE Approval', isGFCE))), AND(OR(npcForm.Reason_for_New_Part__c == 'New Probe Card Flow', npcForm.Reason_for_New_Part__c == 'ShortLoop Flow'),npcForm.Reference_Id__c != 'NotAvailable'), isAddMaskClicked), true, false)}" />                            
+                            <apex:outputText value="{!m.mask.Layer__c}" rendered="{!IF(AND(OR(AND(NOT(ISBLANK(npcForm.NPC_Form_Status__c)), npcForm.NPC_Form_Status__c != 'Pending Submission', npcForm.NPC_Form_Status__c != 'Pending Resubmission', NOT(AND(npcForm.NPC_Form_Status__c == 'In Execution', isRejected)), NOT(AND(npcForm.NPC_Form_Status__c == 'Pending CE Approval', isGFCE))), AND(OR(npcForm.Reason_for_New_Part__c == 'New Probe Card Flow', npcForm.Reason_for_New_Part__c == 'ShortLoop Flow'),npcForm.Reference_Id__c != 'NotAvailable')), NOT(isAddMaskClicked)), true, false)}" />
+                        </apex:column>
+                        <apex:column >                            
+                            <apex:facet name="header">Mask</apex:facet>
+                            <apex:outputText value="{!m.mask.Original_Mask__c}" rendered="{!If(OR(npcForm.Reason_for_New_Part__c == 'New Probe Card Flow', npcForm.Reason_for_New_Part__c == 'ShortLoop Flow'), true, false)}"/>
+                        </apex:column>
+                        <apex:column >
+                            <apex:facet name="header">Modified Mask</apex:facet>
+                            <apex:inputText value="{!m.mask.Modified_Mask__c}" rendered="{!IF(OR(ISBLANK(npcForm.NPC_Form_Status__c), npcForm.NPC_Form_Status__c == 'Pending Submission', npcForm.NPC_Form_Status__c == 'Pending Resubmission', npcForm.NPC_Form_Status__c == 'Pending Mask Layer Addition by FE', AND(npcForm.NPC_Form_Status__c == 'In Execution', isRejected), AND(npcForm.NPC_Form_Status__c == 'Pending CE Approval', isGFCE)), true, false)}" />
+                            <apex:outputText value="{!m.mask.Modified_Mask__c}" rendered="{!IF(AND(NOT(ISBLANK(npcForm.NPC_Form_Status__c)), npcForm.NPC_Form_Status__c != 'Pending Submission', npcForm.NPC_Form_Status__c != 'Pending Resubmission', npcForm.NPC_Form_Status__c != 'Pending Mask Layer Addition by FE', NOT(AND(npcForm.NPC_Form_Status__c == 'In Execution', isRejected)), NOT(AND(npcForm.NPC_Form_Status__c == 'Pending CE Approval', isGFCE))), true, false)}" />                  
+                        </apex:column>
+                    </apex:pageBlockTable>
+                    <!-- DBiswal End -->
+                    
+                    <table style="width: 85%; margin-right: auto; margin-left: auto;"><tr><td align='left'>
+                    <!-- apex:commandButton value="Add Mask" action="{!addRows}" style="align:center;" rendered="{!IF(AND(device.Fab__c != 'FAB 1', device.Fab__c != 'FAB 8',maskWrappers.size<>0), true, false)}" rerender="maskTable1" -->
+                    <apex:commandButton value="Add Mask" action="{!addRows}" style="align:center;" rendered="{!IF(AND(device.Fab__c != 'FAB 1', device.Fab__c != 'FAB 8',maskWrappers.size<>0, NOT($Setup.CSRUsers__c.Is_CSR_User__c)), true, false)}" rerender="maskTable1,maskTable2">                    
+                        <apex:param name="addCount" value="1" assignTo="{!addCount}"/> 
+                    </apex:commandButton>
+                    
+                    </td></tr></table>                
+                </apex:outputPanel>
+                </apex:outputPanel>                
+            </apex:actionRegion>      
+
+
+ 
+        </apex:pageBlock>       
+        
+        <div id="divSFDCReferenceDevice" class="helpTextStyle" style="top: 223px; display: none; opacity: -0.2; left: 170px;">
+            {!$ObjectType.New_Part_Creation_Form__c.fields.Originating_Device__c.inlineHelpText}
+        </div>
+        <div id="divReasonForNewPart" class="helpTextStyle" style="top: 255px; display: none; opacity: -0.2; left: 170px;">
+            {!$ObjectType.New_Part_Creation_Form__c.fields.Reason_for_New_Part__c.inlineHelpText}
+        </div>
+        <div id="divTapeoutRequired" class="helpTextStyle" style="top: 255px; display: none;  left: 550px;">
+          <apex:outputLabel id="testid" value="{!$ObjectType.New_Part_Creation_Form__c.fields.Tapeout_Required__c.inlineHelpText}"/>
+        </div>
+        <div id="divRequireToCreateTheNewPart" class="helpTextStyle" style="top: 287px; display: none; opacity: -0.2; left: 170px;">
+            {!$ObjectType.New_Part_Creation_Form__c.fields.Require_To_Create_The_New_Part__c.inlineHelpText}
+        </div>
+        <div id="divRequireToCreateTheNewPart1" class="helpTextStyle" style="top: 287px; display: none; opacity: -0.2; left: 170px;">
+            {!$ObjectType.New_Part_Creation_Form__c.fields.ECN_Change_Date__c.inlineHelpText}
+        </div>
+        <div id="divMESReferenceId" class="helpTextStyle" style="top: 300px; display: none; opacity: -0.2; left: 170px;">
+            {!$ObjectType.New_Part_Creation_Form__c.fields.Reference_Id__c.inlineHelpText}
+        </div>
+        <div id="divAdditionalRecipients" class="helpTextStyle" style="top: 610px; display: none; opacity: -0.2; left: 170px;">
+            This is to include the additional customer (selected) contacts in the email notification list.
+        </div>
+        <div id="divNotificationGroup" class="helpTextStyle" style="top: 255px; display: none; opacity: -0.2; left: 170px;">
+            {!$ObjectType.New_Part_Creation_Form__c.fields.Notification_Group__c.inlineHelpText}
+        </div>
+               
+    </apex:form>
+        
+    
+
+</apex:page>

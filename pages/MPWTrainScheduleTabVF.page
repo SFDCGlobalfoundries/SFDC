@@ -1,0 +1,489 @@
+<!--
+    Author: Zymark Ambat
+    Description: This page is used as the main page for Maintain and View MPW Schedule Tab VF Tab.
+    History: 
+        ZAmbat      05112015    - Page creation.
+        SNair       05252015    - modified to add Publish field to the list. Added inline editing for Publish and Active fields. Added Publish as search criteria.
+        ditraju     12152015    - modified Pageblock section header added PST title text  
+-->
+
+<apex:page id="MPWTrainScheduleTabVF" controller="MPWTrainScheduleTabController" sidebar="false" showHeader="{!IF(AND(IsPortalType == false), true, false)}" tabStyle="MPW_Train_Maintenance__c" docType="html-5.0">
+    
+    <apex:stylesheet value="{!URLFOR($Resource.MPWRelatedCSS, '/MPWRelatedCSS/MPWInternalChargeOutReport.css')}" />
+    <apex:stylesheet value="/sCSS/21.0/sprites/1297816277000/Theme3/default/gc/versioning.css" />
+    
+    <!-- Javascript -->
+    <!-- <script src="//ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script> -->
+    <apex:includeScript value="{!URLFOR($Resource.jQuery_1_11_3_min, '/jquery-1.11.3.min/jquery-1.11.3.min.js')}" />
+    <apex:includeScript value="{!URLFOR($Resource.MPWRelatedJS, '/MPWRelatedJS/MPWTrainScheduleTabVF.js')}" />
+    
+    <script type="text/javascript">
+        function setFocusOnLoad() {}
+    </script>
+    
+    <apex:sectionHeader title="MPW Train Schedule" subtitle="{!IF(selectedTab == 'ViewMPWSchedule', 'View', 'Maintenance')}" help="https://help.salesforce.com/htviewhelpdoc?id=co_edit.htm&siteLang=en_US" rendered="{!if(userId == null, 'true', 'false')}"/>
+    <apex:pageMessages id="errorSection" /> 
+    
+    <apex:form id="form">
+        <!-- UI for Maintain MPW Schedule Tab -->
+        <apex:pageblock id="block1" rendered="{!IF(selectedTab != 'ViewMPWSchedule', true, false)}">
+            <apex:pageblockButtons location="bottom">
+                <apex:commandButton value="Search" action="{!retrieveMPWRecords}" />
+                <apex:commandButton value="Reset" action="{!reset}" />
+            </apex:pageblockButtons>
+            
+            <apex:pageBlockSection id="section1" columns="2" title="Filters" collapsible="false">
+                <apex:inputField value="{!mpwtm.Name}" />
+                <apex:pageBlockSectionItem >
+                    <apex:outputLabel value="Status" />
+                    <apex:selectList value="{!selectedStatus}" size="1" multiselect="false">
+                        <apex:selectOptions value="{!Status}" />
+                    </apex:selectList>
+                </apex:pageBlockSectionItem>
+                <apex:pageBlockSectionItem >
+                    <apex:outputLabel value="{!$ObjectType.MPW_Train_Maintenance__c.fields.Geometry__c.label}" />
+                    <apex:selectList value="{!geometry}" size="1" multiselect="false">
+                        <apex:selectOptions value="{!GeometryList}" />
+                    </apex:selectList>
+                </apex:pageBlockSectionItem>
+                <apex:pageBlockSectionItem >
+                    <apex:outputLabel value="{!$ObjectType.MPW_Train_Maintenance__c.fields.Publish__c.label}"/>
+                    <apex:selectList value="{!selectedPublish}" size="1" multiselect="false">
+                        <apex:selectOptions value="{!Publish}" />
+                    </apex:selectList>
+                </apex:pageBlockSectionItem>
+                <apex:selectList value="{!mpwtm.Fab__c}" size="1" multiselect="false">
+                    <apex:selectOptions value="{!Fab}" />
+                </apex:selectList>
+            </apex:pageBlockSection>
+        </apex:pageBlock>
+        
+        <apex:pageblock rendered="{!IF(selectedTab != 'ViewMPWSchedule', true, false)}" id="mpwTblBlock">
+            <apex:pageblockButtons location="top">
+                <apex:commandButton value="Add New MPW Schedule" action="{!addNewMPWSchedule}" />
+                <apex:commandButton value="Save" id="saveButton" action="{!saveMPW}" style="display:none"/>
+                <!-- <apex:commandButton value="Cancel" id="cancelButton" action="{!cancelMPW}" style="display:none"/> -->
+            </apex:pageblockButtons>
+            
+            <apex:pageBlockSection id="mpwTblSection" columns="2" title="MPW Train Schedules" collapsible="false">
+                <apex:pageBlockTable id="mpwTbl" value="{!MPWScheduleRecords}" rendered="{!IF(totalNoOfRecords > 0, true, false)}" var="m" style="width: 102%;">
+                    <apex:column >
+                        <apex:facet name="header">Action</apex:facet>
+                        <div style="display: inline;">
+                            <apex:outputLink value="/apex/MPWTrainScheduleTranxVF?tranx=Edit&from=tab&id={!m.mpwScheduleTrain.Id}&tabId={!selectedTabId}" styleClass="link1">Edit</apex:outputLink><!--&nbsp;|&nbsp;
+                            <apex:outputLink value="/apex/MPWTrainScheduleTranxVF?tranx=Clone&from=tab&id={!m.Id}&tabId={!selectedTabId}" styleClass="link1">Clone</apex:outputLink>-->
+                        </div>
+                    </apex:column>
+                    <apex:column headerClass="{!IF(sortField == 'Name', 'TableTitle', '')}">
+                        <apex:facet name="header">
+                            <apex:outputLabel onclick="sortRecords('Name');" styleClass="hand colDiv">
+                                MPW Train
+                                <apex:image value="data:image/gif;base64,R0lGODlhAQABAID/AMDAwAAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==" styleClass="sortASC" rendered="{!IF(AND(sortField == 'Name', sortType == 'ASC'), true, false)}" />
+                                <apex:image value="data:image/gif;base64,R0lGODlhAQABAID/AMDAwAAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==" styleClass="sortDESC" rendered="{!IF(AND(sortField == 'Name', sortType == 'DESC'), true, false)}" />
+                            </apex:outputLabel>
+                        </apex:facet>
+                        <apex:outputLink value="/apex/MPWTrainScheduleTranxVF?tranx=View&id={!m.mpwScheduleTrain.Id}&tabId={!selectedTabId}&from=tab" styleClass="link1">{!m.mpwScheduleTrain.Name}</apex:outputLink>
+                    </apex:column>
+                    <apex:column value="{!m.mpwScheduleTrain.Geometry__c}" headerClass="{!IF(sortField == 'Geometry__c', 'TableTitle', '')}">
+                        <apex:facet name="header">
+                            <apex:outputLabel onclick="sortRecords('Geometry__c');" styleClass="hand colDiv">
+                                {!$ObjectType.MPW_Train_Maintenance__c.fields.Geometry__c.label}
+                                <apex:image value="data:image/gif;base64,R0lGODlhAQABAID/AMDAwAAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==" styleClass="sortASC" rendered="{!IF(AND(sortField == 'Geometry__c', sortType == 'ASC'), true, false)}" />
+                                <apex:image value="data:image/gif;base64,R0lGODlhAQABAID/AMDAwAAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==" styleClass="sortDESC" rendered="{!IF(AND(sortField == 'Geometry__c', sortType == 'DESC'), true, false)}" />
+                            </apex:outputLabel>
+                        </apex:facet>
+                    </apex:column>
+                    <apex:column headerClass="{!IF(sortField == 'Reservation_Close_Date__c', 'TableTitle', '')}">
+                        <apex:facet name="header">
+                            <apex:outputLabel onclick="sortRecords('Reservation_Close_Date__c');" styleClass="hand colDiv">
+                                {!$ObjectType.MPW_Train_Maintenance__c.fields.Reservation_Close_Date__c.label}
+                                <apex:image value="data:image/gif;base64,R0lGODlhAQABAID/AMDAwAAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==" styleClass="sortASC" rendered="{!IF(AND(sortField == 'Reservation_Close_Date__c', sortType == 'ASC'), true, false)}" />
+                                <apex:image value="data:image/gif;base64,R0lGODlhAQABAID/AMDAwAAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==" styleClass="sortDESC" rendered="{!IF(AND(sortField == 'Reservation_Close_Date__c', sortType == 'DESC'), true, false)}" />
+                            </apex:outputLabel>
+                        </apex:facet>
+                        <apex:outputText value="{!MONTH(DATEVALUE(m.mpwScheduleTrain.Reservation_Close_Date__c))}/{!DAY(DATEVALUE(m.mpwScheduleTrain.Reservation_Close_Date__c))}/{!YEAR(DATEVALUE(m.mpwScheduleTrain.Reservation_Close_Date__c))}" rendered="{!IF(NOT(ISBLANK(DATEVALUE(m.mpwScheduleTrain.Reservation_Close_Date__c))), true, false)}" />
+                    </apex:column>
+                    <apex:column headerClass="{!IF(sortField == 'CDRS_Submit_Date__c', 'TableTitle', '')}">
+                        <apex:facet name="header">
+                            <apex:outputLabel onclick="sortRecords('CDRS_Submit_Date__c');" styleClass="hand colDiv">
+                                {!$ObjectType.MPW_Train_Maintenance__c.fields.CDRS_Submit_Date__c.label}
+                                <apex:image value="data:image/gif;base64,R0lGODlhAQABAID/AMDAwAAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==" styleClass="sortASC" rendered="{!IF(AND(sortField == 'CDRS_Submit_Date__c', sortType == 'ASC'), true, false)}" />
+                                <apex:image value="data:image/gif;base64,R0lGODlhAQABAID/AMDAwAAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==" styleClass="sortDESC" rendered="{!IF(AND(sortField == 'CDRS_Submit_Date__c', sortType == 'DESC'), true, false)}" />
+                            </apex:outputLabel>
+                        </apex:facet>
+                        <apex:outputText value="{!MONTH(DATEVALUE(m.mpwScheduleTrain.CDRS_Submit_Date__c))}/{!DAY(DATEVALUE(m.mpwScheduleTrain.CDRS_Submit_Date__c))}/{!YEAR(DATEVALUE(m.mpwScheduleTrain.CDRS_Submit_Date__c))}" rendered="{!IF(NOT(ISBLANK(m.mpwScheduleTrain.CDRS_Submit_Date__c)), true, false)}" />
+                    </apex:column>
+                    <apex:column headerClass="{!IF(sortField == 'Cancellation_Deadline__c', 'TableTitle', '')}">
+                        <apex:facet name="header">
+                            <apex:outputLabel onclick="sortRecords('Cancellation_Deadline__c');" styleClass="hand colDiv">
+                                {!$ObjectType.MPW_Train_Maintenance__c.fields.Cancellation_Deadline__c.label}
+                                <apex:image value="data:image/gif;base64,R0lGODlhAQABAID/AMDAwAAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==" styleClass="sortASC" rendered="{!IF(AND(sortField == 'Cancellation_Deadline__c', sortType == 'ASC'), true, false)}" />
+                                <apex:image value="data:image/gif;base64,R0lGODlhAQABAID/AMDAwAAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==" styleClass="sortDESC" rendered="{!IF(AND(sortField == 'Cancellation_Deadline__c', sortType == 'DESC'), true, false)}" />
+                            </apex:outputLabel>
+                        </apex:facet>
+                        <apex:outputText value="{!MONTH(DATEVALUE(m.mpwScheduleTrain.Cancellation_Deadline__c))}/{!DAY(DATEVALUE(m.mpwScheduleTrain.Cancellation_Deadline__c))}/{!YEAR(DATEVALUE(m.mpwScheduleTrain.Cancellation_Deadline__c))}" rendered="{!IF(NOT(ISBLANK(m.mpwScheduleTrain.Cancellation_Deadline__c)), true, false)}" />
+                    </apex:column>
+                    <apex:column headerClass="{!IF(sortField == 'GDSII_Cutoff_for_Dry_Run_DRC__c', 'TableTitle', '')}">
+                        <apex:facet name="header">
+                            <apex:outputLabel onclick="sortRecords('GDSII_Cutoff_for_Dry_Run_DRC__c');" styleClass="hand colDiv">
+                                {!$ObjectType.MPW_Train_Maintenance__c.fields.GDSII_Cutoff_for_Dry_Run_DRC__c.label}
+                                <apex:image value="data:image/gif;base64,R0lGODlhAQABAID/AMDAwAAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==" styleClass="sortASC" rendered="{!IF(AND(sortField == 'GDSII_Cutoff_for_Dry_Run_DRC__c', sortType == 'ASC'), true, false)}" />
+                                <apex:image value="data:image/gif;base64,R0lGODlhAQABAID/AMDAwAAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==" styleClass="sortDESC" rendered="{!IF(AND(sortField == 'GDSII_Cutoff_for_Dry_Run_DRC__c', sortType == 'DESC'), true, false)}" />
+                            </apex:outputLabel>
+                        </apex:facet>
+                        <apex:outputText value="{!MONTH(DATEVALUE(m.mpwScheduleTrain.GDSII_Cutoff_for_Dry_Run_DRC__c))}/{!DAY(DATEVALUE(m.mpwScheduleTrain.GDSII_Cutoff_for_Dry_Run_DRC__c))}/{!YEAR(DATEVALUE(m.mpwScheduleTrain.GDSII_Cutoff_for_Dry_Run_DRC__c))}" rendered="{!IF(NOT(ISBLANK(m.mpwScheduleTrain.GDSII_Cutoff_for_Dry_Run_DRC__c)), true, false)}" />
+                    </apex:column>
+                    <apex:column headerClass="{!IF(sortField == 'Tapeout_Date_Other_Participant__c', 'TableTitle', '')}">
+                        <apex:facet name="header">
+                            <apex:outputLabel onclick="sortRecords('Tapeout_Date_Other_Participant__c');" styleClass="hand colDiv">
+                                Other Participants<br/>Tapeout Date
+                                <apex:image value="data:image/gif;base64,R0lGODlhAQABAID/AMDAwAAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==" styleClass="sortASC" rendered="{!IF(AND(sortField == 'Tapeout_Date_Other_Participant__c', sortType == 'ASC'), true, false)}" />
+                                <apex:image value="data:image/gif;base64,R0lGODlhAQABAID/AMDAwAAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==" styleClass="sortDESC" rendered="{!IF(AND(sortField == 'Tapeout_Date_Other_Participant__c', sortType == 'DESC'), true, false)}" />
+                            </apex:outputLabel>
+                        </apex:facet>
+                        <apex:outputText value="{!MONTH(DATEVALUE(m.mpwScheduleTrain.Tapeout_Date_Other_Participant__c))}/{!DAY(DATEVALUE(m.mpwScheduleTrain.Tapeout_Date_Other_Participant__c))}/{!YEAR(DATEVALUE(m.mpwScheduleTrain.Tapeout_Date_Other_Participant__c))}" rendered="{!IF(NOT(ISBLANK(m.mpwScheduleTrain.Tapeout_Date_Other_Participant__c)), true, false)}" />
+                    </apex:column>
+                    <apex:column headerClass="{!IF(sortField == 'Tapeout_Date_Customer__c', 'TableTitle', '')}">
+                        <apex:facet name="header">
+                            <apex:outputLabel onclick="sortRecords('Tapeout_Date_Customer__c');" styleClass="hand colDiv">
+                                Customer<br/>Tapeout Date
+                                <apex:image value="data:image/gif;base64,R0lGODlhAQABAID/AMDAwAAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==" styleClass="sortASC" rendered="{!IF(AND(sortField == 'Tapeout_Date_Customer__c', sortType == 'ASC'), true, false)}" />
+                                <apex:image value="data:image/gif;base64,R0lGODlhAQABAID/AMDAwAAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==" styleClass="sortDESC" rendered="{!IF(AND(sortField == 'Tapeout_Date_Customer__c', sortType == 'DESC'), true, false)}" />
+                            </apex:outputLabel>
+                        </apex:facet>
+                        <apex:outputText value="{!MONTH(DATEVALUE(m.mpwScheduleTrain.Tapeout_Date_Customer__c))}/{!DAY(DATEVALUE(m.mpwScheduleTrain.Tapeout_Date_Customer__c))}/{!YEAR(DATEVALUE(m.mpwScheduleTrain.Tapeout_Date_Customer__c))}" rendered="{!IF(NOT(ISBLANK(m.mpwScheduleTrain.Tapeout_Date_Customer__c)), true, false)}" />
+                    </apex:column>
+                    
+                    <apex:column value="{!m.mpwScheduleTrain.Projected_1st_Batch_Bare_Die_Ship__c}">
+                         <apex:facet name="header">Projected 1st Batch<br/>Bare Die Ship</apex:facet>                         
+                    </apex:column>
+                    
+                    <apex:column value="{!m.mpwScheduleTrain.Projected_2nd_Batch_Bare_Die_Ship__c}">
+                         <apex:facet name="header">Projected 2nd Batch<br/>Bare Dies Ship</apex:facet>                         
+                    </apex:column>
+                    
+                    <apex:column value="{!m.mpwScheduleTrain.Status__c}" headerClass="{!IF(sortField == 'Status__c', 'TableTitle', '')}">
+                        <apex:facet name="header">
+                            <apex:outputLabel onclick="sortRecords('Status__c');" styleClass="hand colDiv">
+                                {!$ObjectType.MPW_Train_Maintenance__c.fields.Status__c.label}
+                                <apex:image value="data:image/gif;base64,R0lGODlhAQABAID/AMDAwAAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==" rendered="{!IF(AND(sortField == 'Status__c', sortType == 'ASC'), true, false)}" styleClass="sortASC"/>
+                                <apex:image value="data:image/gif;base64,R0lGODlhAQABAID/AMDAwAAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==" rendered="{!IF(AND(sortField == 'Status__c', sortType == 'DESC'), true, false)}" styleClass="sortDESC"/>
+                            </apex:outputLabel>
+                        </apex:facet>
+                    </apex:column>
+                    <apex:column value="{!m.mpwScheduleTrain.Fab__c}" headerClass="{!IF(sortField == 'Fab__c', 'TableTitle', '')}">
+                        <apex:facet name="header">
+                            <apex:outputLabel onclick="sortRecords('Fab__c');" styleClass="hand colDiv">
+                                {!$ObjectType.MPW_Train_Maintenance__c.fields.Fab__c.label}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                                <apex:image value="data:image/gif;base64,R0lGODlhAQABAID/AMDAwAAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==" styleClass="sortASC" rendered="{!IF(AND(sortField == 'Fab__c', sortType == 'ASC'), true, false)}" />
+                                <apex:image value="data:image/gif;base64,R0lGODlhAQABAID/AMDAwAAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==" styleClass="sortDESC" rendered="{!IF(AND(sortField == 'Fab__c', sortType == 'DESC'), true, false)}" />
+                            </apex:outputLabel>
+                        </apex:facet>
+                    </apex:column>
+                    <apex:column >
+                        <apex:outputField value="{!m.mpwScheduleTrain.Active__c}">
+                            <apex:inlineEditSupport showOnEdit="saveButton"/>
+                        </apex:outputField>
+                        <apex:facet name="header">Active</apex:facet>
+                    </apex:column>
+                    <apex:column >
+                        <apex:outputField value="{!m.mpwScheduleTrain.Publish__c}">
+                            <apex:inlineEditSupport showOnEdit="saveButton"/>
+                        </apex:outputField>
+                        <apex:facet name="header">Publish</apex:facet>
+                    </apex:column>
+                    <apex:facet name="footer">
+                            <apex:outputPanel >
+                                <apex:outputLabel >Showing Page {!currentPageNo} of {!totalNoOfPages} ({!totalNoOfRecords} Records)</apex:outputLabel>
+                            &nbsp;&nbsp;
+                            <apex:outputLabel >Page Size: </apex:outputLabel>
+                            &nbsp;  
+                            <apex:selectList size="1"
+                                    value="{!selectedVal}">
+                                    <apex:selectOptions value="{!pageList}"></apex:selectOptions>
+                                </apex:selectList>
+                                <apex:actionSupport event="onchange"
+                                    action="{!retrieveMPWRecords}" reRender="mpwTbl, controlPanel1"
+                                    status="loadStatus" />
+                            </apex:outputPanel>
+                        </apex:facet>
+                    </apex:pageBlockTable>
+                <apex:outputText value="No MPW records found." rendered="{!IF(OR(totalNoOfRecords <= 0, totalNoOfRecords == 0), true, false)}" />
+                
+                <!-- Pagination Controls -->
+                <br/>
+                <apex:outputPanel id="controlPanel1" layout="block" style="margin: 0; white-space: nowrap; align: center; position: relative;" rendered="{!IF(MPWScheduleRecords.size > 0, true, false)}">
+                    <center>
+                        <apex:commandLink action="{!first}" style="text-decoration: none;" rendered="{!IF(HasPrevious, true, false)}" rerender="mpwTbl, controlPanel1" status="loadStatus">
+                            <apex:image value="/s.gif" styleClass="first1" alt="First Page" />
+                        </apex:commandLink>
+                        <apex:outputPanel rendered="{!IF(NOT(HasPrevious), true, false)}">
+                            <apex:image value="/s.gif" styleClass="firstoff1" alt="First Page" />
+                        </apex:outputPanel>
+                        &nbsp;
+                        <apex:commandLink action="{!previous}" style="text-decoration: none;" rendered="{!IF(HasPrevious, true, false)}" rerender="mpwTbl, controlPanel1" status="loadStatus">
+                            <apex:image value="/s.gif" styleClass="prev1" alt="Previous" /><span class="prevtext">Previous</span>
+                        </apex:commandLink>
+                        <apex:outputPanel rendered="{!IF(NOT(HasPrevious), true, false)}">
+                            <apex:image value="/s.gif" styleClass="prevoff1" alt="Previous" /><span class="prevtextoff1">Previous</span>
+                        </apex:outputPanel>
+                        &nbsp;&nbsp;
+                        <apex:commandLink action="{!next}" style="text-decoration: none;" rendered="{!IF(HasNext, true, false)}" rerender="mpwTbl, controlPanel1" status="loadStatus">
+                            <span class="nexttext">Next</span><apex:image value="/s.gif" styleClass="next1" alt="Next" />
+                        </apex:commandLink>
+                        <apex:outputPanel rendered="{!IF(NOT(HasNext), true, false)}">
+                            <span class="nexttextoff1">Next</span><apex:image value="/s.gif" styleClass="nextoff1" alt="Next" />
+                        </apex:outputPanel>
+                        &nbsp;
+                        <apex:commandLink action="{!last}" style="text-decoration: none;" rendered="{!IF(HasNext, true, false)}" rerender="mpwTbl, controlPanel1" status="loadStatus">
+                            <apex:image value="/s.gif" styleClass="last1" alt="Last Page" />
+                        </apex:commandLink>
+                        <apex:outputPanel rendered="{!IF(NOT(HasNext), true, false)}">
+                            <apex:image value="/s.gif" styleClass="lastoff1" alt="Last Page" />
+                        </apex:outputPanel>
+                    </center>
+                </apex:outputPanel>
+            </apex:pageBlockSection>
+        </apex:pageBlock>
+        
+        <!-- UI for View MPW Schedule Tab -->
+                <apex:pageBlock rendered="{!IF(selectedTab == 'ViewMPWSchedule', true, false)}"
+                    id="viewMPWScheduleFilter">
+                    <apex:pageBlockButtons location="bottom">
+                        <!-- <apex:commandButton value="Search" action="{!filterMPWRecords}" /> -->
+                        <apex:commandButton value="Search" action="{!retrieveMPWRecords}" />
+                        <apex:commandButton value="Reset" action="{!reset}" />
+                    </apex:pageBlockButtons>
+
+                    <apex:pageBlockSection columns="1" title="Filters"
+                        collapsible="false">
+                        <apex:panelGrid columns="2" style="width:100%" cellspacing="10">
+                            <!-- SNAIR 10-13-2015 Added MPW# as Search Criteria -->
+                            <apex:panelGroup style="margin-left:90px">
+                                <apex:outputLabel value="MPW #" styleClass="labelCol" />
+                                <apex:inputField value="{!mpwtm.Name}" id="name"
+                                    style="width:90px" />
+                            </apex:panelGroup>
+                            <br/>
+                            <!-- End SNAIR 10-13-2015 -->
+                            <apex:panelGroup style="margin-left:72px">
+                                <apex:outputLabel value="{!$ObjectType.MPW_Train_Maintenance__c.fields.Geometry__c.label}" styleClass="labelCol"/>
+                                <apex:selectList value="{!geometry}" size="1" multiselect="false">
+                                    <apex:selectOptions value="{!GeometryList}" />
+                                </apex:selectList>
+                            </apex:panelGroup>
+                            <br/>
+                            <apex:panelGroup >
+                                <apex:outputLabel value="Reservation Close Date" styleClass="labelCol"/>    
+                                <apex:inputField value="{!mpwtm.Reservation_Close_Start_Date__c}" id="startdate" style="width:90px"/>
+                                <apex:outputLabel value="< >" styleClass="labelCol" />
+                                <apex:inputField value="{!mpwtm.Reservation_Close_End_Date__c}" id="enddate" style="width:90px"/>
+                            </apex:panelGroup>
+                            <br />
+                            <apex:panelGroup >
+                                <apex:outputLabel value="Customer Tapeout Date" styleClass="labelCol"/>    
+                                <apex:inputField value="{!mpwtm.Tapeout_Date_Customer_Start_Date__c}" id="custstartdate" />
+                                <apex:outputLabel value="< >" styleClass="labelCol" />
+                                <apex:inputField value="{!mpwtm.Tapeout_Date_Customer_End_Date__c}" id="custenddate"/>
+                            </apex:panelGroup>
+                        </apex:panelGrid>
+                    </apex:pageBlockSection>
+                    
+                    <div align="right">
+                        <apex:outputLink value="https://globalfoundries.my.salesforce.com/_ui/core/chatter/groups/GroupProfilePage?g=0F990000000fyZh" target="_blank">Help for Reservation Form</apex:outputLink>
+                    </div>
+                </apex:pageBlock>
+
+                <apex:pageblock rendered="{!IF(selectedTab == 'ViewMPWSchedule', true, false)}" id="viewMPWSchedule">
+            <apex:pageblockButtons location="top">
+                <apex:commandLink value="Export to PDF" action="{!exportToPDF}" target="_blank" styleClass="btn" style="text-decoration: none;"/>
+            </apex:pageblockButtons>
+            
+            <apex:inputHidden id="tabId" value="{!selectedTabId}" />
+            <apex:inputhidden id="userId" value="{!userId}"/>
+            
+            <apex:pageBlockSection columns="1" title="MPW Train Schedules - All dates are display as Pacific Standard Time (PST) time" collapsible="false">
+                <apex:outputPanel layout="block" style="overflow:auto;width:auto;">
+                    <div style="width:600px">
+                    <apex:pageBlockTable columnsWidth="100" width="100%" id="mpwTb2" value="{!MPWScheduleRecords}" rendered="{!IF(totalNoOfRecords > 0, true, false)}" var="m"><!--style="{!if(userId != null,'width: 100%;', 'font-size: 7pt;width: 70%;')}">-->
+                        <apex:column >
+                            <apex:outputLink value="/apex/MPWReservationFormVF?mpwId={!m.mpwScheduleTrain.Id}&intpoint=viewmpwtrain&mode=Edit" rendered="{!m.isRaiseReq}">Raise MPW Request</apex:outputLink>
+                            <apex:facet name="header">Action</apex:facet>
+                        </apex:column>
+                        <apex:column value="{!m.mpwScheduleTrain.Name}">
+                            <apex:facet name="header">
+                                <apex:outputPanel layout="block">
+                                    <apex:outputLabel value="MPW#" styleClass="hand colDiv" onclick="sortRecords('Name');"/>
+                                    <apex:image value="data:image/gif;base64,R0lGODlhAQABAID/AMDAwAAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==" rendered="{!IF(AND(sortField == 'Name', sortType == 'ASC'), true, false)}" styleClass="sortASC"/>
+                                    <apex:image value="data:image/gif;base64,R0lGODlhAQABAID/AMDAwAAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==" rendered="{!IF(AND(sortField == 'Name', sortType == 'DESC'), true, false)}" styleClass="sortDESC"/>                                                                       
+                                </apex:outputPanel>
+                            </apex:facet>  
+                        </apex:column>
+                        <apex:column value="{!m.mpwScheduleTrain.Geometry__c}">
+                            <apex:facet name="header">
+                                <apex:outputPanel layout="block">
+                                    <apex:outputLabel value="{!$ObjectType.MPW_Train_Maintenance__c.fields.Geometry__c.label}" styleClass="hand colDiv" onclick="sortRecords('Geometry__c');"/>
+                                    <apex:image value="data:image/gif;base64,R0lGODlhAQABAID/AMDAwAAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==" rendered="{!IF(AND(sortField == 'Geometry__c', sortType == 'ASC'), true, false)}" styleClass="sortASC"/>
+                                    <apex:image value="data:image/gif;base64,R0lGODlhAQABAID/AMDAwAAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==" rendered="{!IF(AND(sortField == 'Geometry__c', sortType == 'DESC'), true, false)}" styleClass="sortDESC"/>
+                                </apex:outputPanel>
+                            </apex:facet> 
+                        </apex:column>
+                        <apex:column >
+                            <apex:facet name="header">
+                                <apex:outputPanel layout="block">
+                                    <apex:outputLabel value="{!$ObjectType.MPW_Train_Maintenance__c.fields.Reservation_Close_Date__c.label}*" styleClass="hand colDiv" onclick="sortRecords('Reservation_Close_Date__c');"/>
+                                    <apex:image value="data:image/gif;base64,R0lGODlhAQABAID/AMDAwAAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==" rendered="{!IF(AND(sortField == 'Reservation_Close_Date__c', sortType == 'ASC'), true, false)}" styleClass="sortASC"/>
+                                    <apex:image value="data:image/gif;base64,R0lGODlhAQABAID/AMDAwAAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==" rendered="{!IF(AND(sortField == 'Reservation_Close_Date__c', sortType == 'DESC'), true, false)}" styleClass="sortDESC"/>
+                                </apex:outputPanel>
+                            </apex:facet>
+                            <apex:outputText value="{!MONTH(DATEVALUE(m.mpwScheduleTrain.Reservation_Close_Date__c))}/{!DAY(DATEVALUE(m.mpwScheduleTrain.Reservation_Close_Date__c))}/{!YEAR(DATEVALUE(m.mpwScheduleTrain.Reservation_Close_Date__c))}" rendered="{!IF(NOT(ISBLANK(DATEVALUE(m.mpwScheduleTrain.Reservation_Close_Date__c))), true, false)}" />
+                        </apex:column>
+                        <apex:column >
+                            <apex:facet name="header">
+                                <apex:outputPanel layout="block">
+                                    <apex:outputLabel styleClass="hand colDiv" onclick="sortRecords('CDRS_Submit_Date__c');">
+                                    Configurator/CDRS Submit Date<sup>@</sup>
+                                    </apex:outputLabel>
+                                    <apex:image value="data:image/gif;base64,R0lGODlhAQABAID/AMDAwAAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==" rendered="{!IF(AND(sortField == 'CDRS_Submit_Date__c', sortType == 'ASC'), true, false)}" styleClass="sortASC"/>
+                                    <apex:image value="data:image/gif;base64,R0lGODlhAQABAID/AMDAwAAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==" rendered="{!IF(AND(sortField == 'CDRS_Submit_Date__c', sortType == 'DESC'), true, false)}" styleClass="sortDESC"/>                                  
+                                </apex:outputPanel>
+                            </apex:facet>
+                            <apex:outputText value="{!MONTH(DATEVALUE(m.mpwScheduleTrain.CDRS_Submit_Date__c))}/{!DAY(DATEVALUE(m.mpwScheduleTrain.CDRS_Submit_Date__c))}/{!YEAR(DATEVALUE(m.mpwScheduleTrain.CDRS_Submit_Date__c))}" rendered="{!IF(NOT(ISBLANK(m.mpwScheduleTrain.CDRS_Submit_Date__c)), true, false)}" />
+                        </apex:column>
+                        <apex:column >
+                            <apex:facet name="header">
+                                <apex:outputPanel layout="block">
+                                    <apex:outputLabel styleClass="hand colDiv" onclick="sortRecords('Cancellation_Deadline__c');">
+                                    {!$ObjectType.MPW_Train_Maintenance__c.fields.Cancellation_Deadline__c.label}*
+                                    </apex:outputLabel>
+                                    <apex:image value="data:image/gif;base64,R0lGODlhAQABAID/AMDAwAAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==" rendered="{!IF(AND(sortField == 'Cancellation_Deadline__c', sortType == 'ASC'), true, false)}" styleClass="sortASC"/>
+                                    <apex:image value="data:image/gif;base64,R0lGODlhAQABAID/AMDAwAAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==" rendered="{!IF(AND(sortField == 'Cancellation_Deadline__c', sortType == 'DESC'), true, false)}" styleClass="sortDESC"/>
+                                </apex:outputPanel>
+                            </apex:facet>
+                            <apex:outputText value="{!MONTH(DATEVALUE(m.mpwScheduleTrain.Cancellation_Deadline__c))}/{!DAY(DATEVALUE(m.mpwScheduleTrain.Cancellation_Deadline__c))}/{!YEAR(DATEVALUE(m.mpwScheduleTrain.Cancellation_Deadline__c))}" rendered="{!IF(NOT(ISBLANK(m.mpwScheduleTrain.Cancellation_Deadline__c)), true, false)}" />
+                        </apex:column>
+                        <apex:column >
+                            <apex:facet name="header">
+                                <apex:outputPanel layout="block">
+                                    <apex:outputLabel styleClass="hand colDiv" onclick="sortRecords('GDSII_Cutoff_for_Dry_Run_DRC__c');">
+                                    Dry Run DRC<br/>Cut off
+                                    </apex:outputLabel>
+                                    <apex:image value="data:image/gif;base64,R0lGODlhAQABAID/AMDAwAAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==" rendered="{!IF(AND(sortField == 'GDSII_Cutoff_for_Dry_Run_DRC__c', sortType == 'ASC'), true, false)}" styleClass="sortASC"/>
+                                    <apex:image value="data:image/gif;base64,R0lGODlhAQABAID/AMDAwAAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==" rendered="{!IF(AND(sortField == 'GDSII_Cutoff_for_Dry_Run_DRC__c', sortType == 'DESC'), true, false)}" styleClass="sortDESC"/>
+                                </apex:outputPanel>
+                            </apex:facet>
+                            <apex:outputText value="{!MONTH(DATEVALUE(m.mpwScheduleTrain.GDSII_Cutoff_for_Dry_Run_DRC__c))}/{!DAY(DATEVALUE(m.mpwScheduleTrain.GDSII_Cutoff_for_Dry_Run_DRC__c))}/{!YEAR(DATEVALUE(m.mpwScheduleTrain.GDSII_Cutoff_for_Dry_Run_DRC__c))}" rendered="{!IF(NOT(ISBLANK(m.mpwScheduleTrain.GDSII_Cutoff_for_Dry_Run_DRC__c)), true, false)}" />
+                        </apex:column>
+                        <apex:column >
+                            <apex:facet name="header">
+                                <apex:outputPanel layout="block">
+                                    <apex:outputLabel styleClass="hand colDiv" onclick="sortRecords('Tapeout_Date_Other_Participant__c');">
+                                    Other Participants<br/>Tapeout Date<sup>#&#38;</sup>
+                                    </apex:outputLabel>
+                                    <apex:image value="data:image/gif;base64,R0lGODlhAQABAID/AMDAwAAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==" rendered="{!IF(AND(sortField == 'Tapeout_Date_Other_Participant__c', sortType == 'ASC'), true, false)}" styleClass="sortASC"/>
+                                    <apex:image value="data:image/gif;base64,R0lGODlhAQABAID/AMDAwAAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==" rendered="{!IF(AND(sortField == 'Tapeout_Date_Other_Participant__c', sortType == 'DESC'), true, false)}" styleClass="sortDESC"/>
+                                </apex:outputPanel>
+                            </apex:facet>
+                            <apex:outputText value="{!MONTH(DATEVALUE(m.mpwScheduleTrain.Tapeout_Date_Other_Participant__c))}/{!DAY(DATEVALUE(m.mpwScheduleTrain.Tapeout_Date_Other_Participant__c))}/{!YEAR(DATEVALUE(m.mpwScheduleTrain.Tapeout_Date_Other_Participant__c))}" rendered="{!IF(NOT(ISBLANK(m.mpwScheduleTrain.Tapeout_Date_Other_Participant__c)), true, false)}" />
+                        </apex:column>
+                        <apex:column >
+                            <apex:facet name="header">
+                                <apex:outputPanel layout="block">
+                                    <apex:outputLabel styleClass="hand colDiv" onclick="sortRecords('Tapeout_Date_Customer__c');">
+                                    Customer Tapeout<br/>Date<sup>#</sup>
+                                    </apex:outputLabel>
+                                    <apex:image value="data:image/gif;base64,R0lGODlhAQABAID/AMDAwAAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==" rendered="{!IF(AND(sortField == 'Tapeout_Date_Customer__c', sortType == 'ASC'), true, false)}" styleClass="sortASC"/>
+                                    <apex:image value="data:image/gif;base64,R0lGODlhAQABAID/AMDAwAAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==" rendered="{!IF(AND(sortField == 'Tapeout_Date_Customer__c', sortType == 'DESC'), true, false)}" styleClass="sortDESC"/>
+                                </apex:outputPanel>
+                            </apex:facet>
+                            <apex:outputText value="{!MONTH(DATEVALUE(m.mpwScheduleTrain.Tapeout_Date_Customer__c))}/{!DAY(DATEVALUE(m.mpwScheduleTrain.Tapeout_Date_Customer__c))}/{!YEAR(DATEVALUE(m.mpwScheduleTrain.Tapeout_Date_Customer__c))}" rendered="{!IF(NOT(ISBLANK(m.mpwScheduleTrain.Tapeout_Date_Customer__c)), true, false)}" />
+                        </apex:column>
+                        
+                        <apex:column value="{!m.mpwScheduleTrain.Projected_1st_Batch_Bare_Die_Ship__c}">
+                             <apex:facet name="header">Projected 1st Batch<br/>Bare Die Ship<font color='blue'>$</font></apex:facet>                         
+                        </apex:column>
+                        
+                        <apex:column value="{!m.mpwScheduleTrain.Projected_2nd_Batch_Bare_Die_Ship__c}">
+                             <apex:facet name="header">Projected 2nd Batch<br/>Bare Die Ship<font color='blue'>$</font></apex:facet>                         
+                        </apex:column>
+                        
+                        <apex:column value="{!m.mpwScheduleTrain.Status__c}">
+                            <apex:facet name="header">
+                                <apex:outputPanel layout="block">
+                                    <apex:outputLabel value="{!$ObjectType.MPW_Train_Maintenance__c.fields.Status__c.label}" styleClass="hand colDiv" onclick="sortRecords('Status__c');"/>
+                                    <apex:image value="data:image/gif;base64,R0lGODlhAQABAID/AMDAwAAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==" rendered="{!IF(AND(sortField == 'Status__c', sortType == 'ASC'), true, false)}" styleClass="sortASC"/>
+                                    <apex:image value="data:image/gif;base64,R0lGODlhAQABAID/AMDAwAAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==" rendered="{!IF(AND(sortField == 'Status__c', sortType == 'DESC'), true, false)}" styleClass="sortDESC"/>
+                                </apex:outputPanel>
+                            </apex:facet>
+                        </apex:column>
+                            <apex:facet name="footer">
+                                <apex:outputPanel >
+                                    <apex:outputLabel >Showing Page {!currentPageNo} of {!totalNoOfPages} ({!totalNoOfRecords} Records)</apex:outputlabel>
+                                    &nbsp;&nbsp;
+                                    <apex:outputLabel >Page Size: </apex:outputLabel>
+                                    &nbsp;
+                                    <apex:selectList size="1" value="{!selectedVal}">
+                                        <apex:selectOptions value="{!pageList}"></apex:selectOptions>
+                                    </apex:selectList>
+                                    <apex:actionSupport event="onchange" action="{!retrieveMPWRecords}" reRender="mpwTb2, controlPanel" status="loadStatus"  />
+                                    <!-- <apex:actionSupport event="onchange" action="{!filterMPWRecords}" reRender="mpwTb2, controlPanel" status="loadStatus"  /> -->
+                                </apex:outputPanel>
+                            </apex:facet>                       
+                    </apex:pageBlockTable>
+                    </div>
+                </apex:outputPanel>
+                <apex:outputText value="No MPW records found." rendered="{!IF(OR(totalNoOfRecords <= 0, totalNoOfRecords == 0), true, false)}" />
+                
+                <!-- Pagination Controls -->
+                <br/>
+                <apex:outputPanel id="controlPanel" layout="block" style="margin: 0; white-space: nowrap; align: center; position: relative;" rendered="{!IF(MPWScheduleRecords.size > 0, true, false)}">
+                    <center>
+                        <apex:commandLink action="{!first}" style="text-decoration: none;" rendered="{!IF(HasPrevious, true, false)}" rerender="controlPanel, mpwTb2" status="loadStatus">
+                            <apex:image value="/s.gif" styleClass="first1" alt="First Page" />
+                        </apex:commandLink>
+                        <apex:outputPanel rendered="{!IF(NOT(HasPrevious), true, false)}">
+                            <apex:image value="/s.gif" styleClass="firstoff1" alt="First Page" />
+                        </apex:outputPanel>
+                        &nbsp;
+                        <apex:commandLink action="{!previous}" style="text-decoration: none;" rendered="{!IF(HasPrevious, true, false)}" rerender="controlPanel, mpwTb2" status="loadStatus">
+                            <apex:image value="/s.gif" styleClass="prev1" alt="Previous" /><span class="prevtext">Previous</span>
+                        </apex:commandLink>
+                        <apex:outputPanel rendered="{!IF(NOT(HasPrevious), true, false)}">
+                            <apex:image value="/s.gif" styleClass="prevoff1" alt="Previous" /><span class="prevtextoff1">Previous</span>
+                        </apex:outputPanel>
+                        &nbsp;&nbsp;
+                        <apex:commandLink action="{!next}" style="text-decoration: none;" rendered="{!IF(HasNext, true, false)}" rerender="controlPanel, mpwTb2" status="loadStatus">
+                            <span class="nexttext">Next</span><apex:image value="/s.gif" styleClass="next1" alt="Next" />
+                        </apex:commandLink>
+                        <apex:outputPanel rendered="{!IF(NOT(HasNext), true, false)}">
+                            <span class="nexttextoff1">Next</span><apex:image value="/s.gif" styleClass="nextoff1" alt="Next" />
+                        </apex:outputPanel>
+                        &nbsp;
+                        <apex:commandLink action="{!last}" style="text-decoration: none;" rendered="{!IF(HasNext, true, false)}" rerender="controlPanel, mpwTb2" status="loadStatus">
+                            <apex:image value="/s.gif" styleClass="last1" alt="Last Page" />
+                        </apex:commandLink>
+                        <apex:outputPanel rendered="{!IF(NOT(HasNext), true, false)}">
+                            <apex:image value="/s.gif" styleClass="lastoff1" alt="Last Page" />
+                        </apex:outputPanel>
+                    </center>
+                </apex:outputPanel>
+            </apex:pageBlockSection>
+        </apex:pageBlock>
+        
+        <apex:pageBlock rendered="{!IF(selectedTab == 'ViewMPWSchedule', true, false)}" id="scheduleNotes">
+                  <apex:pageBlockTable columns="1" id="scheduleNotesList" value="{!listScheduleNotes}" var="n" rendered="{!IF(OR(listScheduleNotes.size == null,listScheduleNotes.size > 0), true, false)}">
+                      <apex:column value="{!n.Value__c}" >
+                           <apex:facet name="header">Schedule Notes</apex:facet>
+                      </apex:column>
+                  </apex:pageBlockTable>
+        </apex:pageBlock>
+        
+        <apex:actionfunction name="sortRecords" action="{!sortRecords}" rerender="mpwTblBlock, errorSection, mpwTb2" status="loadStatus">     
+            <apex:param name="sortField" value="" />           
+        </apex:actionfunction>
+        
+        <apex:actionStatus onstart="startLoading();" onstop="endLoading();" id="loadStatus"/>
+        <div id="load_scrl" class="loadingBox loader" style="display: none" />
+        <div class="loadingBox overlay" />
+    </apex:form>
+</apex:page>

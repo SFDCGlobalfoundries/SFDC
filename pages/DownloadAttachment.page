@@ -1,0 +1,105 @@
+<!--Working for disabling the bitton, but not enabling after download-->
+<apex:page Controller="DownloadAttachmentController" id="thePage" showChat="false" cache="false" readOnly="true" title="{!objectName}">
+    <apex:includeScript value="/soap/ajax/30.0/connection.js"/>
+    <apex:includeScript value="/soap/ajax/30.0/apex.js"/>
+    <apex:includeScript value="{!URLFOR($Resource.UCMZipjQuery)}"/>
+    <apex:includeScript value="{!URLFOR($Resource.UCMJSZip)}"/>
+    <script type="text/javascript">
+        function buttonsEnabled(enable) {
+            var $buttons = jQuery('.btn'); // find all buttons in the page
+            if (enable == false) {
+                $buttons.toggleClass('btnDisabled', true).attr('disabled', 'disabled');
+            } else {
+                $buttons.toggleClass('btnDisabled', false).attr('disabled', null);
+            } 
+        }
+          //Download Attachments from Attachment id
+          //Use "," split for multiple Attachments        
+          function downloadFromAttachmentId(  btn, param){
+              try{                
+                var rIds = param; //Attachment Ids
+                if(rIds.length>0){
+                    sforce.connection.sessionId = '{!$Api.Session_ID}';
+                    var response = sforce.apex.execute("UCMZipWebServiceHandler","getAttachmentById",{sfdcId:rIds});
+                    var respObj = JSON.parse( response  );
+                    if( respObj['status'] != '200' ) {
+                      alert( respObj ['error'] );
+                      return;
+                    }
+                    var fileData = respObj['data'];
+                    var docId = downloadZip( fileData);
+                    
+                        buttonsEnabled(true);
+                }else{
+                    alert('Please select at least one attachment');
+                    buttonsEnabled(true);
+                }
+              } catch (e) {
+                alert(e);
+              }
+          }        
+        //Zip files and download
+          function downloadZip( fileData) {
+                var fileName = 'DownloadAttachment.zip'; //Temp file name for downloading
+              var zip = new JSZip();
+              for( var k in fileData ) {
+                  zip.file(fileData[k]['Name'], fileData[k]['Body'].toString(),{base64: true});
+              }
+              content = zip.generate();
+              response = sforce.apex.execute("UCMZipWebServiceHandler","saveToDocument",{zipFileData:content, fileName:fileName});
+              respObj = JSON.parse( response  );
+              if( respObj['status'] != '200' ) {
+                  alert( respObj ['error'] );
+                  return;
+              }
+              var docId = respObj['data'];
+              
+              location.href = '/servlet/servlet.FileDownload?file=' + docId;  
+              return docId;          
+          }
+        function checkAll(cb,section)
+            {
+                var inputElem = document.getElementsByTagName('input');                    
+                for(var i=0; i<inputElem.length; i++) {                                    
+                    if(inputElem[i].id.indexOf(section)!=-1) {
+                        inputElem[i].checked = cb.checked;                    
+                    }            
+                }               
+                                  
+            }   
+    </script>
+    <apex:sectionHeader title="View All Attachment" subtitle="{!objectName}"/>
+    <apex:form Id="theForm" >
+            <apex:messages />
+            <apex:pageblock id="thePageBlock" >
+            <apex:pageblockTable value="{!att}" var="a" id="theTable" >
+                <apex:column width="10">
+                    <apex:facet name="header">
+                        <apex:inputcheckbox id="selectAllSearchList"
+                            onclick="checkAll(this,'SearchList')" />
+                    </apex:facet>
+                    <apex:inputCheckbox value="{!a.isChecked}" id="SearchList"/>
+                </apex:column>
+                <apex:column headerValue="Download" width="30">
+                    <apex:outputLink value="{!a.attObj.urlDownload}" target="_blank">View</apex:outputLink>
+                </apex:column>
+                <apex:column value="{!a.attObj.Name}" headerValue="File Name" width="300"/> 
+                <apex:column value="{!a.attObj.Size }" headerValue="Size(bytes)" width="80"/>                
+                <apex:column value="{!a.attObj.OwnerName}" headerValue="Owner Name" width="150"/>
+                <apex:column value="{!a.attObj.created}" headerValue="Created Date" width="200"/>
+                <apex:column value="{!a.attObj.lastmodified}" headerValue="Last Modified Date" width="200"/>
+                <apex:column headerValue="Public" style="width:50px" >
+                    <apex:inputCheckbox value="{!a.attObj.isPublic}" disabled="true" />
+                </apex:column>
+                <apex:column headerValue="Chatter?" style="width:40px" >
+                     <apex:inputCheckbox value="{!a.attObj.isChatter}" disabled="true" />
+                </apex:column>
+            </apex:pageblockTable>
+            <div align="center" draggable="false" >
+                <apex:commandButton Id="cancel" action="{!Cancel}" value="Cancel" immediate="true"/>     
+                <apex:commandButton Id="theBtn" action="{!prepareSelectedIds}" value="Download" onClick="buttonsEnabled(false);" oncomplete="downloadFromAttachmentId(this,'{!selectedAttIds}');" reRender="error"/>                
+            </div>
+        </apex:pageblock>
+    </apex:form>
+    Note: There is a 5 MB zip file limit. A solution to remove this limit is being explored.
+</apex:page>

@@ -1,0 +1,129 @@
+<apex:page standardController="Package__c"
+    extensions="clsVFAddPackageSpecController">
+    <script type="text/javascript">  <!--Modified for Case#2438-->
+    function checkAll(cb,section)
+        {
+            var inputElem = document.getElementsByTagName('input');                     
+            for(var i=0; i<inputElem.length; i++)
+            {                                                   
+                    if(inputElem[i].id.indexOf(section)!=-1){
+                        inputElem[i].checked = cb.checked;
+                    }               
+            }
+  }
+</script>
+    <apex:form >
+        <apex:outputpanel id="msgblk">
+            <apex:pageMessages />
+        </apex:outputpanel>
+        <apex:pageBlock >
+            <apex:pageBlockSection id="searchblk">
+                <apex:panelGroup >              
+                <!--Start for Case#2438-->
+                <table width="100%">
+                    <tr>
+                        <td align="right"><apex:outputLabel value="{!$Label.FV2_All_Fields}" /></td>
+                        <td align="left"><apex:inputText value="{!searchText}" />&nbsp;&nbsp;</td>                        
+                    </tr>
+                    <tr>
+                        <td align="right"><apex:outputLabel value="{!$Label.FV2_Technology_Geometry}" /></td>
+                        <!--commented by Cognizant for Case 31128 start-------->
+                        <!--<td align="left"><apex:inputText value="{!searchTechGeoText}" /></td>-->
+                        <!--commented by Cognizant for Case 31128 end-------->
+                        <!--added by Cognizant for Case 31128 start--->
+                        <td align="left"><apex:inputText value="{!Package__c.Tech_Geometry__c}" disabled="true"/>
+                        
+                        </td>
+                        <!--added by Cognizant for Case 31128 end--->
+                    </tr>
+                    <tr>
+                        <td align="right"><apex:outputLabel value="{!$Label.FV2_Technology_Type}" /></td>
+                        <td align="left"><apex:inputText value="{!searchtechTypeText}" /></td>
+                    </tr>
+                     <tr> 
+                        <td align="right"><apex:outputLabel value="{!$Label.FV2_Latest_Revision}" /></td>
+                        <td align="left"><apex:inputCheckbox id="LatestRevision" title="Latest Revision"
+                        value="{!isLatestRevision}" label="Latest Revision" /></td>
+                    </tr>
+                     <tr>
+                        <td align="right"><apex:commandButton value="Search" action="{!searchSpecs}"
+                        status="status" rerender="resultBlock,searchMsgblk,msgblk" /></td>
+                        <td align="left"><apex:commandButton value="Clear Search Result"
+                        action="{!clearSearchResult}" rerender="searchblk,resultBlock" /></td>
+                    </tr>
+                </table>
+                </apex:panelGroup>
+                <!--End for Case#2438-->
+                <!--<apex:outputPanel id="searchMsgblk">-->
+                <div>
+                    <apex:outputPanel id="searchMsgblk">
+                        <apex:OutputText value="{!$Label.Package_Spec_Search_Message}"
+                            rendered="{!bSearchMessage}" />
+                    </apex:outputPanel>
+                </div>
+                </apex:pageblockSection>
+                <apex:actionStatus id="status"
+                    startText="Searching... please wait!!" />
+                <apex:outputpanel id="resultBlock">
+                    <apex:pageblockSection Title="Search Result" collapsible="false">
+                        <apex:pageblockTable value="{!searchResultWrapper}" var="spec">
+                            <apex:column >
+                                <apex:facet Name="header">
+                                    <apex:inputcheckbox id="headerid" onchange="checkAll(this,'SearchList')" />
+                                </apex:facet>
+                                <apex:inputCheckbox value="{!spec.checked}" id="SearchList" />
+                            </apex:column>
+                            <apex:column value="{!spec.s.Name}"
+                                HeaderValue="Specification Name" />
+                            <apex:column value="{!spec.s.Document_Number__c}"
+                                HeaderValue="Document Number" />
+                            <apex:column value="{!spec.s.Revision__c}" HeaderValue="Revision" />
+                            <apex:column value="{!spec.s.Specification_Type__c}"
+                                HeaderValue="Spec Type" />
+                            <apex:column value="{!spec.s.Technology_Geometry__c}"
+                                HeaderValue="Technology Geometry" />
+                            <apex:column value="{!spec.s.Technology_Type__c}"
+                                HeaderValue="Technology Type" />
+                            <!---apex:column value="{!spec.s.Description__c}"
+                                HeaderValue="Description" /--><!--commented for case 22610-->
+                            <apex:column value="{!spec.s.Is_Latest_Revision__c}"
+                                HeaderValue="Latest Revision" />
+                        </apex:pageblockTable>
+                    </apex:pageblockSection>
+                </apex:outputpanel>
+                <center>
+                    <apex:commandButton style="margin-left:-30%" value="Add to Package"
+                        action="{!addToPackage}" reRender="packageSpecs" />
+                </center>
+                <apex:pageBlockSection Title="Package Specs" id="packageSpecs">
+                    <apex:pageBlockTable value="{!lstPckgSpec}" var="ps">
+                        <apex:column >
+                            <apex:commandLink value="Remove" action="{!removeSpec}"
+                                reRender="packageSpecs">
+                                <apex:param assignTo="{!remSpecId}" value="{!ps.id}"
+                                    name="selectedSpec" />
+                            </apex:commandLink>
+                        </apex:column>
+                        <apex:column headerValue="Specification Name" value="{!ps.Name}" />
+                        <apex:column headerValue="Document Number"
+                            value="{!ps.Document_Number__c}" />
+                        <apex:column headerValue="Revision" value="{!ps.Revision__c}" />
+                        <apex:column headerValue="Spec Type"
+                            value="{!ps.Specification_Type__c}" />
+                        <apex:column headerValue="Technology Geometry"
+                            value="{!ps.Technology_Geometry__c}" />
+                        <apex:column headerValue="Technology Type"
+                            value="{!ps.Technology_Type__c}" />
+                        <!---apex:column value="{!spec.s.Description__c}"
+                                HeaderValue="Description" /--><!--commented for case 22610-->
+                        <apex:column headerValue="Latest Revision"
+                            value="{!ps.Is_Latest_Revision__c}" />
+                    </apex:pageBlockTable>
+                </apex:pageBlockSection>
+                <apex:pageBlockButtons location="bottom">
+                    <apex:commandButton value="Save" Action="{!Save}" />
+                    <apex:commandButton value="Cancel" Action="{!Cancel}" />
+                    </apex:PageBlockButtons>
+        </apex:pageBlock>
+    </apex:form>
+</apex:page>

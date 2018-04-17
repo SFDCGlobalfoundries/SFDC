@@ -1,0 +1,48 @@
+<apex:page standardController="Apttus__APTS_Agreement__c" extensions="ContractTeamMembersControllerExt" showChat="false">
+    <script type="text/javascript">
+        function confirmMemberDelete() {
+            return confirm('Are you sure you want to remove Member?');
+        }
+        
+    </script>
+    <apex:form >
+        <apex:actionFunction reRender="pageBlock" name="getTeamMemberCall" action="{!getTeamMembers}"/>
+        <apex:actionFunction reRender="pageBlock" name="getAllTeamMembersCall" action="{!getAllTeamMembers}"/>
+   
+        <apex:pageBlock id="pageBlock">
+            <apex:pageBlockButtons location="top">
+      <!--  <apex:commandButton value="Manage Contract Team" action="/apex/AgreementManageMember?id={!teamRoom.Id}&inline=1" /> -->            
+      </apex:pageBlockButtons> 
+          
+            <apex:pageBlockTable value="{!members}" var="m" id="pageBlockTable">
+                <apex:column headerValue="Action" width="50px">
+                    <apex:commandLink action="{!deleteMember}" value="Delete" onClick="if (!confirmMemberDelete()) return false;" id="theCommandLink">
+                        <apex:param name="memberId" value="{!m.id}"/>
+                    </apex:commandLink>
+                </apex:column>
+                <apex:column headerValue="Type" width="50px">
+                    <apex:outputText rendered="{!m.User__r.Name != null}">User</apex:outputText>
+                    <apex:outputText rendered="{!m.Group_Name__c != null}">Group</apex:outputText>
+                </apex:column>
+                <apex:column headerValue="Name">
+                    <apex:outputText rendered="{!m.User__r.Name != null}">{!m.User__r.Name}</apex:outputText>
+                    <apex:outputText rendered="{!m.Group_Name__c != null}">{!m.Group_Name__c}</apex:outputText>     
+                </apex:column>
+          
+                 <apex:column headerValue="Profile">
+                    <apex:outputText rendered="{!m.User__r.Name != null}" value="{!IF(m.User_Profile__c=='PT1','System Administrator',m.User_Profile__c)}"/>
+                    
+                    <apex:outputText rendered="{!m.Group_Name__c != null}" value="{!IF(m.User_Profile__c=='PT1','System Administrator',m.User_Profile__c)}"/>
+                </apex:column>
+            
+                <apex:column headerValue="Role">
+                    <apex:outputField rendered="{!m.User__r.Name != null}" value="{!m.User_Role__c}"/>
+                    <apex:outputField rendered="{!m.Group_Name__c != null}" value="{!m.User_Role__c}"/>
+                </apex:column>
+                <apex:column value="{!m.Access__c}"/>
+            </apex:pageBlockTable>
+            <apex:commandLink value="Show More" onclick="getTeamMemberCall(); return false;" rendered="{!totalRecordCount > 5 && retrivedRecordCount < totalRecordCount}"/>
+            &nbsp;<apex:commandLink value="Show All ({!totalRecordCount})" onclick="getAllTeamMembersCall(); return false;" rendered="{!totalRecordCount > 5 && retrivedRecordCount < totalRecordCount}"/>
+        </apex:pageBlock>
+    </apex:form>
+</apex:page>

@@ -1,0 +1,449 @@
+<apex:page standardController="Device__c" id="devMilestone" extensions="PSP_MilestoneExtension" showChat="false" sidebar="false" docType="html-5.0">
+    <apex:stylesheet value="{!$Resource.Stylesheet_PSP_Pages}"/>
+    <apex:outputPanel id="pspscript">
+    <script>
+        function setFocusOnLoad() {}
+                
+        //redirect to PSP_Create page
+        function checkPSPCreate(){
+            var errorflag = 0;
+            if('{!isASIC}' == 'true'){
+                var deltype = document.getElementById('devMilestone:form1:pb1:delTypeval').value;
+                if(deltype != 'Wafer' && deltype != 'Chip' && deltype != 'Module'){
+                    alert('Please provide "Deliverable Type"');
+                    location.reload();
+                    return false;
+                }
+                for(var j = 0; j <= 12; j++){
+                    var tableval1 = document.getElementById('devMilestone:form1:pb1:pbt3:'+j+':c2').innerText;
+                    if(tableval1 != 'Customer Engagement'){
+                        var dateval2 = document.getElementById('devMilestone:form1:pb1:pbt3:'+j+':cdto4');
+                        if(dateval2 == null) {
+                            var dateval3 = document.getElementById('devMilestone:form1:pb1:pbt3:'+j+':ot4');
+                            if(dateval3 != null) {
+                                if(!dateval3.innerText){
+                                    errorflag++;
+                                }else{
+                                    if(document.getElementById('devMilestone:form1:pb1:pbt3:'+j+':cdto3').value <= 0){
+                                        alert('Please fill Step Cycle Time greater than 0');
+                                        return false;
+                                    }
+                                }
+                            }
+                        } else {
+                            if(!dateval2.value){
+                                errorflag++;
+                            }
+                        }
+                    }
+                }
+            } else {
+                for(var i = 0; i <= 10; i++){
+                    var tableval = document.getElementById('devMilestone:form1:pb1:pbt2:'+i+':col2').innerText;
+                    if(tableval == 'Actual Wafer First Lot Start' || tableval == 'Proto Wafer Fab Shipped' ||
+                        tableval == 'Assembled/Tested Part Shipped' || tableval == 'Production Wafer Start'){
+                        var dateval = document.getElementById('devMilestone:form1:pb1:pbt2:'+i+':cdto2');
+                        if(dateval == null) {
+                            var dateval1 = document.getElementById('devMilestone:form1:pb1:pbt2:'+i+':ot3');
+                            if(dateval1 != null) {
+                                if(!dateval1.innerText){
+                                    errorflag++;
+                                }else{
+                                    if(document.getElementById('devMilestone:form1:pb1:pbt2:'+i+':cdto1').value <= 0){
+                                        alert('Please fill Step Cycle Time greater than 0');
+                                        return false;
+                                    }
+                                }
+                            }
+                        } else {
+                            if(!dateval.value){
+                                errorflag++;
+                            }
+                        }
+                    }
+                }
+            }
+            if(errorflag > 0){
+                alert('Please fill up all PSP Dates!');
+            } else {
+                window.open('/apex/PSP_create?id='+'{!dev.Id}','_blank');
+            }
+            location.reload();
+            return false;
+        }
+        
+        //handle enter key
+        function enterfunction(e){
+            var keynum;
+            if(window.event)
+            {
+                keynum = e.keyCode;
+            }            
+            if(keynum == 13) 
+            { 
+                callrefresh();
+                return false; 
+            }
+        }
+        
+        //validate done checkbox
+        function confirmDone(boxid){
+            if(boxid.checked == false){
+                if(confirm("Are you sure you want to check the Done checkbox?") == true) {
+                    boxid.checked = true;
+                } else {
+                    boxid.checked = false;
+                }
+            }
+        }
+        
+        //validate done checkbox
+        function confirmSave(){
+            if(confirm("Are you sure you want to save the data?") == true) {
+                callsave();
+            }else{
+                location.reload();
+            }
+        }
+        
+        //redirect to PSP_CustomCEUsersLookup page
+        function openCEuserslookup(){
+            window.open('/apex/PSP_CustomCEUsersLookup?accid={!accId}&oppProgid={!dev.Opportunity_Program__c}&isASIC={!isASIC}','_blank', 'toolbar=yes, scrollbars=yes, resizable=yes, top=250, left=400, width=600, height=350');
+        }
+        
+        //redirect to PSP_StatusArchieves page
+        function redirectarchieve(){
+            window.open('/apex/PSP_StatusArchieves?id={!dev.Id}','_blank', 'toolbar=yes, scrollbars=yes, resizable=yes, top=250, left=350, width=800, height=400');
+        }
+    </script>
+    </apex:outputPanel>
+    <style>
+    .tbl1style td{
+        width:20%;
+        display:table-cell;
+        vertical-align:top;
+        text-align:left;
+        height:22px;
+        vertical-align: middle;
+    }
+    .dateFormat{
+        display:none;
+    }
+    </style>
+    
+    <apex:form id="form1">
+        <c:LoadingStatusSpinner />
+        <apex:pageBlock id="pb1">
+            <apex:PageMessages id="errmsg" escape="false"/>
+            <apex:pageBlockButtons id="pbb" location="top"> 
+                <apex:commandButton value="Reset" action="{!reset}" />               
+                <apex:commandButton value="Save" onclick="confirmSave();return false;" reRender="pspscript"/>
+                <apex:commandButton value="Cancel" action="{!cancel}"/>
+                <apex:commandButton value="Switch Edit view" action="{!switchviewmethod}" status="LoadingStatusSpinner"/>
+                <apex:commandButton value="Lock Dates" action="{!lockDates}" disabled="{!IF(dev.PSP_Dates_Locked__c == TRUE,TRUE,FALSE)}"/>
+                <apex:commandButton value="Unlock Dates" action="{!unlockDates}" disabled="{!IF(dev.PSP_Dates_Locked__c == FALSE,TRUE,IF(unlockAccess,FALSE,TRUE))}"/>
+                <apex:commandButton value="2) PSP Volumes" onclick="checkPSPCreate();callsave();" reRender="pspscript"/>
+            </apex:pageBlockButtons>
+                      
+            <table border="1" class="tbl1style" style="width:100%;border-collapse:collapse;border-color:#000000;height: 140px;">
+                <th rowspan="8" scope="row" style="text-align:center;background-color:#cce6ff;">1. Device<br/>Overview</th>                
+                <th colspan="8" scope="col" style="background-color: #cce6ff;text-align:left;font-weight:800;">{!dev.Account__r.Name}</th>                
+                <apex:repeat id="r1" value="{!devOverviewList}" var="devOver">
+                    <tr>
+                        <th scope="row">Fab</th>
+                        <td><apex:outputText value="{!devOver.device.Fab__c}"/></td>
+                        <th scope="row">Sales Region</th>
+                        <td><apex:outputText value="{!devOver.salesRegion}"/></td>
+                        <th scope="row">GF Device Id</th>
+                        <td><apex:outputText value="{!devOver.device.CRMDID__c}"/></td>                        
+                        <th scope="row">End Application</th>
+                        <td><apex:outputText value="{!devOver.device.End_Application__c}"/></td>
+                    </tr>
+                    <tr>
+                        <th scope="row">Geometry</th>
+                        <td><apex:outputText value="{!devOver.device.Geometry__c}"/></td>
+                        <th scope="row">Account Manager</th>
+                        <td><apex:outputText value="{!devOver.accManager}"/></td>
+                        <th scope="row">Current Customer Device ID</th>
+                        <td><apex:inputField value="{!devOver.device.Current_Customer_Device_Id__c}"/> </td>
+                        <th scope="row">Semiconductor Device</th>
+                        <td><apex:outputText value="{!devOver.device.Semiconductor_Device__c}"/></td>                       
+                    </tr>
+                    <tr>
+                        <th scope="row">Technology</th>
+                        <td><apex:outputText value="{!devOver.device.Process_Technology__c}"/></td>
+                        <th scope="row">Original Customer Device Sourcing</th>
+                        <td><apex:outputfield value="{!devOver.device.Device_Sourcing__c}"/></td>
+                        <th scope="row">Original Customer Device ID</th>
+                        <td><apex:outputLink value="/{!devOver.device.Id}" target="blank">{!devOver.device.Name}</apex:outputLink></td>
+                        <!-- th scope="row">Proto Lot Start ID</th>
+                        <td><apex:outputLink value="/{!devOver.mflot.Id}" target="blank">{!devOver.mflot.Name}</apex:outputLink></td -->
+                        <th scope="row">End Customer</th>
+                        <td><apex:outputText value="{!devOver.device.End_Customer__c}"/></td>
+                    </tr>
+                    <tr>
+                        <th scope="row">Opportunity Name</th>
+                        <td><apex:outputLink value="/{!devOver.device.Opportunity__c}" target="blank">{!devOver.device.Opportunity_Name__c}</apex:outputLink></td>
+                        <th scope="row">Current Customer Device Sourcing</th>
+                        <td><apex:inputfield value="{!devOver.device.Current_Customer_Device_Sourcing__c}"/></td>
+                        <th scope="row">Tapeout Revenue - <br/> manual</th>
+                        <td>
+                            <apex:outputText value="{0, number, currency}" rendered="{!IF(devOver.torCalculation=='Manual',True,False)}"><apex:param value="{!devOver.turnkeyTotal}"/></apex:outputText>
+                            <apex:outputText value="N/A" rendered="{!IF(devOver.torCalculation=='Automatic',True,False)}"/>
+                        </td>
+                        <th scope="row">End Product</th>
+                        <td><apex:outputText value="{!devOver.device.Opportunity2__r.Product__c}"/></td>
+                    </tr>
+                    <tr>
+                        <th scope="row">Account Classification</th>
+                        <td><apex:outputText value="{!devOver.device.Account__r.Classification__c}"/></td>
+                        <th scope="row">% Share End Customer<br/> Socket</th>
+                        <td><apex:inputfield value="{!dev.Percentage_Share_End_Customer_Socket__c}"/></td>
+                        <th scope="row">Tapeout Revenue - <br/> PSP automatic</th>
+                        <td>
+                            <apex:outputText value="{0, number, currency}" rendered="{!IF(devOver.torCalculation=='Automatic',True,False)}"><apex:param value="{!devOver.turnkeyTotal}"/></apex:outputText>
+                            <apex:outputText value="N/A" rendered="{!IF(devOver.torCalculation=='Manual',True,False)}"/>
+                        </td>
+                        <th scope="row">Market Segment</th>
+                        <td colspan="3"><apex:outputText value="{!devOver.device.Market_Segment__c}"/></td>
+                    </tr>
+                </apex:repeat>
+                <tr>                    
+                    <th scope="row" colspan="2">PSP to be Locked by Date &nbsp;
+                    <apex:input id="lock1" type="auto" value="{!lockdate}" disabled="true"/></th>
+                    <th scope="row" colspan="3">Include in PSP Reports &nbsp;
+                        <apex:selectList id="includePSP" required="true" size="1" value="{!includeinPSPtext}">
+                            <apex:selectOptions id="includePSPlist" value="{!includeinPSPList}"/>
+                        </apex:selectList>
+                    </th>
+                    <th scope="row"><apex:outputText value="{!IF(isASIC,'TS/PEM','CE/PM')}"/> &nbsp;<apex:image value="/img/alohaSkin/help_orange.png" title="{!IF(isASIC,'Tactical Sales/Product Execution Manager','Customer Engineer/ Program Manager')}" height="13" width="13"/></th>
+                    <td colspan="2"><apex:inputText styleClass="cestyle" id="ceinput" value="{!ceUser}" style="width:34%"/>
+                        <apex:image value="{!$Resource.contact_lookup_icon}" onclick="openCEuserslookup();" style="cursor:pointer;vertical-align:middle;"/>&nbsp;&nbsp;
+                        <apex:commandButton value="{!IF(isASIC,'Update TS/PEM','Update CE/PM')}" action="{!updateCEmethod}"/>
+                    </td>
+                </tr>
+                <tr>
+                    <th scope="row" colspan="2">Business Unit &nbsp;
+                    <apex:inputfield value="{!dev.Business_Unit__c}"/></th>
+                    <th scope="row" colspan="2">Product Line &nbsp;
+                    <apex:inputfield value="{!dev.Product_Line__c}"/></th>
+                     <th scope="row" colspan="2">Option Flow &nbsp;
+                    <apex:inputfield value="{!dev.Design_Execution_Required__c}"/></th>
+                    <th scope="row" colspan="2">Deliverable type &nbsp;
+                    <apex:selectList id="delTypeval" size="1" value="{!delType}">
+                        <apex:selectOptions id="delTypeVallist" value="{!delTypeList}"/>
+                    </apex:selectList></th>
+                    <th scope="row" colspan="2">Exclude from <br/>Demand Forecast &nbsp;
+                    <apex:inputfield value="{!dev.Exclude_from_Demand_Forecast__c}"/></th>
+                </tr>                
+            </table>
+            <br/><br/>
+            
+            <table border="1" class="tbl1style" style="width:100%;border-collapse:collapse;border-color:#000000;height: 75px;">
+                <th rowspan="4" scope="row" style="text-align:center;width:8%;background-color:#cce6ff;">2a. Status</th>
+                <tr>
+                    <th scope="row" style="width:15%;">Risk</th>
+                    <td colspan="3"><apex:image value="{!IF(dev.PSP_Risk__c=='High',$Resource.PSP_Status_Red,IF(dev.PSP_Risk__c=='Medium',$Resource.PSP_Status_Yellow,IF(dev.PSP_Risk__c=='Low',$Resource.PSP_Status_Green,'')))}" width="90" height="40" rendered="{!AND(dev.PSP_Risk__c != null,NOT(editstatusflag))}"/>
+                    <apex:inputfield id="statRisk" value="{!dev.PSP_Risk__c}" rendered="{!editstatusflag}" style="width:50%;"/></td>
+                    <td rowspan="3" style="width:22%;text-align:center;">
+                    <apex:commandButton value="Edit Status" action="{!editStatus}" disabled="{!editstatusflag}"/>
+                    <apex:commandButton value="Update Status" action="{!updateStatus}" disabled="{!NOT(editstatusflag)}"/><br/><br/>
+                    <apex:commandButton value="Cancel" action="{!cancelPSPStatus}" disabled="{!NOT(editstatusflag)}"/>
+                    <apex:commandButton value="Show Archives" onclick="redirectarchieve();" action="{!editStatus}" disabled="{!dev.PSP_Status_Archieves__r.size=0}"/>
+                    </td>
+                </tr>
+                <tr>
+                    <th scope="row">Overview Comments Section</th>
+                    <td colspan="3"><apex:outputfield id="statCommentOutput" value="{!dev.PSP_Overview_Comments__c}" rendered="{!NOT(editstatusflag)}" style="width:90%;"/>
+                    <apex:inputfield id="statCommentInput" value="{!dev.PSP_Overview_Comments__c}" rendered="{!editstatusflag}" style="width:90%;"/></td>
+                </tr>
+                <tr>
+                    <th scope="row">Escalation/Help Needed (who/when)</th>                    
+                    <td style="width:32%;"><apex:outputfield value="{!dev.PSP_Escalation__c}" rendered="{!NOT(editstatusflag)}" style="width:90%;"/>
+                    <apex:inputfield id="statEsc" value="{!dev.PSP_Escalation__c}" rendered="{!editstatusflag}" style="width:90%;"/></td>
+                    <td style="width:15%;">
+                    <b>Who:</b>&nbsp;
+                    <apex:outputfield value="{!dev.PSP_Status_Who__c}" rendered="{!NOT(editstatusflag)}" style="width:80%;"/>
+                    <apex:inputfield id="statWho" value="{!dev.PSP_Status_Who__c}" rendered="{!editstatusflag}" style="width:80%;"/></td>
+                    <td style="width:15%;">
+                    <b>When:</b>&nbsp;
+                    <apex:outputText value="{0,date,MM/dd/yyyy}" rendered="{!NOT(editstatusflag)}"><apex:param value="{!dev.PSP_Status_When__c}"/></apex:outputText>
+                    <apex:input type="auto" id="statWhen" value="{!pspStatusWhen}" rendered="{!editstatusflag}" style="width:70%;"/></td>                    
+                </tr>
+            </table>
+            
+            <table border="1" style="width:100%;border-collapse:collapse;border-color:#000000;border-top:none;text-align:center;">
+                <tr>
+                    <td colspan="3" scope="row" style="height:25px;border:none;width:50%;">
+                        <apex:outputlabel id="revCE" for="revCEval" style="font-weight:bold;" value="CE has completed review of initial schedule" />&nbsp;
+                        <apex:image value="/img/alohaSkin/help_orange.png" title="CE must fill this value" height="13" width="13"/>&nbsp;&nbsp;
+                        <apex:selectList id="revCEval" required="true" size="1" value="{!scheduleCompletedtext}" disabled="{!IF(OR(CEFlag,adminFlag),FALSE,TRUE)}">
+                            <apex:selectOptions id="revCElist" value="{!scheduleCompletedList}"/>
+                        </apex:selectList>
+                    </td>
+                    <td colspan="3" scope="row" style="height:25px;border-left-color:#000000;width:50%;">
+                        <apex:outputLabel id="olceFtps" for="ceFtpsVal" value="CE FTPS (First Time Prototype Success)" style="font-weight:bold;"/>&nbsp;
+                        <apex:inputfield id="ceFtpsVal" value="{!dev.CE_FTPS__c}"/>
+                    </td>
+                </tr>
+            </table>
+            
+            <br/><br/>
+            <apex:inputHidden value="{!userId}" id="inputuserIdHidden"/>
+            
+            <table border="1" style="width:100%;border-collapse:collapse;border-color:#000000;border-bottom:none;">
+                <tr>
+                    <th colspan="7" scope="row" style="text-align:center;background-color: #cce6ff;height: 22px;border:none;">2b. PSP Milestone Schedule</th>
+                </tr>
+            </table>            
+            <apex:variable id="var1" var="rowcount" value="{!1}"/>
+            <apex:variable id="var2" var="total1" value="{!0}"/>
+            <apex:variable id="var3" var="total2" value="{!0}"/>
+            <apex:pageblockTable id="pbt2" value="{!milestoneList}" var="mile" rendered="{!NOT(isASIC)}" columns="9" style="border-color:#000000;" rowClasses="rowClass1,rowClass2" columnsWidth="4%,15%,5%,13%,9%,5%,14%,3%,32%">
+                <apex:column id="col1" headerValue="Step No." headerClass="pspheadspecial" style="border-color:#000000;text-align:center;font-weight:bold;">
+                    <apex:outputText rendered="{!IF(mile.milestone!='',TRUE,FALSE)}">{!rowcount}</apex:outputText>
+                    <apex:variable var="rowcount" value="{!rowcount+1}"/>
+                </apex:column>
+                <apex:column id="col2" headerValue="Milestone" headerClass="pspheaddefault" style="border-color:#000000;border-left:1px solid #000000;">
+                    <apex:outputText style="font-weight:bold;" rendered="{!IF(AND(mile.milestone!='Product TO'),TRUE,FALSE)}" value="{!mile.milestone}"/>
+                    <apex:outputText style="font-weight:bold;" rendered="{!IF(mile.milestone=='Product TO',TRUE,FALSE)}" value="Product Tapeout"/>
+                    <apex:outputText rendered="{!IF(mile.milestone=='Respin Impact to Schedule',TRUE,FALSE)}">&nbsp;<apex:image value="/img/alohaSkin/help_orange.png" title="{!$Label.PSP_Milestone_Respin_Help}" height="13" width="13"/>
+                    <br/><apex:outputText style="font-weight:normal !important;">(See important ? note on device revisions)</apex:outputText></apex:outputText>
+                    <apex:outputText rendered="{!IF(mile.milestone=='RTR - Functionality and Yield',TRUE,FALSE)}">&nbsp;<apex:image value="/img/alohaSkin/help_orange.png" title="Risk Start Capable" height="13" width="13"/></apex:outputText>
+                    <apex:outputText rendered="{!IF(mile.milestone=='Direct Customer Qual Complete',TRUE,FALSE)}">&nbsp;<apex:image value="/img/alohaSkin/help_orange.png" title="CS Wafer Shipment" height="13" width="13"/></apex:outputText>
+                </apex:column>
+                <apex:column id="col3" headerClass="pspheaddefault" style="border-color:#000000;text-align:center;border-left:1px solid #000000;">
+                    <apex:facet name="header">Functional <br/>Group</apex:facet>
+                    <apex:outputText value="{!mile.owner}"/>
+                </apex:column>
+                <apex:column id="col4" headerClass="pspheaddefault" style="border-color:#000000;text-align:center;border-left:1px solid #000000;">
+                    <apex:facet name="header">Owner Name <br/>(only 1 per milestone)</apex:facet>
+                    <apex:outputText value="{!mile.ownerName}"/>
+                </apex:column>
+                <apex:column id="col5" headerValue="POR Date" headerClass="pspheaddefault" style="border-color:#000000;text-align:center;border-left:1px solid #000000;">
+                    <apex:outputText id="ot2" value="{0,date,MM/dd/yyyy}" rendered="{!AND(OR(NOT(mile.showEdit),mile.originalDate != null),mile.milestone!='')}"><apex:param value="{!mile.originalDate}"/></apex:outputText>
+                    <apex:outputText rendered="{!IF(mile.milestone=='',TRUE,FALSE)}"><b>Tapeout to Production <br/>Cycle Time</b></apex:outputText>
+                </apex:column>
+                <apex:column id="col6" headerClass="pspheaddefault" style="border-color:#000000;text-align:center;border-left:1px solid #000000;">
+                    <apex:facet name="header">Forecasted <br/>Step Cycle time</apex:facet>
+                    <apex:outputText id="otstepcycle" value="{!IF(mile.stepcycle!=null,mile.stepcycle,0)}" rendered="{!IF(AND(mile.milestone!='',NOT(dateEditView)),TRUE,FALSE)}"/>
+                    <apex:inputtext id="cdto1" value="{!mile.stepcycle}" size="8" onkeypress="return enterfunction(event);" rendered="{!IF(AND(mile.milestone!='',mile.milestone!='Design Win',dateEditView),TRUE,FALSE)}" style="text-align:center;">
+                        <apex:actionSupport action="{!refreshforecastedDate}" event="onchange" status="LoadingStatusSpinner"/>
+                    </apex:inputtext>
+                    <apex:variable var="total1" value="{!IF(AND(mile.stepcycle != null,mile.milestone!='Product TO'), total1 + mile.stepcycle, total1 + 0)}"/>
+                    <apex:outputText id="otstep1" rendered="{!IF(mile.milestone=='',TRUE,FALSE)}"><b>{!total1}</b></apex:outputText>
+                </apex:column>
+                <apex:column id="col7" headerClass="pspheaddefault" style="{!IF(AND(mile.milestone!='',mile.milestone!='Design Win',mile.forecastedDate!=null),IF(mile.productTOdone==TRUE,'background-color:#00e600;border-color:#000000;text-align:center;border-left:1px solid #000000;','border-color:#000000;text-align:center;border-left:1px solid #000000;'),'border-color:#000000;text-align:center;border-left:1px solid #000000;')}">
+                    <apex:facet name="header">Forecasted/Actual date <br/>(mm/dd/yyyy)</apex:facet>
+                    <apex:outputText id="ot3" value="{0,date,MM/dd/yyyy}" rendered="{!dateEditView}"><apex:param value="{!mile.forecastedDate}"/></apex:outputText>
+                    <apex:input id="cdto2" value="{!mile.forecastedDate}" type="date" rendered="{!IF(AND(mile.milestone!='',mile.milestone!='Design Win',NOT(dateEditView)),TRUE,FALSE)}">
+                        <apex:actionSupport action="{!refreshStepCycletime}" event="onchange" status="LoadingStatusSpinner"/>
+                    </apex:input>
+                </apex:column>
+                <apex:column id="col8" headerValue="Done" headerClass="pspheaddefault" style="border-color:#000000;text-align:center;border-left:1px solid #000000;">
+                    <apex:inputCheckbox value="{!mile.productTOdone}" onmousedown="confirmDone(this);" rendered="{!IF(AND(mile.milestone!='',mile.milestone!='Design Win'),TRUE,FALSE)}" disabled="{!IF(mile.forecastedDate!=null,IF(mile.milestone=='Wafer First Lot Start',IF(OR(CEFlag,adminFlag),FALSE,TRUE),IF(mile.owner=='CE/PM',NOT(OR(AMFlag,CEFlag,adminFlag)),IF(mile.owner=='FAE',NOT(OR(AMFAEFlag,adminFlag)),IF(mile.owner=='AM',NOT(OR(AMFlag,adminFlag)),TRUE)))),TRUE)}"/>
+                    <!-- apex:inputCheckbox value="{!mile.productTOdone}" onmousedown="confirmDone(this);" 
+                    disabled="{!IF(!dev.PSP_Dates_Locked__c,TRUE,IF(OR(AND(mile.milestone=='Product TO',dev.Actual_Tapeout_Date_Done__c),AND(mile.milestone=='Proto Wafer First Lot Start',dev.Proto_Wafer_First_Lot_Start_Done__c),AND(mile.milestone=='Proto Wafer Fab Shipped',dev.Proto_Wafer_Fab_Shipped_Done__c),AND(mile.milestone=='Assembled/Tested Part Shipped',dev.Assembled_Tested_Part_Shipped_Done__c)),TRUE,IF(mile.forecastedDate!=null,OR(mile.forecastedDate>TODAY(),mile.forecastedDate<TODAY()-7),TRUE)))}" 
+                    rendered="{!IF(AND(mile.milestone!='',mile.milestone!='Design Win'),TRUE,FALSE)}"/-->
+                </apex:column>
+                <apex:column id="col9" headerValue="Notes/Details" headerClass="pspheaddefault" style="border-color:#000000;text-align:center;border-left:1px solid #000000;">
+                    <apex:inputtextarea id="ita1" value="{!mile.notes}" cols="35" rows="2" rendered="{!IF(mile.milestone!='',TRUE,FALSE)}"/><br/>
+                    <apex:outputtext id="ottrev" value="No Current Device Revisions found." style="font-weight:bold;color:red;" rendered="{!IF(AND(mile.milestone=='Respin Impact to Schedule',currDevId=='Not Available'),TRUE,FALSE)}" />
+                    <apex:outputPanel id="revdevpanel" rendered="{!IF(AND(mile.milestone=='Respin Impact to Schedule',currDevId!='Not Available'),TRUE,FALSE)}">
+                        <table style="width:100%;border-color:#000000;border: 1px solid black;">
+                            <tr>
+                                <td colspan="2" style="text-align:right;"><b>Current Device Rev.</b></td>
+                                <td colspan="2" style="text-align:left;">
+                                    <apex:selectList value="{!currDevId}" size="1">
+                                        <apex:selectOptions value="{!currDevoptions}"></apex:selectOptions>
+                                        <apex:actionSupport event="onchange" action="{!refreshRevDates}"/>
+                                    </apex:selectList>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td style="text-align:left;">1. Product TO</td>
+                                <td><apex:inputField value="{!currDevMap[currDevId].Product_TO_Current__c}" style="width:65px;float:left;" onchange="refrevdevpanel();"/></td>                            
+                                <td style="text-align:left;">2. Wafer First Lot</td>
+                                <td><apex:inputField value="{!currDevMap[currDevId].Proto_Wafer_First_Lot_Start_Current__c}" style="width:65px;float:left;" onchange="refrevdevpanel();"/></td>
+                            </tr>
+                            <tr>
+                                <td style="text-align:left;">3. Wafer Fab Ship</td>
+                                <td><apex:inputField value="{!currDevMap[currDevId].Proto_Wafer_Fab_Shipped_Current__c}" style="width:65px;float:left;" onchange="refrevdevpanel();"/></td>                            
+                                <td style="text-align:left;">4. A/T Part Ship</td>
+                                <td><apex:inputField value="{!currDevMap[currDevId].Assembled_Tested_Part_Shipped_Current__c}" style="width:65px;float:left;" onchange="refrevdevpanel();"/></td>
+                            </tr>
+                            <tr>
+                                <td colspan="2" style="text-align:right;">Retrofit Done</td>
+                                <td colspan="2" style="text-align:left;"><apex:inputCheckbox value="{!currDevDone}" style="float:left;" disabled="{!IF(AND(currDevMap[currDevId].Product_TO_Current__c!=null,currDevMap[currDevId].Proto_Wafer_First_Lot_Start_Current__c!=null,currDevMap[currDevId].Proto_Wafer_Fab_Shipped_Current__c!=null,currDevMap[currDevId].Assembled_Tested_Part_Shipped_Current__c!=null),FALSE,TRUE)}"/></td>
+                            </tr>
+                            <tr>
+                                <td colspan="4"><apex:commandButton value="Save" action="{!saveRevDates}"/>
+                                <apex:commandButton value="Reset" action="{!refreshRevDates}"/></td>
+                            </tr>
+                        </table>
+                        
+                    </apex:outputPanel>
+                    <apex:variable var="total2" value="{!IF(AND(mile.stepcycle != null,mile.milestone!=''), total2 + mile.stepcycle, total2 + 0)}"/>
+                    <apex:outputText id="otstep2" rendered="{!IF(mile.milestone=='',TRUE,FALSE)}"><b>Design Win to Production<br/> Cycle Time: {!total2}</b></apex:outputText>
+                </apex:column>
+            </apex:pageblockTable>
+            
+            <apex:pageblockTable id="pbt3" value="{!milestoneList}" columns="9" var="mile" rendered="{!isASIC}" style="border-color:#000000;" rowClasses="rowClass1,rowClass2" columnsWidth="4%,15%,5%,13%,9%,5%,14%,3%,32%">
+                <apex:column id="c1" headerValue="Step No." headerClass="pspheadspecial" style="border-color:#000000;text-align:center;font-weight:bold;">
+                    <apex:outputText rendered="{!IF(mile.milestone!='',TRUE,FALSE)}">{!rowcount}</apex:outputText>
+                    <apex:variable var="rowcount" value="{!rowcount+1}"/>
+                </apex:column>
+                <apex:column id="c2" headerValue="Milestone" headerClass="pspheaddefault" style="border-color:#000000;border-left:1px solid #000000;">
+                    <apex:outputText style="font-weight:bold;" value="{!mile.milestone}" rendered="{!IF(AND(mile.milestone!='1st customer design data',mile.milestone!='RTM e-Release Dt',mile.milestone!='Product TO',mile.milestone!='Proto Wafer Fab Shipped',mile.milestone!='Production Wafer Start',mile.milestone!='CDS Complete'),TRUE,FALSE)}"/>
+                    <apex:outputText style="font-weight:bold;" rendered="{!IF(mile.milestone=='1st customer design data',TRUE,FALSE)}" value="{!mile.milestone} (netlist)"/>
+                    <apex:outputText style="font-weight:bold;" rendered="{!IF(mile.milestone=='RTM e-Release Dt',TRUE,FALSE)}" value="PTRF or RTM e-Release Dt"/>
+                    <apex:outputText style="font-weight:bold;" rendered="{!IF(mile.milestone=='Product TO',TRUE,FALSE)}" value="Product Tapeout (RTM e-Release B)"/>
+                    <apex:outputText style="font-weight:bold;" rendered="{!IF(AND(OR(mile.milestone=='Proto Wafer Fab Shipped',mile.milestone=='Production Wafer Start'),AND(delType!=null,delType!='Wafer')),TRUE,FALSE)}" value="{!mile.milestone} ({!delType})"/>
+                    <apex:outputText style="font-weight:bold;" rendered="{!IF(AND(OR(mile.milestone=='Proto Wafer Fab Shipped',mile.milestone=='Production Wafer Start'),OR(delType==null,delType=='Wafer')),TRUE,FALSE)}" value="{!mile.milestone}"/>
+                    <apex:outputText style="font-weight:bold;" rendered="{!IF(mile.milestone =='CDS Complete',TRUE,FALSE)}" value="Ready For IDR" />
+                </apex:column>
+                <apex:column id="c3" headerClass="pspheaddefault" style="border-color:#000000;text-align:center;border-left:1px solid #000000;">
+                    <apex:facet name="header">Functional <br/>Group</apex:facet>
+                    <apex:outputText value="{!mile.owner}"/>
+                </apex:column>
+                <apex:column id="c4" headerClass="pspheaddefault" style="border-color:#000000;text-align:center;border-left:1px solid #000000;">
+                    <apex:facet name="header">Owner Name <br/>(only 1 per milestone)</apex:facet>
+                    <apex:outputText value="{!mile.ownerName}"/>
+                </apex:column>
+                <apex:column id="c5" headerValue="POR Date" headerClass="pspheaddefault" style="border-color:#000000;text-align:center;border-left:1px solid #000000;">
+                    <apex:outputText value="{0,date,MM/dd/yyyy}" rendered="{!AND(OR(NOT(mile.showEdit),mile.originalDate != null),mile.milestone!='')}"><apex:param value="{!mile.originalDate}"/></apex:outputText>
+                    <apex:outputText rendered="{!IF(mile.milestone=='',TRUE,FALSE)}"><b>Tapeout to Production <br/>Cycle Time</b></apex:outputText>
+                </apex:column>
+                <apex:column id="c6" headerClass="pspheaddefault" style="border-color:#000000;text-align:center;border-left:1px solid #000000;">
+                    <apex:facet name="header">Forecasted <br/>Step Cycle time</apex:facet>
+                    <apex:outputText value="{!IF(mile.stepcycle!=null,mile.stepcycle,0)}" rendered="{!IF(AND(mile.milestone!='',NOT(dateEditView)),TRUE,FALSE)}"/>
+                    <apex:inputtext id="cdto3" value="{!mile.stepcycle}" size="8" onkeypress="return enterfunction(event);" rendered="{!IF(AND(mile.milestone!='',mile.milestone!='Customer Engagement',dateEditView),TRUE,FALSE)}" style="text-align:center;">
+                        <apex:actionSupport action="{!refreshforecastedDate}" event="onchange" status="LoadingStatusSpinner"/>
+                    </apex:inputtext>
+                    <apex:variable var="total1" value="{!IF(AND(mile.stepcycle != null,mile.milestone!='Customer Engagement',mile.milestone!='Ready to Quote',mile.milestone!='Design Win',mile.milestone!='CDS Complete',mile.milestone!='1st customer design data',mile.milestone!='RTM e-Release Dt',mile.milestone!='RTM e-Release A',mile.milestone!='Product TO'), total1 + mile.stepcycle, total1 + 0)}"/>
+                    <apex:outputText rendered="{!IF(mile.milestone=='',TRUE,FALSE)}"><b>{!total1}</b></apex:outputText>
+                </apex:column>
+                <apex:column id="c7" headerClass="pspheaddefault" style="{!IF(AND(mile.milestone!='',mile.forecastedDate!=null),IF(mile.productTOdone==TRUE,'background-color:#00e600;border-color:#000000;text-align:center;border-left:1px solid #000000;','border-color:#000000;text-align:center;border-left:1px solid #000000;'),'border-color:#000000;text-align:center;border-left:1px solid #000000;')}">
+                    <apex:facet name="header">Forecasted/Actual date <br/>(mm/dd/yyyy)</apex:facet>
+                    <apex:outputText id="ot4" value="{0,date,MM/dd/yyyy}" rendered="{!dateEditView}"><apex:param value="{!mile.forecastedDate}"/></apex:outputText>
+                    <apex:input id="cdto4" value="{!mile.forecastedDate}" type="date" rendered="{!IF(AND(mile.milestone!='',NOT(dateEditView)),TRUE,FALSE)}">
+                        <apex:actionSupport action="{!refreshStepCycletime}" event="onchange" status="LoadingStatusSpinner"/>
+                    </apex:input>
+                    
+                </apex:column>
+                <apex:column id="c8" headerValue="Done" headerClass="pspheaddefault" style="border-color:#000000;text-align:center;border-left:1px solid #000000;">
+                    <apex:inputCheckbox value="{!mile.productTOdone}" onmousedown="confirmDone(this);" rendered="{!IF(mile.milestone!='',TRUE,FALSE)}" disabled="{!IF(mile.forecastedDate!=null,FALSE,TRUE)}"/>
+                </apex:column>
+                <apex:column id="c9" headerValue="Notes/Details" headerClass="pspheaddefault" style="border-color:#000000;text-align:center;border-left:1px solid #000000;">
+                    <apex:inputtextarea value="{!mile.notes}" cols="35" rows="2" rendered="{!IF(mile.milestone!='',TRUE,FALSE)}"/>
+                    
+                    <apex:variable var="total2" value="{!IF(AND(mile.stepcycle != null,mile.milestone!=''), total2 + mile.stepcycle, total2 + 0)}"/>
+                    <apex:outputText id="otstep3" rendered="{!IF(mile.milestone=='',TRUE,FALSE)}"><b>Customer Engagement to<br/> Production Cycle Time: {!total2}</b></apex:outputText>
+                </apex:column>
+            </apex:pageblockTable>
+        </apex:pageBlock>
+        <apex:actionFunction name="callrefresh" action="{!refreshforecastedDate}" status="LoadingStatusSpinner"/>
+        <apex:actionFunction name="callsave" action="{!saveDates}"/>
+        <apex:actionFunction name="refrevdevpanel" action="{!refreshRevpanel}"/>
+    </apex:form>
+</apex:page>

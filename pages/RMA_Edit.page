@@ -1,0 +1,2311 @@
+<apex:page standardController="RMA__c" extensions="RMA_Edit_Extension,RMA_AccessClass" id="thepage" sidebar="false" title="RMA : {!RMA__c.Name}" action="{!checkVoided}">
+    
+    
+    <apex:stylesheet value="/sCSS/21.0/sprites/1297816277000/Theme3/default/gc/versioning.css" />
+    <style>
+       .bPageBlock .pbTitle{
+            white-space: nowrap;
+            width: 1%;
+        }
+        
+        .blockStyleClass{
+            border: 1px solid #D4DADC;
+            padding: 4px;
+        }
+        .custPopup{
+            background-color: white;
+            border-width: 2px;
+            border-style: solid;
+            z-index: 200;
+            left: 50%;
+            padding:10px;
+            position: absolute;
+            width: 600px;
+            margin-left: -300px;
+            top:50px;
+        }
+        .custUserPopup{
+            background-color: white;
+            border-width: 2px;
+            border-style: solid;
+            z-index: 200;
+            left: 50%;
+            padding:10px;
+            position: absolute;
+            width: 600px;
+            margin-left: -300px;
+            top:500px;
+        }
+        .popupBackground{
+            background-color:black;
+            opacity: 0.20;
+            filter: alpha(opacity = 20);
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            z-index: 199;
+        }
+        .textAreaCss{
+            width:100% !important;
+            height:125px !important;
+        }
+        
+        /*jQuery dialog titlebar css*/
+        .ui-dialog-titlebar {
+          background-color: #F96B07;
+          background-image: none;
+          color: #FFFFFF;
+        }
+    </style>
+    
+    <script type="text/javascript">
+    
+        function technicalValidationMessage(option){
+            var dial = '';
+            if(option.value == 'Assign to Fab'){
+                dial = 'You have selected the RMA technical cateogory as <b>Fab</b> and need YE/PI validation. <br/><br/>Please select <b>Ok</b> to continue.';
+            }
+            if(option.value == 'Assign to Non-Fab'){
+                dial = 'You have selected the RMA technical cateogory as <b>Non Fab</b>, you need to provide justification and assign this RMA to the appropriate user for Validation and notify the user. <br/><br/>Please select <b>Ok</b> to continue.';
+            }
+            if(option.value == 'Assign to Turnkey'){
+                dial = 'You have selected the RMA technical category as <b>Assign to Turnkey</b>. System auto route to the Turnkey personnel for Validation. <br/><br/>Please select <b>Ok</b> to continue.';
+            }
+            if(option.value == 'No'){
+                dial = 'If the information provided is not adequate for validation, you need to reject the RMA using <b>Reject</b> button after providing justification.';
+            }
+            if(dial != ''){
+               rmaJ$('#rmaModal').html(dial).dialog({
+                     modal: true, 
+                     title: 'Information',
+                     draggable:false,
+                     resizable:false,
+                     closeOnEscape: false,
+                     width:500,
+                     open: function(event, ui) { 
+                                rmaJ$(".ui-dialog-titlebar-close", ui.dialog | ui).hide(); 
+                                rmaJ$(":button:contains('Cancel')").focus();
+                           },
+                     buttons : {
+                        "Ok" : function() {
+                          rmaJ$(this).dialog("close");
+                        },
+                        "Cancel" : function() {
+                           option.value = '';
+                           rmaJ$(this).dialog("close");
+                           rmaJ$('[id$="reAssign"]').change();
+                        }
+                      }
+                });
+            }
+        }
+        
+        function checkRMABy(option){
+            rmaAlert(option.oldvalue,'');
+        }
+        
+        
+    </script>
+    
+    <apex:sectionHeader title="RMA Edit" subtitle="{!RMA__c.Name}">
+        
+    </apex:sectionHeader>
+    
+    <c:loadingPanel ></c:loadingPanel>
+    
+    <apex:form id="theForm">
+        
+        <apex:pageMessages escape="false" id="errormsg"></apex:pageMessages>
+        <apex:pageBlock id="pageBlockId" mode="maindetail">
+            
+            <apex:pageBlockButtons style="text-align:center;">
+                <apex:commandButton action="{!SaveRMA}" onclick="setSelTab();validateBeforeSave('{!RMA__c.Status__c}');" value="Save" style="align:center" status="LoadingStatusSpinner" rendered="{!RMA__c.Id != NULL}"/>
+                <apex:commandButton action="{!CreateRMA}" onclick="validateBeforeSave('{!RMA__c.Status__c}');" value="Save and Add Claims" style="align:center" status="LoadingStatusSpinner" rendered="{!NOT(RMA__c.Id != NULL)}"/>
+                <apex:commandButton action="{!Cancel}" value="Cancel" style="align:center"/>
+            </apex:pageBlockButtons>
+            
+            <!-- Hidden fields -->
+            <apex:repeat value="{!$ObjectType.RMA__c.FieldSets.RMA_Hidden_Fields_for_Edit_Page}" var="hidField">
+                <apex:inputHidden value="{!RMA__c[hidField]}" />
+            </apex:repeat>
+            <apex:repeat value="{!$ObjectType.RMA__c.FieldSets.RMA_Non_Fab_Approvers}"
+                var="nonFab">
+                <apex:inputHidden value="{!RMA__c[nonFab]}" />
+            </apex:repeat>
+            <apex:inputHidden id="selTabHidden" value="{!selTab}"/>
+            <apex:inputHidden value="{!RMA__c.OwnerId}" rendered="{!RMA__c.Id != NULL}" />
+            <!-- End Hidden Fields -->
+            
+            <apex:pageBlockSection id="ReportSection" columns="1"> 
+               
+                <apex:tabPanel switchType="client" value="{!selTab}" id="theTabPanel" styleClass="theTabPanel">
+                    
+                    <apex:tab label="RMA Information" name="RMA_Information" id="RMA_Information">
+                        <apex:pageBlockSection title="RMA - Generic Information" columns="2" id="RMA_Generic_Info">
+                            <apex:outputField value="{!RMA__c.Name}" rendered="{!RMA__c.Id != NULL}"/>
+                            <apex:outputField value="{!RMA__c.Customer__c}" rendered="{!RMA__c.Id != NULL}" />
+                            <apex:pageBlockSectionItem rendered="{!RMA__c.Id == NULL}">
+                                <apex:outputLabel value="{!$ObjectType.RMA__c.fields.Customer__c.label}" />
+                                <apex:outputPanel >
+                                    <div class="requiredInput">
+                                        <div class="requiredBlock"></div>
+                                        <apex:inputField value="{!RMA__c.Customer__c}">
+                                            <apex:actionSupport event="onchange" status="LoadingStatusSpinner" action="{!checkAccTeamProxy}" reRender="theTabPanel,errormsg" oncomplete="validationOnLoad();"/>
+                                        </apex:inputField>
+                                    </div>
+                                </apex:outputPanel>
+                            </apex:pageBlockSectionItem>
+                            <apex:outputField value="{!RMA__c.Region__c}" rendered="{!AND(NOT(ISNULL(RMA__c.Region__c)),NOT(infoTab))}"/>
+                            <apex:inputField value="{!RMA__c.Region__c}" rendered="{!AND(NOT(ISNULL(RMA__c.Region__c)),infoTab)}"/>
+                            <apex:outputField value="{!RMA__c.Fab__c}" rendered="{!RMA__c.Id != NULL}" />
+                            <apex:pageBlockSectionItem rendered="{!RMA__c.Id == NULL}">
+                                <apex:outputLabel value="{!$ObjectType.RMA__c.fields.Fab__c.label}" />
+                                <apex:outputPanel >
+                                    <div class="requiredInput">
+                                        <div class="requiredBlock"></div>
+                                        <apex:inputField value="{!RMA__c.Fab__c}" rendered="{!RMA__c.Id == NULL}" >
+                                            <apex:actionSupport event="onchange" action="{!checkFab}" status="LoadingStatusSpinner" reRender="WaferDieDetails,errormsg" />
+                                        </apex:inputField>
+                                    </div>
+                                </apex:outputPanel>
+                            </apex:pageBlockSectionItem>
+                            <apex:outputField value="{!RMA__c.Status__c}" rendered="{!RMA__c.id != null}"/>
+                            <apex:outputText value="Draft" label="{!$ObjectType.RMA__c.fields.Status__c.label}" rendered="{!RMA__c.id == null}"/>
+                            <apex:outputField value="{!RMA__c.Customer_Request_Date__c}" rendered="{!NOT(infoTab)}"/>
+                            <apex:pageBlockSectionItem rendered="{!infoTab}">
+                                <apex:outputLabel value="{!$ObjectType.RMA__c.fields.Customer_Request_Date__c.label}" />
+                                <apex:outputPanel >
+                                    <div class="requiredInput">
+                                        <div class="requiredBlock"></div>   
+                                        <apex:inputField id="custReqDateId" value="{!RMA__c.Customer_Request_Date__c}" onchange="validateCustomerRequestDate();" rendered="{!infoTab}"/>
+                                    </div>
+                                </apex:outputPanel>
+                            </apex:pageBlockSectionItem> 
+                             <apex:pageBlockSectionItem rendered="{!infoTab}" HelpText="{!$ObjectType.RMA__c.fields.Reason_Code__c.inlineHelpText}">
+                                 <apex:outputLabel id="reasonCodeLabel" value="{!$ObjectType.RMA__c.fields.Reason_Code__c.label}" />    
+                                  <apex:outputPanel >
+                                      <apex:inputField id="reasonCode" value="{!RMA__c.Reason_Code__c}">
+                                        <apex:actionsupport event="onchange" action="{!null}" status="LoadingStatusSpinner" reRender="theTabPanel,errormsg"/>
+                                      </apex:inputField>
+                                  </apex:outputPanel>
+                             </apex:pageBlockSectionItem>
+                             <apex:pageBlockSectionItem rendered="{!infoTab && RMA__c.Reason_Code__c == 'Other'}">
+                                 <apex:outputLabel id="otherReasonLabel" value="{!$ObjectType.RMA__c.fields.Reason_for_delay__c.label}" />  
+                                  <apex:outputPanel id="otherReasonSec">
+                                        <div class="requiredInput">
+                                            <div class="requiredBlock"></div>
+                                            <apex:inputField id="otherReason" styleClass="textAreaCss" value="{!RMA__c.Reason_for_delay__c}"/>
+                                        </div>
+                                  </apex:outputPanel> 
+                             </apex:pageBlockSectionItem>
+                             <apex:outputField value="{!RMA__c.Reason_Code__c}" rendered="{!NOT(infoTab)}"/>
+                             <apex:outputField value="{!RMA__c.Reason_for_delay__c}" rendered="{!NOT(infoTab) && RMA__c.Reason_Code__c == 'Other'}"/>
+                             <apex:outputField value="{!RMA__c.Workflow_Stage__c}" rendered="{!RMA__c.Id != NULL}"/>
+                             <apex:outputField value="{!RMA__c.Intercompany__c}" rendered="{!RMA__c.Id != NULL}"/>
+                        </apex:pageblockSection> 
+                                               
+                        <apex:pageBlockSection title="Return Lot Details" id="WaferDieDetails" columns="2">
+                            <apex:inputHidden value="{!rmaByOldVal}" id="rmabyoldvalue" />
+                            <apex:pageBlockSectionItem />
+                            <apex:outputField value="{!RMA__c.RMA_By__c}" rendered="{!NOT(infoTab) || IF(RMA__c.Id !=NULL,!isCSR,False)}"/>
+                            <apex:pageBlockSectionItem rendered="{!infoTab && IF(RMA__c.Id !=NULL,isCSR,True)}">
+                                <apex:outputLabel value="{!$ObjectType.RMA__c.fields.RMA_By__c.label}" />
+                                <apex:outputPanel >
+                                    <div class="requiredInput">
+                                        <div class="requiredBlock"></div>
+                                        <apex:inputField id="rmaBy" value="{!RMA__c.RMA_By__c}" onchange="onChangeOfRMAByJS(this);"/>
+                                    </div>
+                                </apex:outputPanel>
+                            </apex:pageBlockSectionItem>
+                            <apex:outputField value="{!RMA__c.ITAR_Part__c}" rendered="{!isFab9or10 && (NOT(infoTab) || IF(RMA__c.Id !=NULL,!isCSR,False))}"/>
+                            <apex:pageBlockSectionItem rendered="{!isFab9or10 && infoTab && IF(RMA__c.Id !=NULL,isCSR,True)}">
+                                <apex:outputLabel value="{!$ObjectType.RMA__c.fields.ITAR_Part__c.label}"/>
+                                <apex:inputField value="{!RMA__c.ITAR_Part__c}"/>
+                            </apex:pageBlockSectionItem>
+                            <!--
+                            <apex:outputField value="{!RMA__c.Business_Unit__c}" rendered="{!isFab9or10 && (NOT(infoTab) || IF(RMA__c.Id !=NULL,!isCSR,False))}"/>
+                            <apex:pageBlockSectionItem rendered="{!isFab9or10 && infoTab && IF(RMA__c.Id !=NULL,isCSR,True)}">
+                                <apex:outputLabel value="{!$ObjectType.RMA__c.fields.Business_Unit__c.label}"/>
+                                <apex:pageBlockSectionItem >
+                                    <apex:outputPanel >
+                                        <div class="requiredInput">
+                                            <div class="requiredBlock"></div>
+                                            <apex:inputField value="{!RMA__c.Business_Unit__c}">
+                                                <apex:actionSupport event="onchange" action="{!calculateBusinessCategory}" reRender="WaferDieDetails,WaferDieDetails2" status="LoadingStatusSpinner"/>
+                                            </apex:inputField>
+                                        </div>
+                                    </apex:outputPanel>
+                                </apex:pageBlockSectionItem>
+                            </apex:pageBlockSectionItem>
+                            <apex:outputField value="{!RMA__c.Product_Line__c}" rendered="{!isFab9or10 && (NOT(infoTab) || IF(RMA__c.Id !=NULL,!isCSR,False))}"/>
+                            <apex:pageBlockSectionItem rendered="{!isFab9or10 && infoTab && IF(RMA__c.Id !=NULL,isCSR,True)}">
+                                <apex:outputLabel value="{!$ObjectType.RMA__c.fields.Product_Line__c.label}"/>
+                                <apex:pageBlockSectionItem >
+                                    <apex:outputPanel >
+                                        <div class="requiredInput">
+                                            <div class="requiredBlock"></div>
+                                            <apex:inputField value="{!RMA__c.Product_Line__c}">
+                                                <apex:actionSupport event="onchange" action="{!calculateBusinessCategory}" reRender="WaferDieDetails,WaferDieDetails2" status="LoadingStatusSpinner"/>
+                                            </apex:inputField>
+                                        </div>
+                                    </apex:outputPanel>
+                                </apex:pageBlockSectionItem>
+                            </apex:pageBlockSectionItem>
+                            -->
+                            <apex:outputField value="{!RMA__c.RMA_Category__c}" rendered="{!isFab9or10 && (NOT(infoTab) || IF(RMA__c.Id !=NULL,!isCSR,False))}"/>
+                            <apex:pageBlockSectionItem rendered="{!isFab9or10 && infoTab && IF(RMA__c.Id !=NULL,isCSR,True)}">
+                                <apex:outputLabel value="{!$ObjectType.RMA__c.fields.RMA_Category__c.label}"/>
+                                <apex:pageBlockSectionItem >
+                                    <apex:outputPanel >
+                                        <div class="requiredInput">
+                                            <div class="requiredBlock"></div>
+                                            <apex:inputField value="{!RMA__c.RMA_Category__c}" >
+                                                <apex:actionSupport action="{!checkWarrantyForFA}" event="onchange" reRender="WaferDieDetails2" status="LoadingStatusSpinner" />
+                                            </apex:inputField>
+                                        </div>
+                                    </apex:outputPanel>
+                                </apex:pageBlockSectionItem>
+                            </apex:pageBlockSectionItem>
+                            <apex:outputField value="{!RMA__c.Business_Category__c}" rendered="{!isFab9or10 && (NOT(infoTab) || IF(RMA__c.Id !=NULL,!isCSR,False))}"/>
+                            <apex:pageBlockSectionItem rendered="{!isFab9or10 && infoTab && IF(RMA__c.Id !=NULL,isCSR,True)}">
+                                <apex:outputLabel value="{!$ObjectType.RMA__c.fields.Business_Category__c.label}"/>
+                                <apex:pageBlockSectionItem >
+                                    <apex:outputPanel >
+                                        <div class="requiredInput">
+                                            <div class="requiredBlock"></div>
+                                            <apex:selectList value="{!businessCategory}" multiselect="false" size="1" label="Product Type">
+                                                <apex:selectOption itemValue="" itemLabel="--None--" rendered="{!RMA__c.Id == NULL}"/>
+                                                <apex:selectOption itemValue="ASIC" itemLabel="ASIC"/>
+                                                <apex:selectOption itemValue="Foundry" itemLabel="Foundry"/>
+                                                <apex:selectOption itemValue="IBM Server" itemLabel="IBM Server"/>
+                                            </apex:selectList>
+                                        </div>
+                                    </apex:outputPanel>
+                                </apex:pageBlockSectionItem>
+                            </apex:pageBlockSectionItem>                            
+                            <apex:outputField value="{!RMA__c.ReasonCode__c}" rendered="{!isFab9or10 && (NOT(infoTab) || IF(RMA__c.Id !=NULL,!isCSR,False))}"/>
+                            <apex:pageBlockSectionItem rendered="{!isFab9or10 && infoTab && IF(RMA__c.Id !=NULL,isCSR,True)}">
+                                <apex:outputLabel value="{!$ObjectType.RMA__c.fields.ReasonCode__c.label}"/>
+                                <apex:pageBlockSectionItem >
+                                    <apex:outputPanel >
+                                        <div class="requiredInput">
+                                            <div class="requiredBlock"></div>
+                                            <apex:inputField value="{!RMA__c.ReasonCode__c}">
+                                                <!-- <apex:actionSupport event="onchange" action="{!calculateBusinessCategory}" reRender="WaferDieDetails,WaferDieDetails2" status="LoadingStatusSpinner"/> -->
+                                            </apex:inputField>
+                                        </div>
+                                    </apex:outputPanel>
+                                </apex:pageBlockSectionItem>
+                            </apex:pageBlockSectionItem>
+                        </apex:pageBlockSection>
+                        
+                        <apex:pageBlockSection id="WaferDieDetails2" columns="1" rendered="{!RMA__c.Id != NULL}" showHeader="false">
+                            <apex:pageBlockTable value="{!lstLineItemWrapper}" var="riWrapper">
+                                <apex:column headerValue="Action" styleClass="actionColumn" rendered="{!isCSR}" >
+                                    <apex:commandLink value="Edit" action="{!EditLineItem}" status="LoadingStatusSpinner" reRender="popupEditInfo" rendered="{!infoTab}">
+                                        <apex:param name="LineItemToEdit" value="{!riWrapper.RIrec.Id}" assignTo="{!LineItemToEdit}"/>
+                                    </apex:commandLink>
+                                    <apex:outputLabel value=" | " />
+                                    <apex:commandLink value="Del" action="{!DeleteLineItem}" status="LoadingStatusSpinner" reRender="theForm" rendered="{!infoTab}">
+                                        <apex:param name="LineItemToEdit" value="{!riWrapper.RIrec.Id}" assignTo="{!LineItemToEdit}"/>
+                                    </apex:commandLink>                                    
+                                </apex:column>
+                                <apex:column >
+                                    <apex:facet name="header">Invoice #</apex:facet>
+                                    <apex:outputField value="{!riWrapper.RIrec.Invoice_Number__c}"/>                                                                              
+                                </apex:column>
+                                <apex:column >
+                                    <apex:facet name="header">Invoice Date</apex:facet>
+                                    <apex:outputField value="{!riWrapper.RIrec.Invoice_Date__c}"/>                                                                              
+                                </apex:column>
+                                <apex:column >
+                                    <apex:facet name="header">Lot #</apex:facet>
+                                    <apex:outputField value="{!riWrapper.RIrec.Lot_Number__c}"/>                                                                              
+                                </apex:column>
+                                <apex:column >
+                                    <apex:facet name="header">Device</apex:facet>
+                                    <apex:outputField value="{!riWrapper.RIrec.Device__c}"/>                                                                              
+                                </apex:column>
+                                <apex:column rendered="{!RMA__c.RMA_By__c != 'Module' && (RMA__c.Fab__c != 'FAB 9' && RMA__c.Fab__c != 'FAB 10' && RMA__c.Fab__c != 'ALTIS')}">
+                                    <apex:facet name="header">Wafer Id<br/>(CSR Submission)</apex:facet>
+                                    <apex:outputField value="{!riWrapper.RIrec.Wafer_Id_CSR_Submission__c}" />
+                                </apex:column>
+                                <apex:column rendered="{!RMA__c.RMA_By__c != 'Module' && (RMA__c.Fab__c == 'FAB 9' || RMA__c.Fab__c == 'FAB 10' || RMA__c.Fab__c == 'ALTIS')}">
+                                    <apex:facet name="header">Wafer Id<br/>(CSR Submission)</apex:facet>
+                                    <apex:outputField value="{!riWrapper.RIrec.Wafer_Id_Fab_9_10_CSR_Submission__c}" />
+                                </apex:column>
+                                <apex:column rendered="{!RMA__c.RMA_By__c == 'Wafer'}">
+                                    <apex:facet name="header">Quantity<br/>(CSR Submission)</apex:facet>
+                                    <apex:outputField value="{!riWrapper.RIrec.Wafer_Quantity__c}"/>                                                                              
+                                </apex:column>
+                                <apex:column rendered="{!RMA__c.RMA_By__c == 'Module'}">
+                                    <apex:facet name="header">Module Quantity<br/>(CSR Submission)</apex:facet>
+                                    <apex:outputField value="{!riWrapper.RIrec.Module_Quantity__c}"/>                 
+                                </apex:column>
+                                <apex:column >
+                                    <apex:facet name="header">Scrap Limit</apex:facet>
+                                    <apex:outputField value="{!riWrapper.RIrec.Scrap_Limit__c}"/>                                                                              
+                                </apex:column>
+                                <apex:column >
+                                    <apex:facet name="header">Wafer Yield</apex:facet>
+                                    <apex:outputField value="{!riWrapper.RIrec.Wafer_Yield__c}"/>
+                                </apex:column>
+                                <apex:column rendered="{!RMA__c.RMA_By__c == 'Die'}">
+                                    <apex:facet name="header">GDPW</apex:facet>
+                                    <apex:outputField value="{!riWrapper.RIrec.GDPW__c}"/>                                                                              
+                                </apex:column>
+                                <apex:column rendered="{!RMA__c.RMA_By__c == 'Die'}">
+                                    <apex:facet name="header">Die Quantity</apex:facet>
+                                    <apex:outputField value="{!riWrapper.RIrec.Die_Quantity__c}"/>                                                                              
+                                </apex:column>
+                                <apex:column rendered="{!RMA__c.RMA_By__c == 'Die'}">
+                                    <apex:facet name="header">Die Selling<br/>Price</apex:facet>
+                                    <apex:outputField value="{!riWrapper.RIrec.Die_Selling_Price__c}"/>                                                                              
+                                </apex:column>
+                                <apex:column rendered="{!SystemModeOn && RMA__c.RMA_By__c != 'Die' && RMA__c.ReasonCode__c != 'R81'}">
+                                    <!--<apex:facet name="header">Wafer/Die<br/>Unit Price</apex:facet>-->
+                                    <apex:facet name="header">Unit Selling<br/>Price</apex:facet>
+                                    <apex:outputText value="${0, number, ###,##0.00}">
+                                        <apex:param value="{!riWrapper.WaferDieAmt}"/>
+                                    </apex:outputText>                                                                             
+                                </apex:column>
+                                <apex:column rendered="{!RMA__c.ReasonCode__c == 'R81'}">
+                                    <apex:facet name="header">Existing Form Factor</apex:facet>
+                                    <apex:outputField value="{!riWrapper.RIrec.Existing_Form_Factor__c}"/>                                                                             
+                                </apex:column>
+                                <apex:column rendered="{!SystemModeOn}">
+                                    <apex:facet name="header">{!IF(RMA__c.ReasonCode__c != 'R81','Adjusted Unit Price','Existing Form Factor Price')}</apex:facet>
+                                    <apex:outputText value="${0, number, ###,##0.00}">
+                                        <apex:param value="{!riWrapper.AdjustedAmt}"/>
+                                    </apex:outputText>                                                                             
+                                </apex:column>
+                                <apex:column rendered="{!SystemModeOn && RMA__c.ReasonCode__c == 'R81'}">
+                                    <apex:facet name="header">Existing Form<br/>Factor Quantity</apex:facet>
+                                    <apex:outputField value="{!riWrapper.RIrec.Existing_Form_Factor_Quantity__c}"/>                                                                             
+                                </apex:column>
+                                <apex:column rendered="{!SystemModeOn}">
+                                    <apex:facet name="header">Total Price<br/>(CSR Submission)</apex:facet>
+                                    <apex:outputText value="${0, number, ###,##0.00}">
+                                        <apex:param value="{!riWrapper.TotalCSR}"/>
+                                    </apex:outputText>                                                                              
+                                </apex:column>
+                            </apex:pageBlockTable>
+                            <apex:outputPanel >
+                                <apex:commandButton action="{!AddReturnInvoice}" value="Add/Update Return Wafers" id="theButton" rendered="{!infoTab && isCSR}"/>
+                                <apex:commandButton action="{!MassUpload}" value="Mass Upload" id="massUploadButton" rendered="{!infoTab && isCSR}"/>
+                            </apex:outputPanel>
+                            <apex:pageBlockSection title="" showHeader="false" columns="2">
+                                <apex:outputField value="{!RMA__c.Potential_Impact_Wafers__c}" rendered="{!AND(NOT(infoTab),RMA__c.Total_Wafers__c != 0)}"/>
+                                <apex:pageBlockSectionItem rendered="{!AND(infoTab,RMA__c.Total_Wafers__c != 0)}">
+                                    <apex:outputLabel value="{!$ObjectType.RMA__c.fields.Potential_Impact_Wafers__c.label}" />
+                                    <apex:outputPanel >
+                                        <div class="requiredInput">
+                                            <div class="requiredBlock"></div>
+                                            <apex:inputField value="{!RMA__c.Potential_Impact_Wafers__c}" />
+                                        </div>
+                                    </apex:outputPanel>
+                                </apex:pageBlockSectionItem>
+                                <apex:pageBlockSectionItem rendered="{!isFab9or10}"/>
+                                <apex:outputField value="{!RMA__c.RMA_Category__c}" rendered="{!AND(NOT(isFab9or10),NOT(infoTab),RMA__c.Total_Wafers__c != 0)}"/>
+                                <apex:pageBlockSectionItem rendered="{!AND(NOT(isFab9or10),infoTab,RMA__c.Total_Wafers__c != 0)}">
+                                    <apex:outputLabel value="{!$ObjectType.RMA__c.fields.RMA_Category__c.label}" />
+                                    <apex:outputPanel >
+                                        <div class="requiredInput">
+                                            <div class="requiredBlock"></div>
+                                            <apex:inputField value="{!RMA__c.RMA_Category__c}">
+                                                <apex:actionSupport event="onchange" action="{!validateRMACategory}" reRender="errormsg,justificationfoc,WaferDieDetails2" status="LoadingStatusSpinner" />
+                                            </apex:inputField>
+                                        </div>
+                                    </apex:outputPanel>
+                                </apex:pageBlockSectionItem>
+                                <apex:pageBlockSectionItem rendered="{!NOT(isFab9or10) && RMA__c.RMA_Category__c == 'Technical/ Turnkey'}"/>
+                                <apex:pageBlockSectionItem rendered="{!NOT(isFab9or10) && RMA__c.RMA_Category__c == 'Technical/ Turnkey'}">
+                                    <apex:outputLabel value="{!$ObjectType.RMA__c.fields.Assign_To__c.label}"/>
+                                    <apex:pageBlockSectionItem >
+                                        <apex:outputField value="{!RMA__c.Assign_To__c}" rendered="{!NOT(infoTab)}"/>
+                                        <apex:outputPanel >
+                                            <div class="requiredInput">
+                                                <div class="requiredBlock"></div>
+                                                <apex:inputField value="{!RMA__c.Assign_To__c}" rendered="{!infoTab}"/>
+                                            </div>
+                                        </apex:outputPanel>
+                                    </apex:pageBlockSectionItem>
+                                </apex:pageBlockSectionItem>
+                                <!-- <apex:outputField value="{!RMA__c.Compensation_Type__c}" rendered="{!AND(isFab9or10,NOT(infoTab),RMA__c.Total_Wafers__c != 0)}" />
+                                <apex:pageBlockSectionItem rendered="{!AND(isFab9or10,infoTab,RMA__c.Total_Wafers__c != 0)}">
+                                    <apex:outputLabel value="{!$ObjectType.RMA__c.fields.Compensation_Type__c.label}" />
+                                    <apex:outputPanel >
+                                        <div class="requiredInput">
+                                            <div class="requiredBlock"></div>
+                                            <apex:inputField value="{!RMA__c.Compensation_Type__c}" />
+                                        </div>
+                                    </apex:outputPanel>
+                                </apex:pageBlockSectionItem> -->
+                                <apex:outputField value="{!RMA__c.Compensation_Type__c}" rendered="{!AND(NOT(infoTab),RMA__c.Total_Wafers__c != 0)}" />
+                                <apex:pageBlockSectionItem rendered="{!AND(infoTab,RMA__c.Total_Wafers__c != 0)}">
+                                    <apex:outputLabel value="{!$ObjectType.RMA__c.fields.Compensation_Type__c.label}" />
+                                    <apex:outputPanel >
+                                        <div class="requiredInput">
+                                            <div class="requiredBlock"></div>
+                                            <apex:inputField value="{!RMA__c.Compensation_Type__c}" />
+                                        </div>
+                                    </apex:outputPanel>
+                                </apex:pageBlockSectionItem>
+                                <apex:outputField value="{!RMA__c.Warranty__c}" rendered="{!AND(isFab9or10,RMA__c.RMA_Category__c != 'Failure Analysis',NOT(infoTab),RMA__c.Total_Wafers__c != 0)}" />
+                                <apex:pageBlockSectionItem helpText="{!$ObjectType.RMA__c.fields.Warranty__c.inlineHelpText}" rendered="{!AND(isFab9or10,RMA__c.RMA_Category__c != 'Failure Analysis',infoTab,RMA__c.Total_Wafers__c != 0)}">
+                                    <apex:outputLabel value="{!$ObjectType.RMA__c.fields.Warranty__c.label}" />
+                                    <apex:outputPanel >
+                                        <div class="requiredInput">
+                                            <div class="requiredBlock"></div>
+                                            <apex:inputField value="{!RMA__c.Warranty__c}" />
+                                        </div>
+                                    </apex:outputPanel>
+                                </apex:pageBlockSectionItem>
+                            </apex:pageblockSection>
+                        </apex:pageBlockSection>
+                        
+                        <apex:pageBlockSection columns="2" collapsible="false">
+                            <apex:outputField value="{!RMA__c.Total_Wafers__c}" rendered="{!RMA__c.Id != NULL && RMA__c.Total_Wafers__c != 0}"/>
+                            <apex:outputText value="${0, number, ###,##0.00}" label="Grand Total (CSR Submission)" rendered="{!RMA__c.Total_Wafers__c != 0 && SystemModeOn}">
+                                <apex:param value="{!rmaWrap.grandTotalCSR}"/>
+                            </apex:outputText>
+                        </apex:pageBlockSection>
+                        
+                        <!-- <apex:outputPanel id="justificationfoc">
+                            <apex:pageBlockSection columns="1" showHeader="false"  rendered="{!RMA__c.Id != NULL && RMA__c.RMA_Category__c == 'FOC in lieu of RMA' && RMA__c.Total_Wafers__c < 100}">
+                                <apex:pageBlockSectionItem rendered="{!infoTab}">
+                                    <apex:outputLabel value="{!$ObjectType.RMA__c.fields.Justification_FOC__c.label}" />
+                                    <apex:outputPanel >
+                                        <div class="requiredInput">
+                                            <div class="requiredBlock"></div>
+                                            <apex:inputField value="{!RMA__c.Justification_FOC__c}"  styleClass="textAreaCss"/>
+                                        </div>
+                                    </apex:outputPanel>
+                                </apex:pageBlockSectionItem>
+                                <apex:outputField value="{!RMA__c.Justification_FOC__c}" rendered="{!NOT(infoTab)}" />
+                            </apex:pageBlockSection>
+                        </apex:outputPanel> -->
+                        
+                        <apex:pageBlockSection title="Customer Return Particulars" id="CustRetDetails" columns="1"
+                                rendered="{!RMA__c.Id != NULL && RMA__c.Count_Line_Item__c != NULL && RMA__c.Count_Line_Item__c>0}">                            
+                            
+                            <apex:outputPanel id="FRFpanel" layout="block" styleClass="blockStyleClass" rendered="{!infoTab}">
+                                <apex:pageBlockSection >
+                                    <apex:inputField id="FRFreliabilitycheck" value="{!RMA__c.RMA_due_to_Field_reliability_Failure__c}">
+                                    </apex:inputField>
+                                </apex:pageBlockSection>
+                                <apex:outputPanel id="checkBxFRF">
+                                    <apex:pageBlockSection rendered="{!RMA__c.RMA_due_to_Field_reliability_Failure__c}" id="pgBlockFRF" >
+                                        <apex:pageBlockSectionItem >
+                                        Select Lot/Device (Field Reliability Failure)
+                                        <apex:outputPanel >
+                                        <div class="requiredInput">
+                                            <div class="requiredBlock"></div>
+                                            <c:MultiselectPicklist leftLabel="Available" 
+                                                                    leftOption="{!leftOptionsFRF}"
+                                                                    rightLabel="Chosen"
+                                                                    rightOption="{!rightOptionsFRF}"
+                                                                    size="5"
+                                                                    width="100%"/>
+                                             </div>
+                                        </apex:outputPanel>                        
+                                        </apex:pageBlockSectionItem>
+                                        <apex:inputField value="{!RMA__c.Remarks_Field_Reliability_Failure__c}" style="width:100%;" styleClass="textAreaCss"/>
+                                    </apex:pageblockSection>
+                                    <apex:pageBlockSection rendered="{!NOT(RMA__c.RMA_due_to_Field_reliability_Failure__c)}" columns="2">
+                                        <apex:inputField value="{!RMA__c.Justification_Field_Reliability_Failure__c}" styleClass="textAreaCss" rendered="{!justificationFlag}"/>
+                                    </apex:pageblockSection>
+                                </apex:outputpanel>
+                            </apex:outputpanel>                            
+                            <apex:outputPanel id="FRFpanelRead" layout="block" styleClass="blockStyleClass" rendered="{!NOT(infoTab)}">
+                                <apex:pageBlockSection >
+                                        <apex:outputField value="{!RMA__c.RMA_due_to_Field_reliability_Failure__c}"/>
+                                </apex:pageBlockSection>
+                                <apex:outputPanel id="checkBxFRFRead">
+                                    <apex:pageBlockSection rendered="{!RMA__c.RMA_due_to_Field_reliability_Failure__c}" id="pgBlockFRFRead" >
+                                        <apex:outputField value="{!RMA__c.Lot_Device_FRF__c}"/>
+                                        <apex:outputField value="{!RMA__c.Remarks_Field_Reliability_Failure__c}" style="width:100%;"/>
+                                    </apex:pageblockSection>
+                                    <apex:pageBlockSection rendered="{!NOT(RMA__c.RMA_due_to_Field_reliability_Failure__c)}" columns="2">
+                                        <apex:outputField value="{!RMA__c.Justification_Field_Reliability_Failure__c}" style="width:100%;" rendered="{!justificationFlag}"/>
+                                    </apex:pageblockSection>
+                                </apex:outputpanel>
+                            </apex:outputpanel>                            
+                            
+                            <apex:outputPanel id="WaiverIssuePanel" layout="block" styleClass="blockStyleClass" rendered="{!infoTab}">
+                                <apex:pageBlockSection >
+                                    <apex:inputField value="{!RMA__c.RMA_related_to_Waiver_Issue__c}">
+                                        <apex:actionSupport event="onclick" action="{!dispSectWaiverIssue}" rerender="checkBxWI" status="LoadingStatusSpinner"/>
+                                    </apex:inputField>
+                                </apex:pageblockSection>
+                                <apex:outputPanel id="checkBxWI">
+                                    <apex:pageBlockSection rendered="{!RMA__c.RMA_related_to_Waiver_Issue__c}" id="pgBlockWI" >
+                                        <apex:pageBlockSectionItem >
+                                        Select Lot/Device (Design Rule Waiver)
+                                        <apex:outputPanel >
+                                            <div class="requiredInput">
+                                                <div class="requiredBlock"></div>
+                                                <c:MultiselectPicklist leftLabel="Available" 
+                                                                        leftOption="{!leftOptionsDRW}"
+                                                                        rightLabel="Chosen"
+                                                                        rightOption="{!rightOptionsDRW}"
+                                                                        size="5"
+                                                                        width="100%"/>
+                                            </div>
+                                        </apex:outputPanel>                            
+                                        </apex:pageBlockSectionItem>
+                                        <apex:pageBlockSectionItem >
+                                        Select Lot/Device (ET Waiver)
+                                        <apex:outputPanel >
+                                            <div class="requiredInput">
+                                                <div class="requiredBlock"></div>
+                                                    <c:MultiselectPicklist leftLabel="Available" 
+                                                                            leftOption="{!leftOptionsETW}"
+                                                                            rightLabel="Chosen"
+                                                                            rightOption="{!rightOptionsETW}"
+                                                                            size="5"
+                                                                            width="100%"/>
+                                            </div>
+                                        </apex:outputPanel>                            
+                                        </apex:pageBlockSectionItem>
+                                        <apex:inputField value="{!RMA__c.Remarks_Waiver_Issue__c}" style="width:100%;" styleClass="textAreaCss"/>
+                                    </apex:pageblockSection>
+                                </apex:outputpanel>
+                            </apex:outputPanel>
+                            <apex:outputPanel id="WaiverIssuePanelRead" layout="block" styleClass="blockStyleClass" rendered="{!NOT(infoTab)}">
+                                <apex:pageBlockSection >
+                                    <apex:outputField value="{!RMA__c.RMA_related_to_Waiver_Issue__c}"/>
+                                </apex:pageblockSection>
+                                <apex:outputPanel id="checkBxWIRead">
+                                    <apex:pageBlockSection rendered="{!RMA__c.RMA_related_to_Waiver_Issue__c}" id="pgBlockWIRead" >
+                                        <apex:outputField value="{!RMA__c.Lot_Device_Design_Rule_Waiver__c}"/>
+                                        <apex:outputField value="{!RMA__c.Lot_Device_ET_Waiver__c}"/>
+                                        <apex:outputField value="{!RMA__c.Remarks_Waiver_Issue__c}" style="width:100%;"/>
+                                    </apex:pageblockSection>
+                                </apex:outputpanel>
+                            </apex:outputPanel>                            
+                            
+                            <apex:outputPanel id="RiskProdPanel" layout="block" styleClass="blockStyleClass" rendered="{!infoTab}">
+                                <apex:pageBlockSection >
+                                    <apex:inputField value="{!RMA__c.Risk_Production__c}">
+                                        <apex:actionSupport event="onclick" action="{!dispSectRiskProd}" rerender="checkBxRP" status="LoadingStatusSpinner"/>
+                                    </apex:inputField>
+                                </apex:pageblockSection>
+                                <apex:outputPanel id="checkBxRP">
+                                    <apex:pageBlockSection rendered="{!RMA__c.Risk_Production__c}" id="pgBlockRP" >
+                                        <apex:pageBlockSectionItem >
+                                        Select Lot/Device (Risk Production)
+                                        <apex:outputPanel >
+                                            <div class="requiredInput">
+                                                <div class="requiredBlock"></div>
+                                                <c:MultiselectPicklist leftLabel="Available" 
+                                                                        leftOption="{!leftOptionsRP}"
+                                                                        rightLabel="Chosen"
+                                                                        rightOption="{!rightOptionsRP}"
+                                                                        size="5"
+                                                                        width="100%"/>
+                                             </div>
+                                        </apex:outputPanel>     
+                                        </apex:pageBlockSectionItem>
+                                        <apex:inputField value="{!RMA__c.Remarks_Risk_Production__c}" style="width:100%;" styleClass="textAreaCss"/>
+                                    </apex:pageblockSection>
+                                </apex:outputpanel>
+                            </apex:outputpanel>
+                            <apex:outputPanel id="RiskProdPanelRead" layout="block" styleClass="blockStyleClass" rendered="{!NOT(infoTab)}">
+                                <apex:pageBlockSection >
+                                    <apex:outputField value="{!RMA__c.Risk_Production__c}"/>
+                                </apex:pageblockSection>
+                                <apex:outputPanel id="checkBxRPRead">
+                                    <apex:pageBlockSection rendered="{!RMA__c.Risk_Production__c}" id="pgBlockRPRead" >
+                                        <apex:outputField value="{!RMA__c.Lot_Device_Risk_Production__c}"/>
+                                        <apex:outputField value="{!RMA__c.Remarks_Risk_Production__c}" style="width:100%;"/>
+                                    </apex:pageblockSection>
+                                </apex:outputpanel>
+                            </apex:outputpanel>
+                            
+                            <apex:outputPanel id="PRFpanel" layout="block" styleClass="blockStyleClass" rendered="{!infoTab}">
+                                <apex:pageBlockSection >
+                                    <apex:inputField value="{!RMA__c.Is_the_RMA_lot_s_related_to_PRF__c}" onclick="showPRFCARParticulars(this, true);"/>
+                                </apex:pageblockSection>
+                                <apex:outputPanel id="checkBxPRF">
+                                    <apex:pageBlockSection rendered="{!RMA__c.Is_the_RMA_lot_s_related_to_PRF__c}">
+                                        <apex:pageBlockTable id="prfTable" value="{!PRFParticulars}" var="prf">
+                                            <apex:column headerValue="Action" styleClass="actionColumn" rendered="{!isCSR}">
+                                                <apex:commandLink styleClass="actionLink" value="Delete" action="{!removePRFCAR}" rerender="prfTable" status="LoadingStatusSpinner">
+                                                    <apex:param name="prfId" value="{!prf.id}"/>
+                                                </apex:commandLink> 
+                                            </apex:column> 
+                                            <apex:column headerValue="PRF #" value="{!prf.PRF__c}"/>
+                                            <apex:column headerValue="Lot #" value="{!prf.Lot__c}"/>
+                                        </apex:pageBlockTable>
+                                        <apex:pageBlockSectionItem >
+                                            <apex:outputLabel value="{!$ObjectType.RMA__c.fields.Justification_PRF__c.label}"/>
+                                            <apex:outputPanel >
+                                                <div class="requiredInput">
+                                                    <div class="requiredBlock"></div>
+                                                    <apex:inputField value="{!RMA__c.Justification_PRF__c}" style="width:100%;" styleClass="textAreaCss"/>
+                                                </div>
+                                            </apex:outputPanel>
+                                        </apex:pageBlockSectionItem>
+                                        <apex:commandbutton value="Add" id="prfAdd" action="{!showPrfPopup}"  rerender="popupCARPRF" oncomplete="showPRFCARPopup(true);" status="LoadingStatusSpinner" rendered="{!isCSR}">
+                                            <apex:param name="isPrf" value="true" assignTo="{!isPrf}"/>
+                                        </apex:commandbutton>
+                                    </apex:pageBlockSection>
+                                </apex:outputPanel>
+                            </apex:outputpanel>
+                            <apex:outputPanel id="PRFpanelRead" layout="block" styleClass="blockStyleClass" rendered="{!NOT(infoTab)}">
+                                <apex:pageBlockSection >
+                                    <apex:outputField value="{!RMA__c.Is_the_RMA_lot_s_related_to_PRF__c}"/>
+                                </apex:pageblockSection>
+                                <apex:outputPanel id="checkBxPRFRead">
+                                    <apex:pageBlockSection rendered="{!RMA__c.Is_the_RMA_lot_s_related_to_PRF__c}" id="pgBlockPRFRead" >
+                                        <apex:pageBlockTable id="prfTable" value="{!PRFParticulars}" var="prf">
+                                            <apex:column headerValue="PRF #" value="{!prf.PRF__c}"/>
+                                            <apex:column headerValue="Lot #" value="{!prf.Lot__c}"/>
+                                        </apex:pageBlockTable>
+                                        <apex:outputField value="{!RMA__c.Justification_PRF__c}" style="width:100%;"/>
+                                    </apex:pageblockSection>
+                                </apex:outputpanel>
+                            </apex:outputpanel>
+                            
+                            <apex:outputPanel id="CARpanel" layout="block" styleClass="blockStyleClass" rendered="{!infoTab}">
+                                <apex:pageBlockSection >
+                                    <apex:inputField value="{!RMA__c.Customer_CAR_Raised__c}" onclick="showPRFCARParticulars(this, false);">
+                                    </apex:inputField>
+                                </apex:pageblockSection>
+                                <apex:outputPanel id="checkBxCAR">
+                                    <apex:pageBlockSection rendered="{!RMA__c.Customer_CAR_Raised__c}">
+                                        <apex:pageBlockTable id="carTable" value="{!CARParticulars}" var="car"> 
+                                            <apex:column headerValue="Action" styleClass="actionColumn" rendered="{!isCSR}">
+                                                <apex:commandLink styleClass="actionLink" value="Delete" action="{!removePRFCAR}" rerender="carTable" status="LoadingStatusSpinner">
+                                                    <apex:param name="carId" value="{!car.id}"/>
+                                                </apex:commandLink> 
+                                            </apex:column> 
+                                            <apex:column headerValue="Car #" value="{!car.Car__c}"/>
+                                            <apex:column headerValue="Lot #" value="{!car.Lot__c}"/>
+                                        </apex:pageBlockTable>
+                                        <apex:pageBlockSectionItem >
+                                            <apex:outputLabel value="{!$ObjectType.RMA__c.fields.Justification_CAR__c.label}"/>
+                                            <apex:outputPanel >
+                                                <div class="requiredInput">
+                                                    <div class="requiredBlock"></div>
+                                                    <apex:inputField value="{!RMA__c.Justification_CAR__c}" style="width:100%;" styleClass="textAreaCss"/>
+                                                </div>
+                                            </apex:outputPanel>
+                                        </apex:pageBlockSectionItem>
+                                        <apex:commandbutton value="Add" id="carAddbtn" action="{!showCarPopup}"  rerender="popupCARPRF" oncomplete="showPRFCARPopup(false);" status="LoadingStatusSpinner" rendered="{!isCSR}">
+                                            <apex:param name="isPrf" value="false" assignTo="{!isPrf}"/>
+                                        </apex:commandbutton>
+                                    </apex:pageBlockSection>
+                                </apex:outputpanel>
+                            </apex:outputpanel>
+                            <apex:outputPanel id="CARpanelRead" layout="block" styleClass="blockStyleClass" rendered="{!NOT(infoTab)}">
+                                <apex:pageBlockSection >
+                                    <apex:outputField value="{!RMA__c.Customer_CAR_Raised__c}"/>
+                                </apex:pageblockSection>
+                                <apex:outputPanel id="checkBxCARRead">
+                                    <apex:pageBlockSection rendered="{!RMA__c.Customer_CAR_Raised__c}" id="pgBlockCARRead" >
+                                        <apex:pageBlockTable id="carTable" value="{!CARParticulars}" var="car"> 
+                                            <apex:column headerValue="Car #" value="{!car.Car__c}"/>
+                                            <apex:column headerValue="Lot " value="{!car.Lot__c}"/>
+                                        </apex:pageBlockTable>
+                                        <apex:outputField value="{!RMA__c.Justification_CAR__c}" style="width:100%;"/>
+                                    </apex:pageblockSection>
+                                </apex:outputpanel>
+                            </apex:outputpanel>
+                            <apex:outputPanel id="OthersPanel" layout="block" styleClass="blockStyleClass" rendered="{!infoTab}">
+                                <apex:pageBlockSection >
+                                    <apex:inputField value="{!RMA__c.If_Others__c}">
+                                        <apex:actionSupport event="onclick" action="{!dispSectOthers}" rerender="checkBxOther" status="LoadingStatusSpinner"/>
+                                    </apex:inputField>
+                                </apex:pageblockSection>
+                                <apex:outputPanel id="checkBxOther">
+                                    <apex:pageBlockSection rendered="{!RMA__c.If_Others__c}" id="pgBlockOther" >
+                                        <apex:inputField value="{!RMA__c.Remarks_if_Others__c}" style="width:100%;" styleClass="textAreaCss"/>
+                                    </apex:pageblockSection>
+                                </apex:outputpanel>
+                            </apex:outputpanel>
+                            <apex:outputPanel id="OthersPanelRead" layout="block" styleClass="blockStyleClass" rendered="{!NOT(infoTab)}">
+                                <apex:pageBlockSection >
+                                    <apex:outputField value="{!RMA__c.If_Others__c}"/>
+                                </apex:pageblockSection>
+                                <apex:outputPanel id="checkBxOtherRead">
+                                    <apex:pageBlockSection rendered="{!RMA__c.If_Others__c}" id="pgBlockOtherRead" >
+                                        <apex:outputField value="{!RMA__c.Remarks_if_Others__c}" style="width:100%;"/>
+                                    </apex:pageblockSection>
+                                </apex:outputpanel>
+                            </apex:outputpanel>
+                            <apex:outputPanel id="GeneralPanel" layout="block" styleClass="blockStyleClass" rendered="{!infoTab}">
+                                <apex:pageBlockSection columns="1">
+                                    <apex:pageBlockSectionItem >
+                                        <apex:outputLabel value="{!$ObjectType.RMA__c.fields.Access_Impact__c.label}" />
+                                        <apex:outputPanel >
+                                            <div class="requiredInput">
+                                                <div class="requiredBlock"></div>
+                                                <apex:inputField value="{!RMA__c.Access_Impact__c}"/>
+                                            </div>
+                                        </apex:outputPanel>
+                                    </apex:pageBlockSectionItem>
+                                    <!--<apex:pageBlockSectionItem ></apex:pageBlockSectionItem>
+                                    <apex:pageBlockSectionItem >
+                                        <apex:outputLabel value="{!$ObjectType.RMA__c.fields.Remarks__c.label}" />
+                                        <apex:outputPanel >
+                                            <div class="requiredInput">
+                                                <div class="requiredBlock"></div>
+                                                <apex:inputField value="{!RMA__c.Remarks__c}" style="width:100%;" styleClass="textAreaCss"/>
+                                            </div>
+                                        </apex:outputPanel>
+                                    </apex:pageBlockSectionItem>-->
+                                    <apex:pageBlockSectionItem helpText="{!$ObjectType.RMA__c.fields.Description_of_Reason_s__c.inlineHelpText}">
+                                        <apex:outputLabel value="{!$ObjectType.RMA__c.fields.Description_of_Reason_s__c.label}" />
+                                        <apex:outputPanel >
+                                            <div class="requiredInput">
+                                                <div class="requiredBlock"></div>
+                                                <apex:inputField styleclass="textAreaCss" value="{!RMA__c.Description_of_Reason_s__c}" style="width:100%;"/>
+                                            </div>
+                                        </apex:outputPanel>
+                                    </apex:pageBlockSectionItem>
+                                </apex:pageblockSection>
+                            </apex:outputpanel>
+                            <apex:outputPanel id="GeneralPanelRead" layout="block" styleClass="blockStyleClass" rendered="{!NOT(infoTab)}">
+                                <apex:pageBlockSection columns="1">
+                                    <apex:outputField value="{!RMA__c.Access_Impact__c}"/>
+                                    <!-- <apex:pageBlockSectionItem ></apex:pageBlockSectionItem>
+                                    <apex:outputField value="{!RMA__c.Remarks__c}" style="width:100%;"/> -->
+                                    <apex:outputField value="{!RMA__c.Description_of_Reason_s__c}" style="width:100%;"/>
+                                </apex:pageblockSection>
+                            </apex:outputpanel>
+                            
+                        </apex:pageBlockSection>
+                    
+                    </apex:tab>
+                    
+                    <apex:tab label="Disposition of Wafers" name="Disposition_of_Wafers" id="Disposition_of_Wafers" rendered="{!RMA__c.Id != NULL}">
+                        
+                        <apex:pageBlockSection title="Disposition of Wafers" id="DisposnOfWafers">
+                            <apex:pageBlockSectionItem >
+                                <apex:outputLabel value="Site"/>
+                                <apex:outputText value="{!site}"/>
+                            </apex:pageBlockSectionItem>
+                            <apex:outputField value="{!RMA__c.Fab__c}" />
+                            <apex:pageBlockSectionItem rendered="{!dispTab}"> 
+                                <apex:outputLabel value="{!$ObjectType.RMA__c.fields.Disposition_of_Wafers__c.label}" />
+                                <apex:outputPanel >
+                                    <div class="requiredInput">
+                                        <div class="requiredBlock"></div>
+                                        <apex:inputField value="{!RMA__c.Disposition_of_Wafers__c}" >
+                                            <apex:actionSupport event="onchange" action="{!dispDisposition}" rerender="DisposnOfWafers,panelDisposition,errormsg" status="LoadingStatusSpinner"/>
+                                        </apex:inputField>
+                                    </div>
+                                </apex:outputPanel>
+                            </apex:pageBlockSectionItem>
+                            <apex:outputField value="{!RMA__c.Disposition_of_Wafers__c}" rendered="{!NOT(dispTab)}"/>
+                            
+                            <!-- For Fab 9 and Fab 10 -->
+                            <!--<apex:pageBlockSectionItem rendered="{!AND(dispTab,isFab9or10,OR(RMA__c.Disposition_of_Wafers__c == 'Return to GF',RMA__c.Disposition_of_Wafers__c == 'Return to GF and to Scrap at Customer Site'))}"> -->
+                            <apex:pageBlockSectionItem rendered="{!isCSR && isFab9or10 && !RMA__c.Acknowledged_Wafer_Return__c && (RMA__c.Disposition_of_Wafers__c == 'Return to GF' || RMA__c.Disposition_of_Wafers__c == 'Return to GF and to Scrap at Customer Site')}" >
+                                <apex:outputLabel value="{!$ObjectType.RMA__c.fields.Return_Location__c.label}" />
+                                <apex:outputPanel >
+                                    <div class="requiredInput">
+                                        <div class="requiredBlock"></div>
+                                        <apex:inputField value="{!RMA__c.Return_Location__c}">
+                                            <apex:actionSupport event="onchange" action="{!setReturnLocation}" status="LoadingStatusSpinner" reRender="pgBlockDisposition2"/>
+                                        </apex:inputField>
+                                    </div>
+                                </apex:outputPanel>
+                            </apex:pageBlockSectionItem>
+                            <!--<apex:outputField value="{!RMA__c.Return_Location__c}" rendered="{!AND(isFab9or10,NOT(dispTab),OR(RMA__c.Disposition_of_Wafers__c == 'Return to GF',RMA__c.Disposition_of_Wafers__c == 'Return to GF and to Scrap at Customer Site'))}"/>-->
+                            <apex:outputField value="{!RMA__c.Return_Location__c}" 
+                                rendered="{!(RMA__c.Disposition_of_Wafers__c == 'Return to GF' || RMA__c.Disposition_of_Wafers__c == 'Return to GF and to Scrap at Customer Site')
+                                             && isFab9or10 && (!isCSR || (isCSR && RMA__c.Acknowledged_Wafer_Return__c))}" />
+                            <!--<apex:outputField value="{!RMA__c.Carrier_Vendor__c}" rendered="{!AND(isFab9or10,NOT(dispTab),OR(RMA__c.Disposition_of_Wafers__c == 'Return to GF',RMA__c.Disposition_of_Wafers__c == 'Return to GF and to Scrap at Customer Site'))}"/>-->
+                            <apex:outputField value="{!RMA__c.Carrier_Vendor__c}" 
+                                rendered="{!(RMA__c.Disposition_of_Wafers__c == 'Return to GF' || RMA__c.Disposition_of_Wafers__c == 'Return to GF and to Scrap at Customer Site')
+                                             && isFab9or10 && (!isCSR || (isCSR && RMA__c.Acknowledged_Wafer_Return__c))}" />
+                            <!--<apex:pageBlockSectionItem rendered="{!dispTab && isFab9or10 && OR(RMA__c.Disposition_of_Wafers__c == 'Return to GF',RMA__c.Disposition_of_Wafers__c == 'Return to GF and to Scrap at Customer Site')}">-->
+                            <apex:pageBlockSectionItem rendered="{!isCSR && isFab9or10 && !RMA__c.Acknowledged_Wafer_Return__c && (RMA__c.Disposition_of_Wafers__c == 'Return to GF' || RMA__c.Disposition_of_Wafers__c == 'Return to GF and to Scrap at Customer Site')}">
+                                <apex:outputLabel value="{!$ObjectType.RMA__c.fields.Carrier_Vendor__c.label}" />
+                                <apex:outputPanel >
+                                    <div class="requiredInput">
+                                        <div class="requiredBlock"></div>
+                                        <apex:inputField value="{!RMA__c.Carrier_Vendor__c}">
+                                            <apex:actionSupport event="onchange" action="{!clearCarrierFields}" reRender="DisposnOfWafers" status="LoadingStatusSpinner"/> 
+                                        </apex:inputField>
+                                    </div>
+                                </apex:outputPanel>
+                            </apex:pageBlockSectionItem>
+                            <!--<apex:outputField value="{!RMA__c.Carrier_Vendor_Account_Number__c}" rendered="{!AND(isFab9or10,NOT(dispTab),OR(RMA__c.Disposition_of_Wafers__c == 'Return to GF',RMA__c.Disposition_of_Wafers__c == 'Return to GF and to Scrap at Customer Site'))}"/>-->
+                            <!--<apex:pageBlockSectionItem rendered="{!dispTab && isFab9or10 && OR(RMA__c.Disposition_of_Wafers__c == 'Return to GF',RMA__c.Disposition_of_Wafers__c == 'Return to GF and to Scrap at Customer Site')}">-->
+                            <apex:outputField value="{!RMA__c.Carrier_Vendor_Account_Number__c}" 
+                                rendered="{!(RMA__c.Disposition_of_Wafers__c == 'Return to GF' || RMA__c.Disposition_of_Wafers__c == 'Return to GF and to Scrap at Customer Site')
+                                             && isFab9or10 && (!isCSR || (isCSR && RMA__c.Acknowledged_Wafer_Return__c))}" />
+                            <apex:pageBlockSectionItem rendered="{!isCSR && isFab9or10 && !RMA__c.Acknowledged_Wafer_Return__c && (RMA__c.Disposition_of_Wafers__c == 'Return to GF' || RMA__c.Disposition_of_Wafers__c == 'Return to GF and to Scrap at Customer Site')}">
+                                <apex:outputLabel value="{!$ObjectType.RMA__c.fields.Carrier_Vendor_Account_Number__c.label}" />
+                                <apex:outputPanel >
+                                    <div class="requiredInput">
+                                        <div class="requiredBlock"></div>
+                                        <apex:inputField value="{!RMA__c.Carrier_Vendor_Account_Number__c}" />
+                                    </div>
+                                </apex:outputPanel>
+                            </apex:pageBlockSectionItem>
+                            <apex:outputField value="{!RMA__c.New_Carrier_Vendor__c}" 
+                                rendered="{!(RMA__c.Disposition_of_Wafers__c == 'Return to GF' || RMA__c.Disposition_of_Wafers__c == 'Return to GF and to Scrap at Customer Site')
+                                             && RMA__c.Carrier_Vendor__c =='Others' && isFab9or10 && (!isCSR || (isCSR && RMA__c.Acknowledged_Wafer_Return__c))}"/>                                             
+                            <apex:pageBlockSectionItem rendered="{!RMA__c.Carrier_Vendor__c=='Others' && isCSR && isFab9or10 && !RMA__c.Acknowledged_Wafer_Return__c && (RMA__c.Disposition_of_Wafers__c == 'Return to GF' || RMA__c.Disposition_of_Wafers__c == 'Return to GF and to Scrap at Customer Site')}">
+                                <apex:outputLabel value="{!$ObjectType.RMA__c.fields.New_Carrier_Vendor__c.label}" />
+                                <apex:outputPanel >
+                                    <div class="requiredInput">
+                                        <div class="requiredBlock"></div>
+                                        <apex:inputField value="{!RMA__c.New_Carrier_Vendor__c}" />
+                                    </div>
+                                </apex:outputPanel>
+                            </apex:pageBlockSectionItem>
+                            <apex:pageBlockSectionItem rendered="{!isCSR && isFab9or10 && RMA__c.Workflow_Stage__c != 'RMA Raised' && RMA__c.Workflow_Stage__c != 'Rejected RMA' && RMA__c.Workflow_Stage__c != 'Pending for Quality Validation' && RMA__c.Compensation_Type__c == 'Credit with charged replacement'}">
+                                <apex:outputLabel value="{!$ObjectType.RMA__c.fields.Sales_Order_Number_CRO__c.label}" />
+                                <apex:outputPanel >
+                                    <div class="requiredInput">
+                                        <div class="requiredBlock"></div>
+                                        <apex:inputField value="{!RMA__c.Sales_Order_Number_CRO__c}"/>
+                                    </div>
+                                </apex:outputPanel>
+                            </apex:pageBlockSectionItem>
+                        </apex:pageBlockSection>
+                        
+                        <!-- For Dispositon for Quality -->
+                        <apex:pageBlockSection title="Disposition By Quality" columns="1" rendered="{!AND(isFab9or10,RMA__c.Status__c != 'Draft',RMA__c.Status__c != 'Rejected')}">
+                            <apex:outputField value="{!RMA__c.Disposition_by_Quality__c}" rendered="{!dispByQtyTab && NOT(isApprover)}"/>
+                            <apex:outputField value="{!RMA__c.Comments_Quality__c}" rendered="{!dispByQtyTab && NOT(isApprover)}"/>
+                            <apex:pageBlockSectionItem rendered="{!AND(dispByQtyTab,isApprover)}"> 
+                                <apex:outputLabel value="{!$ObjectType.RMA__c.fields.Disposition_by_Quality__c.label}" />
+                                <apex:outputPanel >
+                                    <div class="requiredInput">
+                                        <div class="requiredBlock"></div>
+                                        <apex:inputField value="{!RMA__c.Disposition_by_Quality__c}" />
+                                    </div>
+                                </apex:outputPanel>
+                            </apex:pageBlockSectionItem>
+                            <apex:inputField value="{!RMA__c.Comments_Quality__c}" rendered="{!AND(dispByQtyTab,isApprover)}" style="width:50%;"/>
+                        </apex:pageBlockSection>
+                        
+                        <apex:pageBlockSection title="Alternative Customer" columns="1" rendered="{!AND(isFab9or10,RMA__c.ReasonCode__c == 'R81')}">
+                            <apex:outputField value="{!RMA__c.Alternative_Customer__c}" rendered="{!NOT(dispTab)}" />
+                            <apex:pageBlockSectionItem rendered="{!dispTab}">
+                                <apex:outputLabel value="{!$ObjectType.RMA__c.fields.Alternative_Customer__c.label}" />
+                                <apex:outputPanel >
+                                    <div class="requiredInput">
+                                        <div class="requiredBlock"></div>
+                                        <apex:inputField value="{!RMA__c.Alternative_Customer__c}"  />
+                                    </div>
+                                </apex:outputPanel>
+                            </apex:pageBlockSectionItem>
+                        </apex:pageBlockSection>
+                        
+                        <apex:outputPanel id="panelDisposition">
+                            
+                            <apex:pageBlockSection title="Scrap to Customer Site" rendered="{!dispDispositionScrapBool}" id="pgBlockDisposition" columns="1">
+                                <apex:outputField value="{!RMA__c.Certificate_Received_Date__c}" rendered="{!NOT(dispTab) && RMA__c.Acknowledged_Wafer_Scrap__c && RMA__c.Workflow_Stage__c != 'Pending for Quality Validation'}"/>
+                                <apex:inputField value="{!RMA__c.Certificate_Received_Date__c}" rendered="{!(dispTab || AND(isScrap,NOT(RMA__c.Acknowledged_Wafer_Scrap__c))) && RMA__c.Workflow_Stage__c != 'Pending for Quality Validation'}"/>
+                                <apex:outputField value="{!RMA__c.Certificate_No__c}" rendered="{!!dispTab && RMA__c.Acknowledged_Wafer_Scrap__c && RMA__c.Workflow_Stage__c != 'Pending for Quality Validation'}"/>
+                                <apex:inputField value="{!RMA__c.Certificate_No__c}" rendered="{!OR(dispTab,AND(isScrap,NOT(RMA__c.Acknowledged_Wafer_Scrap__c))) && RMA__c.Workflow_Stage__c != 'Pending for Quality Validation'}"/>
+                                <apex:outputField value="{!RMA__c.Remarks_Disposition__c}" rendered="{!NOT(dispTab)}"/>
+                                <apex:inputField value="{!RMA__c.Remarks_Disposition__c}" styleClass="textAreaCss" rendered="{!dispTab}"/>
+                                <apex:pageBlockSectionItem helpText="{!$ObjectType.RMA__c.fields.Receiver_Names_for_Scrap__c.inlineHelpText}">
+                                    <apex:outputLabel value="Receiver Name (if 'Scrap at Customer site'): " />
+                                    <apex:pageBlockSectionItem >
+                                        <apex:outputField value="{!RMA__c.Receiver_Names_for_Scrap__c}" />
+                                        <apex:commandButton value="Add" action="{!showScrapPopUp}" reRender="popupScrapReceiver" status="LoadingStatusSpinner" rendered="{!dispTab}"/>
+                                    </apex:pageBlockSectionItem>
+                                </apex:pageBlockSectionItem>
+                                <apex:pageBlockSectionItem rendered="{!dispTab}">
+                                Lot Ids required Scrap certificate:
+                                <apex:outputPanel >
+                                    <div class="requiredInput">
+                                        <div class="requiredBlock"></div>
+                                        <c:MultiselectPicklist leftLabel="Available" 
+                                                                leftOption="{!leftOptionsScrapReturn}"
+                                                                rightLabel="Chosen"
+                                                                rightOption="{!rightOptionsScrapReturn}"
+                                                                size="5"
+                                                                width="100%"/>
+                                    </div>
+                                </apex:outputPanel>                        
+                                </apex:pageBlockSectionItem>
+                                <apex:outputField value="{!RMA__c.Lot_Device_Requires_Scrap_Certificate__c}" rendered="{!NOT(dispTab)}"/>
+                            </apex:pageblockSection>
+                            
+                            <apex:pageBlockSection id="pgBlockDisposition5" 
+                                rendered="{!IF(AND(OR(RMA__c.Status__c == 'Submitted',RMA__c.Status__c == 'Approved'),RMA__c.Workflow_Stage__c != 'Pending for Quality Validation',dispDispositionScrapBool),true,false)}">
+                                <apex:outputField value="{!RMA__c.Acknowledged_Wafer_Scrap__c}" rendered="{!NOT(dispTab) && RMA__c.Acknowledged_Wafer_Scrap__c}"/>
+                                <apex:inputField value="{!RMA__c.Acknowledged_Wafer_Scrap__c}" rendered="{!dispTab || AND(isScrap,NOT(RMA__c.Acknowledged_Wafer_Scrap__c))}"/>
+                                <apex:outputField value="{!RMA__c.Remarks_Reason_Wafer_Scrap__c}" rendered="{!NOT(dispTab) && RMA__c.Acknowledged_Wafer_Scrap__c}"/>
+                                <apex:inputField value="{!RMA__c.Remarks_Reason_Wafer_Scrap__c}" styleClass="textAreaCss" rendered="{!dispTab || AND(isScrap,NOT(RMA__c.Acknowledged_Wafer_Scrap__c))}"/>
+                                <apex:outputField value="{!RMA__c.Acknowledge_By_Wafer_Scrap__c}" />
+                                <br/>
+                                <apex:outputField value="{!RMA__c.Acknowledge_On_Wafer_Scrap__c}" />
+                            </apex:pageBlockSection>
+                            
+                            <apex:pageBlockSection title="Return to GF - Spore/Dresden/Malta" rendered="{!dispDispositionReturnBool}" id="pgBlockDisposition2" columns="1">
+                                <apex:pageBlockSectionItem helpText="{!$ObjectType.RMA__c.fields.Receiver_Names_for_Wafer__c.inlineHelpText}">
+                                    <apex:outputLabel value="Receiver Name (If 'Return to GF- Spore/Dresden/Malta'): " />
+                                    <apex:pageBlockSectionItem >
+                                        <apex:outputField value="{!RMA__c.Receiver_Names_for_Wafer__c}" />
+                                        <apex:commandButton value="Add" action="{!showWaferPopUp}" reRender="popupWaferReceiver" status="LoadingStatusSpinner" rendered="{!dispTab}"/>
+                                    </apex:pageBlockSectionItem>
+                                </apex:pageBlockSectionItem>
+                                <apex:pageBlockSectionItem rendered="{!dispTab}">
+                                Select Lot/Device (To Return)
+                                <apex:outputPanel >
+                                    <div class="requiredInput">
+                                        <div class="requiredBlock"></div>
+                                        <c:MultiselectPicklist leftLabel="Available" 
+                                                                leftOption="{!leftOptionsReturn}"
+                                                                rightLabel="Chosen"
+                                                                rightOption="{!rightOptionsReturn}"
+                                                                size="5"
+                                                                width="100%"/>
+                                    </div>
+                                </apex:outputPanel>
+                                </apex:pageBlockSectionItem>
+                                <apex:outputField value="{!RMA__c.Lot_Device_To_Return__c}" rendered="{!NOT(dispTab)}"/>
+                                <apex:outputField value="{!RMA__c.Return_Estimated_Date__c}" rendered="{!NOT(dispTab)}"/>
+                                <apex:pageBlockSectionItem rendered="{!dispTab}">
+                                    <apex:outputLabel value="{!$ObjectType.RMA__c.fields.Return_Estimated_Date__c.label}" />
+                                    <apex:outputPanel >
+                                        <div class="requiredInput">
+                                            <div class="requiredBlock"></div>
+                                            <apex:inputField value="{!RMA__c.Return_Estimated_Date__c}" />
+                                        </div>
+                                    </apex:outputPanel>
+                                </apex:pageBlockSectionItem>
+                                <apex:outputField value="{!RMA__c.Receiver_Address__c}" rendered="{!NOT(dispTab)}"/>
+                                <apex:inputField value="{!RMA__c.Receiver_Address__c}" rendered="{!AND(dispTab,isCSR)}" style="width:50%;"/>
+                                <apex:outputField value="{!RMA__c.Ship_from_Address__c}" rendered="{!AND(isFab9or10,(!isCSR || (isCSR && RMA__c.Acknowledged_Wafer_Return__c)))}"/>
+                                <!--<apex:inputField value="{!RMA__c.Ship_from_Address__c}" rendered="{!AND(isFab9or10,dispTab,isCSR)}" style="width:50%;"/>-->
+                                <apex:inputField value="{!RMA__c.Ship_from_Address__c}" rendered="{!AND(isFab9or10,isCSR,!RMA__c.Acknowledged_Wafer_Return__c)}" style="width:50%;"/>
+                                <apex:outputField value="{!RMA__c.Contact_Information__c}" rendered="{!AND(isFab9or10,NOT(dispTab))}"/>
+                                <apex:inputField value="{!RMA__c.Contact_Information__c}" rendered="{!AND(isFab9or10,dispTab,isCSR)}" style="width:50%;"/>
+                                
+                                <!-- <apex:pageBlockSectionItem rendered="{!AND(isFab9or10,dispTab,isCSR)}">
+                                    <apex:outputLabel value="{!$ObjectType.RMA__c.fields.Ship_from_Address__c.label}" />
+                                    <apex:pageBlockSectionItem >
+                                        <apex:outputField value="{!RMA__c.Ship_from_Address__c}" />
+                                        <apex:commandButton value="Add/Update" action="{!showShipFromAddrPopUp}" reRender="shipfromaddresspopup" status="LoadingStatusSpinner"/>
+                                    </apex:pageBlockSectionItem>
+                                </apex:pageBlockSectionItem> -->
+                            </apex:pageblockSection>
+                            
+                            <apex:pageBlockSection id="pgBlockDisposition4" 
+                                rendered="{!IF(AND(OR(RMA__c.Status__c == 'Submitted',RMA__c.Status__c == 'Approved'),RMA__c.Workflow_Stage__c != 'Pending for Quality Validation',dispDispositionReturnBool),true,false)}">
+                                <apex:outputField value="{!RMA__c.Date_of_Wafer_Receipt__c}" rendered="{!NOT(dispTab) && RMA__c.Acknowledged_Wafer_Return__c}"/>
+                                <apex:inputField value="{!RMA__c.Date_of_Wafer_Receipt__c}" rendered="{!dispTab || AND(isReturnToGF,NOT(RMA__c.Acknowledged_Wafer_Return__c))}"/>
+                                <apex:outputField value="{!RMA__c.Air_way_Bill_No__c}" rendered="{!NOT(dispTab) && RMA__c.Acknowledged_Wafer_Return__c}"/>
+                                <apex:inputField value="{!RMA__c.Air_way_Bill_No__c}" rendered="{!dispTab || AND(isReturnToGF,NOT(RMA__c.Acknowledged_Wafer_Return__c))}"/>
+                                <apex:outputText label="Expected Qty to receive" value="{!totalReceivingQty}" rendered="{!dispTab || isReturnToGF}" />
+                                <apex:outputField value="{!RMA__c.Quantity_Received__c}" rendered="{!NOT(dispTab) && RMA__c.Acknowledged_Wafer_Return__c}"/>
+                                <apex:inputField value="{!RMA__c.Quantity_Received__c}" rendered="{!dispTab || AND(isReturnToGF,NOT(RMA__c.Acknowledged_Wafer_Return__c))}" />
+                                <apex:outputField value="{!RMA__c.Acknowledged_Wafer_Return__c}" rendered="{!NOT(dispTab) && RMA__c.Acknowledged_Wafer_Return__c}"/>
+                                <apex:inputField value="{!RMA__c.Acknowledged_Wafer_Return__c}" rendered="{!dispTab || AND(isReturnToGF,NOT(RMA__c.Acknowledged_Wafer_Return__c))}"/>
+                                <apex:outputField value="{!RMA__c.Remarks_Reason_Wafer_Receipt__c}" rendered="{!NOT(dispTab) && RMA__c.Acknowledged_Wafer_Return__c}"/>
+                                <apex:inputField value="{!RMA__c.Remarks_Reason_Wafer_Receipt__c}" styleClass="textAreaCss" rendered="{!dispTab || AND(isReturnToGF,NOT(RMA__c.Acknowledged_Wafer_Return__c))}"/>
+                                <apex:outputField value="{!RMA__c.Acknowledge_By_Wafer_Return__c}"/>
+                                <br/>
+                                <apex:outputField value="{!RMA__c.Acknowledge_On_Wafer_Return__c}"/>
+                            </apex:pageBlockSection>
+                            
+                            <apex:pageBlockSection title="Notify / Circulate to (FE / Fab YE / Others)" id="pgBlockDisposition3" columns="1">
+                                <apex:pageBlockSectionItem helpText="{!$ObjectType.RMA__c.fields.Notify_Circulate_to_FE_Fab_YE_Others__c.inlineHelpText}">
+                                    <apex:outputLabel value="Notify / Circulate to (FE / Fab YE / Others): " />
+                                    <apex:pageBlockSectionItem >
+                                        <apex:outputField value="{!RMA__c.Notify_Circulate_to_FE_Fab_YE_Others__c}" />
+                                        <apex:commandButton value="Add" action="{!showNotifyPopUp}" reRender="popupNotifyReceiver" status="LoadingStatusSpinner" rendered="{!dispTab}"/>
+                                    </apex:pageBlockSectionItem>
+                                </apex:pageBlockSectionItem>
+                            </apex:pageBlockSection>
+                            
+                            <apex:pageBlockSection title="Attachments & links"
+                                rendered="{!IF(AND(OR(RMA__c.Status__c == 'Submitted',RMA__c.Status__c == 'Approved'),dispDispositionScrapBool),true,false)}">
+                                <apex:commandbutton value="Upload Attachments & links"
+                                    onclick="redirectToAttachmentsAndLinks('Disposition_of_Wafers');return false;" rerender="dummy"/>
+                            </apex:pageBlockSection>
+                        </apex:outputpanel>
+                    
+                    </apex:tab>
+                    
+                    <!-- For FAB 9 and FAB 10 -->
+                    <!-- <apex:tab label="Disposition by Quality" name="Disposition_by_Quality" id="Disposition_by_Quality" rendered="{!dispByQtyTabActive}">
+                        <apex:pageBlockSection title="Disposition by Quality" >
+                            <apex:outputField value="{!RMA__c.Disposition_by_Quality__c}" rendered="{!NOT(dispByQtyTab)}"/>
+                            <apex:pageBlockSectionItem rendered="{!isApprover}"> 
+                                <apex:outputLabel value="{!$ObjectType.RMA__c.fields.Disposition_by_Quality__c.label}" />
+                                <apex:outputPanel >
+                                    <div class="requiredInput">
+                                        <div class="requiredBlock"></div>
+                                        <apex:inputField value="{!RMA__c.Disposition_by_Quality__c}" />
+                                    </div>
+                                </apex:outputPanel>
+                            </apex:pageBlockSectionItem>
+                        </apex:pageBlockSection>
+                    </apex:tab> -->
+                    
+                    <apex:tab label="Technical Validation" name="Technical_Validation" id="Technical_Validation" rendered="{!techTabActive}">
+                        
+                        <apex:pageBlockSection rendered="{!AND(techTab,NOT(isFab9or10))}">
+                            <apex:selectList id="reAssign" value="{!reAssign}" size="1" label="Do you want to Re-assign?">
+                                <apex:selectOption itemValue=""     itemLabel="--None--"/>
+                                <apex:selectOption itemValue="Assign to Fab"     itemLabel="Assign to Fab" rendered="{!RMA__c.Workflow_Stage__c != 'Pending for Fab Validation'}"/>
+                                <apex:selectOption itemValue="Assign to Non-Fab" itemLabel="Assign to Non-Fab" rendered="{!RMA__c.Workflow_Stage__c != 'Pending for Non Fab Category Validation'}"/>
+                                <apex:selectOption itemValue="Assign to Turnkey" itemLabel="Assign to Turnkey" rendered="{!RMA__c.Workflow_Stage__c != 'Pending for Turnkey/ Sub-con Validation'}"/>
+                                <apex:actionSupport event="onchange" reRender="panelFabValidation" onsubmit="technicalValidationMessage(this);" status="LoadingStatusSpinner"/>
+                            </apex:selectList>
+                        </apex:pageBlockSection>
+
+                        <apex:outputPanel id="panelFabValidation">
+
+                            <apex:pageBlockSection title="Technical Validation"
+                                rendered="{!reAssign == NULL}"
+                                columns="1">
+                                <apex:pageMessage severity="info"
+                                    summary="Due date to respond the RMA validation is {!RMA__c.Escalation_Date_for_Fab_Validation__c}.  
+                                             If extensions/more time needed, enter number of days and select <b>Extend time for validation</b> button."
+                                    strength="2" escape="false"
+                                    rendered="{!AND(OR(RMA__c.Extension_Status__c == NULL, RMA__c.Extension_Status__c == 'Rejected'),
+                                                    RMA__c.Extension_for_Fab_validation_required__c,
+                                                    OR(RMA__c.Workflow_Stage__c == 'Pending for Fab Validation',RMA__c.Workflow_Stage__c == 'Pending for Turnkey/ Sub-con Validation'))}" />
+                                                    
+                                <apex:pageBlockSectionItem rendered="{!AND(RMA__c.Extension_Status__c == 'Approved',NOT(techTab),
+                                                                        OR(RMA__c.Workflow_Stage__c == 'Pending for Fab Validation',RMA__c.Workflow_Stage__c == 'Pending for Turnkey/ Sub-con Validation',RMA__c.Workflow_Stage__c == 'Pending for Non Fab Category Validation'))}">
+                                    <apex:outputLabel value="{!$ObjectType.RMA__c.fields.Extension_for_Fab_validation_required__c.label}" />
+                                    <apex:outputField value="{!RMA__c.Extension_for_Fab_validation_required__c}" />
+                                </apex:pageBlockSectionItem>
+                                
+                                <apex:pageBlockSectionItem rendered="{!AND(OR(RMA__c.Extension_Status__c == NULL, RMA__c.Extension_Status__c == 'Rejected'),
+                                                                        techTab,OR(RMA__c.Workflow_Stage__c == 'Pending for Fab Validation',
+                                                                        RMA__c.Workflow_Stage__c == 'Pending for Turnkey/ Sub-con Validation',
+                                                                        RMA__c.Workflow_Stage__c == 'Pending for Non Fab Category Validation'))}">
+                                    <apex:outputLabel value="{!$ObjectType.RMA__c.fields.Extension_for_Fab_validation_required__c.label}" />
+                                    <apex:inputField value="{!RMA__c.Extension_for_Fab_validation_required__c}">
+                                        <apex:actionSupport event="onchange"
+                                            status="LoadingStatusSpinner" reRender="panelFabValidation"/>
+                                    </apex:inputField>
+                                </apex:pageBlockSectionItem>
+                                
+                                <apex:pageBlockSectionItem rendered="{!AND(RMA__c.Extension_Status__c == 'Approved',
+                                                            NOT(techTab),RMA__c.Extension_for_Fab_validation_required__c,
+                                                            OR(RMA__c.Workflow_Stage__c == 'Pending for Fab Validation',RMA__c.Workflow_Stage__c == 'Pending for Turnkey/ Sub-con Validation',RMA__c.Workflow_Stage__c == 'Pending for Non Fab Category Validation'))}">
+                                    <apex:outputLabel value="{!$ObjectType.RMA__c.fields.Number_of_Days__c.label}" />
+                                    <apex:outputField value="{!RMA__c.Number_of_Days__c}" />
+                                </apex:pageBlockSectionItem>
+                                
+                                <apex:pageBlockSectionItem rendered="{!AND(OR(RMA__c.Extension_Status__c == NULL, RMA__c.Extension_Status__c == 'Rejected'),
+                                                                            techTab,RMA__c.Extension_for_Fab_validation_required__c,
+                                                                            OR(RMA__c.Workflow_Stage__c == 'Pending for Fab Validation',
+                                                                            RMA__c.Workflow_Stage__c == 'Pending for Turnkey/ Sub-con Validation',
+                                                                            RMA__c.Workflow_Stage__c == 'Pending for Non Fab Category Validation'))}">
+                                    <apex:outputLabel value="{!$ObjectType.RMA__c.fields.Number_of_Days__c.label}" />
+                                    <apex:inputField value="{!RMA__c.Number_of_Days__c}" />
+                                </apex:pageBlockSectionItem>
+                                
+                                <apex:pageBlockSectionItem rendered="{!AND(RMA__c.Extension_Status__c == 'Approved',
+                                                            NOT(techTab),RMA__c.Extension_for_Fab_validation_required__c,
+                                                            OR(RMA__c.Workflow_Stage__c == 'Pending for Fab Validation',RMA__c.Workflow_Stage__c == 'Pending for Turnkey/ Sub-con Validation',RMA__c.Workflow_Stage__c == 'Pending for Non Fab Category Validation'))}">
+                                    <apex:outputLabel value="{!$ObjectType.RMA__c.fields.Extension_Reason__c.label}" />
+                                    <apex:outputField value="{!RMA__c.Extension_Reason__c}" />
+                                </apex:pageBlockSectionItem>
+                                
+                                <apex:pageBlockSectionItem rendered="{!AND(OR(RMA__c.Extension_Status__c == NULL, RMA__c.Extension_Status__c == 'Rejected'),
+                                                                            techTab,RMA__c.Extension_for_Fab_validation_required__c,
+                                                                            OR(RMA__c.Workflow_Stage__c == 'Pending for Fab Validation',
+                                                                            RMA__c.Workflow_Stage__c == 'Pending for Turnkey/ Sub-con Validation',
+                                                                            RMA__c.Workflow_Stage__c == 'Pending for Non Fab Category Validation'))}">
+                                    <apex:outputLabel value="{!$ObjectType.RMA__c.fields.Extension_Reason__c.label}" />
+                                    <apex:inputField value="{!RMA__c.Extension_Reason__c}" styleClass="textAreaCss"/>
+                                </apex:pageBlockSectionItem>
+                                
+                                <apex:pageBlockSectionItem rendered="{!RMA__c.Workflow_Stage__c == 'Pending for Fab Validation'}">
+                                    <apex:outputLabel value="Assignee: " />
+                                    <apex:pageBlockSectionItem >
+                                        <apex:outputField value="{!RMA__c.Notify_For_Fab__c}" />
+                                        <apex:commandButton value="Add" action="{!showFabPopUp}"
+                                            reRender="popupFabReceiver" status="LoadingStatusSpinner" rendered="{!isApprover}"/>
+                                    </apex:pageBlockSectionItem>
+                                </apex:pageBlockSectionItem>
+                                
+                                <apex:pageBlockSectionItem rendered="{!RMA__c.Workflow_Stage__c == 'Pending for Turnkey/ Sub-con Validation'}">
+                                    <apex:outputLabel value="Turnkey Assignee: " />
+                                    <apex:pageBlockSectionItem >
+                                        <apex:outputField value="{!RMA__c.Notify_For_Turnkey__c}" />
+                                        <apex:commandButton value="Add" action="{!showTurnkeyPopUp}" 
+                                            reRender="popupTurnkeyReceiver" status="LoadingStatusSpinner" rendered="{!isApprover}" />
+                                    </apex:pageBlockSectionItem>
+                                </apex:pageBlockSectionItem>
+                                
+                            </apex:pageBlockSection>
+
+                            <apex:pageBlockSection title="Non-Fab Validation"
+                                rendered="{!OR(reAssign == 'Assign to Non-Fab',AND(reAssign == NULL,RMA__c.Workflow_Stage__c == 'Pending for Non Fab Category Validation'))}">
+                                <apex:pageBlockSectionItem >
+                                    <apex:outputLabel value="Notify personnel who need to validate for Non-Fab : " />
+                                    <apex:pageBlockSectionItem >
+                                        <apex:outputField value="{!RMA__c.Notify_For_Non_Fab__c}" />
+                                        <apex:commandButton value="Add" action="{!showNonFabPopUp}"
+                                            reRender="popupNonFabReceiver" status="LoadingStatusSpinner"
+                                            rendered="{!isApprover}" />
+                                    </apex:pageBlockSectionItem>
+                                </apex:pageBlockSectionItem>
+                            </apex:pageBlockSection>
+
+                            <apex:pageBlockSection title="Investigation Results"
+                                rendered="{!reAssign == NULL && !techTab}">
+                                <apex:outputField value="{!RMA__c.Lot_Comments__c}" styleClass="textAreaCss"/>
+                                <apex:outputField value="{!RMA__c.E_Test__c}" />
+                                <apex:outputField value="{!RMA__c.Sort_Map__c}" />
+                                <apex:outputField value="{!RMA__c.Possible_Root_Cause__c}" />
+                                <apex:outputField value="{!RMA__c.Technical_Return_Classification__c}" />
+                                <apex:outputField value="{!RMA__c.Remarks_Techincal_Validation__c}" />
+                            </apex:pageBlockSection>
+
+                            <apex:pageBlockSection title="Investigation Results"
+                                rendered="{!reAssign == NULL && techTab}">
+                                <apex:pageBlockSectionItem >
+                                    <apex:outputLabel value="{!$ObjectType.RMA__c.fields.Lot_Comments__c.label}" />
+                                    <apex:outputPanel >
+                                        <div class="requiredInput">
+                                            <div class="requiredBlock"></div>
+                                            <apex:inputField value="{!RMA__c.Lot_Comments__c}" styleClass="textAreaCss"/>
+                                        </div>
+                                    </apex:outputPanel>
+                                </apex:pageBlockSectionItem>
+                                <apex:inputField value="{!RMA__c.E_Test__c}" styleClass="textAreaCss"/>
+                                <apex:inputField value="{!RMA__c.Sort_Map__c}" styleClass="textAreaCss"/>
+                                <apex:inputField value="{!RMA__c.Possible_Root_Cause__c}" styleClass="textAreaCss"/>
+                                <apex:inputField value="{!RMA__c.Remarks_Techincal_Validation__c}" styleClass="textAreaCss"/>
+                            </apex:pageBlockSection>
+
+                            <apex:pageBlockSection title="Technical Return Classification"
+                                columns="1" rendered="{!reAssign == NULL && techTab}">
+                                <apex:inputField value="{!RMA__c.Return_Category__c}" />
+                                <apex:inputField value="{!RMA__c.Return_Classes__c}" />
+                            </apex:pageBlockSection>
+
+                            <apex:pageBlockSection title="Failure Mode" columns="1"
+                                rendered="{!reAssign == NULL && techTab}" id="failuremodetable">
+                                <apex:pageBlockTable value="{!failureModeList}" var="fmode"
+                                    rendered="{!failureModeList.size != 0}">
+                                    <apex:column headerValue="Action" styleClass="actionColumn">
+                                        <apex:commandLink value="Edit"
+                                            action="{!editFailureModeLineItem}"
+                                            status="LoadingStatusSpinner"
+                                            reRender="failureModeError,addFailureModeSection">
+                                            <apex:param name="failureModeId" value="{!fmode.Id}"
+                                                assignTo="{!failureModeId}" />
+                                        </apex:commandLink>
+                                        <apex:outputLabel value=" | " />
+                                        <apex:commandLink value="Del"
+                                            action="{!deleteFailureModeLineItem}"
+                                            status="LoadingStatusSpinner"
+                                            reRender="failuremodetable,failureModeError">
+                                            <apex:param name="failureModeId" value="{!fmode.Id}"
+                                                assignTo="{!failureModeId}" />
+                                        </apex:commandLink>
+                                    </apex:column>
+                                    <apex:column value="{!fmode.Failure_Mode__c}" />
+                                    <apex:column value="{!fmode.Lot__c}" />
+                                </apex:pageBlockTable>
+                                <apex:commandButton value="Add" action="{!addFailureMode}"
+                                    reRender="addFailureModeSection,failuremodetable"
+                                    status="LoadingStatusSpinner"
+                                    rendered="{!NOT(showAddFailurModeSection)}" />
+                                <apex:pageMessages escape="false" id="failureModeError" rendered="{!showFailureModeError == true}"></apex:pageMessages>
+                            </apex:pageBlockSection>
+
+                            <apex:pageBlockSection title="Failure Mode" columns="1"
+                                rendered="{!reAssign == NULL && !techTab}">
+                                <apex:pageBlockTable value="{!failureModeList}" var="fmode"
+                                    rendered="{!failureModeList.size != 0}" style="width:50%;">
+                                    <apex:column value="{!fmode.Failure_Mode__c}" />
+                                    <apex:column value="{!fmode.Lot__c}" />
+                                </apex:pageBlockTable>
+                            </apex:pageBlockSection>
+
+                            <apex:outputPanel id="addFailureModeSection">
+                                <apex:pageBlockSection rendered="{!showAddFailurModeSection}">
+                                    <apex:pageBlockSectionItem helpText="Enter first few characters of the failure mode to search. click on Go. The results will be displayed in the adjacent picklist value of the 'Failure Mode' field.">
+                                        <apex:outputLabel value="Failure Mode Search" />
+                                        <apex:pageBlockSectionItem >
+                                            <apex:inputText value="{!searchTextForFailureMode}" />
+                                            <apex:commandButton value="Go" action="{!searchFailureMode}"
+                                                status="LoadingStatusSpinner"
+                                                reRender="addFailureModeSection,failureModeError" />
+                                        </apex:pageBlockSectionItem>
+                                    </apex:pageBlockSectionItem>
+                                    <apex:selectList value="{!rmaFailureCode.Failure_Mode__c}"
+                                        multiselect="false" size="1">
+                                        <apex:selectOptions value="{!failureModeSelectOption}" />
+                                    </apex:selectList>
+                                    <apex:pageBlockSectionItem >
+                                        Select Lot#
+                                        <c:MultiselectPicklist leftLabel="Available"
+                                            leftOption="{!leftOptionForFailureMode}" rightLabel="Chosen"
+                                            rightOption="{!rightOptionForFailureMode}" size="5"
+                                            width="100%" />
+                                    </apex:pageBlockSectionItem>
+                                </apex:pageBlockSection>
+                                <center>
+                                    <apex:commandButton value="Add/Update"
+                                        action="{!saveFailureMode}" status="LoadingStatusSpinner"
+                                        rendered="{!showAddFailurModeSection}"
+                                        reRender="failuremodetable,failureModeError,addFailureModeSection" />
+                                    <apex:commandButton value="Cancel"
+                                        status="LoadingStatusSpinner"
+                                        action="{!hideAddFailureModeSection}"
+                                        rendered="{!showAddFailurModeSection}"
+                                        reRender="addFailureModeSection,failureModeError,failuremodetable" />
+                                </center>
+                            </apex:outputPanel>
+
+                            <apex:pageBlockSection title="Return Lot Details"
+                                columns="1" rendered="{!reAssign == NULL}">
+                                <apex:pageBlockTable value="{!lstLineItemWrapper}" var="riWrapper">
+                                    <apex:column headerValue="Action" styleClass="actionColumn" rendered="{!techTab && RMA__c.Compensation_Type__c != 'Credit with charged replacement'}">
+                                        <apex:commandLink value="Edit" action="{!EditLineItemForFabValidation}" status="LoadingStatusSpinner" reRender="popupEditInfoForFabValidation">
+                                            <apex:param name="LineItemToEditForFab" value="{!riWrapper.RIrec.Id}" assignTo="{!LineItemToEditForFab}"/>
+                                        </apex:commandLink>                                
+                                    </apex:column>
+                                    <apex:column value="{!riWrapper.RIrec.Invoice_Number__c}" />
+                                    <apex:column value="{!riWrapper.RIrec.Lot_Number__c}" />
+                                    <apex:column value="{!riWrapper.RIrec.Wafer_Id_CSR_Submission__c}" 
+                                        rendered="{!RMA__c.RMA_By__c == 'Wafer' && (RMA__c.Fab__c != 'FAB 9' && RMA__c.Fab__c != 'FAB 10' && RMA__c.Fab__c != 'ALTIS')}"/>
+                                    <apex:column value="{!riWrapper.RIrec.Wafer_Id_Fab_9_10_CSR_Submission__c}" headerValue="Wafer Id (CSR Submission)"
+                                        rendered="{!RMA__c.RMA_By__c == 'Wafer' && (RMA__c.Fab__c == 'FAB 9' || RMA__c.Fab__c == 'FAB 10' || RMA__c.Fab__c == 'ALTIS')}"/>
+                                    <apex:column value="{!riWrapper.RIrec.Wafer_Id_Fab_Validated__c}" 
+                                        rendered="{!RMA__c.RMA_By__c == 'Wafer' && (RMA__c.Fab__c != 'FAB 9' && RMA__c.Fab__c != 'FAB 10' && RMA__c.Fab__c != 'ALTIS')}"/>
+                                    <apex:column value="{!riWrapper.RIrec.Wafer_Id_Fab_9_10_Fab_Validated__c}" headerValue="Wafer Id (Fab Validated)"
+                                        rendered="{!RMA__c.RMA_By__c == 'Wafer' && (RMA__c.Fab__c == 'FAB 9' || RMA__c.Fab__c == 'FAB 10' || RMA__c.Fab__c == 'ALTIS')}"/>
+                                    <apex:column value="{!riWrapper.RIrec.Wafer_Id_Fab_In_Validated__c}" 
+                                        rendered="{!RMA__c.RMA_By__c == 'Wafer' && (RMA__c.Fab__c != 'FAB 9' && RMA__c.Fab__c != 'FAB 10' && RMA__c.Fab__c != 'ALTIS')}"/>
+                                    <apex:column value="{!riWrapper.RIrec.Wafer_Id_Fab_9_10_Fab_Invalidated__c}" headerValue="Wafer Id (Fab Invalidated)"
+                                        rendered="{!RMA__c.RMA_By__c == 'Wafer' && (RMA__c.Fab__c == 'FAB 9' || RMA__c.Fab__c == 'FAB 10' || RMA__c.Fab__c == 'ALTIS')}"/>
+                                    <apex:column value="{!riWrapper.RIrec.Total_Wfr_Qty_after_validation__c}" rendered="{!RMA__c.RMA_By__c == 'Wafer'}"/>
+                                    
+                                    <apex:column value="{!riWrapper.RIrec.Die_Quantity__c}" rendered="{!RMA__c.RMA_By__c == 'Die'}"/>
+                                    <apex:column value="{!riWrapper.RIrec.Die_Quantity_Fab_Validated__c}" rendered="{!RMA__c.RMA_By__c == 'Die'}"/>
+                                    
+                                    <apex:column rendered="{!RMA__c.RMA_By__c == 'Module'}">
+                                        <apex:facet name="header">Module Quantity<br/>(CSR Submission)</apex:facet>
+                                        <apex:outputField value="{!riWrapper.RIrec.Module_Quantity__c}"/>                 
+                                    </apex:column>
+                                    <apex:column rendered="{!RMA__c.RMA_By__c == 'Module'}">
+                                        <apex:facet name="header">Module Quantity<br/>(Fab Validated)</apex:facet>
+                                        <apex:outputField value="{!riWrapper.RIrec.Module_Quantity_Fab_Validated__c}"/>                 
+                                    </apex:column>
+                                    
+                                    <apex:column rendered="{!SystemModeOn && RMA__c.ReasonCode__c != 'R81'}">
+                                        <!--<apex:facet name="header">Wafer/Die<br/>Unit Price</apex:facet>-->
+                                        <apex:facet name="header">Unit Selling<br/>Price</apex:facet>
+                                        <apex:outputText value="${0, number, ###,##0.00}">
+                                            <apex:param value="{!riWrapper.WaferDieAmt}"/>
+                                        </apex:outputText>                                                                             
+                                    </apex:column>
+                                    <apex:column rendered="{!SystemModeOn}">
+                                        <apex:facet name="header">{!IF(RMA__c.ReasonCode__c != 'R81','Adjusted Unit Price','Existing Form Factor Price')}</apex:facet>
+                                        <apex:outputText value="${0, number, ###,##0.00}">
+                                            <apex:param value="{!riWrapper.AdjustedAmt}"/>
+                                        </apex:outputText>                                                                             
+                                    </apex:column>
+                                    <apex:column rendered="{!SystemModeOn}">
+                                        <apex:facet name="header">Total Price<br/>(FAB Validation)</apex:facet>
+                                        <apex:outputText value="${0, number, ###,##0.00}">
+                                            <apex:param value="{!riWrapper.TotalTec}"/>
+                                        </apex:outputText>                                                                             
+                                    </apex:column>
+                                </apex:pageBlockTable>
+                            </apex:pageBlockSection>
+                            <apex:pageBlockSection title="" showHeader="false" columns="2">
+                                <apex:outputField value="{!RMA__c.Total_Wafers_FAB_Validation__c}"
+                                    rendered="{!RMA__c.Total_Wafers_FAB_Validation__c != 0}" />
+                                <apex:outputText value="${0, number, ###,##0.00}" label="Grand Total (FAB Validation)" 
+                                    rendered="{!RMA__c.Total_Wafers_FAB_Validation__c != 0 && SystemModeOn}">
+                                    <apex:param value="{!rmaWrap.grandTotalTec}"/>
+                                </apex:outputText>
+                            </apex:pageBlockSection>
+
+                            <apex:pageBlockSection title="Investigation/Integration"
+                                rendered="{!reAssign == NULL && techTab}">
+                                <apex:inputField value="{!RMA__c.Lot_Yield_Results__c}" styleClass="textAreaCss"/>
+                                <apex:inputField value="{!RMA__c.Is_this_RMA_related_to_the_MRB_eDR__c}" />
+                                <apex:inputField value="{!RMA__c.Is_this_RMA_related_to_the_PRF__c}" />
+                                <apex:inputField value="{!RMA__c.Is_this_RMA_related_to_the_SPSR_ERF__c}" />
+                            </apex:pageBlockSection>
+                            <apex:pageBlockSection title="Investigation/Integration"
+                                rendered="{!reAssign == NULL && !techTab}">
+                                <apex:outputField value="{!RMA__c.Lot_Yield_Results__c}" />
+                                <apex:outputField value="{!RMA__c.Is_this_RMA_related_to_the_MRB_eDR__c}" />
+                                <apex:outputField value="{!RMA__c.Is_this_RMA_related_to_the_PRF__c}" />
+                                <apex:outputField value="{!RMA__c.Is_this_RMA_related_to_the_SPSR_ERF__c}" />
+                            </apex:pageBlockSection>
+
+                        </apex:outputPanel>
+
+                    </apex:tab>
+
+                    <apex:tab label="{!IF(AND(isFab9or10,RMA__c.RMA_Category__c == 'Business',RMA__c.ReasonCode__c == 'R25'),'CSR Manager/Logistics Approval',IF(AND(isFab9or10,RMA__c.RMA_Category__c == 'Business',RMA__c.ReasonCode__c == 'R30'),'CSR Manager','Reg Personnel Recommendation'))}" name="Reg_Personnel_Recommendation" id="Reg_Personnel_Recommendation" rendered="{!regnTabActive}" >
+                        
+                        <apex:pageBlockSection title="{!IF(AND(isFab9or10,RMA__c.RMA_Category__c == 'Business',RMA__c.ReasonCode__c == 'R25'),'CSR Manager/Logistics Approval',IF(AND(isFab9or10,RMA__c.RMA_Category__c == 'Business',RMA__c.ReasonCode__c == 'R30'),'CSR Manager','Regional Sales / Biz Operation Personnel Decision'))}" columns="1">
+                            <apex:pageBlockTable value="{!lstLineItemWrapper}" var="riWrapper">
+                                <apex:column rendered="{!AND(regnTab,RMA__c.RMA_Category__c != 'Business',isApprover,RMA__c.Compensation_Type__c != 'Credit with charged replacement')}" headerValue="Action" styleClass="actionColumn">
+                                    <apex:commandLink value="Edit" action="{!EditLineItemForRegValidation}" status="LoadingStatusSpinner" reRender="popupEditInfoForRegValidation">
+                                        <apex:param name="LineItemToEditForReg" value="{!riWrapper.RIrec.Id}" assignTo="{!LineItemToEditForReg}"/>
+                                    </apex:commandLink>                                
+                                </apex:column>
+                                <apex:column value="{!riWrapper.RIrec.Invoice_Number__c}"/>
+                                <apex:column value="{!riWrapper.RIrec.Lot_Number__c}"/>
+                                <apex:column value="{!riWrapper.RIrec.Wafer_Id_CSR_Submission__c}" 
+                                    rendered="{!RMA__c.RMA_By__c == 'Wafer' && (RMA__c.Fab__c != 'FAB 9' && RMA__c.Fab__c != 'FAB 10' && RMA__c.Fab__c != 'ALTIS')}"/>
+                                <apex:column value="{!riWrapper.RIrec.Wafer_Id_Fab_9_10_CSR_Submission__c}" headerValue="Wafer Id (CSR Submission)"
+                                    rendered="{!RMA__c.RMA_By__c == 'Wafer' && (RMA__c.Fab__c == 'FAB 9' || RMA__c.Fab__c == 'FAB 10' || RMA__c.Fab__c == 'ALTIS')}"/>
+                                <apex:column value="{!riWrapper.RIrec.Wafer_Id_Fab_Validated__c}" 
+                                    rendered="{!RMA__c.RMA_By__c == 'Wafer' && (RMA__c.Fab__c != 'FAB 9' && RMA__c.Fab__c != 'FAB 10' && RMA__c.Fab__c != 'ALTIS')}"/>
+                                <apex:column value="{!riWrapper.RIrec.Wafer_Id_Fab_9_10_Fab_Validated__c}" headerValue="Wafer Id (Fab Validated)"
+                                    rendered="{!RMA__c.RMA_By__c == 'Wafer' && (RMA__c.Fab__c == 'FAB 9' || RMA__c.Fab__c == 'FAB 10' || RMA__c.Fab__c == 'ALTIS')}"/>
+                                <apex:column value="{!riWrapper.RIrec.Wafer_Id_Fab_In_Validated__c}" 
+                                    rendered="{!RMA__c.RMA_By__c == 'Wafer' && (RMA__c.Fab__c != 'FAB 9' && RMA__c.Fab__c != 'FAB 10' && RMA__c.Fab__c != 'ALTIS')}"/>
+                                <apex:column value="{!riWrapper.RIrec.Wafer_Id_Fab_9_10_Fab_Invalidated__c}" headerValue="Wafer Id (Fab Invalidated)"
+                                    rendered="{!RMA__c.RMA_By__c == 'Wafer' && (RMA__c.Fab__c == 'FAB 9' || RMA__c.Fab__c == 'FAB 10' || RMA__c.Fab__c == 'ALTIS')}"/>
+                                <apex:column value="{!riWrapper.RIrec.Wafer_Id_Regional_Personnel_Recommended__c}" 
+                                    rendered="{!RMA__c.RMA_By__c == 'Wafer' && (RMA__c.Fab__c != 'FAB 9' && RMA__c.Fab__c != 'FAB 10' && RMA__c.Fab__c != 'ALTIS')}"/>
+                                <apex:column value="{!riWrapper.RIrec.Wafer_Id_Fab_9_10_Regional_Validated__c}" headerValue="{!IF(AND(isFab9or10,RMA__c.RMA_Category__c == 'Business',RMA__c.ReasonCode__c == 'R25'),'Wafer Id (Logistics/CSR Manager Validated)',IF(AND(isFab9or10,RMA__c.RMA_Category__c == 'Business',RMA__c.ReasonCode__c == 'R30'),'Wafer Id (CSR Manager Validated)','Wafer Id (Regional Validated)'))}"
+                                    rendered="{!RMA__c.RMA_By__c == 'Wafer' && (RMA__c.Fab__c == 'FAB 9' || RMA__c.Fab__c == 'FAB 10' || RMA__c.Fab__c == 'ALTIS')}"/>
+                                <apex:column value="{!riWrapper.RIrec.Wafer_Id_Regional_Personnel_Not_Rec__c}" 
+                                    rendered="{!RMA__c.RMA_By__c == 'Wafer' && (RMA__c.Fab__c != 'FAB 9' && RMA__c.Fab__c != 'FAB 10' && RMA__c.Fab__c != 'ALTIS')}"/>
+                                <apex:column value="{!riWrapper.RIrec.Wafer_Id_Fab_9_10_Regional_Invalidated__c}" headerValue="{!IF(AND(isFab9or10,RMA__c.RMA_Category__c == 'Business',RMA__c.ReasonCode__c == 'R25'),'Wafer Id (Logistics/CSR Manager Invalidated)',IF(AND(isFab9or10,RMA__c.RMA_Category__c == 'Business',RMA__c.ReasonCode__c == 'R30'),'Wafer Id (CSR Manager Invalidated)','Wafer Id (Regional Invalidated)'))}"
+                                    rendered="{!RMA__c.RMA_By__c == 'Wafer' && (RMA__c.Fab__c == 'FAB 9' || RMA__c.Fab__c == 'FAB 10' || RMA__c.Fab__c == 'ALTIS')}"/>
+                                <apex:column rendered="{!RMA__c.RMA_By__c == 'Wafer'}">
+                                    <apex:facet name="header">Quantity<br/>(To Issue CN/SO)</apex:facet>
+                                    <apex:outputText value="{!riWrapper.RIrec.Final_RMA_Wfr_Qty_To_Issue_CN_SO__c}"/>
+                                </apex:column>
+                                
+                                <apex:column value="{!riWrapper.RIrec.Die_Quantity__c}" rendered="{!RMA__c.RMA_By__c == 'Die'}"/>
+                                <apex:column value="{!riWrapper.RIrec.Die_Quantity_Fab_Validated__c}" rendered="{!RMA__c.RMA_By__c == 'Die'}"/>
+                                <apex:column value="{!riWrapper.RIrec.Die_Quantity_Regional_Validated__c}" rendered="{!RMA__c.RMA_By__c == 'Die'}"/>
+                                
+                                <apex:column value="{!riWrapper.RIrec.Module_Quantity__c}" rendered="{!RMA__c.RMA_By__c == 'Module'}"/>
+                                <apex:column value="{!riWrapper.RIrec.Module_Quantity_Fab_Validated__c}" rendered="{!RMA__c.RMA_By__c == 'Module'}"/>
+                                <apex:column value="{!riWrapper.RIrec.Module_Quantity_Regional_Validated__c}" rendered="{!RMA__c.RMA_By__c == 'Module'}"/>
+                                
+                                <apex:column rendered="{!SystemModeOn && RMA__c.ReasonCode__c != 'R81'}">
+                                    <apex:facet name="header">Unit Selling<br/>Price</apex:facet>
+                                    <apex:outputText value="${0, number, ###,##0.00}">
+                                        <apex:param value="{!riWrapper.WaferDieAmt}"/>
+                                    </apex:outputText>                                                                             
+                                </apex:column>
+                                <apex:column rendered="{!SystemModeOn}">
+                                    <apex:facet name="header">{!IF(RMA__c.ReasonCode__c != 'R81','Adjusted Unit Price','Existing Form Factor Price')}</apex:facet>
+                                    <apex:outputText value="${0, number, ###,##0.00}">
+                                        <apex:param value="{!riWrapper.AdjustedAmt}"/>
+                                    </apex:outputText>                                                                             
+                                </apex:column>
+                                <apex:column rendered="{!SystemModeOn}">
+                                    <apex:facet name="header">Total Price<br/>(Final)</apex:facet>
+                                    <apex:outputText value="${0, number, ###,##0.00}">
+                                        <apex:param value="{!riWrapper.TotalReg}"/>
+                                    </apex:outputText>                                                                             
+                                </apex:column>
+                            </apex:pageBlockTable>
+                        </apex:pageBlockSection>                        
+                        <apex:pageBlockSection title="" showHeader="false" columns="2">
+                            <apex:outputField value="{!RMA__c.Total_Wafers_Final__c}" rendered="{!RMA__c.Total_Wafers_Final__c!= 0}"/>
+                            <apex:outputText value="${0, number, ###,##0.00}" label="Grand Total (Final)" 
+                                    rendered="{!RMA__c.Total_Wafers_Final__c != 0 && SystemModeOn}">
+                                    <apex:param value="{!rmaWrap.grandTotalReg}"/>
+                                </apex:outputText>
+                        </apex:pageBlockSection>
+                        <apex:pageBlockSection title="Recommendation Status" columns="2">
+                            <apex:outputField value="{!RMA__c.Remarks_Regional_Recommendation__c}" rendered="{!OR(NOT(regnTab),AND(regnTab,NOT(isApprover)))}" />
+                            <apex:inputField value="{!RMA__c.Remarks_Regional_Recommendation__c}" rendered="{!AND(regnTab,isApprover)}" styleClass="textAreaCss"/>
+                            <apex:pageBlockSectionItem ></apex:pageBlockSectionItem>
+                            <apex:outputField value="{!RMA__c.Approved_By_Regional_Recommendation__c}" />
+                            <apex:outputField value="{!RMA__c.Approved_On_Regional_Recommendation__c}" />
+                        </apex:pageBlockSection>
+                    
+                    </apex:tab>
+                    
+                    <apex:tab label="Finance Section" name="Finance_Section" id="Finance_Section" rendered="{!fincTabActive}">
+                        
+                        <apex:pageBlockSection title="Finance Approval Section" columns="1">
+                            <apex:outputField value="{!RMA__c.Remarks_Finance_Approval__c}" rendered="{!OR(NOT(fincTab),AND(fincTab,NOT(isApprover)))}"/>
+                            <apex:inputField value="{!RMA__c.Remarks_Finance_Approval__c}" styleClass="textAreaCss" rendered="{!AND(fincTab,isApprover)}"/>
+                            <apex:outputField value="{!RMA__c.Sales_Order_Number__c}" rendered="{!AND(NOT(fincTab),isFab9or10,RMA__c.Workflow_Stage__c == 'Pending for SO Issue')}"/>
+                            <apex:inputField value="{!RMA__c.Sales_Order_Number__c}" rendered="{!AND(fincTab,isCSR,isFab9or10,RMA__c.Workflow_Stage__c == 'Pending for SO Issue')}"/>
+                            <apex:outputField value="{!RMA__c.CN_DN_Number__c}" rendered="{!AND(NOT(fincTab),isFab9or10,RMA__c.Workflow_Stage__c == 'Pending for CN Issue')}"/>
+                            <apex:inputField value="{!RMA__c.CN_DN_Number__c}" rendered="{!AND(fincTab,isCSR,isFab9or10,RMA__c.Workflow_Stage__c == 'Pending for CN Issue')}"/>
+                        </apex:pageBlockSection>
+                    
+                    </apex:tab>
+                    
+                    <apex:tab label="Audit log" id="audit_log" name="audit_log" rendered="{!RMA__c.Id != NULL}">
+                        <apex:pageBlockSection title="Cycle Time" columns="1">
+                            <apex:outputPanel >
+                                <table class="list" border="0" cellpadding="0" cellspacing="0">
+                                    <tr class="headerRow ">
+                                       <th class="headerRow ">Queue Name</th>
+                                       <th class="headerRow ">Queue In time</th>
+                                       <th class="headerRow ">Queue Out time</th>
+                                       <th class="headerRow">Desired Cycle time</th>
+                                       <th class="headerRow">Consumed Cycle time</th>
+                                    </tr>
+                                    <tr class="dataRow">
+                                       <td class="dataCell">CSR Submission</td>
+                                       <apex:repeat value="{!$Objecttype.RMA__c.Fieldsets.RMA_CSR_Submission_Cycle_time}" var="csrField">
+                                           <td class="dataCell">
+                                               <apex:outputText value="{!RMA__c[csrField]}" rendered="{!csrField.Type != 'datetime'}"/>
+                                               <c:RMA_UserLocaleDateTimeFormatter date_Timevalue="{!RMA__c[csrField]}" rendered="{!csrField.Type == 'datetime'}"/>
+                                           </td>
+                                       </apex:repeat>
+                                   </tr>
+                                   <!-- <apex:variable var="v" value="" rendered="{!isFab9or10}">
+                                   <tr class="dataRow">
+                                        <td class="dataCell">Customer Quality Validation</td>
+                                        <apex:repeat value="{!$Objecttype.RMA__c.Fieldsets.RMA_CQ_Validation_Cycle_Time}" var="fabField">
+                                           <td class="dataCell">
+                                               <apex:outputText value="{!RMA__c[fabField]}" rendered="{!fabField.Type != 'datetime'}"/>
+                                               <c:RMA_UserLocaleDateTimeFormatter date_Timevalue="{!RMA__c[fabField]}" rendered="{!fabField.Type == 'datetime'}"/>
+                                           </td>
+                                       </apex:repeat>
+                                   </tr>
+                                   </apex:variable> -->
+                                   <tr class="dataRow">
+                                        <td class="dataCell">Quality Validation</td>
+                                        <apex:repeat value="{!$Objecttype.RMA__c.Fieldsets.RMA_CQ_Validation_Cycle_Time}" var="fabField">
+                                           <td class="dataCell">
+                                               <apex:outputText value="{!RMA__c[fabField]}" rendered="{!fabField.Type != 'datetime'}"/>
+                                               <c:RMA_UserLocaleDateTimeFormatter date_Timevalue="{!RMA__c[fabField]}" rendered="{!fabField.Type == 'datetime'}"/>
+                                           </td>
+                                       </apex:repeat>
+                                   </tr>
+                                   <tr class="dataRow{!IF(RMA__c.Extension_Status__c == 'Approved',' highlightRow',null)}">
+                                       <td class="dataCell">
+                                           <apex:outputText value="{!IF(RMA__c.Is_SMPLSI__c, 'PE Manager', 'Fab Validation' )}" rendered="{! NOT(RMA__c.Extension_Status__c == 'Approved')}"/>
+                                           <apex:outputText value="PE Manager (Extended by {!RMA__c.Number_of_Days__c} days)" rendered="{!RMA__c.Is_SMPLSI__c && RMA__c.Extension_Status__c == 'Approved'}"/>
+                                           <apex:outputText value="Fab Validation (Extended by {!RMA__c.Number_of_Days__c} days)" rendered="{!Not(RMA__c.Is_SMPLSI__c) && RMA__c.Extension_Status__c == 'Approved'}"/>
+                                       </td>
+                                       <apex:repeat value="{!$Objecttype.RMA__c.Fieldsets.RMA_Fab_Validation_Cycle_time}" var="fabField">
+                                           <td class="dataCell">
+                                               <apex:outputText value="{!RMA__c[fabField]}" rendered="{!fabField.Type != 'datetime'}"/>
+                                               <c:RMA_UserLocaleDateTimeFormatter date_Timevalue="{!RMA__c[fabField]}" rendered="{!fabField.Type == 'datetime'}"/>
+                                           </td>
+                                       </apex:repeat>
+                                   </tr>
+                                   <tr class="dataRow">
+                                       <!-- <td class="dataCell">Regional Approval</td> -->
+                                       <td class="dataCell">{!IF(AND(isFab9or10,RMA__c.RMA_Category__c == 'Business',RMA__c.ReasonCode__c == 'R25'),
+                                                            'CSR Manager/Logistics Approval',IF(AND(isFab9or10,RMA__c.RMA_Category__c == 'Business',
+                                                            RMA__c.ReasonCode__c == 'R30'),'CSR Manager Approval','Regional Approval'))}</td>
+                                       <apex:repeat value="{!$Objecttype.RMA__c.Fieldsets.RMA_Regional_Approval_Cycle_Time}" var="regionalField">
+                                           <td class="dataCell">
+                                               <apex:outputText value="{!RMA__c[regionalField]}" rendered="{!regionalField.Type != 'datetime'}"/>
+                                               <c:RMA_UserLocaleDateTimeFormatter date_Timevalue="{!RMA__c[regionalField]}" rendered="{!regionalField.Type == 'datetime'}"/>
+                                           </td>
+                                       </apex:repeat>
+                                   </tr>
+                                   <tr class="dataRow">
+                                       <td class="dataCell">Finance Approval</td>
+                                       <apex:repeat value="{!$Objecttype.RMA__c.Fieldsets.RMA_Finance_Approval_Cycle_Time}" var="financeField">
+                                           <td class="dataCell">
+                                               <apex:outputText value="{!RMA__c[financeField]}" rendered="{!financeField.Type != 'datetime'}"/>
+                                               <c:RMA_UserLocaleDateTimeFormatter date_Timevalue="{!RMA__c[financeField]}" rendered="{!financeField.Type == 'datetime'}"/>
+                                           </td>
+                                       </apex:repeat>
+                                   </tr>
+                                   <tr class="dataRow">
+                                       <td class="dataCell">Wafer Acknowledgement</td>
+                                       <apex:repeat value="{!$Objecttype.RMA__c.Fieldsets.RMA_Wafer_Acknowledgement_Cycle_Time}" var="waferAckField">
+                                           <td class="dataCell">
+                                               <apex:outputText value="{!RMA__c[waferAckField]}" rendered="{!waferAckField.Type != 'datetime'}"/>
+                                               <c:RMA_UserLocaleDateTimeFormatter date_Timevalue="{!RMA__c[waferAckField]}" rendered="{!waferAckField.Type == 'datetime'}"/>
+                                           </td>
+                                       </apex:repeat>
+                                   </tr>
+                                </table>
+                            </apex:outputPanel>
+                            <apex:outputPanel rendered="{!showCycleTimeHistoryLink}">
+                                <a Class="actionLink" href="javascript:window.open('{!$Page.RMA_CycleTimeHistory}?id={!RMA__c.id}','_self');">Click here for Cycle time history</a>
+                            </apex:outputPanel>
+                        </apex:pageBlockSection>
+                        <apex:pageBlockSection title="Mail log" id="MaillogSec" columns="1">
+                            <apex:outputPanel rendered="{!maillogList.size > 0}" style="margin-left:93%"> 
+                                 <apex:actionRegion >
+                                      <apex:commandLink styleClass="contentActionLink" action="{!getReportUrl}" rerender="dummy">
+                                        <apex:param name="maillogReport" value="RMA_with_Mail_logs" assignTo="{!reportDevName}"/>
+                                        <apex:image value="/img/s.gif" style="height:14px;" styleclass="downloadItemIcon"/>
+                                        <span style="font-size:1.1em;">Download Maillog</span>
+                                      </apex:commandLink>
+                                 </apex:actionRegion>
+                            </apex:outputPanel>
+                            <apex:pageBlockTable style="table-layout: fixed;" value="{!maillogList}" var="maillog" columnsWidth="6%,17%,17%,25%,25%,10%">
+                                <apex:column headerValue="" styleClass="actionColumn">
+                                    <a href="#" class="actionLink" onclick="openVFinNewWindow('{!$Page.RMA_Mail_Log_Resend}','{!mailLog.id}');">{!IF(isCSR, 'View / Resend', 'View')}</a>
+                                </apex:column> 
+                                <apex:column style="word-wrap:break-word;" headerValue="Subject" value="{!mailLog.Subject__c}"/>
+                                <apex:column style="word-wrap:break-word;" headerValue="Send By" value="{!maillog.From__c}"/>
+                                <apex:column style="word-wrap:break-word;" headerValue="Send To"  value="{!maillog.To__c}"/>
+                                <apex:column style="word-wrap:break-word;" headerValue="CC"  value="{!maillog.Cc__c}"/>
+                                <apex:column headerValue="Sent Date" value="{!maillog.createdDate}"/>
+                            </apex:pageBlockTable>
+                            <apex:panelGrid columns="5"  style="margin:auto;" rendered="{!maillogList.size > 0}">
+                                    <apex:commandButton status="LoadingStatusSpinner" reRender="MaillogSec" value="First" action="{!mailLogSetCon.first}" disabled="{!!mailLogSetCon.hasPrevious}" title="First Page"/> 
+                                    <apex:commandButton status="LoadingStatusSpinner" reRender="MaillogSec" value="Previous" action="{!mailLogSetCon.previous}" disabled="{!!mailLogSetCon.hasPrevious}" title="Previous Page"/> 
+                                    <apex:outputText value="{!mailLogSetCon.PageNumber} of {!CEILING(mailLogSetCon.resultSize/mailLogSetCon.pageSize)}"/>
+                                    <apex:commandButton status="LoadingStatusSpinner" reRender="MaillogSec" value="Next" action="{!mailLogSetCon.next}" disabled="{!!mailLogSetCon.hasNext}" title="Next Page"/> 
+                                    <apex:commandButton status="LoadingStatusSpinner" reRender="MaillogSec" value="Last" action="{!mailLogSetCon.last}" disabled="{!!mailLogSetCon.hasNext}" title="Last Page"/> 
+                            </apex:panelGrid>
+                            <apex:outputPanel id="maillogdisplaytxt">
+                                <apex:outputText value="There are no mail logs to display" rendered="{!maillogList.size == 0}"/>
+                            </apex:outputPanel>
+                        </apex:pageBlockSection>
+                        <apex:pageBlockSection title="RMA History" columns="1">
+                            <c:RMA_HistoryComponent Object="{!RMA__c}" rendered="{!RMA__c.Id != NULL}"/>
+                        </apex:pageBlockSection>
+                    </apex:tab>
+                    <apex:tab label="Vendor Code" id="vendor_code" name="vendor_code" rendered="{!RMA__c.Fab__c == 'FAB 7'}">
+                        <apex:pageBlockSection title="Vendor Code">
+                            <apex:pageblockTable value="{!vendorCodes}" var="vendorCode">
+                                <apex:column headerValue="{!$Objecttype.RMA_Vendor_Code__c.fields['lot_id__c'].label}" value="{!vendorCode.Lot_Id__c}"/>
+                                <apex:column headerValue="{!$Objecttype.RMA_Vendor_Code__c.fields['wafer_id__c'].label}" value="{!vendorCode.Wafer_Id__c}"/>
+                                <apex:column headerValue="Vendor Code" value="{!vendorCode.name}"/> 
+                            </apex:pageblockTable>
+                        </apex:pageBlockSection>
+                    </apex:tab>
+                    
+               </apex:tabPanel> 
+               
+            </apex:pageBlockSection>
+            
+        </apex:pageBlock>
+        
+        <apex:outputPanel id="popupEditInfo">
+            <apex:pageBlock rendered="{!showPopUp}">
+                <apex:outputPanel styleClass="popupBackground" layout="block" style="position:fixed;"/>
+                <apex:outputPanel styleClass="custPopup" layout="block" style="top:10%;position:fixed;">
+                    <apex:pageMessages id="pageMsgpopupEditInfo" escape="false"/>
+                    <apex:pageBlockSection title="Edit the Line Item Selection" columns="1">
+                        <apex:pageBlockSectionItem rendered="{!RMA__c.RMA_By__c != 'Module' && (RMA__c.RMA_By__c != 'Die' || itemType == 'SD')}">
+                            Select Wafers (New Selection)
+                            <c:MultiselectPicklist leftLabel="Available" 
+                            leftOption="{!leftOptions}"
+                            rightLabel="Chosen"
+                            rightOption="{!rightOptions}"
+                            size="20"
+                            width="100%"/>
+                        </apex:pageBlockSectionItem>
+                    </apex:pageblockSection>
+                    <apex:pageBlockSection >
+                        <apex:inputText value="{!waferYield}" label="Wafer Yield"/>
+                        <apex:inputText value="{!adjustedPrice}" label="{!IF(RMA__c.ReasonCode__c != 'R81','Adjusted Unit Price','Existing Form Factor Price')}"/>
+                        <apex:inputText value="{!scrapLimit}" label="Scrap Limit"/>
+                        <apex:inputText value="{!DieQuantity}" label="Die Quantity" rendered="{!RMA__c.RMA_By__c == 'Die'}"/>
+                        <apex:inputText value="{!formFactorQuantity}" label="Existing Form Factor Quantity" rendered="{!RMA__c.ReasonCode__c == 'R81'}"/>
+                        <apex:inputText value="{!modQuantity}" label="Module Quantity" rendered="{!RMA__c.RMA_By__c == 'Module'}"/>
+                        <apex:selectList value="{!formFactor}" multiselect="false" size="1" label="Existing Form Factor" rendered="{!RMA__c.ReasonCode__c == 'R81'}">
+                            <apex:selectOption itemValue="" itemLabel="--None--"/>
+                            <apex:selectOption itemValue="Die" itemLabel="Die"/>
+                            <apex:selectOption itemValue="Die on Wafer" itemLabel="Die on Wafer"/>
+                            <apex:selectOption itemValue="Module" itemLabel="Module"/>
+                            <apex:selectOption itemValue="Module on Card" itemLabel="Module on Card"/>
+                            <apex:selectOption itemValue="Wafer" itemLabel="Wafer"/>
+                            <apex:selectOption itemValue="Wafer Carcass" itemLabel="Wafer Carcass"/>
+                        </apex:selectList>
+                    </apex:pageBlockSection>
+                    <center>
+                        <apex:commandButton value="Update" 
+                                            action="{!UpdateLineItem}"
+                                            rerender="popupEditInfo,pageBlockId" 
+                                            status="LoadingStatusSpinner"/>
+                                            
+                        <apex:commandButton value="Cancel" 
+                                            action="{!CancelPopup}"
+                                            rerender="popupEditInfo,pageBlockId" 
+                                            status="LoadingStatusSpinner"/> 
+                    </center>
+                </apex:outputPanel>
+            </apex:pageBlock>
+        </apex:outputPanel>
+        
+        <apex:outputPanel id="popupEditInfoForFabValidation">
+            <apex:pageBlock rendered="{!showPopUpForFab}">
+                <apex:outputPanel styleClass="popupBackground" layout="block" style="position:fixed;"/>
+                <apex:outputPanel styleClass="custPopup" layout="block" style="top:25%;position:fixed;">
+                    <apex:pageMessages id="pageMsgpopupEditInfoFab"/>
+                    <apex:pageBlockSection title="Edit the Line Item Selection" columns="1">
+                        <apex:pageBlockSectionItem rendered="{!RMA__c.RMA_By__c == 'Wafer'}">
+
+                            Select Wafers (Fab Validated)
+                            <c:MultiselectPicklist leftLabel="Validated" 
+                            leftOption="{!leftFabValidatedOptions}"
+
+                            rightLabel="Invalidated"
+                            rightOption="{!righFabValidatedtOptions}"
+                            size="10"
+                            width="100%"/>
+                        </apex:pageBlockSectionItem>
+                        <apex:inputText value="{!DieQuantity}" label="Die Quantity" rendered="{!RMA__c.RMA_By__c == 'Die'}"/>
+                        <apex:inputText value="{!modQuantity}" label="Module Quantity" rendered="{!RMA__c.RMA_By__c == 'Module'}"/>
+                    </apex:pageblockSection>
+                    <center>
+                        <apex:commandButton value="Update" 
+                                            action="{!UpdateLineItemForFabValidation}"
+                                            rerender="popupEditInfoForFabValidation,pageBlockId" 
+                                            status="LoadingStatusSpinner"/>
+                                            
+                        <apex:commandButton value="Cancel" 
+                                            action="{!CancelPopupForFab}"
+                                            rerender="popupEditInfoForFabValidation,pageBlockId" 
+                                            status="LoadingStatusSpinner"/> 
+                    </center>
+                </apex:outputPanel>
+            </apex:pageBlock>
+        </apex:outputPanel>
+        
+        <apex:outputPanel id="popupEditInfoForRegValidation">
+            <apex:pageBlock rendered="{!showPopUpForReg}">
+                <apex:outputPanel styleClass="popupBackground" layout="block" style="position:fixed;"/>
+                <apex:outputPanel styleClass="custPopup" layout="block" style="top:25%;position:fixed;">
+                    <apex:pageMessages id="pageMsgpopupEditInfoReg"/>
+                    <apex:pageBlockSection title="Edit the Line Item Selection" columns="1">
+                        <apex:pageBlockSectionItem rendered="{!RMA__c.RMA_By__c == 'Wafer'}">
+                            Select Wafers (Not Recommended)
+                            <c:MultiselectPicklist leftLabel="Recommended" 
+                            leftOption="{!leftRegValidatedOptions}"
+                            rightLabel="Not Recommended"
+                            rightOption="{!rightRegValidatedOptions}"
+                            size="10"
+                            width="100%"/>
+                        </apex:pageBlockSectionItem>
+                        <apex:inputText value="{!DieQuantity}" label="Die Quantity" rendered="{!RMA__c.RMA_By__c == 'Die'}"/>
+                        <apex:inputText value="{!ModQuantity}" label="Module Quantity" rendered="{!RMA__c.RMA_By__c == 'Module'}"/>
+                    </apex:pageblockSection>
+                    
+                    <center>
+                        <apex:commandButton value="Update" 
+                                            action="{!UpdateLineItemForRegValidation}"
+                                            rerender="popupEditInfoForRegValidation,pageBlockId" 
+                                            status="LoadingStatusSpinner"/>
+                                            
+                        <apex:commandButton value="Cancel" 
+                                            action="{!CancelPopupForReg}"
+                                            rerender="popupEditInfoForRegValidation,pageBlockId" 
+                                            status="LoadingStatusSpinner"/> 
+                    </center>
+                </apex:outputPanel>
+            </apex:pageBlock>
+        </apex:outputPanel>
+
+        <apex:outputPanel id="popupScrapReceiver">
+            <apex:pageBlock rendered="{!showScrapReceiver}">
+                <apex:outputPanel styleClass="popupBackground" layout="block" style="position:fixed;"/>
+                <apex:outputPanel styleClass="custUserPopup" layout="block" style="top:45%;position:fixed;">
+                    <apex:pageBlockSection title="Receiver Name (if 'Scrap at Customer site'):" columns="1">
+                        <apex:panelGrid columns="3" style="margin-left:155px;">
+                            <apex:panelGroup >
+                                <apex:outputLabel value="Search" for="usertextforScrapDOW"
+                                    styleClass="labelCol vfLabelColTextWrap" />
+                                <apex:inputText value="{!searchScrapUser}"
+                                    id="usertextforScrapDOW" />
+                            </apex:panelGroup>
+                            <apex:commandButton value="Search" action="{!SearchScrapUser}" reRender="scrapuserselection" status="LoadingStatusSpinner"/>
+                        </apex:panelGrid>
+                        <apex:panelGrid columns="3" id="scrapuserselection">
+                            <apex:selectList id="scrapleftuserlist" value="{!leftSelectedUsersForScrap}"
+                                multiselect="true" style="width:200px" size="10">
+                                <apex:selectOptions value="{!unselectedScrapUserValues}" />
+                            </apex:selectList>
+                            <apex:panelGroup >
+                                <br />
+                                <apex:image value="/s.gif" alt="Add" styleClass="rightArrowIcon"
+                                    title="Add">
+                                    <apex:actionSupport event="onclick" action="{!selectScrapUserClick}"
+                                        reRender="scrapuserselection" status="LoadingStatusSpinner"/>
+                                </apex:image>
+                                <br />
+                                <br />
+                                <apex:image value="/s.gif" alt="Remove"
+                                    styleClass="leftArrowIcon" title="Remove">
+                                    <apex:actionSupport event="onclick" status="LoadingStatusSpinner"
+                                        action="{!unselectScrapUserClick}" reRender="scrapuserselection" />
+                                </apex:image>
+                            </apex:panelGroup>
+                            <apex:selectList id="rightuserlist" value="{!rightSelectedUsersForScrap}"
+                                multiselect="true" style="width:200px" size="10">
+                                <apex:selectOptions value="{!SelectedScrapUserValues}" />
+                            </apex:selectList>
+                        </apex:panelGrid>
+                    </apex:pageBlockSection>
+                    <center>
+                        <apex:commandButton value="Add/Update" action="{!addScrapUsersToField}" reRender="popupScrapReceiver,pageBlockId" status="LoadingStatusSpinner" />
+                        <apex:commandButton value="Cancel" action="{!cancelScrapPopUp}" reRender="popupScrapReceiver,pageBlockId" status="LoadingStatusSpinner" />
+                    </center>
+                </apex:outputPanel>
+            </apex:pageBlock>
+        </apex:outputPanel>
+        
+        <apex:outputPanel id="popupWaferReceiver">
+            <apex:pageBlock rendered="{!showWaferReceiver}">
+                <apex:outputPanel styleClass="popupBackground" layout="block" style="position:fixed;"/>
+                <apex:outputPanel styleClass="custUserPopup" layout="block" style="top:45%;position:fixed;">
+                    <apex:pageBlockSection title="Receiver Name (If 'Return to GF- Spore/Dresden/Malta'):" columns="1">
+                        <apex:panelGrid columns="3" style="margin-left:155px;">
+                            <apex:panelGroup >
+                                <apex:outputLabel value="Search" for="usertextforWaferDOW"
+                                    styleClass="labelCol vfLabelColTextWrap" />
+                                <apex:inputText value="{!searchWaferUser}"
+                                    id="usertextforWaferDOW" />
+                            </apex:panelGroup>
+                            <apex:commandButton value="Search" action="{!SearchWaferUser}" reRender="Waferuserselection" status="LoadingStatusSpinner"/>
+                        </apex:panelGrid>
+                        <apex:panelGrid columns="3" id="Waferuserselection">
+                            <apex:selectList id="Waferleftuserlist" value="{!leftSelectedUsersForWafer}"
+                                multiselect="true" style="width:200px" size="10">
+                                <apex:selectOptions value="{!unselectedWaferUserValues}" />
+                            </apex:selectList>
+                            <apex:panelGroup >
+                                <br />
+                                <apex:image value="/s.gif" alt="Add" styleClass="rightArrowIcon"
+                                    title="Add">
+                                    <apex:actionSupport event="onclick" action="{!selectWaferUserClick}"
+                                        reRender="Waferuserselection" status="LoadingStatusSpinner"/>
+                                </apex:image>
+                                <br />
+                                <br />
+                                <apex:image value="/s.gif" alt="Remove"
+                                    styleClass="leftArrowIcon" title="Remove">
+                                    <apex:actionSupport event="onclick" status="LoadingStatusSpinner"
+                                        action="{!unselectWaferUserClick}" reRender="Waferuserselection" />
+                                </apex:image>
+                            </apex:panelGroup>
+                            <apex:selectList id="rightuserlist" value="{!rightSelectedUsersForWafer}"
+                                multiselect="true" style="width:200px" size="10">
+                                <apex:selectOptions value="{!SelectedWaferUserValues}" />
+                            </apex:selectList>
+                        </apex:panelGrid>
+                    </apex:pageBlockSection>
+                    <center>
+                        <apex:commandButton value="Add/Update" action="{!addWaferUsersToField}" reRender="popupWaferReceiver,pageBlockId" status="LoadingStatusSpinner" />
+                        <apex:commandButton value="Cancel" action="{!cancelWaferPopUp}" reRender="popupWaferReceiver,pageBlockId" status="LoadingStatusSpinner" />
+                    </center>
+                </apex:outputPanel>
+            </apex:pageBlock>
+        </apex:outputPanel>
+        
+        <apex:outputPanel id="popupNotifyReceiver">
+            <apex:pageBlock rendered="{!showNotifyReceiver}">
+                <apex:outputPanel styleClass="popupBackground" layout="block" style="position:fixed;"/>
+                <apex:outputPanel styleClass="custUserPopup" layout="block" style="top:45%;position:fixed;">
+                    <apex:pageBlockSection title="Receiver Name (If 'Return to GF- Spore/Dresden/Malta'):" columns="1">
+                        <apex:panelGrid columns="3" style="margin-left:155px;">
+                            <apex:panelGroup >
+                                <apex:outputLabel value="Search" for="usertextforNotifyDOW"
+                                    styleClass="labelCol vfLabelColTextWrap" />
+                                <apex:inputText value="{!searchNotifyUser}"
+                                    id="usertextforNotifyDOW" />
+                            </apex:panelGroup>
+                            <apex:commandButton value="Search" action="{!SearchNotifyUser}" reRender="Notifyuserselection" status="LoadingStatusSpinner"/>
+                        </apex:panelGrid>
+                        <apex:panelGrid columns="3" id="Notifyuserselection">
+                            <apex:selectList id="Notifyleftuserlist" value="{!leftSelectedUsersForNotify}"
+                                multiselect="true" style="width:200px" size="10">
+                                <apex:selectOptions value="{!unselectedNotifyUserValues}" />
+                            </apex:selectList>
+                            <apex:panelGroup >
+                                <br />
+                                <apex:image value="/s.gif" alt="Add" styleClass="rightArrowIcon"
+                                    title="Add">
+                                    <apex:actionSupport event="onclick" action="{!selectNotifyUserClick}"
+                                        reRender="Notifyuserselection" status="LoadingStatusSpinner"/>
+                                </apex:image>
+                                <br />
+                                <br />
+                                <apex:image value="/s.gif" alt="Remove"
+                                    styleClass="leftArrowIcon" title="Remove">
+                                    <apex:actionSupport event="onclick" status="LoadingStatusSpinner"
+                                        action="{!unselectNotifyUserClick}" reRender="Notifyuserselection" />
+                                </apex:image>
+                            </apex:panelGroup>
+                            <apex:selectList id="rightuserlist" value="{!rightSelectedUsersForNotify}"
+                                multiselect="true" style="width:200px" size="10">
+                                <apex:selectOptions value="{!SelectedNotifyUserValues}" />
+                            </apex:selectList>
+                        </apex:panelGrid>
+                    </apex:pageBlockSection>
+                    <center>
+                        <apex:commandButton value="Add/Update" action="{!addNotifyUsersToField}" reRender="popupNotifyReceiver,pageBlockId" status="LoadingStatusSpinner" />
+                        <apex:commandButton value="Cancel" action="{!cancelNotifyPopUp}" reRender="popupNotifyReceiver,pageBlockId" status="LoadingStatusSpinner" />
+                    </center>
+                </apex:outputPanel>
+            </apex:pageBlock>
+        </apex:outputPanel>
+        
+        <apex:outputPanel id="popupNonFabReceiver">
+            <apex:pageBlock rendered="{!showNonFabReceiver}" mode="maindetail">
+                <apex:outputPanel styleClass="popupBackground" layout="block" style="position:fixed;"/>
+                <apex:outputPanel styleClass="custPopup" layout="block" style="top:45%;position:fixed;">
+                    <apex:pageMessages id="nonfaberror" />
+                    <apex:pageBlockSection title="Notify personnel who need to validate for Non-Fab: " columns="1">
+                        <apex:panelGrid columns="3" style="margin-left:155px;">
+                            <apex:panelGroup >
+                                <apex:outputLabel value="Search" for="usertextforNonFabDOW"
+                                    styleClass="labelCol vfLabelColTextWrap" />
+                                <apex:inputText value="{!searchNonFabUser}"
+                                    id="usertextforNonFabDOW" />
+                            </apex:panelGroup>
+                            <apex:commandButton value="Search" action="{!SearchNonFabUser}" reRender="NonFabuserselection" status="LoadingStatusSpinner"/>
+                        </apex:panelGrid>
+                        <apex:panelGrid columns="3" id="NonFabuserselection">
+                            <apex:selectList id="NonFableftuserlist" value="{!leftSelectedUsersForNonFab}"
+                                multiselect="true" style="width:200px" size="10">
+                                <apex:selectOptions value="{!unselectedNonFabUserValues}" />
+                            </apex:selectList>
+                            <apex:panelGroup >
+                                <br />
+                                <apex:image value="/s.gif" alt="Add" styleClass="rightArrowIcon"
+                                    title="Add">
+                                    <apex:actionSupport event="onclick" action="{!selectNonFabUserClick}"
+                                        reRender="NonFabuserselection,nonfaberror" status="LoadingStatusSpinner"/>
+                                </apex:image>
+                                <br />
+                                <br />
+                                <apex:image value="/s.gif" alt="Remove"
+                                    styleClass="leftArrowIcon" title="Remove">
+                                    <apex:actionSupport event="onclick" status="LoadingStatusSpinner"
+                                        action="{!unselectNonFabUserClick}" reRender="NonFabuserselection,errormsg" />
+                                </apex:image>
+                            </apex:panelGroup>
+                            <apex:selectList id="rightuserlist" value="{!rightSelectedUsersForNonFab}"
+                                multiselect="true" style="width:200px" size="10">
+                                <apex:selectOptions value="{!SelectedNonFabUserValues}" />
+                            </apex:selectList>
+                        </apex:panelGrid>
+                    </apex:pageBlockSection>
+                    <center>
+                        <apex:commandButton value="Add/Update" action="{!addNonFabUsersToField}" reRender="popupNonFabReceiver,pageBlockId" status="LoadingStatusSpinner" />
+                        <apex:commandButton value="Cancel" action="{!cancelNonFabPopUp}" reRender="popupNonFabReceiver,pageBlockId" status="LoadingStatusSpinner" />
+                    </center>
+                </apex:outputPanel>
+            </apex:pageBlock>
+        </apex:outputPanel>
+        
+        <apex:outputPanel id="popupFabReceiver">
+            <apex:pageBlock rendered="{!showFabReceiver}">
+                <apex:outputPanel styleClass="popupBackground" layout="block" style="position:fixed;"/>
+                <apex:outputPanel styleClass="custPopup" layout="block" style="top:45%;position:fixed;">
+                    <apex:pageBlockSection title="Assignee: " columns="1">
+                        <apex:panelGrid columns="3" style="margin-left:155px;">
+                            <apex:panelGroup >
+                                <apex:outputLabel value="Search" for="usertextforFabDOW"
+                                    styleClass="labelCol vfLabelColTextWrap" />
+                                <apex:inputText value="{!searchFabUser}"
+                                    id="usertextforFabDOW" />
+                            </apex:panelGroup>
+                            <apex:commandButton value="Search" action="{!SearchFabUser}" reRender="Fabuserselection" status="LoadingStatusSpinner"/>
+                        </apex:panelGrid>
+                        <apex:panelGrid columns="3" id="Fabuserselection">
+                            <apex:selectList id="Fableftuserlist" value="{!leftSelectedUsersForFab}"
+                                multiselect="true" style="width:200px" size="10">
+                                <apex:selectOptions value="{!unselectedFabUserValues}" />
+                            </apex:selectList>
+                            <apex:panelGroup >
+                                <br />
+                                <apex:image value="/s.gif" alt="Add" styleClass="rightArrowIcon"
+                                    title="Add">
+                                    <apex:actionSupport event="onclick" action="{!selectFabUserClick}"
+                                        reRender="Fabuserselection,errormsg" status="LoadingStatusSpinner"/>
+                                </apex:image>
+                                <br />
+                                <br />
+                                <apex:image value="/s.gif" alt="Remove"
+                                    styleClass="leftArrowIcon" title="Remove">
+                                    <apex:actionSupport event="onclick" status="LoadingStatusSpinner"
+                                        action="{!unselectFabUserClick}" reRender="Fabuserselection,errormsg" />
+                                </apex:image>
+                            </apex:panelGroup>
+                            <apex:selectList id="rightuserlist" value="{!rightSelectedUsersForFab}"
+                                multiselect="true" style="width:200px" size="10">
+                                <apex:selectOptions value="{!SelectedFabUserValues}" />
+                            </apex:selectList>
+                        </apex:panelGrid>
+                    </apex:pageBlockSection>
+                    <center>
+                        <apex:commandButton value="Add/Update" action="{!addFabUsersToField}" reRender="popupFabReceiver,pageBlockId" status="LoadingStatusSpinner" />
+                        <apex:commandButton value="Cancel" action="{!cancelFabPopUp}" reRender="popupFabReceiver,pageBlockId" status="LoadingStatusSpinner" />
+                    </center>
+                </apex:outputPanel>
+            </apex:pageBlock>
+        </apex:outputPanel>
+        
+        <apex:outputPanel id="popupTurnkeyReceiver">
+            <apex:pageBlock rendered="{!showTurnkeyReceiver}">
+                <apex:outputPanel styleClass="popupBackground" layout="block" style="position:fixed;"/>
+                <apex:outputPanel styleClass="custPopup" layout="block" style="top:45%;position:fixed;">
+                    <apex:pageBlockSection title="Turnkey Assignee: " columns="1">
+                        <apex:panelGrid columns="3" style="margin-left:155px;">
+                            <apex:panelGroup >
+                                <apex:outputLabel value="Search" for="usertextforTurnkeyDOW"
+                                    styleClass="labelCol vfLabelColTextWrap" />
+                                <apex:inputText value="{!searchTurnkeyUser}"
+                                    id="usertextforTurnkeyDOW" />
+                            </apex:panelGroup>
+                            <apex:commandButton status="LoadingStatusSpinner" value="Search" action="{!SearchTurnkeyUser}" reRender="Turnkeyuserselection"/>
+                        </apex:panelGrid>
+                        <apex:panelGrid columns="3" id="Turnkeyuserselection">
+                            <apex:selectList id="Turnkeyleftuserlist" value="{!leftSelectedUsersForTurnkey}"
+                                multiselect="true" style="width:200px" size="10">
+                                <apex:selectOptions value="{!unselectedTurnkeyUserValues}" />
+                            </apex:selectList>
+                            <apex:panelGroup >
+                                <br />
+                                <apex:image value="/s.gif" alt="Add" styleClass="rightArrowIcon"
+                                    title="Add">
+                                    <apex:actionSupport status="LoadingStatusSpinner" event="onclick" action="{!selectTurnkeyUserClick}"
+                                        reRender="Turnkeyuserselection,errormsg" />
+                                </apex:image>
+                                <br />
+                                <br />
+                                <apex:image value="/s.gif" alt="Remove"
+                                    styleClass="leftArrowIcon" title="Remove">
+                                    <apex:actionSupport status="LoadingStatusSpinner" event="onclick"
+                                        action="{!unselectTurnkeyUserClick}" reRender="Turnkeyuserselection,errormsg" />
+                                </apex:image>
+                            </apex:panelGroup>
+                            <apex:selectList id="rightuserlist" value="{!rightSelectedUsersForTurnkey}"
+                                multiselect="true" style="width:200px" size="10">
+                                <apex:selectOptions value="{!SelectedTurnkeyUserValues}" />
+                            </apex:selectList>
+                        </apex:panelGrid>
+                    </apex:pageBlockSection>
+                    <center>
+                        <apex:commandButton value="Add/Update" action="{!addTurnkeyUsersToField}" reRender="popupTurnkeyReceiver,pageBlockId" status="LoadingStatusSpinner" />
+                        <apex:commandButton value="Cancel" action="{!cancelTurnkeyPopUp}" reRender="popupTurnkeyReceiver,pageBlockId" status="LoadingStatusSpinner" />
+                    </center>
+                </apex:outputPanel>
+            </apex:pageBlock>
+        </apex:outputPanel>
+        
+        <apex:outputPanel id="popupCARPRF" style="display:none;">
+             <apex:pageBlock id="PRFCARpopupBlock">
+                <apex:outputPanel styleClass="popupBackground" layout="block" style="position:fixed;"/>
+                <apex:outputPanel styleClass="custPopup" layout="block" style="top:45%;position:fixed;">
+                    <apex:pageblockSection title="{!IF(ISPRF, 'PRF Details', 'CAR Details')}" columns="1">
+                        <apex:pagemessages id="prfcarmsgs" escape="false"/>
+                            
+                            <apex:inputText id="carNumber" label="CAR Number" value="{!carParticular.Car__c}" rendered="{!NOT(ISPRF)}"/>
+                            <apex:pageBlockSectionItem rendered="{!NOT(ISPRF)}">
+    
+                                Select Lots
+                                <c:MultiselectPicklist leftLabel="Available" 
+                                leftOption="{!leftOptionsCAR}"
+    
+                                rightLabel="Selected"
+                                rightOption="{!rightOptionsCAR}"
+                                size="5"
+                                width="100%"/>
+                            </apex:pageBlockSectionItem>
+                        <apex:inputText id="prfNumber" label="PRF Number" value="{!prfParticular.PRF__c}" rendered="{!ISPRF}"/>
+                        <apex:selectList id="prfLots" value="{!prfParticular.Lot__c}" size="1" rendered="{!ISPRF}">
+                            <apex:selectOptions value="{!LotNumbers}"/>
+                        </apex:selectList>
+                    </apex:pageblockSection>
+                    <apex:panelgrid columns="2" style="margin:auto;">
+                        <apex:commandButton value="Save" action="{!addPRF}" rerender="popupCARPRF,checkBxPRF" status="LoadingStatusSpinner" rendered="{!ISPRF}"/>
+                        <apex:commandButton value="Save" action="{!addCAR}" rerender="popupCARPRF,checkBxCAR" status="LoadingStatusSpinner" rendered="{!NOT(ISPRF)}"/>
+                        <apex:commandButton value="Cancel" onclick="hidePRFCARPopup(false);return false;"/>
+                    </apex:panelgrid>
+                </apex:outputPanel> 
+             </apex:pageBlock>
+        </apex:outputPanel>
+        
+        <!-- <apex:outputPanel id="shipfromaddresspopup">
+            <apex:pageBlock rendered="{!showShipFromAddr}">
+                <apex:outputPanel styleClass="popupBackground" layout="block" style="position:fixed;"/>
+                <apex:outputPanel styleClass="custPopup" layout="block" style="top:45%;position:fixed;">
+                    <apex:pageBlockSection title="Ship From Address">
+                        <apex:pageBlockSectionItem >
+                            <apex:outputLabel value="Address 1" />
+                            <apex:inputText value="{!shipFromAddr1}"/>
+                        </apex:pageBlockSectionItem>
+                        <apex:pageBlockSectionItem >
+                            <apex:outputLabel value="Address 2" />
+                            <apex:inputText value="{!shipFromAddr2}"/>
+                        </apex:pageBlockSectionItem>
+                        <apex:pageBlockSectionItem >
+                            <apex:outputLabel value="Address 3" />
+                            <apex:inputText value="{!shipFromAddr3}"/>
+                        </apex:pageBlockSectionItem>
+                        <apex:pageBlockSectionItem >
+                            <apex:outputLabel value="Address 4" />
+                            <apex:inputText value="{!shipFromAddr4}"/>
+                        </apex:pageBlockSectionItem>
+                        <apex:pageBlockSectionItem >
+                            <apex:outputLabel value="City" />
+                            <apex:inputText value="{!shipFromCity}"/>
+                        </apex:pageBlockSectionItem>
+                        <apex:pageBlockSectionItem >
+                            <apex:outputLabel value="State" />
+                            <apex:inputText value="{!shipFromState}"/>
+                        </apex:pageBlockSectionItem>
+                        <apex:pageBlockSectionItem >
+                            <apex:outputLabel value="Country" />
+                            <apex:inputText value="{!shipFromCountry}"/>
+                        </apex:pageBlockSectionItem>
+                        <apex:pageBlockSectionItem >
+                            <apex:outputLabel value="ZipCode" />
+                            <apex:inputText value="{!shipFromZipCode}"/>
+                        </apex:pageBlockSectionItem>
+                    </apex:pageBlockSection>
+                    <center>
+                        <apex:commandButton value="Add/Update" action="{!addUpdateShipFromAddress}" reRender="shipfromaddresspopup,pageBlockId" status="LoadingStatusSpinner" />
+                        <apex:commandButton value="Cancel" action="{!closeShipFromAddrPopUp}" reRender="shipfromaddresspopup,pageBlockId" status="LoadingStatusSpinner" />
+                    </center>
+                </apex:outputPanel>
+            </apex:pageBlock>
+        </apex:outputPanel> -->
+        
+        <apex:actionfunction name="deletePrfParticulars" action="{!deletePrfParticulars}" rerender="checkBxPRF" status="LoadingStatusSpinner"/> 
+        <apex:actionfunction name="deleteCarParticulars" action="{!deleteCarParticulars}" rerender="checkBxCAR" status="LoadingStatusSpinner"/> 
+        <apex:actionfunction name="dispSectFRF" action="{!dispSectFRF}" rerender="checkBxFRF,errormsg" status="LoadingStatusSpinner"/>
+        <apex:actionfunction name="onChangeOfRMAByAction" action="{!onChangeOfRMABy}" rendered="{!RMA__c.Id != NULL}" status="LoadingStatusSpinner"/>
+        <div id="rmaModal"></div>
+    </apex:form>
+    
+    <c:JqueryLibrary />
+    <script language="JavaScript" type="text/javascript">
+        var rmaJ$ = jQuery.noConflict();
+        var businessDays = 0;
+        rmaJ$(document).ready(function(){
+           validationOnLoad();  
+            rmaJ$('input[type="checkbox"][id$="FRFreliabilitycheck"]').change(function(){
+                if(rmaJ$(this).is(':checked')){
+                    var message = 'Kindly take note that as per GF RMA Policy the time limit for the return of wafers / packaged units with field Relibality failures is <b>365 days</b> from the Invoice Date.'+
+                                  '<br/><br/> Please select the Lot affected by Field reliability issue.';
+                    
+                    rmaJ$('#rmaModal').html(message).dialog({
+                         modal: true, 
+                         title: 'Note',
+                         draggable:false,
+                         resizable:false,
+                         width:500,
+                         close: function( event, ui ) {
+                             dispSectFRF();
+                         }
+                    });              
+                }else{
+                    dispSectFRF();
+                }
+                dispSectFRF();
+            });
+            if(document.getElementsByName('piSubmit').length>0){
+                document.getElementsByName('piSubmit')[0].style.display = "none";
+            }
+        });
+        function onChangeOfRMAByJS(ele){
+            if('{!RMA__c.id}'){
+                 var message = 'You are about to change the value of RMA By field. <br/>Please note that selected Lot details will be deleted if any.<br/> Click <b>Ok</b> to confirm.';
+                 rmaJ$('#rmaModal').html(message).dialog({
+                     modal: true, 
+                     title: 'Warning',
+                     draggable:false,
+                     resizable:false,
+                     closeOnEscape: false,
+                     width : 500,
+                     open: function(event, ui) { 
+                                rmaJ$(".ui-dialog-titlebar-close", ui.dialog | ui).hide(); 
+                                rmaJ$(":button:contains('Cancel')").focus();
+                            },
+                     buttons : {
+                        "Ok" : function() {
+                          rmaJ$(this).dialog("close");
+                          onChangeOfRMAByAction();
+                        },
+                        "Cancel" : function() {
+                           ele.value = rmaJ$('[id$="rmabyoldvalue"]').val();    
+                           rmaJ$(this).dialog("close");
+                        }
+                      }
+                });
+            }
+        }
+        function rmaAlert(message, titleText){
+           rmaJ$('#rmaModal').html(message).dialog({
+                 modal: true, 
+                 title: titleText,
+                 draggable:false,
+                 resizable:false,
+                 closeOnEscape: false
+            });
+        }
+        function rmaConfirmPRFCAR(message, titleText, isPRF, ele){
+            rmaJ$('#rmaModal').html(message).dialog({
+                     modal: true, 
+                     title: titleText,
+                     draggable:false,
+                     resizable:false,
+                     closeOnEscape: false,
+                     open: function(event, ui) { 
+                                rmaJ$(".ui-dialog-titlebar-close", ui.dialog | ui).hide(); 
+                                rmaJ$(":button:contains('Cancel')").focus();
+                            },
+                     buttons : {
+                        "Proceed" : function() {
+                          rmaJ$(this).dialog("close");
+                          if(isPRF){
+                              deletePrfParticulars(); 
+                           }else{
+                              deleteCarParticulars(); 
+                           }
+                        },
+                        "Cancel" : function() {
+                           rmaJ$(this).dialog("close");
+                           ele.checked = true;
+                        }
+                      }
+                });
+        }
+        function validationOnLoad(){
+            var reasonCode= rmaJ$('[id$="reasonCode"]').prop('selectedIndex');
+            if(reasonCode <= 0){
+                rmaJ$('[id$="reasonCode"]').prop('disabled','true');
+            }
+        }
+        function showPRFCARPopup(isPRF){
+            rmaJ$('[id$="popupCARPRF"]').show();
+        }
+        function hidePRFCARPopup(hasError){
+            if(!hasError){
+                rmaJ$('[id$="popupCARPRF"]').hide();
+            }
+        }
+        function showPRFCARParticulars(ele, isPrf){
+            if(!ele.checked){
+                if(isPrf){
+                    var rowCount = rmaJ$('[id$="prfTable"] tr').length;
+                    if(rowCount > 1){
+                        rmaConfirmPRFCAR('Added PRF details will be deleted. Are you sure?', 'Warning', true, ele);
+                    }
+                }else{
+                    var rowCount = rmaJ$('[id$="carTable"] tr').length;
+                    if(rowCount > 1){
+                        rmaConfirmPRFCAR('Added CAR details will be deleted. Are you sure?', 'Warning', false, ele);
+                    }
+                }
+            }else{
+                //Calling these for rerendering pageblock tables
+                if(isPrf){
+                    deletePrfParticulars();
+                }else{
+                    deleteCarParticulars();
+                }
+            }
+        }
+        function reload(){
+            location.replace("/{!RMA__c.Id}");
+        }
+        function openVFinNewWindow(page,param){ 
+            window.open(page+'?id='+param,'_blank', 'toolbar=yes, scrollbars=yes, resizable=yes, top=500, left=500, width=800, height=800');
+        }
+        
+        function redirectToAttachmentsAndLinks(selTab){
+            var href = '{!$Page.RMA_UploadAttachmentsAndLinks}' + '?id={!RMA__c.id}&selTab=' + selTab;
+            location.href=href;
+        }
+        /* This method prevents the focus to datepicker fields on page load*/
+        function setFocusOnLoad() {}
+        
+        function setSelTab(){
+            var selTabId = '';
+            rmaJ$('.rich-tabhdr-cell-active').each(function(){
+                var eleId = rmaJ$(this).attr('id');
+                if(eleId.indexOf('ReportSection') > -1){
+                    selTabId = eleId;
+                    return false;
+                }
+            });
+            selTabId = selTabId.split(':').last().split('_cell')[0].trim();
+            rmaJ$('[id$="selTabHidden"]').val(selTabId);
+        }
+        
+        function validateCustomerRequestDate(){
+           try{
+                 businessDays = calcBusinessDays();
+                 console.log('businessDays : ' + businessDays);
+                 if(businessDays <= 2 && businessDays != -1){
+                    rmaJ$('[id$="reasonCode"]').prop('selectedIndex', 0);
+                    rmaJ$('[id$="reasonCode"]').prop("disabled", true);
+                    rmaJ$('[id$="otherReason"]').val('');
+                    rmaJ$('[id$="otherReasonSec"]').hide();
+                    rmaJ$('[id$="otherReasonLabel"]').hide();
+                 }else{
+                    if(businessDays > 2){
+                        rmaJ$('[id$="reasonCode"]').prop("disabled", false);
+                        if(!rmaJ$('[id$="reasonCode"]').val()){
+                            rmaAlert('Select the <b>Reason for delayed submission</b> as the <b>Customer Request Date</b> is delayed by <b>2 working days</b> from the raised date.','Error');
+                        }
+                     }
+                 }
+             }catch(err){
+                console.log(err);
+                rmaAlert('Enter valid Customer Request date', 'Error');
+             } 
+        }
+        
+        function validateBeforeSave(rmaStatus){
+            if({!RMA__c.id == null} || rmaStatus == '{!DRAFT_STATUS}' || rmaStatus == '{!REJECTED_STATUS}'){
+                console.log(rmaStatus);
+                var reasonCode = rmaJ$('[id$="reasonCode"]').val();
+                var otherReason = rmaJ$('[id$="otherReason"]').val();
+                businessDays = calcBusinessDays();
+                if(businessDays > 2){
+                    console.log('reasonCode : ' + reasonCode);
+                    if(reasonCode == 'Other' && !otherReason){
+                        rmaAlert('Enter Reason for delay(Others)', 'Error');
+                        event.preventDefault ? event.preventDefault() : (event.returnValue = false);
+                    }
+                    if(!reasonCode){
+                        rmaAlert('Select the <b>Reason for delayed submission</b> as the <b>Customer Request Date</b> is delayed by <b>2 working days</b> from the raised date.','Error');
+                        event.preventDefault ? event.preventDefault() : (event.returnValue = false);
+                    }
+                }
+            }
+        }
+        
+        function calcBusinessDays() {         
+              var startDate = new Date(rmaJ$('[id$="custReqDateId"]').val());
+              var endDate = new Date('{!IF(RMA__c.id != null, RMA__c.createdDate, NOW())}');
+              var s,e,adjust;
+              console.log('startDate : ' + startDate);
+              console.log('endDate : ' + endDate);
+              if (startDate < endDate) {
+                   s = startDate;
+                   e = endDate;
+               
+                  var diffDays = Math.floor((e - s) / 86400000);
+                  var weeksBetween = Math.floor(diffDays / 7);
+                  if (s.getDay() == e.getDay()) {
+                      adjust = 0;
+                  } else if (s.getDay() == 0 && e.getDay() == 6) {
+                      adjust = 5;
+                  } else if (s.getDay() == 6 && e.getDay() == 0) {
+                      adjust = 0;
+                  } else if (e.getDay() == 6 || e.getDay() == 0) {
+                      adjust = 5-s.getDay();
+                  } else if (s.getDay() == 0 || s.getDay() == 6) {
+                      adjust = e.getDay()-1;
+                  } else if (e.getDay() > s.getDay() ) {
+                      adjust = e.getDay()-s.getDay();
+                  }else {
+                      adjust = 5+e.getDay()-s.getDay();
+                  }
+                  return (weeksBetween * 5) + adjust;
+              }
+      }
+    </script>
+    
+</apex:page>

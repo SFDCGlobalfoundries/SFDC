@@ -1,0 +1,193 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Workflow xmlns="http://soap.sforce.com/2006/04/metadata">
+    <alerts>
+        <fullName>AAT_Submit_Confirmation_to_Submitter</fullName>
+        <description>AAT Submit Confirmation to Submitter</description>
+        <protected>false</protected>
+        <recipients>
+            <type>owner</type>
+        </recipients>
+        <senderType>CurrentUser</senderType>
+        <template>unfiled$public/AAT_Submitter_Notification</template>
+    </alerts>
+    <alerts>
+        <fullName>CIA_Approved_Notification_to_Submitter</fullName>
+        <description>CIA Approved Notification to Submitter</description>
+        <protected>false</protected>
+        <recipients>
+            <type>owner</type>
+        </recipients>
+        <senderType>CurrentUser</senderType>
+        <template>unfiled$public/AAT_CIA_Approved_Notification_to_Submitter</template>
+    </alerts>
+    <alerts>
+        <fullName>Fully_Approved_Notification_to_Submitter</fullName>
+        <description>Fully Approved Notification to Submitter</description>
+        <protected>false</protected>
+        <recipients>
+            <type>owner</type>
+        </recipients>
+        <senderType>CurrentUser</senderType>
+        <template>unfiled$public/AAT_Fully_Approved_Notification_to_Submitter</template>
+    </alerts>
+    <alerts>
+        <fullName>Notify_AAT_Administrator</fullName>
+        <description>Notify AAT Administrator</description>
+        <protected>false</protected>
+        <recipients>
+            <recipient>AAT_Administrators</recipient>
+            <type>group</type>
+        </recipients>
+        <senderType>CurrentUser</senderType>
+        <template>unfiled$public/AAT_Admin_Notification</template>
+    </alerts>
+    <alerts>
+        <fullName>Notify_AAT_Submitter_on_Submission</fullName>
+        <description>Notify AAT Submitter on Submission</description>
+        <protected>false</protected>
+        <recipients>
+            <type>owner</type>
+        </recipients>
+        <senderType>CurrentUser</senderType>
+        <template>unfiled$public/AAT_Schedule_Notification</template>
+    </alerts>
+    <alerts>
+        <fullName>Notify_Submitter_on_CIA_Technical_Approval</fullName>
+        <description>Notify Submitter on CIA&amp;Technical Approval</description>
+        <protected>false</protected>
+        <recipients>
+            <type>owner</type>
+        </recipients>
+        <senderType>CurrentUser</senderType>
+        <template>unfiled$public/AAT_CIA_Technical_Approved_Notification_to_Submitter</template>
+    </alerts>
+    <alerts>
+        <fullName>Tech_Approved_Notification_to_Submitter</fullName>
+        <description>Tech Approved Notification to Submitter</description>
+        <protected>false</protected>
+        <recipients>
+            <type>owner</type>
+        </recipients>
+        <senderType>CurrentUser</senderType>
+        <template>unfiled$public/AAT_Tech_Approved_Notification_to_Submitter</template>
+    </alerts>
+    <fieldUpdates>
+        <fullName>Evaluate_Tech_CIA</fullName>
+        <field>Evaluate_Technical_CIA__c</field>
+        <literalValue>1</literalValue>
+        <name>Evaluate Tech/CIA</name>
+        <notifyAssignee>false</notifyAssignee>
+        <operation>Literal</operation>
+        <protected>false</protected>
+        <reevaluateOnChange>true</reevaluateOnChange>
+    </fieldUpdates>
+    <fieldUpdates>
+        <fullName>SetStageToApproved</fullName>
+        <field>Stage__c</field>
+        <literalValue>Approved</literalValue>
+        <name>SetStageToApproved</name>
+        <notifyAssignee>false</notifyAssignee>
+        <operation>Literal</operation>
+        <protected>false</protected>
+        <reevaluateOnChange>true</reevaluateOnChange>
+    </fieldUpdates>
+    <fieldUpdates>
+        <fullName>SetStageToDraft</fullName>
+        <field>Stage__c</field>
+        <literalValue>Draft</literalValue>
+        <name>SetStageToDraft</name>
+        <notifyAssignee>false</notifyAssignee>
+        <operation>Literal</operation>
+        <protected>false</protected>
+    </fieldUpdates>
+    <fieldUpdates>
+        <fullName>SetStageToReject</fullName>
+        <field>Stage__c</field>
+        <literalValue>Rejected</literalValue>
+        <name>SetStageToReject</name>
+        <notifyAssignee>false</notifyAssignee>
+        <operation>Literal</operation>
+        <protected>false</protected>
+    </fieldUpdates>
+    <fieldUpdates>
+        <fullName>SetStageToUnderReview</fullName>
+        <field>Stage__c</field>
+        <literalValue>Under Review</literalValue>
+        <name>SetStageToUnderReview</name>
+        <notifyAssignee>false</notifyAssignee>
+        <operation>Literal</operation>
+        <protected>false</protected>
+    </fieldUpdates>
+    <fieldUpdates>
+        <fullName>Technical_Team_Approved</fullName>
+        <field>Is_Technical_Approved__c</field>
+        <literalValue>1</literalValue>
+        <name>Technical Team Approved</name>
+        <notifyAssignee>false</notifyAssignee>
+        <operation>Literal</operation>
+        <protected>false</protected>
+    </fieldUpdates>
+    <fieldUpdates>
+        <fullName>Uncheck_Admin_Notification</fullName>
+        <field>Notify_Administrator__c</field>
+        <literalValue>0</literalValue>
+        <name>Uncheck Admin Notification</name>
+        <notifyAssignee>false</notifyAssignee>
+        <operation>Literal</operation>
+        <protected>false</protected>
+    </fieldUpdates>
+    <fieldUpdates>
+        <fullName>Uncheck_IsCIAApproved</fullName>
+        <field>Is_CIA_Approved__c</field>
+        <literalValue>0</literalValue>
+        <name>Uncheck IsCIAApproved</name>
+        <notifyAssignee>false</notifyAssignee>
+        <operation>Literal</operation>
+        <protected>false</protected>
+    </fieldUpdates>
+    <fieldUpdates>
+        <fullName>Uncheck_IsTechApproved</fullName>
+        <field>Is_Technical_Approved__c</field>
+        <literalValue>0</literalValue>
+        <name>Uncheck IsTechApproved</name>
+        <notifyAssignee>false</notifyAssignee>
+        <operation>Literal</operation>
+        <protected>false</protected>
+    </fieldUpdates>
+    <fieldUpdates>
+        <fullName>Update_Is_PDT_Approved_False</fullName>
+        <field>Is_PDT_Approved__c</field>
+        <literalValue>0</literalValue>
+        <name>Update Is PDT Approved False</name>
+        <notifyAssignee>false</notifyAssignee>
+        <operation>Literal</operation>
+        <protected>false</protected>
+    </fieldUpdates>
+    <fieldUpdates>
+        <fullName>Update_PDT_Queue_Flag</fullName>
+        <field>PDT_Queue_Update__c</field>
+        <literalValue>1</literalValue>
+        <name>Update PDT Queue Flag</name>
+        <notifyAssignee>false</notifyAssignee>
+        <operation>Literal</operation>
+        <protected>false</protected>
+    </fieldUpdates>
+    <rules>
+        <fullName>Send Notification to Admin</fullName>
+        <actions>
+            <name>AAT_Submit_Confirmation_to_Submitter</name>
+            <type>Alert</type>
+        </actions>
+        <actions>
+            <name>Notify_AAT_Administrator</name>
+            <type>Alert</type>
+        </actions>
+        <active>true</active>
+        <criteriaItems>
+            <field>AAT_Request__c.Notify_Administrator__c</field>
+            <operation>equals</operation>
+            <value>True</value>
+        </criteriaItems>
+        <triggerType>onCreateOrTriggeringUpdate</triggerType>
+    </rules>
+</Workflow>

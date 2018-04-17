@@ -1,0 +1,161 @@
+<!--
+    Author: Pradosh Samal
+    Description: This serves as the visualforce page for the Pick All and Kerf Map page in FV portal.
+    History: 
+        Psamal  03302017  - Created. 
+        Psamal  04132017  - Changes for Kerf map. 
+        Psamal  04262017  - Changes for notch. 
+        Psamal  05032017  - Changing Kerf Map tab label. 
+-->
+
+<apex:page sidebar="false" showHeader="false" controller="PickAllKerfMapController">
+    
+    <apex:includeScript value="{!URLFOR($Resource.PickAllKerfMap, 'PickAllKerfMap/js/jquery.min.js')}" />
+    <apex:includeScript value="{!URLFOR($Resource.PickAllKerfMap, 'PickAllKerfMap/js/highcharts.js')}" />
+    <apex:includeScript value="{!URLFOR($Resource.PickAllKerfMap, 'PickAllKerfMap/js/highcharts-more.js')}" />
+    
+    <style>
+        .notch{
+            font-size: 25px;
+            font-weight: bold;
+        }
+    </style>
+    
+    <script>
+        jQuery.noConflict();
+    </script>
+    
+    <apex:form >
+        <apex:pageMessages ></apex:pageMessages>
+        
+        <apex:tabPanel switchType="client" selectedTab="PickAll" id="theTabPanel">
+            
+            <apex:tab label="Pick All Map" name="PickAll" id="PickAll">
+                <apex:pageBlock >
+                    <apex:pageblocksection >
+                        <apex:pageblockSectionItem >
+                            <apex:outputLabel for="partNum" value="Step Plan Part Number"/>
+                            <apex:inputText id="partNum" value="{!pickAllPartNumber}"/>
+                        </apex:pageblockSectionItem>
+                    </apex:pageblocksection>
+                    <apex:pageblockSection >           
+                        <apex:pageblockSectionItem >             
+                            <apex:outputLabel for="ecnum" value="Step Plan EC Number"/>                
+                            <apex:inputText id="ecnum" value="{!pickAllECNumber}" />
+                        </apex:pageblockSectionItem>
+                    </apex:pageblockSection>
+                    
+                    <apex:pageBlockButtons location="bottom" >
+                        <apex:commandButton value="Download Map" action="{!downloadPickAllMap}" >
+                            <apex:outputLink value="/sfc/servlet.shepherd/version/download/{!pickAllMapContentDocument.LatestPublishedVersionId}" rendered="{!showPickAllMapDownloadLink}"> Click Here To download {!pickAllMapContentDocument.title}</apex:outputLink>
+                        </apex:commandButton>
+                    </apex:pageBlockButtons>
+                </apex:pageBlock>
+            </apex:tab>
+                
+            <apex:tab label="Kerf Coordinate Map" name="Kerf" id="Kerf">
+                <apex:pageBlock >
+                    <apex:pageBlockSection >
+                        <apex:pageblockSectionItem >
+                            <apex:outputLabel for="kerfPartNum" value="Step Plan Part Number"/>
+                            <apex:inputText id="kerfPartNum" value="{!kerfMapPartNumber}" />
+                        </apex:pageblockSectionItem>
+                    </apex:pageBlockSection>
+                    <apex:pageBlockSection >
+                        <apex:pageblockSectionItem >             
+                            <apex:outputLabel for="kerfECNum" value="Step Plan EC Number"/>                
+                            <apex:inputText id="kerfECNum" value="{!kerfMapECNumber}" />
+                        </apex:pageblockSectionItem>
+                    </apex:pageBlockSection>
+                    
+                    <apex:pageBlockButtons location="bottom">         
+                        <apex:commandButton action="{!showKerfMap}" title="Show Map" value="Show Map" /> 
+                    </apex:pageBlockButtons>  
+                </apex:pageBlock>
+                
+                <apex:pageBlock id="mapPageBlock" rendered="{!showKerfMap}">
+                    
+                    <div id="container" style="min-width: 310px; max-width: 1000px; height: 600px; margin: 0 auto;"></div> 
+                    
+                    <script>
+                        
+                        Highcharts.chart('container', {
+
+                            chart: {
+                                type: 'bubble',
+                                plotBorderWidth: 1,
+                                zoomType: 'xy'
+                            },
+
+                            title: {
+                                text: ''
+                            },
+                            
+                            credits: {
+                                enabled: false
+                            },
+                            
+                            xAxis: {
+                                gridLineWidth: 1,
+                                title: {
+                                    enabled: true,
+                                    text: '<span class="notch">∩<span> <br> X axis'
+                                },
+                                tickInterval: 20,
+                                min: 0
+                            },
+
+                            yAxis: {
+                                startOnTick: false,
+                                endOnTick: false,
+                                title: {
+                                    enabled: true,
+                                    text: 'Y axis'
+                                },
+                                tickInterval: 20,
+                                min: 0
+                            },
+                            plotOptions: {
+                                    bubble: {
+                                        tooltip: {
+                                            headerFormat: '',
+                                            pointFormat: '{point.x}, {point.y}'
+                                        },
+                                        minSize: 35,
+                                        maxSize: 35
+                                    }
+                                },
+
+                            series: [{
+                                data: {!xyCoordinateList},
+                                marker: {
+                                    fillColor: {
+                                        radialGradient: { cx: 0.4, cy: 0.3, r: 0.7 },
+                                        stops: [
+                                            [0, 'rgba(255,255,255,0.5)'],
+                                            [1, Highcharts.Color(Highcharts.getOptions().colors[0]).setOpacity(0.5).get('rgba')]
+                                        ]
+                                    }
+                                },
+                                dataLabels: {
+                                    enabled: true,
+                                    useHTML:true,
+                                    formatter:function(){
+                                        return "<span style='position: relative;top: 1px;font-size: 8px;padding-left: 0px;'>"+ this.x + "," + this.y + "</span>";
+                                    },
+                                    allowOverlap: true,
+                                    zIndex: 10
+                                },
+                                showInLegend: false
+                            }],
+                            bubble: {
+                                        minSize:10,
+                                        maxSize:10
+                                    }
+                        });
+                    </script>
+                </apex:pageBlock>
+            </apex:tab>
+        </apex:tabPanel>
+    </apex:form>
+</apex:page>

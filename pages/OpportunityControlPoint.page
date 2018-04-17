@@ -1,0 +1,330 @@
+<!-- 
+    Author: Meghna Ganguly
+    Description: This serves as the visualforce page for Opportunity Control Point
+    History: 
+        MGanguly   02212017 - page creation.    
+        Poulami Saha	06152017	Modified to Change field label of Last Modified by section from 'Market Segment CP2' to 'Seg Mktg CP2' and 'Market Segment CP3' to 'Seg Mktg CP3'
+-->
+
+<apex:page id="pg" standardController="Opportunity" extensions="OpportunityControlPoint_Ctrl">  
+    <style type="text/css">
+        body {background: #F3F3EC; padding-top: 15px}
+    </style>
+    <script>
+    function showSimpleDialog(){
+        var val=document.getElementById('pg:fm:hd').value;
+        //alert(val);
+        console.log(val);
+        if(val.length>0)alert(val);
+        ClientScript.RegisterClientScriptBlock
+        
+     }
+    
+   
+    </script>
+
+    <apex:form id="fm" >
+    <apex:outputPanel rendered="{!refreshPage}">
+       <script>
+          window.top.location='/{!Opportunity.id}';
+       </script>
+    </apex:outputPanel>
+        <apex:inputhidden id="hd" value="{!message}"></apex:inputhidden>
+
+        <apex:pageBlock title="Opportunity Checklist" id="pb" rendered="{!isedit}">
+            <apex:pageBlockButtons >
+                <apex:commandButton value="Save" action="{!save}" rerender="fm" oncomplete="showSimpleDialog();" status="status"/>
+                <apex:actionstatus id="status">
+                    <apex:facet name="start">
+                        <div class="waitingSearchDiv" id="el_loading" style="background-color: #fbfbfb;
+                               height: 100%;opacity:0.65;width:100%;"> 
+                            <div class="waitingHolder" style="top: 74.2px; width: 91px;">
+                                <img class="waitingImage" src="/img/loading.gif" title="Please Wait..." />
+                                <span class="waitingDescription">Please Wait...</span>
+                            </div>
+                        </div>
+                    </apex:facet>
+                </apex:actionstatus>
+                </apex:pageBlockButtons>
+            <apex:pageMessages />
+                      
+            <apex:pageBlockSection title="Control Point 1 - Stage 0 to Stage 1" columns="2" collapsible="true" rendered="{!((opp.StageName == '0.Pre-Discovery') || prediscovery)}">  <!-- display ony for internal user- render only on Stage0-->
+
+                <apex:inputfield value="{!opp.AM_CP1__c}" rendered="{!NOT(opp.AM_CP1__c)}" />
+                <apex:outputField value="{!opp.AM_CP1__c}" rendered="{!opp.AM_CP1__c}"/>
+                <apex:inputfield value="{!opp.FAE_CP1__c}" rendered="{!NOT(opp.FAE_CP1__c)}"/>
+                <apex:outputField value="{!opp.FAE_CP1__c}" rendered="{!opp.FAE_CP1__c}"/> 
+                               
+            </apex:pageBlockSection>
+            
+             <apex:pageBlockSection title="Control Point 2 - Stage 1 to Stage 2" columns="2"  collapsible="true"> <!-- display ony for both users- render only on Stage Discovery-->
+
+                <apex:inputfield value="{!opp.AM_CP2__c}" rendered="{!NOT(opp.AM_CP2__c)}"/>
+                <apex:outputField value="{!opp.AM_CP2__c}" rendered="{!opp.AM_CP2__c}"/>
+                <apex:inputfield value="{!opp.FAE_CP2__c}"  rendered="{!NOT(opp.FAE_CP2__c)}"/> 
+                <apex:outputField value="{!opp.FAE_CP2__c}" rendered="{!opp.FAE_CP2__c}"/>
+                <apex:inputfield value="{!opp.PLM_CP2__c}" rendered="{!NOT(opp.PLM_CP2__c)}" />
+                <apex:outputField value="{!opp.PLM_CP2__c}" rendered="{!opp.PLM_CP2__c}"/>
+                <apex:inputfield value="{!opp.MarketSegment_CP2__c}" rendered="{!NOT(opp.MarketSegment_CP2__c)}"/>
+                <apex:outputField value="{!opp.MarketSegment_CP2__c}" rendered="{!opp.MarketSegment_CP2__c}"/>                
+            </apex:pageBlockSection>
+            
+             <apex:pageBlockSection title="Control Point 3 - Stage 4 Pre-Design Win Submission" columns="2"  collapsible="true" rendered="{!showCP3}"> <!-- display ony for both users- render only on Stage Decision-->
+
+                <apex:inputfield value="{!opp.AM_CP3__c}" rendered="{!NOT(opp.AM_CP3__c)}"/>
+                <apex:outputField value="{!opp.AM_CP3__c}" rendered="{!opp.AM_CP3__c}"/>
+                <apex:inputfield value="{!opp.FAE_CP3__c}" rendered="{!NOT(opp.FAE_CP3__c)}"/>
+                <apex:outputField value="{!opp.FAE_CP3__c}" rendered="{!opp.FAE_CP3__c}"/>
+                <apex:inputfield value="{!opp.PLM_CP3__c}" rendered="{!NOT(opp.PLM_CP3__c)}"/>
+                <apex:outputField value="{!opp.PLM_CP3__c}" rendered="{!opp.PLM_CP3__c}"/>
+                <apex:inputfield value="{!opp.MarketSegment_CP3__c}" rendered="{!NOT(opp.MarketSegment_CP3__c)}"/>
+                <apex:outputField value="{!opp.MarketSegment_CP3__c}" rendered="{!opp.MarketSegment_CP3__c}"/>
+                <!--<apex:inputfield value="{!opp.Finance_Check_CP3__c}" label="Pricing" rendered="{!NOT(opp.Finance_Check_CP3__c)}" />
+                <apex:outputField value="{!opp.Finance_Check_CP3__c}" label="Pricing" rendered="{!opp.Finance_Check_CP3__c}"/>-->
+            </apex:pageBlockSection>
+            
+            <apex:pageBlockSection title="Control Point PLM and Seg Mktg Approvers" collapsible="false"/>
+            <apex:outputPanel >
+            <apex:outputPanel >
+            <table border="1" cellspacing="0" cellPadding="5" width="100%"  >
+              <tr>
+                    <td bgcolor="#ddb929"><b> Product Line </b> </td>
+                    <td bgcolor="#ddb929"><b> Assigned PLM </b> </td>
+                    <td bgcolor="#ddb929"><b> Market Segment </b> </td>
+                    <td bgcolor="#ddb929"><b> Assigned Segment Marketing </b> </td>
+              </tr>
+              <tr>
+                <td>
+                  <apex:outputField value="{!opp.Product_Line__c}" />
+                </td>
+                <td>
+                  <apex:outputField value="{!opp.Assigned_PLM__c}" />
+                </td>
+                <td>
+                  <apex:outputField value="{!opp.Market_Segment__c}" />
+                </td>
+                <td>
+                  <apex:outputField value="{!opp.Assigned_Segment_Marketing__c}" />
+                </td>
+              </tr>
+            </table>
+            </apex:outputPanel>
+            </apex:outputPanel>
+            
+        </apex:pageBlock>
+        
+        <apex:pageBlock title="Opportunity Checklist" id="pbedit" mode="view" rendered="{!NOT(isedit)}">
+            <apex:pageBlockButtons >
+                <apex:commandButton action="{!edit}" value="Edit" rerender="fm" oncomplete="showSimpleDialog();"/>
+            </apex:pageBlockButtons>
+            <apex:pageMessages />
+      
+            <apex:pageBlockSection title="Control Point 1 - Stage 0 to Stage 1" columns="2" collapsible="true"  rendered="{!((opp.StageName == '0.Pre-Discovery') || prediscovery)}" >  <!-- display ony for internal user- render only on Stage0-->
+
+                <apex:outputfield value="{!opp.AM_CP1__c}"/>
+                <apex:outputfield value="{!opp.FAE_CP1__c}"/> 
+                
+                </apex:pageBlockSection>
+            
+             <apex:pageBlockSection title="Control Point 2 - Stage 1 to Stage 2" columns="2"  collapsible="true"> <!-- display ony for both users- render only on Stage Discovery-->
+
+                <apex:outputfield value="{!opp.AM_CP2__c}"/>
+                <apex:outputfield value="{!opp.FAE_CP2__c}"/> 
+                <apex:outputfield value="{!opp.PLM_CP2__c}"/> 
+                <apex:outputfield value="{!opp.MarketSegment_CP2__c}"/>
+                            
+            </apex:pageBlockSection>
+            
+             <apex:pageBlockSection title="Control Point 3 - Stage 4 Pre-Design Win Submission" columns="2"  collapsible="true" rendered="{!showCP3}"> <!-- display ony for both users- render only on Stage Decision-->
+
+                <apex:outputfield value="{!opp.AM_CP3__c}"/>
+                <apex:outputfield value="{!opp.FAE_CP3__c}"/> 
+                <apex:outputfield value="{!opp.PLM_CP3__c}"/> 
+                <apex:outputfield value="{!opp.MarketSegment_CP3__c}"/>
+                <!--<apex:outputfield value="{!opp.Finance_Check_CP3__c}" label="Pricing"/>-->
+            </apex:pageBlockSection>
+            
+            <apex:pageBlockSection title="Control Point PLM and Seg Mktg Approvers" collapsible="false"/>
+            <apex:outputPanel >
+            <apex:outputPanel >
+            <table border="1" cellspacing="0" cellPadding="5" width="100%"  >
+              <tr>
+                    <td bgcolor="#ddb929"><b> Product Line </b> </td>
+                    <td bgcolor="#ddb929"><b> Assigned PLM </b> </td>
+                    <td bgcolor="#ddb929"><b> Market Segment </b> </td>
+                    <td bgcolor="#ddb929"><b> Assigned Segment Marketing </b> </td>
+              </tr>
+              <tr>
+                <td>
+                  <apex:outputField value="{!opp.Product_Line__c}" />
+                </td>
+                <td>
+                  <apex:outputField value="{!opp.Assigned_PLM__c}" />
+                </td>
+                <td>
+                  <apex:outputField value="{!opp.Market_Segment__c}" />
+                </td>
+                <td>
+                  <apex:outputField value="{!opp.Assigned_Segment_Marketing__c}" />
+                </td>
+              </tr>
+            </table>
+            </apex:outputPanel>
+            </apex:outputPanel>
+            
+            <apex:pageBlockSection title="Control Point fields last modified by" collapsible="false"/>
+            <br/> 
+            <apex:outputPanel id="Refreshtableo">
+            <apex:outputPanel id="Refreshtablei">
+            <table border="1" cellspacing="0" cellPadding="5" width="100%"  >
+                  <tr>
+                        <td bgcolor="#ddb929"><b> Field </b> </td>
+                        <td bgcolor="#ddb929"><b> Last Modified by </b> </td>
+                        <td bgcolor="#ddb929"><b> Last Modified Date </b> </td>
+                  </tr>
+                  <tr>
+                      <td><b>
+                          <apex:outputLabel value="AM CP1" /></b>
+                      </td>
+                      <td>
+                          <apex:outputField value="{!opp.AM_last_modified_by_CP1__c}" />
+                      </td>
+                       <td>
+                          <apex:outputField value="{!opp.AM_last_modified_Date_CP1__c}" />
+                      </td>
+                    
+                  </tr>
+                  <tr>
+                      <td><b>
+                          <apex:outputLabel value="FAE CP1" /></b>
+                      </td>
+                      <td>
+                          <apex:outputField value="{!opp.FAE_last_modified_by_CP1__c }" />
+                      </td>
+                       <td>
+                          <apex:outputField value="{!opp.FAE_last_modified_date_CP1__c }" />
+                      </td>
+                    
+                  </tr>
+                  <tr>
+                      
+                      <td><b>
+                          <apex:outputLabel value="AM CP2" /></b>
+                      </td>
+                      <td>
+                          <apex:outputField value="{!opp.AM_last_modified_by_CP2__c}" />
+                      </td>
+                      <td>
+                          <apex:outputField value="{!opp.AM_last_modified_Date_CP2__c}" />
+                      </td>
+                     
+                  </tr>
+                  <tr>
+                      <td><b>
+                          <apex:outputLabel value="FAE CP2" /></b>
+                      </td>
+                      <td>
+                          <apex:outputField value="{!opp.FAE_last_modified_by_CP2__c }" />
+                      </td>
+                       <td>
+                          <apex:outputField value="{!opp.FAE_last_modified_date_CP2__c }" />
+                      </td>
+                    
+                  </tr>
+                  <tr>
+                      <td ><b>
+                          <apex:outputLabel value="PLM CP2" /></b>
+                      </td>
+                      <td >
+                          <apex:outputField value="{!opp.PLM_last_modified_by_CP2__c }" />
+                      </td>
+                      <td >
+                          <apex:outputField value="{!opp.PLM_last_modified_date_CP2__c }" />
+                      </td>
+                    
+                  </tr>
+                  <tr>
+                      <td ><b>
+                          <apex:outputLabel value="Seg Mktg CP2" /></b>
+                      </td>
+                      <td >
+                          <apex:outputField value="{!opp.Market_Segment_last_modified_by_CP2__c  }" />
+                      </td>
+                      <td >
+                          <apex:outputField value="{!opp.Market_Segment_last_modified_date_CP2__c  }" />
+                      </td>
+                    
+                  </tr>
+                  <tr>
+                      <td><b>
+                          <apex:outputLabel value="AM CP3" /></b>
+                      </td>
+                      <td>
+                          <apex:outputField value="{!opp.AM_last_modified_by_CP3__c}" />
+                      </td>
+                      <td>
+                          <apex:outputField value="{!opp.AM_last_modified_Date_CP3__c}" />
+                      </td>
+                    
+                  </tr>
+                  
+                  
+                  <tr>
+                      <td><b>
+                          <apex:outputLabel value="FAE CP3" /></b>
+                      </td>
+                      <td>
+                          <apex:outputField value="{!opp.FAE_last_modified_by_CP3__c }" />
+                      </td>
+                      <td>
+                          <apex:outputField value="{!opp.FAE_last_modified_date_CP3__c }" />
+                      </td>
+                    
+                  </tr>
+                  
+                  <tr>
+                      <td ><b>
+                          <apex:outputLabel value="PLM CP3" /></b>
+                      </td>
+                      <td >
+                          <apex:outputField value="{!opp.PLM_last_modified_by_CP3__c }" />
+                      </td>
+                      <td >
+                          <apex:outputField value="{!opp.PLM_last_modified_date_CP3__c }" />
+                      </td>
+                    
+                  </tr>
+                  
+                  <tr>
+                      <td ><b>
+                          <apex:outputLabel value="Seg Mktg CP3" /></b>
+                      </td>
+                      <td >
+                          <apex:outputField value="{!opp.Market_Segment_last_modified_by_CP3__c  }" />
+                      </td>
+                      <td >
+                          <apex:outputField value="{!opp.Market_Segment_last_modified_date_CP3__c  }" />
+                      </td>
+                    
+                  </tr>
+                  <!--<tr>
+                      <td><b>
+                          <apex:outputLabel value="Pricing CP3" /></b>
+                      </td>
+                      <td>
+                          <apex:outputField value="{!opp.Pricing_last_modified_by_CP3__c }" />
+                      </td>
+                      <td>
+                          <apex:outputField value="{!opp.Pricing_last_modified_date_CP3__c }" />
+                      </td>
+                    
+                  </tr>-->
+                  
+          </table> 
+          </apex:outputPanel>
+          </apex:outputPanel>
+          <br/>              
+          
+        </apex:pageBlock>
+    </apex:form>
+</apex:page>

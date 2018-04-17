@@ -1,0 +1,248 @@
+<!--
+    Author: Nikhil Jain
+    Description: This serves as the visualforce page for the Mass Edit of Lot Instructions associated to particular Lot Service Request.
+    History: 
+        NJain    03/09/2013    - page creation.
+        NJain    25/09/2013    - added some columns
+        NJain    14/10/2013    - Removed the columns Lot Request Name, Request Type(LR), Purchase Order Number(ML)
+                                 Added column Expedite Type To Meet CRD (CSR)
+        ZAmbat   10/13/2014    - Updated code as per CASE 34882.
+        ZAmbat   10/31/2014    - Updated code as per CASE 35698.
+        NJain    07/16/2015    - Added the columns - Device Id, Wafer Qty and removed Able to Improve CSD from layout.
+-->
+<apex:page standardController="Lot_Instruction__c" recordSetVar="unused" sidebar="false" extensions="LotInstruction_MassEditController" showChat="false">
+<script type="text/javascript">
+        function selectAllCheckboxes(obj,receivedInputID){
+            var inputCheckBox = document.getElementsByTagName("input");
+            for(var i=0; i<inputCheckBox.length; i++){
+                if(inputCheckBox[i].id.indexOf(receivedInputID)!=-1){
+                    inputCheckBox[i].checked = obj.checked;
+                }
+            }
+        }
+    </script>
+    
+    <script type="text/javascript">
+        function unSelectAllCheckboxes(){
+            var inputCheckBox = document.getElementsByTagName("input");
+            for(var i=0; i<inputCheckBox.length; i++){
+               
+                    inputCheckBox[i].checked = obj.unchecked;
+                
+            }
+        }
+    </script>
+    
+    <style type="text/css">
+        #innerTable {border-spacing:0px;border-collapse:collapse;text-align:center;}
+        #innerTable tr td{border:1px solid #e0e3e5;text-align:center;}
+        #headerTable {border-spacing:0px;border-collapse:collapse;}
+        #headerTable tr td{border:1px solid #e0e3e5;text-align:center;}
+        //#qtrDiv {overflow:auto;position:relative;width:1200px;height:130px;text-align:left;display:block}
+        .outerTable {text-align:center;border-spacing: 0px;background-color:#FFFFFF;border:1px solid #e0e3e5;vertical-align:middle;align:left;border-collapse:collapse;}
+        .outerTr{color: #000;font-size: .9em;font-weight: bold;}
+        .outerTd{vertical-align:middle;text-align:center;}
+        .firstTable{background-color:#ececec;background-repeat: repeat-x;border-spacing: -10px;border-color: #ececec;border:1px solid #e0e3e5;border-collapse:collapse;}
+        
+        .headerRow .TableTitle {
+            background-color: #D6ECFF !important;
+            font-size:100% !important; 
+        }
+        .dateFormat{
+             visibility:hidden;
+             display:none;
+        }
+        .tab {
+            position: absolute;
+            left: 5em;
+        }
+    </style>
+    <apex:includeScript value="{!$Resource.UtilJS}" />
+    <script>
+        function openDPMLCalculator(liId) {
+            window.open("/apex/LotInstructionDPMLCalculatorVF?id=" + liId, "DPML Calculator", "location=1,status=1,scrollbars=1,width=600,height=320");
+        }
+    </script>
+    
+    <apex:form >
+        
+        <apex:pageBlock >
+            <apex:pageMessages />
+            <apex:pageBlockSection columns="1">
+                <apex:outputText style="font-weight:bold;color:red;" 
+                    value="No Lot Instruction records were selected for Mass Edit, please go back and select 1 or more records." 
+                    rendered="{!noRecordsSelected}" />
+                <apex:outputText style="font-weight:bold;" 
+                    value="Note: Editing is not Allowed if the record is Locked.
+                           All modifications made on the page will be lost if Return button is clicked without clicking the Update button first." 
+                    rendered="{!IF(((canEdit == true)&&(noRecordsSelected == false)), true, false)}" /> 
+                
+                <apex:outputText style="font-weight:bold;color:red;" 
+                    value="Please contact the AM or CSR to grant you read/write permission for this Opportunity ({0}) or the entire Account ({1}). " 
+                    rendered="{!IF(((canEdit == false)&&(noRecordsSelected == false)), true, false)}" > 
+                      <apex:param value="{!lotReqName}"/>
+                      <apex:param value="{!accountName}"/> 
+                </apex:outputText>
+             </apex:pageBlockSection>
+            
+            <apex:pageBlockButtons >
+              
+                <apex:commandButton value="Return" action="{!cancel}"/>
+                <apex:commandButton value="Update" action="{!updateLotInst}"  rendered="{!IF(((canEdit == true)&&(noRecordsSelected == false)), true, false)}"/>
+            </apex:pageBlockButtons>
+           
+            <apex:pageBlockSection >
+             <apex:outputText style="font-weight:bold;color:black;" value="Please use below if you want to update Multiple Lot Instructions by selecting check boxes against them." />
+             <apex:outputText />
+             <apex:inputField value="{!lotIn.Submitted_Customer_Request_Date_CRD__c}" />
+             <apex:inputField value="{!lotIn.New_CSD_P__c}" />
+            </apex:pageBlockSection>
+            
+           
+            
+            
+            <apex:pageBlockTable id="tableN" value="{!linstWrapList}" var="a" border="2px;">
+                <!--
+                <apex:column style="height:50px; background-color: #F0F8FF !important;" headerClass="TableTitle" >                               
+                          <apex:facet name="header">Lot Request<br/>Name</apex:facet>
+                          <apex:outputText value="{!a.name}" style="font-weight:bold;"/>                                                                              
+                </apex:column>
+                -->
+                <apex:column style="height:50px; background-color: #F0F8FF !important;" headerClass="TableTitle" >
+                        <apex:facet name="header">     
+                          <apex:inputCheckbox onclick="selectAllCheckboxes(this,'inputId')"/>
+                        </apex:facet>                          
+                          <apex:inputCheckbox value="{!a.selected}" id="inputId"/>
+                                                                             
+                </apex:column>
+                <apex:column style="height:50px; background-color: #F0F8FF !important;" headerClass="TableTitle" >                               
+                          <apex:facet name="header">Manufacturing<br/>Lot</apex:facet>
+                          <apex:outputText value="{!a.lInst.Manufacturing_Lot__r.name}" style="font-weight:bold;"/>                                                                              
+                </apex:column>
+                <apex:column style="height:50px;background-color: #F0F8FF !important;" headerClass="TableTitle">                               
+                          <apex:facet name="header">Validation Signal</apex:facet>
+                          <apex:inputField value="{!a.lInst.ValidationSignals__c}"/>                                                                              
+                </apex:column>
+                <apex:column style="height:50px;width:100px;background-color: #F0F8FF !important;" headerClass="TableTitle">                               
+                          <apex:facet name="header">Error Messages</apex:facet>
+                          <apex:outputText value="{!a.ErrorMessages}"></apex:outputText> 
+                                                                                                       
+                </apex:column>
+                <apex:column style="height:50px;background-color: #F0F8FF !important;" headerClass="TableTitle">                               
+                          <apex:facet name="header">Current CRD</apex:facet>
+                          <apex:inputField value="{!a.lInst.Current_Customer_Request_Date_CRD_ML__c}"/>                                                                              
+                </apex:column>
+                <apex:column style="height:50px;background-color: #F0F8FF !important; text-align:center;" headerClass="TableTitle" >                               
+                          <apex:facet name="header">Current CSD at time of submission </apex:facet>
+                          <apex:inputField value="{!a.lInst.Current_CSD_ML_at_time_of_Submission__c }"/>                                                                              
+                </apex:column>
+                <apex:column style="height:50px;background-color: #F0F8FF !important; text-align:center;" headerClass="TableTitle" >                               
+                          <apex:facet name="header">Current CSD</apex:facet>
+                          <apex:inputField value="{!a.lInst.Current_Schedule_Date_CSD_ML__c}"/>                                                                        
+                </apex:column>
+                <apex:column style="height:50px;background-color: #F0F8FF !important;" headerClass="TableTitle">                               
+                          <apex:facet name="header">Lot Type<br/>(ML)</apex:facet>
+                          <apex:outputField value="{!a.lInst.Lot_Type__c}"/>                                                                              
+                </apex:column>
+                <apex:column style="height:50px;background-color: #F0F8FF !important;" headerClass="TableTitle">                               
+                          <apex:facet name="header">Geometry<br/>(ML)</apex:facet>
+                          <apex:outputField value="{!a.lInst.Manufacturing_Lot__r.Geometry__c}"/>                                                                              
+                </apex:column>
+                <apex:column style="height:50px;background-color: #F0F8FF !important;" headerClass="TableTitle">                               
+                          <apex:facet name="header">SO#<br/>(ML)</apex:facet>
+                          <apex:outputField value="{!a.lInst.Sales_Order_Number_ML__c}"/>                                                                              
+                </apex:column>
+                <!-- Added as per Discussed on 16-Jul-2015 -->
+                <apex:column style="height:50px;background-color: #F0F8FF !important; text-align:center;" headerClass="TableTitle">                               
+                          <apex:facet name="header">Device Id</apex:facet>
+                          <apex:outputField value="{!a.lInst.Customer_Device_Id_ML__c}"/>                                                                              
+                </apex:column>
+                <apex:column style="height:50px;background-color: #F0F8FF !important; text-align:center;" headerClass="TableTitle">                               
+                          <apex:facet name="header">Wafer Qty</apex:facet>
+                          <apex:outputField value="{!a.lInst.Current_Wafer_Quantity_in_the_Lot_ML__c}"/>                                                                              
+                </apex:column>
+                
+                <!-- ++changes made as epr King's Comments on Oct.12,2013 -->
+                <!-- 
+                <apex:column style="height:50px;background-color: #F0F8FF !important;" headerClass="TableTitle">                               
+                          <apex:facet name="header">Request <br/>Type (LR)</apex:facet>
+                          <apex:inputField value="{!a.Request_Type_LR__c}"/>                                                                              
+                </apex:column>
+                <apex:column style="height:50px;background-color: #F0F8FF !important;" headerClass="TableTitle">                               
+                          <apex:facet name="header">Purchase Order<br/>Number (ML)</apex:facet>
+                          <apex:inputField value="{!a.Purchase_Order_Number_ML__c}"/>                                                                              
+                </apex:column>
+                -->
+                <apex:column style="height:50px;background-color: #F0F8FF !important;" headerClass="TableTitle">                               
+                          <apex:facet name="header">Expedite Type To <br/>Meet CRD (CSR)</apex:facet>
+                          <apex:inputField value="{!a.lInst.Expedite_Type_To_Meet_CRD_CSR__c}"/>                                                                              
+                </apex:column>
+                <!-- --changes made as epr King's Comments on Oct.12,2013 -->
+                
+                <apex:column style="height:50px;" headerClass="TableTitle">                               
+                          <apex:facet name="header">New CRD <br/>(CSR)</apex:facet>
+                          <apex:inputField value="{!a.lInst.Submitted_Customer_Request_Date_CRD__c}"/>                                                                              
+                </apex:column>
+                
+                <apex:column style="height:50px;" headerClass="TableTitle">                               
+                          <apex:facet name="header">New CRD<br/>DPML</apex:facet>
+                          <apex:inputField value="{!a.lInst.New_CRD_DPML__c}"/>                                                                              
+                </apex:column>
+                <!--Removed as per CSR request 29-Jul-15
+                <apex:column style="height:50px;text-align:center;" headerClass="TableTitle">                               
+                          <apex:facet name="header">Submitted for<br/> Review (CSR)</apex:facet>
+                          <apex:inputField value="{!a.Submitted_for_Review_CSR__c}"/>                                                                              
+                </apex:column> -->
+                <!--Removed As per Kings Request 
+                <apex:column style="height:50px;" headerClass="TableTitle">                               
+                          <apex:facet name="header">Comments (CSR)</apex:facet>
+                          <apex:inputField value="{!a.Comments_CSR__c}"/>                                                                              
+                </apex:column>
+                -->                
+                <apex:column style="height:50px;" headerClass="TableTitle">                               
+                          <apex:facet name="header">Lead Time<br/>Adder(P)</apex:facet>
+                          <apex:inputField value="{!a.lInst.Lead_Time_Adder_Days__c}" style="width:50px;"/>                                                                              
+                </apex:column>
+                <apex:column style="height:50px;" headerClass="TableTitle">                               
+                          <apex:facet name="header">New CSD<br/>DPML</apex:facet>
+                          <apex:inputField value="{!a.lInst.New_CSD_DPML__c}"/>                                                                              
+                </apex:column>
+                
+                
+                <apex:column style="height:50px;" headerClass="TableTitle">                               
+                          <apex:facet name="header">New CSD (P)</apex:facet>
+                          <apex:inputField value="{!a.lInst.New_CSD_P__c}"/>                                                                              
+                </apex:column>
+                <!-- Commenting as per Parveen's Feedback 14-Jul-2015
+                <apex:column style="height:50px;text-align:center;" headerClass="TableTitle">                               
+                          <apex:facet name="header">Able to Improve<br/> CSD (P)</apex:facet>
+                          <apex:inputField value="{!a.Able_to_Support_Request_P__c}"/>                                                                              
+                </apex:column>
+                -->
+                <!-- Removed As per Kings Request 
+                <apex:column style="height:50px;" headerClass="TableTitle">                               
+                          <apex:facet name="header">Comments (P)</apex:facet>
+                          <apex:inputField value="{!a.Comments_P__c}"/>                                                                              
+                </apex:column>
+                -->
+                <apex:column style="height:50px;background-color: #F0F8FF;" headerClass="TableTitle">                               
+                          <apex:facet name="header">Current CSD at<br/>Planner Approval</apex:facet>
+                          <apex:outputField value="{!a.lInst.Current_CSD_at_Planner_Submission_Stage__c}" 
+                                  rendered="{!(a.lInst.Lot_Request__r.Stage__c == 'Fully Approved' || a.lInst.Lot_Request__r.Stage__c == 'Closed - Fully Executed' || 
+                                               a.lInst.Lot_Request__r.Stage__c == 'Closed - Partially Executed' || a.lInst.Lot_Request__r.Stage__c == 'Closed - Failed to Execute')}"/>                                                                              
+                </apex:column>
+            </apex:pageBlockTable><br/>
+        </apex:pageBlock>
+        
+    </apex:form>
+    
+    <script language="javascript">  
+        window.onload= function()
+        {
+            var a = document.getElementById("innerTable");
+            if(!(a && a!=null)){
+                document.getElementById("qtrDiv").style.display="none";
+            }
+        }
+    </script>
+</apex:page>

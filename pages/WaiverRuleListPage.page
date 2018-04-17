@@ -1,0 +1,69 @@
+<!-- 
+    Author: Abhita Bansal
+    Company: GLOBALFOUNDRIES
+    Project: DRC Application
+    Description: This page is used to view the Waiver rule record
+    History: 
+-->
+<apex:page id="RuleListPage" standardController="Waiver_Rule_List__c" extensions="WaiverRuleListController">
+    
+    <apex:includeScript value="{!URLFOR($Resource.myjQuery, 'js/jquery-1.6.2.min.js')}"/>
+    <apex:includeScript value="{!URLFOR($Resource.myjQuery, 'js/jquery-ui-1.8.16.custom.min.js')}"/> 
+    <apex:stylesheet value="{!URLFOR($Resource.GF_DQ_JQueryLatest, '/jquery-ui-1.10.3/themes/base/jquery-ui.css')}"/>
+    <apex:includeScript value="{!URLFOR($Resource.GF_DQ_jQueryLib, '/jquery.blockUI.js')}"/>
+    <apex:includeScript value="https://code.jquery.com/jquery-1.11.0.min.js"/>
+    
+    <script type="text/javascript">
+		$( document ).ready(function() {
+            var val = $('[name="piSubmit"]');
+            $('[name="piSubmit"]').hide();
+            $j = jQuery.noConflict();
+                        
+        });
+    </script>
+    
+    <apex:form id="ruleForm">              
+        <apex:pageBlock >
+            <apex:pageBlockButtons location="top">
+                <apex:commandButton value="Back" action="{!back}"/>
+            </apex:pageBlockButtons>
+            <apex:pageBlockSection title="Waiver Rule Detail">
+                <apex:repeat value="{!fields}" var="f">
+                    <apex:outputField value="{!waiverRule[f.fieldPath]}" title="{!IF(f.fieldPath == 'GF_Review_Results__c', 
+																				 IF(waiverRule.Stage__c == 'PI', 'Pass Ignore (No review requested by Customer,GLOBALFOUNDRIES expectation is that violation is absent in final TO or requested in additional waiver request.)', 
+																				 IF(waiverRule.Stage__c == 'PW', 'Pass Waived (Waived for the specified use and/or Tapeout. No further action required by Customer.)', 
+																				 IF(waiverRule.Stage__c == 'FCC', 'Failed Design, Customer to check (Cannot be waived by GLOBALFOUNDRIES, need to be fixed or Customer Waiver provided with Customer assuming related risk.)',
+																				 IF(waiverRule.Stage__c == 'IFD', 'Initial Failed Design (Cannot be waived by GLOBALFOUNDRIES, need to be fixed for final TO.)', '')))),
+																				 IF(f.fieldPath == 'Final_Status__c', 
+																				 IF(waiverRule.Final_Stage__c == 'PI', 'Pass Ignore (No review requested by Customer,GLOBALFOUNDRIES expectation is that violation is absent in final TO or requested in additional waiver request.)', 
+																				 IF(waiverRule.Final_Stage__c == 'PW', 'Pass Waived (Waived for the specified use and/or Tapeout. No further action required by Customer.)',
+																				 IF(waiverRule.Final_Stage__c == 'FCF', 'Failed Design, Customer Agree to Fix (Customer Agreed to fix, updated design to be submitted for Tapeout.)', 
+																				 IF(waiverRule.Final_Stage__c == 'WCR', 'Waived Customer Risk (Customer agreed to waive, Customer is aware of related risk. Risk is assumed by Customer.)',
+																				 IF(waiverRule.Final_Stage__c == 'WEA', 'Waived Exceptional Agreement (Waived with exceptional agreement by GLOBALFOUNDRIES. Please contact GLOBALFOUNDRIES Customer Representative)',
+																				 IF(waiverRule.Final_Stage__c == 'FD', 'Failed Design (Cannot be waived by GLOBALFOUNDRIES. Design cannot be accepted.)', '')))))),''))}"/>
+                </apex:repeat>
+            </apex:pageBlockSection>          
+        </apex:pageBlock>
+        
+        <apex:pageBlock >
+        	<apex:pageBlockSection title="Design Waiver Rule Attachments" columns="1" >            
+                <apex:pageBlockTable value="{!attachments}" var="attachment">                   
+                    <apex:column headerValue="Title">
+                        <apex:outputLink value="/{!attachment.id}" target="_blank">{!attachment.Name}</apex:outputLink>
+                    </apex:column> 
+                    <apex:column headerValue="Created Date">
+                        <apex:outputText value="{!attachment.CreatedDate}"/>
+                    </apex:column>                   
+                    <apex:column headerValue="Last modify Date">
+                        <apex:outputText value="{!attachment.LastModifiedDate}"/>
+                    </apex:column>                    
+                </apex:pageBlockTable>           
+            </apex:pageBlockSection>
+        </apex:pageBlock>
+    </apex:form>
+    
+    <apex:relatedList list="ProcessSteps" id="processId" rendered="{!Not(isPortalUser)}"/>
+        <apex:outputPanel rendered="{!IF(AND(!isPortalUser),true,false)}">
+                <c:GenericHistoryComponent Object="{!Waiver_Rule_List__c}" Limit="20"/>
+                </apex:outputpanel>
+</apex:page>

@@ -1,0 +1,52 @@
+<!--
+    Author: Poulami Saha
+    Project Name: DIW Step Down Track 2 (BnP) 
+    Created Date: 23/06/2016
+    Description: This serves as the List View page for RFQ Routing.
+    History: 
+-->
+
+<apex:page standardController="Request_Information__c" extensions="BnPRFQRoutingRelatedListCtrl">
+<!--<apex:page controller="BnPRFQRoutingRelatedListCtrl">-->
+    <apex:relatedList list="RFQ_Routings__r" />
+    <apex:form >
+    <apex:pageblock title="Search Template">
+        <apex:pageBlockSection title="Enter Search Criteria">
+            <apex:inputText label="Template Name" value="{!templateName}"/>
+            <apex:inputText label="No of Task" value="{!noOfTask}"/>
+            <apex:inputText label="Created By" value="{!createdByUser}"/>
+            <!--<apex:inputText label="Route Base Purpose" value="{!routeBasePurpose}"/>-->
+            <apex:selectList id="chooseRouteBase" label="Route Base Purpose" value="{!routeBasePurpose}" size="1">
+                <apex:selectOption itemValue="None" itemLabel="--None--"/>
+                <apex:selectOption itemValue="Standard" itemLabel="Standard"/>
+                <apex:selectOption itemValue="Approval" itemLabel="Approval"/>
+                <apex:selectOption itemValue="Review" itemLabel="Review"/>
+            </apex:selectList>
+            
+            <apex:commandButton value="Search" action="{!find}"/>
+        </apex:pageBlockSection>
+    </apex:pageblock>
+    <apex:pageblock title="Select a Template to clone" id="pb">
+        <apex:pageblockTable value="{!RoutingTemplates}" var="temp">
+            <apex:column headerValue="Template Name">
+                <apex:outputLink value="/{!temp.Id}?reqId={!reqInfoId}" target="blank">{!temp.Name}</apex:outputLink>
+            </apex:column>
+            <apex:column headerValue="Route Name" value="{!temp.Route_Name__c}"/>
+            <apex:column headerValue="Route Base Purpose" value="{!temp.Route_Base_Purpose__c}"/>
+            <apex:column headerValue="No of Task" value="{!temp.No_of_Task__c}"/>
+            <apex:column headerValue="Created By" value="{!temp.CreatedById}"/>
+        </apex:pageblockTable>
+        <apex:panelGrid columns="7">
+                <apex:commandButton status="fetchStatus" reRender="pb" value="|<" action="{!first}" disabled="{!!hasPrevious}" title="First Page"/>
+                <apex:commandButton status="fetchStatus" reRender="pb" value="<" action="{!previous}" disabled="{!!hasPrevious}" title="Previous Page"/>
+                <apex:commandButton status="fetchStatus" reRender="pb" value=">" action="{!next}" disabled="{!!hasNext}" title="Next Page"/>
+                <apex:commandButton status="fetchStatus" reRender="pb" value=">|" action="{!last}" disabled="{!!hasNext}" title="Last Page"/>
+                <apex:outputText >{!(pageNumber * size)+1-size}-{!IF((pageNumber * size)>noOfRecords, noOfRecords,(pageNumber * size))} of {!noOfRecords}</apex:outputText>
+                <apex:commandButton status="fetchStatus" reRender="pb" value="Refresh" action="{!refresh}" title="Refresh Page"/>
+                <apex:outputPanel style="color:#4AA02C;font-weight:bold">
+                    <apex:actionStatus id="fetchStatus" startText="Fetching..." stopText=""/>
+                </apex:outputPanel>
+        </apex:panelGrid>
+    </apex:pageblock>
+    </apex:form>
+</apex:page>

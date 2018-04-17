@@ -1,0 +1,50 @@
+<!-- 
+Type Name:  ASICBugUpdateOwnerandTeam.page
+Author: UCM Team
+Created Date: 10/23/2016
+Reason: 
+Change History:
+Author: 
+Modified Date: 
+Reason: 
+ -->
+<apex:page standardController="Bug__c" extensions="ASICBugUpdateOwnerAndTeam" sidebar="false" showChat="false" showHeader="false"  Cache="false">
+
+<apex:form >
+   <apex:actionfunction name="resetowner" action="{!ResetOwnerandTeam}"  oncomplete="loadpage()" />
+   <apex:actionfunction name="noresetowner" action="{!NoResetOwnerandTeam}" oncomplete="loadpage()"/>
+    
+</apex:form>
+   <script type="text/javascript" src="/soap/ajax/29.0/connection.js"></script>
+   <script type="text/javascript" language="javascript">       
+       window.onload = function() 
+        {
+                    sforce.connection.sessionId = "{!$Api.Session_ID}";
+                    var myquery = "SELECT Sub_Type_A__c,Sub_Type_B__c,Sub_Type_C__c,Sub_Type_D__c, Old_SubTypeA_TypeB_TypeC_TypeD__c FROM Bug__c WHERE Id = '{!bug__c.Id}' limit 1";
+                    var result = sforce.connection.query(myquery);
+                    var records = result.getArray("records");
+                    var bugobj = records[0];
+                    //var productcomponent = (bugobj.Sub_Type_A__c != null ? bugobj.Sub_Type_A__c : "") + (bugobj.Sub_Type_B__c != null ? ","+ bugobj.Sub_Type_B__c : "")+(bugobj.Sub_Type_C__c != null ? "," + bugobj.Sub_Type_C__c : "")+(bugobj.Sub_Type_D__c != null ? ","+ bugobj.Sub_Type_D__c : "");
+                    var productcomponent = bugobj.Sub_Type_A__c + "," + bugobj.Sub_Type_B__c +"," +bugobj.Sub_Type_C__c + "," + bugobj.Sub_Type_D__c;
+                    console.log(':::: Product Component:'+productcomponent);
+                    console.log(':::: bugobj.Old_SubTypeA_TypeB_TypeC_TypeD__c:'+bugobj.Old_SubTypeA_TypeB_TypeC_TypeD__c);
+                    if (bugobj.Old_SubTypeA_TypeB_TypeC_TypeD__c != productcomponent && 
+                        (bugobj.Old_SubTypeA_TypeB_TypeC_TypeD__c != '' &&
+                        bugobj.Old_SubTypeA_TypeB_TypeC_TypeD__c != null)  ) 
+                    {
+                         var r = confirm("{!Alertmessage}");
+                         if(r == true)
+                             resetowner(); 
+                         else
+                             noresetowner();
+                    }
+        }
+        
+        function loadpage()
+        {
+             window.open('/{!bug__c.Id}', target = '_top');
+        }
+   
+   </script>
+   
+</apex:page>

@@ -1,0 +1,352 @@
+<!-- 
+   Type Name:  VFCreateSubPDK1.page
+   Author: Cognizant 
+   Created Date: 
+   Reason: 
+   Change History:
+   Author: Dinesh Suggala(Global Foundries)
+   Modified Date: 26/9/2017
+   Reason: Added the pagination for Table "Select Master PDK Design Spec" .
+   
+-->
+<apex:page standardController="PDK__c" extensions="ClsCreateSubPDK" sidebar="true" id="pageId">
+        
+        
+        <apex:includeScript value="{!URLFOR($Resource.myjQuery, 'js/jquery-1.6.2.min.js')}"/>
+        <apex:includeScript value="{!URLFOR($Resource.myjQuery, 'js/jquery-ui-1.8.16.custom.min.js')}"/> 
+        <apex:stylesheet value="{!URLFOR($Resource.GF_DQ_JQueryLatest, '/jquery-ui-1.10.3/themes/base/jquery-ui.css')}"/>
+        <apex:includeScript value="{!URLFOR($Resource.GF_DQ_jQueryLib, '/jquery.blockUI.js')}"/>
+        <apex:includeScript value="https://code.jquery.com/jquery-1.11.0.min.js"/>
+        <apex:includeScript value="{!URLFOR($Resource.savebtnDisable, 'savebtnDisable/js/file.js')}"/>  
+	
+        
+        <script type="text/javascript">
+                
+            $j = jQuery.noConflict();
+             
+           $j( window ).ready(function() {
+             pageload();
+           });
+                                                                       
+
+            function pageload(){
+              try{               
+                if('{!masterPDK.Master_PDK_ASIC__c}' == 'true'){
+                     $j(document).ready( function () {
+                        $j('option[value="General Release"]').remove();
+                        $j('option[value="Specific Account Release"]').remove(); 
+                    
+                    document.getElementById('pageId:theForm:Pageblockid:Pageblocksectionid:Fieldset:4:Inputfieldid').innerHTML= '<img src="/img/checkbox_checked.gif" alt="Checked" width="21" height="16" class="checkImg" title="Checked">';
+                                                                
+                        });                    
+                 }
+              }
+              catch(err){
+                  alert(err.message);
+              }
+              }  
+               
+            function checkAll(checkbox,section)
+            {
+                $j('.'+section).each(function() {
+                      this.checked = checkbox.checked;
+                }); 
+            } 
+            
+            function SaveBundle(){
+               buttonSaveCreate('enable');
+               var status;
+               var bundleName = document.getElementById('pageId:theForm:Pageblockid:Pageblocksectionid:Fieldset:1:Inputfieldid').value;
+
+               if(bundleName != null){
+                var regExp = /^[a-zA-Z0-9\-._ ]+$/;
+                if(!regExp.test(bundleName)){
+                    buttonSaveCreate('enable');
+                    alert('Bundle Name can only contain alphanumeric characters, hyphens(-),underscore(_) and dot(.)');
+                    return false;                                       
+                }       
+               }
+               if(document.getElementById('pageId:theForm:hiddenId')!=null){
+                    status = document.getElementById('pageId:theForm:hiddenId').value;
+               }
+               if (status=='true'){
+                  $('<div></div>').appendTo('body')
+                          .html('<div><h6>You have selected Specification with Internal Release status and that will not be accessible/visible to the customer.<br> Do you want to proceed ?</br></h6></div>')
+                          .dialog({
+                                  modal: true, 
+                                  title: 'message', 
+                                  zIndex: 10000, 
+                                  autoOpen: true,
+                                  width: 'auto', 
+                                  resizable: false,
+                                  buttons: {
+                                          Yes: function () {
+                                           $.blockUI({ css: { backgroundColor: '##0174DF', color: '#FAFAFA'} }); 
+
+                                             saveSubPDK();
+                                             $(this).dialog("close");
+                                          },
+                                          No: function () {
+                                              $(this).dialog("close");
+                                          }
+                                  },
+                                  close: function (event, ui) {
+                                      $(this).remove();
+                                  }
+                        });
+                   
+               } else {
+                   $.blockUI({ css: { backgroundColor: '##0174DF', color: '#FAFAFA'} }); 
+
+                    saveSubPDK();
+               } 
+            }
+           
+          //function to unblock the page  
+          function unblockPage(){  
+
+
+             buttonSaveCreate('enable');      
+
+             $.unblockUI();  
+
+          }                     
+          
+        </script> 
+        <apex:sectionHeader title="PDK Edit" subtitle="New PDK"/>  
+            
+        <apex:form id="theForm">
+            <apex:actionFunction name="clearsearch" action="{!clearSearch}" oncomplete="unblockPage()" reRender="searchPanel"/>
+            <apex:actionFunction action="{!saveNewSubPDK}" name="saveSubPDK" oncomplete="unblockPage()" reRender="msg"/>
+
+            <apex:pageBlock mode="detail" title="PDK Edit" id="Pageblockid" >
+                 <apex:pagemessages id="msg"/>
+                 
+                 <apex:pageBlockButtons id="btnpanel">
+                     <apex:outputPanel id="mainbtn">
+                        <apex:outputPanel rendered="{!editpanel}">     
+                           <!-- <apex:outputPanel rendered="{!isNotObsoletePDK}"> -->
+                               <apex:outputPanel rendered="{!((isNotObsoletePDK) && (displayPage))}">
+                               <apex:commandButton id="bundlesave" onclick="disableButtonCreate(this)" value="Save" action="{!validateStatus}" reRender="hiddenId" oncomplete="return SaveBundle();"/>
+                            </apex:outputPanel> 
+                            <!--<apex:commandButton value="Save" action="{!saveNewSubPDK}" status="saveStatus" reRender="msg" rendered="{!isNotObsoletePDK}"/>-->
+                            <apex:commandButton value="Cancel" action="{!Cancel}" immediate="true"/>                   
+                        </apex:outputPanel>
+                        
+                        <apex:actionStatus id="saveStatus">
+                            <apex:facet name="start" >
+                                <apex:image url="/img/loading32.gif" height="20px"/>                       
+                            </apex:facet>
+                        </apex:actionStatus>
+                    </apex:outputPanel>  
+                </apex:pageBlockButtons>
+            
+                
+                <apex:outputPanel id="editpanel" rendered="{!(displayPage)}">
+                    <apex:outputPanel rendered="{!((editpanel)&&(isNotObsoletePDK))}">
+                        <apex:pageblockSection title="PDK Information" columns="2" id="Pageblocksectionid">
+            
+                            <apex:repeat value="{!$ObjectType.Sub_PDK__c.FieldSets.ReadOnlyFields}" var="f">
+                                <apex:outputField value="{!newSubPDK[f]}"/>                    
+                            </apex:repeat>
+                            
+
+
+
+
+
+
+                             
+                            <apex:repeat value="{!$ObjectType.Sub_PDK__c.FieldSets.InputFields}" var="f" id="Fieldset">                    
+                                <apex:inputField value="{!newSubPDK[f]}" id="Inputfieldid" rendered="{!IF(NOT(f == 'PDK_Bundle_ASIC__c' && masterPDK.Master_PDK_ASIC__c== false ),true,false)}" style="{!IF(((f == 'Description__c' || f =='Special_Instructions_for_PDK_ReleaseTeam__c')), 'width:324px;height:76px;', '')}"><!-- required="{!IF(OR(f == 'Name',f == 'Release_Status__c'),true,false)}">-->
+                                
+                                    <apex:actionSupport event="onchange" action="{!showWLAccountSection}" reRender="msg,WLAccountPanel,accountsearchClick" status="rsStatus"  rendered="{!IF(f == 'Release_Status__c',true,false)}" >
+                                
+                                        
+                                    </apex:actionSupport>
+                                </apex:inputField>
+                            </apex:repeat>                            
+                            <apex:outputPanel id="accountsearchClick" style="padding-left:20%;">                        
+                                <apex:commandLink style="color:green;font-weight:bold;" action="{!clearSearch}" rendered="{!showWLAccountsSection}" reRender="editpanel,mainbtn,searchPanel">
+                                    <apex:image url="/img/icon/accounts16.png"/>
+                                    Add Account
+                                </apex:commandLink>
+                                
+                                <apex:actionStatus id="rsStatus">
+                                    <apex:facet name="start" >
+                                        <apex:image url="/img/loading32.gif" height="20px"/>                       
+                                    </apex:facet>
+                                </apex:actionStatus>
+                            <script>
+                             pageload();
+                            </script>                                              
+                            </apex:outputPanel>
+                                                       
+                                            
+                        </apex:pageblockSection>
+                
+                        <apex:pageBlockSection id="designspecsection" title="Select Master PDK Design Spec" columns="1" >
+                            
+                            <apex:pageblockTable value="{!showmasterDesignSpec}" var="ds" rendered="{!IF(masterDesignSpec.size>0,true,false)}" width="90%" >
+                                <apex:column >
+                                
+                                    <apex:facet name="header">
+                                            <apex:inputcheckbox id="selectAllDesignSpec" onclick="checkAll(this,'DesignSpec')" value="{!selectAll}"/>
+                                        </apex:facet>                                
+                                
+                                    <apex:inputCheckbox value="{!ds.isSelected}" styleClass="DesignSpec"/>
+                                </apex:column>
+                                
+                                <apex:repeat value="{!$ObjectType.Design_Spec__c.FieldSets.SelectDesignSpec}" var="f">
+                                    <apex:column value="{!ds.designSpec[f]}" rendered="{!IF(NOT(f == 'Specification_ASIC_Flag__c' && masterPDK.Master_PDK_ASIC__c== false ),true,false)}" />
+                                    <!-- rendered="{!IF(masterPDK.Master_PDK_ASIC__c = true,true,false)}" -->
+                                </apex:repeat>    
+                            </apex:pageblockTable>
+                            
+                            <apex:outputLabel value="No records found" rendered="{!!IF(masterDesignSpec.size>0,true,false)}"/>
+                            
+                        </apex:pageBlockSection>
+						<!--- Added Pagination Code By Dinesh 24/9/2017  -->
+                        <apex:outputpanel id="panel">
+                        <apex:outputLabel value=" Page {!pageNum} of {!totalPages} " />
+                         
+                         <apex:commandButton value="First" action="{!beginning}" disabled="{!DisablePrevious}" reRender="designspecsection,panel" status="loadingStatus"  />
+                         <apex:commandButton value="Previous" action="{!previous}" disabled="{!DisablePrevious}" reRender="designspecsection,panel" status="loadingStatus"  />
+                         <apex:commandButton value="Next" action="{!next}" disabled="{!DisableNext}" reRender="designspecsection,panel" status="loadingStatus"  />
+                         <apex:commandButton value="Last" action="{!last}" disabled="{!DisableNext}" reRender="designspecsection,panel" status="loadingStatus" />  
+                           <apex:actionStatus id="loadingStatus">
+                                            <apex:facet name="start" >
+                                                <apex:image url="/img/loading32.gif" height="20px"/>                       
+                                            </apex:facet>
+                           </apex:actionStatus>
+                           
+                          <apex:outputtext >Total Records :{!masterDesignSpec.size}</apex:outputtext>
+                         </apex:outputPanel>
+                        <!--- Code Ended by Dinesh-->
+                        
+                        <apex:pageBlockSection id="designspecPatchsection" title="Select Master PDK Patch Design Spec" columns="1" >
+                            
+                            <apex:pageblockTable value="{!patchDesignSpec}" var="ds" rendered="{!IF(patchDesignSpec.size>0,true,false)}" width="90%">
+                                <apex:column >
+                                
+                                    <apex:facet name="header">
+                                            <apex:inputcheckbox id="selectAllDesignSpec" onclick="checkAll(this,'DesignSpecPatch')" />
+                                        </apex:facet>                                
+                                
+                                    <apex:inputCheckbox value="{!ds.isSelected}" styleClass="DesignSpecPatch"/>
+                                </apex:column>
+                                
+                                <apex:repeat value="{!$ObjectType.Design_Spec__c.FieldSets.SelectDesignSpec}" var="f">
+                                    <apex:column value="{!ds.designSpec[f]}" rendered="{!IF(NOT(f == 'Specification_ASIC_Flag__c' && masterPDK.Master_PDK_ASIC__c== false ),true,false)}" />
+                                    
+                                </apex:repeat> 
+                                <apex:column headerValue="Patch Name">
+                                    <apex:outputText value="{!ds.designSpec.PDK_Patch_Name__c}"/>
+                                </apex:column>   
+                            </apex:pageblockTable>
+                            
+                            <apex:outputLabel value="No records found" rendered="{!!IF(patchDesignSpec.size>0,true,false)}"/>
+                            
+                        </apex:pageBlockSection>
+                
+                        <apex:outputPanel id="WLAccountPanel">
+                            <apex:pageblockSection title="White Listed Accounts" columns="1" rendered="{!showWLAccountsSection}">
+                                
+                                
+                                <apex:pageBlockTable value="{!WLAccounts}" var="ac" rendered="{!IF(WLAccounts.size>0,true,false)}">
+                                    <apex:column >
+                                    
+                                        <apex:facet name="header">
+                                            <apex:inputcheckbox id="selectAllWhiteList" onclick="checkAll(this,'WhiteList')" />
+                                        </apex:facet>
+                                    
+                                        <!-- <apex:inputCheckbox value="{!ac.isChecked}" styleClass="WhiteList"/> -->
+                                        <apex:inputCheckbox styleClass="WhiteList" rendered="{!IF(((ac.accountFound.ASIC_Business_Flag__c=true && masterPDK.Master_PDK_ASIC__c = true)|| (masterPDK.Master_PDK_ASIC__c = false)),true,false)}"/>                                    
+                                    </apex:column>
+                                   
+                                    <apex:repeat value="{!$ObjectType.Account.FieldSets.WhiteListFields}" var="f">
+                                        <apex:column value="{!ac.accountFound[f]}"/>
+                                    </apex:repeat>
+                                    
+                                </apex:pageBlockTable>
+                                
+                                <apex:outputLabel value="No records found" rendered="{!!IF(WLAccounts.size>0,true,false)}"/>
+                                
+                              
+                            </apex:pageblockSection>
+                        </apex:outputPanel>
+                                       
+                    </apex:outputPanel>
+                </apex:outputPanel>
+                
+               
+                <apex:outputpanel id="searchPanel" rendered="{!(displayPage)}">
+                    <apex:outputPanel rendered="{!searchpanel}">
+                        <apex:pageBlockSection title="Search Accounts" columns="1">
+                            
+                            <apex:outputPanel style="padding-left:30%;padding-top:10%;padding-bottom:10%;">
+                                               
+                                <apex:inputText value="{!searchString}" styleClass="ui-corner-all"/> &nbsp;&nbsp;&nbsp;                                       
+                                <apex:commandButton value="Search" action="{!searchAccount}"    reRender="searchresultpanel,msg" status="searchStatus"/>&nbsp;&nbsp;
+                                <apex:commandButton value="Back"   action="{!cancelAddAccount}" reRender="theForm"               status="searchStatus"/>
+                                
+                                <apex:actionStatus id="searchStatus">
+                                    <apex:facet name="start" >
+                                        <apex:image url="/img/loading32.gif" height="20px"/>                       
+                                    </apex:facet>
+                                </apex:actionStatus>
+                                
+                            </apex:outputPanel>    
+                            
+                            
+                            <apex:outputPanel id="searchresultpanel">
+                                
+                                <apex:outputPanel rendered="{!IF(accountSearchList.size>0,true,false)}">
+                                    <apex:commandButton value="Add Selected Accounts" action="{!addSelectedAccounts}" status="addAccountStatus1" reRender="theForm" />&nbsp;&nbsp;
+                                    <apex:commandButton value="Cancel"                action="{!cancelAddAccount}"    status="addAccountStatus1" reRender="theForm" />
+                                </apex:outputPanel>
+                                
+                                <apex:actionStatus id="addAccountStatus1">
+                                    <apex:facet name="start" >
+                                        <apex:image url="/img/loading32.gif" height="20px"/>                       
+                                    </apex:facet>
+                                </apex:actionStatus>
+                                <br/><br/>
+                                <apex:pageBlockTable value="{!accountSearchList}" var="ac" rendered="{!IF(accountSearchList.size>0,true,false)}">
+                                    <apex:column >
+                                        <apex:facet name="header">
+                                            <apex:inputcheckbox id="selectAllSearchList" onclick="checkAll(this,'SearchList')" />
+                                        </apex:facet>
+                                                                        
+    <!--                                    <apex:inputCheckbox value="{!ac.isChecked}" styleClass="SearchList"/> -->
+                                        <apex:inputCheckbox styleClass="SearchList" value="{!ac.isChecked}" rendered="{!IF(((ac.accountFound.ASIC_Business_Flag__c=true && masterPDK.Master_PDK_ASIC__c = true)|| (masterPDK.Master_PDK_ASIC__c = false)),true,false)}"/>                                    
+                                                                            
+                                    </apex:column>
+                                  
+                                    <apex:repeat value="{!$ObjectType.Account.FieldSets.WhiteListFields}" var="f">
+                                        <apex:column value="{!ac.accountFound[f]}"/>
+                                    </apex:repeat>
+                                    
+                                </apex:pageBlockTable>
+                                
+                                <apex:outputLabel value="No records found" rendered="{!!IF(accountSearchList.size>0,true,false)}"/>
+                                <br/>
+                                <apex:outputPanel rendered="{!IF(accountSearchList.size>0,true,false)}" style="align:right;">
+                                    <apex:commandButton value="Add Selected Accounts" action="{!addSelectedAccounts}" status="addAccountStatus" reRender="theForm" />&nbsp;&nbsp;
+                                    <apex:commandButton value="Cancel"                action="{!cancelAddAccount}"    status="addAccountStatus" reRender="theForm" />
+                                </apex:outputPanel>
+                               
+                                <apex:actionStatus id="addAccountStatus">
+                                    <apex:facet name="start" >
+                                        <apex:image url="/img/loading32.gif" height="20px"/>                       
+                                    </apex:facet>
+                                </apex:actionStatus>
+                                
+                            </apex:outputPanel>
+                        </apex:pageBlockSection>
+                    </apex:outputPanel>
+                </apex:outputpanel>
+            </apex:pageBlock> 
+            <apex:inputHidden value="{!isTrue}" id="hiddenId"/> 
+        </apex:form>    
+    </apex:page>

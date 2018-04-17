@@ -1,0 +1,177 @@
+<apex:page standardController="RMA__c" extensions="RMA_Certificate_Extension" Id="RMA_Scrap_Certificate_PDF" renderAs="pdf" applyBodyTag="false">
+    <head>
+        <style>
+            @page {
+                @top-center {
+                    content: element(header);
+                }
+                @bottom-left {
+                    content: element(footer);
+                }
+            }
+            div.header {
+                position: running(header);
+            }
+            div.footer {
+                position: running(footer);
+            }
+            .pagenumber:before {
+                content: counter(page);
+            }
+            .pagecount:before {
+                content: counter(pages);
+            }
+            body {
+                font-family : 'Times New Roman';
+                font-size : 85%;
+            }
+            table {
+                width: 100%;
+            }
+        </style>
+    </head>
+    <body>
+        <apex:form >
+            <apex:repeat value="{!$ObjectType.RMA__c.FieldSets.RMA_Fields_For_Certificate}" var="hidField">
+                <apex:inputHidden value="{!RMA__c[hidField]}" />
+            </apex:repeat>
+            <h2>GLOBALFOUNDRIES</h2>
+            <b>Scrap Material Certification for Authorized RMA Compensation</b>
+            __________________________________________________________________________________________________________
+            <p>
+                Client's Name:<br/>
+                <b>{!RMA__c.Customer_Name__c}</b><br/>
+                Address:<br/>
+                <b>
+                    <apex:repeat value="{!lstAddress}" var="add">
+                        <apex:outputText value="{!add}"/><br/>
+                    </apex:repeat>
+                </b>
+            </p>
+            <p>
+                <b>
+                    <table>
+                        <tr><td>GLOBALFOUNDRIES SCRAP CERTIFICATE</td></tr>
+                    </table>
+                </b>
+                <b>This RMA is currently pending internal approval within GlobalFoundries.  Once this RMA has been approved, 
+                    the defective parts identified below are authorized for compensation without being returned to GlobalFoundries.</b> 
+            </p>
+            <p>
+                <b>RMA Number:</b>&nbsp;{!RMA__c.Name}<br/>
+            </p>
+            
+            <apex:pageBlock >
+                <apex:pageBlockTable value="{!lstInvoicesScrapWrapper}" var="wrapper" border="1" cellpadding="5" style="text-align:center;font-size:10px !important;">
+                    <apex:column style="text-align:center;">
+                        <apex:facet name="header">Original Client<br/> PO Number</apex:facet>
+                        <apex:outputField value="{!wrapper.invoice.Purchase_Order_Number__c}"/>                                                                             
+                    </apex:column>
+                    <!-- <apex:column style="text-align:center;">
+                        <apex:facet name="header">Part #</apex:facet>
+                        <apex:outputField value="{!wrapper.invoice.Invoice__r.Part_Number__c}"/>                                                                             
+                    </apex:column>
+                    <apex:column style="text-align:center;">
+                        <apex:facet name="header">Customer <br/>Part #</apex:facet>
+                        <apex:outputField value="{!wrapper.invoice.Cust_Part_Num__c}"/>                                                                             
+                    </apex:column> -->
+                    <apex:column style="text-align:center;width:75px;">
+                        <apex:facet name="header">Part #<br/>Customer Part #</apex:facet>
+                        <apex:outputText escape="false" value="{!wrapper.invoice.Invoice__r.Part_Number__c +'<br><i>'+
+                            IF( LEN(wrapper.invoice.Cust_Part_Num__c) > 24,
+                                    LEFT(wrapper.invoice.Cust_Part_Num__c,12)+'<br>'+
+                                    LEFT(SUBSTITUTE(wrapper.invoice.Cust_Part_Num__c, LEFT(wrapper.invoice.Cust_Part_Num__c,12),''),12) + '<br>' +
+                                    LEFT(SUBSTITUTE(wrapper.invoice.Cust_Part_Num__c, LEFT(wrapper.invoice.Cust_Part_Num__c,24),''),LEN(wrapper.invoice.Cust_Part_Num__c)),
+                                IF(LEN(wrapper.invoice.Cust_Part_Num__c) > 12,
+                                    LEFT(wrapper.invoice.Cust_Part_Num__c,12)+'<br>'+
+                                    LEFT(SUBSTITUTE(wrapper.invoice.Cust_Part_Num__c, LEFT(wrapper.invoice.Cust_Part_Num__c,12),''),LEN(wrapper.invoice.Cust_Part_Num__c)),
+                                wrapper.invoice.Cust_Part_Num__c))
+                            +'</i>' }"/>                                                                             
+                    </apex:column>
+                    <apex:column style="text-align:center;">
+                        <apex:facet name="header">Type</apex:facet>
+                        <apex:outputField value="{!wrapper.invoice.RMA__r.Compensation_Type__c}"/>                                                                             
+                    </apex:column>
+                    <apex:column style="text-align:center;">
+                        <apex:facet name="header">Lot #</apex:facet>
+                        <apex:outputField value="{!wrapper.invoice.Lot_Number__c}"/>                                                                             
+                    </apex:column>
+                    <apex:column style="text-align:center;">
+                        <apex:facet name="header">Original<br/>Invoice #</apex:facet>
+                        <apex:outputField value="{!wrapper.invoice.Invoice_Number__c}"/>                                                                             
+                    </apex:column>
+                    <!--<apex:column style="text-align:center;">
+                        <apex:facet name="header">Original<br/>SO #</apex:facet>
+                        <apex:outputField value="{!wrapper.invoice.Invoice__r.Sales_Order_Number__c}"/>                                                                             
+                    </apex:column>-->
+                    <apex:column rendered="{!RMA__c.ReasonCode__c == 'R81'}" style="text-align:center;">
+                        <apex:facet name="header">Existing Form Factor</apex:facet>
+                        <apex:outputField value="{!wrapper.invoice.Existing_Form_Factor__c}"/>                                                                             
+                    </apex:column>
+                    <apex:column style="text-align:center;">
+                        <apex:facet name="header">Qty</apex:facet>
+                        <apex:outputField value="{!wrapper.invoice.Wafer_Quantity__c}"/>                                                                             
+                    </apex:column>
+                    <apex:column rendered="{!RMA__c.ReasonCode__c != 'R81'}" style="text-align:center;">
+                        <apex:facet name="header">Unit Price</apex:facet>
+                        <apex:outputText value="{!wrapper.UnitPrice}"/>                                                                             
+                    </apex:column>
+                    <apex:column rendered="{!RMA__c.ReasonCode__c == 'R81'}"  style="text-align:center;">
+                        <apex:facet name="header">Existing Form Factor Price</apex:facet>
+                        <apex:outputText value="{!wrapper.UnitPrice}"/>                                                                             
+                    </apex:column>
+                    <apex:column style="text-align:center;">
+                        <apex:facet name="header">Item Value</apex:facet>
+                        <apex:outputText value="{!wrapper.ItemValue}"/>                                                                             
+                    </apex:column>
+                </apex:pageBlockTable>
+            </apex:pageBlock>
+            <p align="right" style="text-align:top"><b>Credit (may be less than original invoice): </b>
+            <apex:outputText rendered="{!RMA__c.Compensation_Type__c == 'Credit' || RMA__c.Compensation_Type__c == 'Credit with charged replacement'}">
+                {!amountScrapInvoices}
+            </apex:outputText>
+            <apex:outputText rendered="{!RMA__c.Compensation_Type__c == 'No Compensation' || RMA__c.Compensation_Type__c == 'Replacement'}">
+                0.00
+            </apex:outputText>
+            </p>
+            <p>
+                <b>After this RMA has been internally approved, compensation will be given when the product described in this 
+                document has been </b>  <br/>1. Scrapped<br/>2. Signed Scrap Certificate has been completed and returned to GlobalFoundries
+            </p>
+            
+            <b>Please scan the signed scrap certificate and email to {!RMA__c.Originator_Email__c}, GLOBALFOUNDRIES' Customer Service Representative.</b><br/>
+            __________________________________________________________________________________________________________
+            <br/><b>Required client information --- All fields below must be completed before compensation is processed.</b><br/>
+            <!--<p>-->
+                Scrap Date:<br/>
+                Scrap Reason:<br/>
+                Scrap Location:
+            <!--</p>-->
+            <p><b>Validation of scrap of product:</b></p>
+            <p>
+                By:&nbsp;____________________________________________________<br/>
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                <apex:outputText style="font-size:12px;" value="Authorized Signature"/>
+            </p>
+            <p>
+                Name:&nbsp;__________________________________________________<br/>
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                <apex:outputText style="font-size:12px;" value="Please print or type name"/>
+            </p>
+            <p>
+                Title:&nbsp;___________________________________________________<br/>
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                <apex:outputText style="font-size:12px;" value="Please print or type title"/>
+            </p>
+            <p>
+                Company:&nbsp;_______________________________________________<br/>
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                <apex:outputText style="font-size:12px;" value="Please print or type company"/>
+            </p>
+            <p>Phone Number:&nbsp;___________________________________________</p>
+            <div class="footer">
+                <div>Page <span class="pagenumber" /> of <span class="pagecount" /> - <apex:outputText value="{!NOW()}" /></div>
+            </div>
+        </apex:form>
+    </body>    
+</apex:page>

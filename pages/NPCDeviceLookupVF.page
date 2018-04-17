@@ -1,0 +1,117 @@
+<!--
+    Author: Zymark Ambat
+    Description: This page is used for NPCDeviceLookupController.
+    History: 
+        ZAmbat      11142013    - Page creation.
+-->
+
+<apex:page id="NPCDeviceLookupVF" controller="NPCDeviceLookupController" title="Search" showHeader="false" sideBar="false" tabStyle="Device__c">
+	<style>
+		.next {
+			background-image: url(/img/paginationArrows.gif);
+			background-repeat: no-repeat;
+			background-position: -17px 1px;
+			width: 9px;
+			height: 10px;
+		}
+		
+		.nextoff {
+			background-image: url(/img/paginationArrows.gif);
+			background-repeat: no-repeat;
+			background-position: -17px -10px;
+			width: 9px;
+			height: 10px;
+		}
+		
+		.prev {
+			background-image: url(/img/paginationArrows.gif);
+			background-repeat: no-repeat;
+			background-position: -10px 1px;
+			margin: 0;
+			padding: 0;
+			width: 9px;
+			height: 10px;
+		}
+		
+		.prevoff {
+			background-image: url(/img/paginationArrows.gif);
+			background-repeat: no-repeat;
+			background-position: -10px -10px;
+			margin: 0;
+			padding: 0;
+			width: 9px;
+			height: 10px;
+		}
+	</style>
+	
+	<script>
+		function captureKey(e) {
+			if (e.keyCode == 13) {
+				searchDevices();
+			}
+			
+			return true;
+		}
+	</script>
+	
+	<apex:form >
+		<apex:pageBlock title="Search Devices">
+			<apex:outputPanel id="page" layout="block" style="margin: 5px; padding: 10px; padding-top: 2px;">
+				<apex:outputPanel id="top" layout="block" style="margin: 5px; padding: 10px; padding-top: 2px;">
+	            	<apex:outputLabel value="Search" style="font-weight: Bold; padding-right: 10px;" for="txtSearch" />
+	            	<apex:inputText id="txtSearch" value="{!searchKey}" onkeypress="return captureKey(event);" />
+	              	<span style="padding-left: 5px">
+	              		<apex:commandButton id="btnGo" value="Go" action="{!searchDevices}" rerender="searchResults" />
+	              	</span>
+	          	</apex:outputPanel>
+	          	
+	          	<apex:outputPanel id="pnlSearchResults" style="margin: 10px; height: 430px; overflow-Y: auto;" layout="block">
+	          		<apex:pageBlock id="searchResults"> 
+	          			<apex:pageBlockTable value="{!listDevices}" var="d" id="tblResults">
+	          				<apex:column >
+	          					<apex:facet name="header">
+	          						Name
+	          					</apex:facet>
+	          					<apex:outputLink value="javascript:top.window.opener.lookupPick2('{!FormTag}', '{!TextBox}_lkid', '{!TextBox}', '{!d.Id}', '{!d.Name}', false)">{!d.Name}</apex:outputLink>
+	          				</apex:column>
+	          				<apex:column >
+	          					<apex:facet name="header">
+	          						CRM DID
+	          					</apex:facet>
+	          					<apex:outputText value="{!d.CRMDID__c}" />
+	          				</apex:column>
+	          			</apex:pageBlockTable>
+	          			
+	          			<apex:outputPanel id="controlPanel" layout="inline" rendered="{!IF(totalNoOfRecords > 0, true, false)}">
+			           		<apex:commandLink action="{!previous}" rendered="{!HasPrevious}" style="text-decoration: none; color: #333;">
+			           			<img src="/s.gif" title="Previous" alt="Previous" class="prev" />Previous
+			           		</apex:commandLink>
+			           		<apex:outputPanel layout="inline" rendered="{!NOT(HasPrevious)}">
+			           			<img src="/s.gif" alt="Previous" class="prevoff" />
+			           			<apex:outputText style="color: #a8a8a8;" value="Previous" />
+			           		</apex:outputPanel>
+			           		
+			           		&nbsp;&nbsp;&nbsp;
+			           		<apex:outputText value="     {!fromNo} - {!toNo} of {!totalNoOfRecords}     " />
+			           		&nbsp;&nbsp;&nbsp;
+			           		
+			           		<apex:commandLink action="{!next}" rendered="{!HasNext}" style="text-decoration: none; color: #333;">
+			           			Next<img src="/s.gif" title="Next" alt="Next" class="next" />
+			           		</apex:commandLink>
+			           		<apex:outputPanel layout="inline" rendered="{!NOT(HasNext)}" style="color: #a8a8a8;">
+			           			<apex:outputText style="color: #a8a8a8;" value="Next" />
+			           			<img src="/s.gif" alt="Next" class="nextoff" />
+			           		</apex:outputPanel>
+			           	</apex:outputPanel>
+			
+			           	<apex:outputPanel layout="inline" rendered="{!IF(totalNoOfRecords <= 0, true, false)}">
+			           		No records found.
+			           	</apex:outputPanel>
+	          		</apex:pageBlock>
+	          	</apex:outputPanel>
+			</apex:outputPanel>
+		</apex:pageBlock>
+		
+		<apex:actionFunction name="searchDevices" action="{!searchDevices}" />
+	</apex:form>
+</apex:page>

@@ -1,0 +1,128 @@
+<!-- 
+    Type Name: WRCreate.page
+    Author: Manikumar M
+    Created Date: 24, Nov 2015
+    Created by: GlobalFoundries
+    Reason: 
+    Change History:
+    Author: 
+    Modified Date: 
+    Reason: 
+-->
+<apex:page standardController="Bug__c" extensions="WRCreateController"  standardStylesheets="true" ShowChat="false" Cache="false">
+    <apex:form >
+       <apex:outputPanel rendered="{!IF((displayrecord),false,true)}" >
+            Insufficient Privileges
+            You do not have the level of access necessary to perform the operation you requested. Please contact the owner of the record or your administrator if access is necessary. 
+        </apex:outputPanel>
+        <apex:pageMessages id="msg1"   escape="false" ></apex:pageMessages>
+        <apex:outputPanel rendered="{!displayrecord}">
+            <style>
+                .locationError { color: blue; font-weight: strong;}
+                .employeeError { color: green; font-weight: strong;}
+            </style>
+            <apex:sectionHeader subtitle="{!bugtitle}" title="Bug/Work Request Edit"/>
+            <apex:pageblock title="Bug/Work Request Edit">
+                <apex:pageblockbuttons >
+                    <apex:actionStatus id="prstatus">
+                        <apex:facet name="stop">
+                            <apex:outputpanel >
+                                <apex:commandButton value="Save"  action="{!savebug}"  status="prstatus" />
+                                <apex:commandButton value="Cancel"  action="{!Cancelbug}" immediate="true"/>
+                            </apex:outputpanel>
+                        </apex:facet>
+                        <apex:facet name="start">
+                            <apex:outputpanel >
+                                <apex:commandButton value="Save"  disabled="true"/>
+                                <apex:commandButton value="Cancel" disabled="true" />
+                            </apex:outputpanel>
+                        </apex:facet>
+                    </apex:actionStatus>
+                </apex:pageblockbuttons>
+                <apex:pageblocksection columns="1" showHeader="true" title="Information" collapsible="false">
+                    <apex:outputtext label="{!$ObjectType.Bug__c.fields.Bug_Title__c.Label}">
+                        <apex:outputPanel layout="block" styleClass="requiredInput" >
+                            <div class="requiredBlock"></div>
+                                <apex:inputText value="{!bugVar.Bug_Title__c}" size="100"/>                        
+                            </apex:outputPanel>
+                    </apex:outputtext>
+                    <apex:outputtext label="{!$ObjectType.Bug__c.fields.Bug_Description__c.Label}">
+                        <apex:outputPanel layout="block" styleClass="requiredInput" >
+                            <div class="requiredBlock"></div>
+                                <apex:inputfield value="{!bugVar.Bug_Description__c}" />                        
+                            </apex:outputPanel>
+                    </apex:outputtext>
+                </apex:pageblocksection>
+                <apex:pageblocksection columns="2" showHeader="true" title="PDK Details" collapsible="false">
+                    <apex:outputtext label="{!$ObjectType.Bug__c.fields.Request_Type__c.Label}">
+                        <apex:outputPanel layout="block" styleClass="requiredInput" >
+                            <div class="requiredBlock"></div>
+                                <apex:inputfield value="{!bugVar.Request_Type__c}" />                        
+                            </apex:outputPanel>
+                    </apex:outputtext>
+                    <apex:outputtext label="{!$ObjectType.Bug__c.fields.Need_By_Date__c.Label}">
+                        <apex:outputPanel layout="block" styleClass="requiredInput" >
+                            <div class="requiredBlock"></div>
+                                <apex:inputfield value="{!bugVar.Need_By_Date__c}" />                        
+                            </apex:outputPanel>
+                    </apex:outputtext>  
+                    <apex:outputtext label="{!$ObjectType.Bug__c.fields.Geometry__c.Label}">
+                        <apex:outputPanel layout="block" styleClass="requiredInput" >
+                            <div class="requiredBlock"></div>
+                                <apex:inputfield value="{!bugVar.Geometry__c}" />                        
+                            </apex:outputPanel>
+                    </apex:outputtext>
+                    <apex:inputfield value="{!bugVar.Master_PDK__c}"/>
+                    <apex:outputtext label="{!$ObjectType.Bug__c.fields.Target_Process_Node__c.Label}">
+                        <apex:outputPanel layout="block" styleClass="requiredInput" >
+                            <div class="requiredBlock"></div>
+                                <apex:inputfield value="{!bugVar.Target_Process_Node__c}" />                        
+                            </apex:outputPanel>
+                    </apex:outputtext>
+                    <apex:inputfield value="{!bugVar.Process_Technology__c}"/>
+                    <apex:inputfield value="{!bugVar.Proposed_Technology_Name__c}"/>
+                    <apex:inputfield value="{!bugVar.New_Devices_Required__c}"/>
+                </apex:pageblocksection>
+                <apex:pageblocksection columns="1"  collapsible="false" title="Additional Details">
+                    <apex:inputfield value="{!bugVar.Opportunity__c}"/>
+                </apex:pageblocksection>
+                <apex:pageblocksection columns="2"  collapsible="false" title="Originating Case information">
+                    <apex:pageBlockSectionItem dataStyle="width:30%">
+                        <apex:outputLabel >{!$ObjectType.Case.fields.Geometry__c.label}</apex:outputLabel>
+                        <apex:outputText value="{!caseObj.Geometry__c}"/>
+                    </apex:pageBlockSectionItem>
+                    <apex:pageBlockSectionItem dataStyle="width:30%">
+                        <apex:outputLabel >{!$ObjectType.Case.fields.Target_process_node__c.label}</apex:outputLabel>
+                        <apex:outputText value="{!caseObj.Target_process_node__c}"/>
+                    </apex:pageBlockSectionItem>
+                    <apex:pageBlockSectionItem dataStyle="width:30%">
+                        <apex:outputLabel >{!$ObjectType.Case.fields.Metal_Stack__c.label}</apex:outputLabel>
+                        <apex:outputText value="{!caseObj.Metal_Stack__c}"/>
+                    </apex:pageBlockSectionItem>
+                    <apex:pageBlockSectionItem dataStyle="width:30%">
+                        <apex:outputLabel >{!$ObjectType.Case.fields.Subcategory__c.label}</apex:outputLabel>
+                        <apex:outputText value="{!caseObj.Subcategory__c}"/>
+                    </apex:pageBlockSectionItem>
+                    <apex:pageBlockSectionItem dataStyle="width:30%" rendered="{!caseObj.Internal_or_external__c == false}">
+                        <apex:outputLabel value="Related Account"/>
+                        <apex:outputText value="{!caseObj.Account.Name}"/>
+                    </apex:pageBlockSectionItem>
+                    <apex:pageBlockSectionItem dataStyle="width:30%" rendered="{!caseObj.Internal_or_external__c == true}">
+                        <apex:outputLabel value="Related Account"/>
+                        <apex:outputText value="{!$Label.GlobalfoundryAccount}"/>
+                    </apex:pageBlockSectionItem>
+                    <apex:pageBlockSectionItem />
+                </apex:pageblocksection>
+                <apex:pageblocksection columns="1" showHeader="false" collapsible="false">
+                        <apex:pageBlockSectionItem >
+                            <apex:outputLabel value="Please Note"/>
+                            <apex:outputText style="color:#0101DF" value="{!$Label.WR_TeamMembersHelpText}"/>
+                        </apex:pageBlockSectionItem>
+                </apex:pageblocksection>
+                <apex:pageblocksection columns="2"  collapsible="false" title="System Information">
+                    <apex:outputfield value="{!bugVar.recordtypeid}"/>
+                </apex:pageblocksection>
+            </apex:pageblock>
+        </apex:outputPanel>
+    </apex:form>
+</apex:page>

@@ -1,0 +1,891 @@
+<!---------------------------------------------------------------------------------------------------------------------------------------
+  
+    Page Name: CPQScribeWidthCalculator
+    Reason: Mock Up page for Scribe Width Calculator
+    History:    PS 06102015 : Page Creation
+                ..
+                .. 
+  Nbajaj      23-Aug-17   -cpq Sprint10 case- 00067881
+  Description: added on apex pagemessage  if device TapeoutReadinessValidationStatus
+   is in fully complet state  
+   .09/01/2018--Dilip Jha--changes done for case 00067874--Sprint 14: Align die size precision in scribewidth from line 606 to 609            
+---------------------------------------------------------------------------------------------------------------------------------------->
+<apex:page standardController="Device__c"
+           extensions="CPQScribeWidthCalculatorController" sidebar="false" id="pg">
+    <style>
+        .pageTitleCustom{
+          display: inline;
+          float: left;
+          width: 32px;
+          margin-right: 5px;
+        }
+        tr.border_bottom td {
+          border-bottom:2pt solid black;
+          border-right:1pt solid black;
+        }
+        tr.border_bottom1 td {
+          border-bottom:1pt solid black;
+          border-right:1pt solid black;
+        }
+        boldText {
+          font-weight : bold;
+        }
+    </style>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.4/jquery.min.js"></script>
+    <div class="bPageTitle">
+        <div class="ptBody secondaryPalette brandSecondaryBrd">
+            <div class="content">
+                <img src="/img/icon/invoices32.png" class="pageTitleCustom" title="Scribe Width Calculator" alt="Scribe Width Calculator">
+                <h1 class="pageType">Calculator</h1>
+                <span class="titleSeparatingColon">:</span>
+                <h2 class="pageDescription">Scribe Width Calculator</h2>
+                <div class="blank">
+                </div>
+                </img>
+            </div>
+            
+        </div>
+    </div>
+    <apex:form title="Scribe Width Calculator" id="frm">
+    <!--CPQ Sprint 10,case-00067881--->
+    <apex:pageMessage rendered="{!TapeoutReadinessValidationStatus == 'Fully Complete'}" summary="Device TapeoutReadinessValidationStatus is in Fully Complete state therefore scribe width calculation can not be performed." strength="3" severity="warning"></apex:pageMessage>
+    <apex:pageMessage rendered="{!iPAccountKey == NULL}" summary="Current device's process technology record is not configured in base table" strength="3" severity="warning"></apex:pageMessage>
+        <apex:inputHidden id="minWidthXPost" value="{!device.Min_scribe_width_X_post_shrink__c}"/>
+        <apex:inputHidden id="minWidthYPost" value="{!device.Min_scribe_width_Y_post_shrink__c}"/>
+        <apex:inputHidden id="stdWidthXPost" value="{!device.Std_scribe_width_X_post_shrink__c}"/>
+        <apex:inputHidden id="stdWidthYPost" value="{!device.Std_scribe_width_Y_post_shrink__c}"/>
+        <apex:inputHidden id="dieXIllumination" value="{!device.Dies_X_per_illumination_field__c}"/>
+        <apex:inputHidden id="dieYIllumination" value="{!device.Dies_Y_per_illumination_field__c}"/>
+        
+        <apex:pageBlock id="pb">
+            <apex:pageblockButtons >
+                <apex:commandButton action="{!saveDie}" rendered="{!if(device.Pre_PTRF_Validation_Status__c != 'Fully Complete',true,false)}" onclick="if(isError == 1 || '{!iPAccountKey}' == '' ) {alert('Cannot save as there is an error in the page, please correct before saving.');return false;}" value="Save"/> 
+                <apex:commandButton action="{!cancel}" value="Cancel"/>
+                <input type="button" value="Print" class="btn" onclick="printThisPage();"/> 
+            </apex:pageblockButtons>    
+            
+           
+                <table border="" class="" cellspacing="0" cellpadding="0" style="margin-top:20px;" width="80%">
+                  <tr class="dataRow">
+                    <td class="labelCol">Die Size Pre Shrink X(mm)
+                    </td>
+                    
+                    <td style="padding-left:30px;"><apex:inputField value="{!device.Die_Size_X_mm__c}" id="PreX" style="width:60px" required="false" onkeyup="doScribeWidthCalculation();"/>
+                    <img src="/img/msg_icons/error16.png" id="preXErrorIMG" style="vertical-align: middle;display:none;" alt="Pre X more than allowed limit"/> 
+                    </td>
+                    
+                     
+                      <td class="labelCol">Die Size Pre Shrink Y(mm)
+                    </td>
+                     <td style="padding-left:30px;"><apex:inputField value="{!device.Die_Size_Y_mm__c}" id="PreY" style="width:60px" required="false" onkeyup="doScribeWidthCalculation();"/>
+                    <img src="/img/msg_icons/error16.png" id="preYErrorIMG"  style="vertical-align: middle;display:none;" alt="Pre Y more than allowed limit"/>
+                    </td>
+                      
+                       
+                  </tr>
+                  <tr class="dataRow">
+                    <td class="labelCol">Die Size Post Shrink X(mm)</td>
+                     <td  style="padding-left:30px;" id="postX"></td>
+                     <td class="labelCol">Die Size Post Shrink Y(mm)</td>
+                     <td style="padding-left:30px;" id="postY"></td> 
+                  
+                  </tr>
+                  <tr class="dataRow">
+                    <td class="labelCol">Die Size Pre Shrink (mm<sup>2</sup>)</td>
+                      <td style="padding-left:30px;" id="areaPre"></td>
+                     <td class="labelCol">Die Size Post Shrink (mm<sup>2</sup>)</td>
+                    <td style="padding-left:30px;" id="areaPost"></td> 
+                  </tr>
+                  
+                    <tr class="dataRow">
+                    <td class="labelCol">Dies horizontal (X) per illumination field</td>
+                    <td  style="padding-left:30px;" id="dieXill"></td>
+                    <td class="labelCol">Dies vertical (Y) per illumination field</td>
+                    <td style="padding-left:30px;" id="dieYill"></td>
+                  </tr>  
+                  
+                  <tr class="dataRow">
+                    <td class="labelCol">Max. Illumination field on wafer X</td>
+                    <td style="padding-left:30px;">26000</td>
+                    <td class="labelCol">Max. Illumination field on wafer Y</td>
+                    <td style="padding-left:30px;">33000</td>
+                  </tr>
+                  
+                
+                  
+                  <tr class="dataRow">
+                    <td class="labelCol">Minimum horizontal scribe width X post shrink</td>
+                    <td  style="padding-left:30px;" id="minXPostShrink123"></td>
+                    <td class="labelCol">Minimum vertical scribe width Y post shrink</td>
+                    <td style="padding-left:30px;" id="minYPostShrink123"></td>
+                  </tr>
+                  
+                  <tr class="dataRow">
+                    <td class="labelCol">Standard horizontal scribe width X post shrink</td>
+                    <td  style="padding-left:30px;" id="stdXPostShrink"></td>
+                    <td class="labelCol">Standard vertical scribe width Y post shrink</td>
+                    <td style="padding-left:30px;" id="stdYPostShrink"></td>
+                  </tr>
+                  
+                </table>
+            
+            
+             
+              
+                <table border="1" class="list" cellspacing="0" cellpadding="0" style="margin-top:20px;display:{!if(calcDisplaySetting.Display_Base_Calculated_Table__c,'','none')}">
+                    <tr  class="headerRow">
+                        <td colspan="2">Table unit is (mm)</td>
+                        <apex:repeat value="{!processTechList}" var="processTech">
+                            <td style="display:{!if(calcDisplaySetting.Display_only_current_PT_data__c && UPPER(iPAccountKey) = UPPER(processTech),'',if(!calcDisplaySetting.Display_only_current_PT_data__c,'','none'))};background-color:{!if(processTech == iPAccountKey,'yellow','')};">{!processTech}</td>
+                        </apex:repeat>
+                    </tr>
+                    
+                      <tr class="dataRow" onmouseover="if (window.hiOn){hiOn(this);}" onmouseout="if (window.hiOff){hiOff(this);}">
+                      <td rowspan="2" style="font-weight:bolder;">Class 1</td>
+                      <td >Optical and Manufacturing Structures H</td>
+                      <apex:repeat value="{!processTechList}" var="processTech">
+                        <td id="{!processTech & '--opManStr--H'}" style="display:{!if(calcDisplaySetting.Display_only_current_PT_data__c && UPPER(iPAccountKey) = UPPER(processTech),'',if(!calcDisplaySetting.Display_only_current_PT_data__c,'','none'))};">
+                          {!mpBaseTableData[processTech+'--opManStr--H']} 
+                        </td>
+                        </apex:repeat>
+                      </tr>
+                      <tr class="dataRow" onmouseover="if (window.hiOn){hiOn(this);}" onmouseout="if (window.hiOff){hiOff(this);}">
+                      <td>Optical and Manufacturing Structures V</td>
+                      <apex:repeat value="{!processTechList}" var="processTech">
+                        <td id="{!processTech & '--opManStr--V'}" style="display:{!if(calcDisplaySetting.Display_only_current_PT_data__c && UPPER(iPAccountKey) = UPPER(processTech),'',if(!calcDisplaySetting.Display_only_current_PT_data__c,'','none'))};">
+                          {!mpBaseTableData[processTech+'--opManStr--V']} 
+                        </td>
+                        </apex:repeat>
+                      </tr>
+                       <tr class="dataRow" onmouseover="if (window.hiOn){hiOn(this);}" onmouseout="if (window.hiOff){hiOff(this);}">
+                      <td rowspan="2" style="font-weight:bolder;">Class 2</td>
+                      <td>Electrical Wafer Disposition Structures H</td>
+                      <apex:repeat value="{!processTechList}" var="processTech">
+                        <td  id="{!processTech & '--elecWatDisStruct--H'}" style="display:{!if(calcDisplaySetting.Display_only_current_PT_data__c && UPPER(iPAccountKey) = UPPER(processTech),'',if(!calcDisplaySetting.Display_only_current_PT_data__c,'','none'))};">
+                          {!mpBaseTableData[processTech+'--elecWatDisStruct--H']} 
+                        </td>
+                        </apex:repeat>
+                      </tr>
+                       <tr class="dataRow" onmouseover="if (window.hiOn){hiOn(this);}" onmouseout="if (window.hiOff){hiOff(this);}">
+                      <td>Electrical Wafer Disposition Structures V</td>
+                      <apex:repeat value="{!processTechList}" var="processTech">
+                        <td id="{!processTech & '--elecWatDisStruct--V'}" style="display:{!if(calcDisplaySetting.Display_only_current_PT_data__c && UPPER(iPAccountKey) = UPPER(processTech),'',if(!calcDisplaySetting.Display_only_current_PT_data__c,'','none'))};">
+                          {!mpBaseTableData[processTech+'--elecWatDisStruct--V']} 
+                        </td>
+                        </apex:repeat>
+                      </tr>
+                       <tr class="dataRow" onmouseover="if (window.hiOn){hiOn(this);}" onmouseout="if (window.hiOff){hiOff(this);}">
+                      <td rowspan="2" style="font-weight:bolder;">Class 3</td>
+                      <td>Electrical Reliability Structures H</td>
+                      <apex:repeat value="{!processTechList}" var="processTech">
+                        <td id="{!processTech & '--elecWatRelStruct--H'}" style="display:{!if(calcDisplaySetting.Display_only_current_PT_data__c && UPPER(iPAccountKey) = UPPER(processTech),'',if(!calcDisplaySetting.Display_only_current_PT_data__c,'','none'))};">
+                          {!mpBaseTableData[processTech+'--elecWatRelStruct--H']} 
+                        </td>
+                        </apex:repeat>
+                      </tr>
+                       <tr class="dataRow" onmouseover="if (window.hiOn){hiOn(this);}" onmouseout="if (window.hiOff){hiOff(this);}">
+                      <td>Electrical Reliability Structures V</td>
+                      <apex:repeat value="{!processTechList}" var="processTech">
+                        <td id="{!processTech & '--elecWatRelStruct--V'}" style="display:{!if(calcDisplaySetting.Display_only_current_PT_data__c && UPPER(iPAccountKey) = UPPER(processTech),'',if(!calcDisplaySetting.Display_only_current_PT_data__c,'','none'))};">
+                          {!mpBaseTableData[processTech+'--elecWatRelStruct--V']} 
+                        </td>
+                        </apex:repeat>
+                      </tr>
+                       <tr class="dataRow" onmouseover="if (window.hiOn){hiOn(this);}" onmouseout="if (window.hiOff){hiOff(this);}">
+                      <td rowspan="2" style="font-weight:bolder;">Class 4</td>
+                      <td>Electrical Yield Bring-Up Structures H</td>
+                      <apex:repeat value="{!processTechList}" var="processTech">
+                        <td id="{!processTech & '--elecYieldBrUpStruct--H'}" style="display:{!if(calcDisplaySetting.Display_only_current_PT_data__c && UPPER(iPAccountKey) = UPPER(processTech),'',if(!calcDisplaySetting.Display_only_current_PT_data__c,'','none'))};">
+                          {!mpBaseTableData[processTech+'--elecYieldBrUpStruct--H']} 
+                        </td>
+                        </apex:repeat>
+                      </tr>
+                       <tr class="dataRow" onmouseover="if (window.hiOn){hiOn(this);}" onmouseout="if (window.hiOff){hiOff(this);}">
+                      <td>Electrical Yield Bring-Up Structures V</td>
+                      <apex:repeat value="{!processTechList}" var="processTech">
+                        <td  id="{!processTech & '--elecYieldBrUpStruct--V'}" style="display:{!if(calcDisplaySetting.Display_only_current_PT_data__c && UPPER(iPAccountKey) = UPPER(processTech),'',if(!calcDisplaySetting.Display_only_current_PT_data__c,'','none'))};">
+                          {!mpBaseTableData[processTech+'--elecYieldBrUpStruct--V']} 
+                        </td>
+                        </apex:repeat>
+                      </tr>
+                    
+                      <tr class="dataRow" onmouseover="if (window.hiOn){hiOn(this);}" onmouseout="if (window.hiOff){hiOff(this);}">
+                      <td rowspan="2" style="font-weight:bolder;">Class 5</td>
+                      <td>Electrical Debugging+Customer Structures H</td>
+                      <apex:repeat value="{!processTechList}" var="processTech">
+                        <td  id="{!processTech & '--elecDebCustStruct--H'}" style="display:{!if(calcDisplaySetting.Display_only_current_PT_data__c && UPPER(iPAccountKey) = UPPER(processTech),'',if(!calcDisplaySetting.Display_only_current_PT_data__c,'','none'))};">
+                          {!mpBaseTableData[processTech+'--elecDebCustStruct--H']} 
+                        </td>
+                        </apex:repeat>
+                      </tr>
+                       <tr class="dataRow" onmouseover="if (window.hiOn){hiOn(this);}" onmouseout="if (window.hiOff){hiOff(this);}">
+                      
+                      <td>Electrical Debugging+Customer Structures V</td>
+                      <apex:repeat value="{!processTechList}" var="processTech">
+                        <td  id="{!processTech & '--elecDebCustStruct--V'}" style="display:{!if(calcDisplaySetting.Display_only_current_PT_data__c && UPPER(iPAccountKey) = UPPER(processTech),'',if(!calcDisplaySetting.Display_only_current_PT_data__c,'','none'))};">
+                          {!mpBaseTableData[processTech+'--elecDebCustStruct--V']} 
+                        </td>
+                        </apex:repeat>
+                      </tr>
+                      
+                      
+                      
+                      <!--- START CALCULATION -->
+                      <tr class="dataRow" onmouseover="if (window.hiOn){hiOn(this);}" onmouseout="if (window.hiOff){hiOff(this);}">
+                      <td colspan="2"></td>
+                        <apex:repeat value="{!processTechList}" var="processTech">
+                          <td style="display:{!if(calcDisplaySetting.Display_only_current_PT_data__c && UPPER(iPAccountKey) = UPPER(processTech),'',if(!calcDisplaySetting.Display_only_current_PT_data__c,'','none'))};"></td>
+                        </apex:repeat>
+                      </tr>
+                      <tr  class="dataRow" onmouseover="if (window.hiOn){hiOn(this);}" onmouseout="if (window.hiOff){hiOff(this);}"><td></td>
+                        <td>Must have horizontal (H) - class 1+2+3</td>
+                        <apex:repeat value="{!processTechList}" var="processTech">
+                        <td  id="{!processTech & '--MHHC123'}" style="display:{!if(calcDisplaySetting.Display_only_current_PT_data__c && UPPER(iPAccountKey) = UPPER(processTech),'',if(!calcDisplaySetting.Display_only_current_PT_data__c,'','none'))};">
+                          N/A
+                        </td>
+                        </apex:repeat>
+                      </tr>
+                      
+                      <tr  class="dataRow" onmouseover="if (window.hiOn){hiOn(this);}" onmouseout="if (window.hiOff){hiOff(this);}"><td></td>
+                        <td>Must have vertical (V) - class 1+2+3</td>
+                        <apex:repeat value="{!processTechList}" var="processTech">
+                        <td  id="{!processTech & '--MHVC123'}" style="display:{!if(calcDisplaySetting.Display_only_current_PT_data__c && UPPER(iPAccountKey) = UPPER(processTech),'',if(!calcDisplaySetting.Display_only_current_PT_data__c,'','none'))};">
+                          N/A
+                        </td>
+                        </apex:repeat>
+                      </tr>
+                      
+                      <tr  class="dataRow" onmouseover="if (window.hiOn){hiOn(this);}" onmouseout="if (window.hiOff){hiOff(this);}"><td></td>
+                        <td>Recommended horizontal adder (H) - class 4+5</td>
+                        <apex:repeat value="{!processTechList}" var="processTech">
+                        <td  id="{!processTech & '--RHAC45'}" style="display:{!if(calcDisplaySetting.Display_only_current_PT_data__c && UPPER(iPAccountKey) = UPPER(processTech),'',if(!calcDisplaySetting.Display_only_current_PT_data__c,'','none'))};">
+                          N/A
+                        </td>
+                        </apex:repeat>
+                      </tr>
+                      
+                      <tr  class="dataRow" onmouseover="if (window.hiOn){hiOn(this);}" onmouseout="if (window.hiOff){hiOff(this);}"><td></td>
+                        <td>Recommended vertical adder (V) - class 4+5</td>
+                        <apex:repeat value="{!processTechList}" var="processTech">
+                        <td  id="{!processTech & '--RVAC45'}" style="display:{!if(calcDisplaySetting.Display_only_current_PT_data__c && UPPER(iPAccountKey) = UPPER(processTech),'',if(!calcDisplaySetting.Display_only_current_PT_data__c,'','none'))};">
+                          N/A
+                        </td>
+                        </apex:repeat>
+                      </tr>
+                      
+                      <!-- Start 2nd table calculation -->
+                        <tr class="dataRow" onmouseover="if (window.hiOn){hiOn(this);}" onmouseout="if (window.hiOff){hiOff(this);}">
+                      <td colspan="2"></td>
+                        <apex:repeat value="{!processTechList}" var="processTech">
+                          <td style="display:{!if(calcDisplaySetting.Display_only_current_PT_data__c && UPPER(iPAccountKey) = UPPER(processTech),'',if(!calcDisplaySetting.Display_only_current_PT_data__c,'','none'))};"></td>
+                        </apex:repeat>
+                      </tr>
+                      <tr  class="dataRow" onmouseover="if (window.hiOn){hiOn(this);}" onmouseout="if (window.hiOff){hiOff(this);}"><td></td>
+                        <td>Chips horizontal per illumination field</td>
+                        <apex:repeat value="{!processTechList}" var="processTech">
+                        <td  id="{!processTech & '--CHPIF'}" style="display:{!if(calcDisplaySetting.Display_only_current_PT_data__c && UPPER(iPAccountKey) = UPPER(processTech),'',if(!calcDisplaySetting.Display_only_current_PT_data__c,'','none'))};">
+                          N/A
+                        </td>
+                        </apex:repeat>
+                      </tr>
+                      
+                      <tr  class="dataRow" onmouseover="if (window.hiOn){hiOn(this);}" onmouseout="if (window.hiOff){hiOff(this);}"><td></td>
+                        <td>Chips vertical per illumination field</td>
+                        <apex:repeat value="{!processTechList}" var="processTech">
+                        <td  id="{!processTech & '--CVPIF'}" style="display:{!if(calcDisplaySetting.Display_only_current_PT_data__c && UPPER(iPAccountKey) = UPPER(processTech),'',if(!calcDisplaySetting.Display_only_current_PT_data__c,'','none'))};">
+                          N/A
+                        </td>
+                        </apex:repeat>
+                      </tr>
+                      
+                      <tr  class="dataRow" onmouseover="if (window.hiOn){hiOn(this);}" onmouseout="if (window.hiOff){hiOff(this);}"><td></td>
+                        <td>Available horizontal run length per single line (mm)</td>
+                        <apex:repeat value="{!processTechList}" var="processTech">
+                        <td  id="{!processTech & '--AHRL'}" style="display:{!if(calcDisplaySetting.Display_only_current_PT_data__c && UPPER(iPAccountKey) = UPPER(processTech),'',if(!calcDisplaySetting.Display_only_current_PT_data__c,'','none'))};">
+                          N/A
+                        </td>
+                        </apex:repeat>
+                      </tr>
+                      
+                      <tr  class="dataRow" onmouseover="if (window.hiOn){hiOn(this);}" onmouseout="if (window.hiOff){hiOff(this);}">
+                        <td></td>
+                        <td>Available vertical run length per single line (mm)</td>
+                        <apex:repeat value="{!processTechList}" var="processTech">
+                        <td  id="{!processTech & '--AVRL'}" style="display:{!if(calcDisplaySetting.Display_only_current_PT_data__c && UPPER(iPAccountKey) = UPPER(processTech),'',if(!calcDisplaySetting.Display_only_current_PT_data__c,'','none'))};">
+                          N/A
+                        </td>
+                        </apex:repeat>
+                      </tr>
+                      
+                       <!-- Start 3rd table calculation -->
+                        <tr class="dataRow" onmouseover="if (window.hiOn){hiOn(this);}" onmouseout="if (window.hiOff){hiOff(this);}">
+                      <td></td>
+                        <td></td>
+                        <apex:repeat value="{!processTechList}" var="processTech">
+                          <td style="display:{!if(calcDisplaySetting.Display_only_current_PT_data__c && UPPER(iPAccountKey) = UPPER(processTech),'',if(!calcDisplaySetting.Display_only_current_PT_data__c,'','none'))};"></td>
+                        </apex:repeat>
+                      </tr>
+                      <tr  class="dataRow" onmouseover="if (window.hiOn){hiOn(this);}" onmouseout="if (window.hiOff){hiOff(this);}">
+                        <td></td>
+                        <td>Total horizontal single scribe run length in reticle</td>
+                        <apex:repeat value="{!processTechList}" var="processTech">
+                        <td  id="{!processTech & '--THSS'}" style="display:{!if(calcDisplaySetting.Display_only_current_PT_data__c && UPPER(iPAccountKey) = UPPER(processTech),'',if(!calcDisplaySetting.Display_only_current_PT_data__c,'','none'))};">
+                          N/A
+                        </td>
+                        </apex:repeat>
+                      </tr>
+                      
+                      <tr  class="dataRow" onmouseover="if (window.hiOn){hiOn(this);}" onmouseout="if (window.hiOff){hiOff(this);}">
+                      <td></td>
+                        <td>Total vertical single scribe run length in reticle</td>
+                        <apex:repeat value="{!processTechList}" var="processTech">
+                        <td  id="{!processTech & '--TVSS'}" style="display:{!if(calcDisplaySetting.Display_only_current_PT_data__c && UPPER(iPAccountKey) = UPPER(processTech),'',if(!calcDisplaySetting.Display_only_current_PT_data__c,'','none'))};">
+                          N/A
+                        </td>
+                        </apex:repeat>
+                      </tr>
+                      
+                       <!-- Start 4th table calculation -->
+                        <tr class="dataRow" onmouseover="if (window.hiOn){hiOn(this);}" onmouseout="if (window.hiOff){hiOff(this);}">
+                      <td colspan="2"></td>
+                        <apex:repeat value="{!processTechList}" var="processTech">
+                          <td style="display:{!if(calcDisplaySetting.Display_only_current_PT_data__c && UPPER(iPAccountKey) = UPPER(processTech),'',if(!calcDisplaySetting.Display_only_current_PT_data__c,'','none'))};"></td>
+                        </apex:repeat>
+                      </tr>
+                      <tr  class="dataRow" onmouseover="if (window.hiOn){hiOn(this);}" onmouseout="if (window.hiOff){hiOff(this);}">
+                        <td rowspan="2" style="font-weight:bolder;">Result Minimum</td>
+                      <td>Total Number of Scribes horizontal (class 1+2+3)</td>
+                        <apex:repeat value="{!processTechList}" var="processTech">
+                        <td  id="{!processTech & '--TNSHC123'}" style="display:{!if(calcDisplaySetting.Display_only_current_PT_data__c && UPPER(iPAccountKey) = UPPER(processTech),'',if(!calcDisplaySetting.Display_only_current_PT_data__c,'','none'))};">
+                          N/A
+                        </td>
+                        </apex:repeat>
+                      </tr>
+                      
+                      <tr  class="dataRow" onmouseover="if (window.hiOn){hiOn(this);}" onmouseout="if (window.hiOff){hiOff(this);}">
+                        <td>Total Number of Scribes vertical (class 1+2+3)</td>
+                        <apex:repeat value="{!processTechList}" var="processTech">
+                        <td  id="{!processTech & '--TNSVC123'}" style="display:{!if(calcDisplaySetting.Display_only_current_PT_data__c && UPPER(iPAccountKey) = UPPER(processTech),'',if(!calcDisplaySetting.Display_only_current_PT_data__c,'','none'))};">
+                          N/A
+                        </td>
+                        </apex:repeat>
+                      </tr>
+                      
+                      
+                      
+                       <!-- Start 4th table calculation -->
+                        <tr class="dataRow" onmouseover="if (window.hiOn){hiOn(this);}" onmouseout="if (window.hiOff){hiOff(this);}">
+                      <td colspan="2"></td>
+                      
+                        <apex:repeat value="{!processTechList}" var="processTech">
+                          <td style="display:{!if(calcDisplaySetting.Display_only_current_PT_data__c && UPPER(iPAccountKey) = UPPER(processTech),'',if(!calcDisplaySetting.Display_only_current_PT_data__c,'','none'))};"></td>
+                        </apex:repeat>
+                      </tr>
+                      <tr  class="dataRow" onmouseover="if (window.hiOn){hiOn(this);}" onmouseout="if (window.hiOff){hiOff(this);}">
+                        <td rowspan="2" style="font-weight:bolder;">Result All</td>
+                      <td>Total Number of Scribes horizontal (all classes)</td>
+                        <apex:repeat value="{!processTechList}" var="processTech">
+                        <td  id="{!processTech & '--TNSH'}" style="display:{!if(calcDisplaySetting.Display_only_current_PT_data__c && UPPER(iPAccountKey) = UPPER(processTech),'',if(!calcDisplaySetting.Display_only_current_PT_data__c,'','none'))};">
+                          N/A
+                        </td>
+                        </apex:repeat>
+                      </tr>
+                      
+                      <tr  class="dataRow" onmouseover="if (window.hiOn){hiOn(this);}" onmouseout="if (window.hiOff){hiOff(this);}">
+                        <td>Total Number of Scribes vertical (all class)</td>
+                        <apex:repeat value="{!processTechList}" var="processTech">
+                        <td  id="{!processTech & '--TNSV'}" style="display:{!if(calcDisplaySetting.Display_only_current_PT_data__c && UPPER(iPAccountKey) = UPPER(processTech),'',if(!calcDisplaySetting.Display_only_current_PT_data__c,'','none'))};">
+                          N/A
+                        </td>
+                        </apex:repeat>
+                      </tr>
+                      
+                      <!------------------------------------------ Start WORKING table calculation --------------------------->
+                      
+                      
+                        <tr class="dataRow" onmouseover="if (window.hiOn){hiOn(this);}" onmouseout="if (window.hiOff){hiOff(this);}">
+                      <td colspan="2"></td>
+                        <apex:repeat value="{!processTechList}" var="processTech">
+                          <td style="display:{!if(calcDisplaySetting.Display_only_current_PT_data__c && UPPER(iPAccountKey) = UPPER(processTech),'',if(!calcDisplaySetting.Display_only_current_PT_data__c,'','none'))};"></td>
+                        </apex:repeat>
+                      </tr>
+                      <tr  class="dataRow" onmouseover="if (window.hiOn){hiOn(this);}" onmouseout="if (window.hiOff){hiOff(this);}">
+                        <td rowspan="4"  style="font-weight:bolder;">Horizontal class 1,2,3</td>
+                      <td>Single Scribe at class 1+2+3 Possible ?</td>
+                        <apex:repeat value="{!processTechList}" var="processTech">
+                        <td  id="{!processTech & '--HSSC123'}" style="display:{!if(calcDisplaySetting.Display_only_current_PT_data__c && UPPER(iPAccountKey) = UPPER(processTech),'',if(!calcDisplaySetting.Display_only_current_PT_data__c,'','none'))};">
+                          N/A
+                        </td>
+                        </apex:repeat>
+                      </tr>
+                      
+                      <tr  class="dataRow" onmouseover="if (window.hiOn){hiOn(this);}" onmouseout="if (window.hiOff){hiOff(this);}">
+                        <td>Double Scribe at class 1+2+3 Possible ?</td>
+                        <apex:repeat value="{!processTechList}" var="processTech">
+                        <td  id="{!processTech & '--HDSC123'}" style="display:{!if(calcDisplaySetting.Display_only_current_PT_data__c && UPPER(iPAccountKey) = UPPER(processTech),'',if(!calcDisplaySetting.Display_only_current_PT_data__c,'','none'))};">
+                          N/A
+                        </td>
+                        </apex:repeat>
+                      </tr>
+                      
+                      <tr  class="dataRow" onmouseover="if (window.hiOn){hiOn(this);}" onmouseout="if (window.hiOff){hiOff(this);}">
+                        <td>Triple Scribe at class 1+2+3 Possible ?</td>
+                        <apex:repeat value="{!processTechList}" var="processTech">
+                        <td  id="{!processTech & '--HTSC123'}" style="display:{!if(calcDisplaySetting.Display_only_current_PT_data__c && UPPER(iPAccountKey) = UPPER(processTech),'',if(!calcDisplaySetting.Display_only_current_PT_data__c,'','none'))};">
+                          N/A
+                        </td>
+                        </apex:repeat>
+                      </tr>
+                      
+                      <tr  class="dataRow" onmouseover="if (window.hiOn){hiOn(this);}" onmouseout="if (window.hiOff){hiOff(this);}">
+                        <td>Quadro Scribe at class 1+2+3 Possible ?</td>
+                        <apex:repeat value="{!processTechList}" var="processTech">
+                        <td  id="{!processTech & '--HQSC123'}" style="display:{!if(calcDisplaySetting.Display_only_current_PT_data__c && UPPER(iPAccountKey) = UPPER(processTech),'',if(!calcDisplaySetting.Display_only_current_PT_data__c,'','none'))};">
+                          N/A
+                        </td>
+                        </apex:repeat>
+                      </tr>
+                      
+                      
+                      
+                      
+                       <tr class="dataRow" onmouseover="if (window.hiOn){hiOn(this);}" onmouseout="if (window.hiOff){hiOff(this);}">
+                      <td colspan="2"></td>
+                        <apex:repeat value="{!processTechList}" var="processTech">
+                          <td style="display:{!if(calcDisplaySetting.Display_only_current_PT_data__c && UPPER(iPAccountKey) = UPPER(processTech),'',if(!calcDisplaySetting.Display_only_current_PT_data__c,'','none'))};"></td>
+                        </apex:repeat>
+                      </tr>
+                      <tr  class="dataRow" onmouseover="if (window.hiOn){hiOn(this);}" onmouseout="if (window.hiOff){hiOff(this);}">
+                        <td rowspan="4"  style="font-weight:bolder;">Vertical class 1,2,3</td>
+                      <td>Single Scribe at class 1+2+3 Possible ?</td>
+                        <apex:repeat value="{!processTechList}" var="processTech">
+                        <td  id="{!processTech & '--VSSC123'}" style="display:{!if(calcDisplaySetting.Display_only_current_PT_data__c && UPPER(iPAccountKey) = UPPER(processTech),'',if(!calcDisplaySetting.Display_only_current_PT_data__c,'','none'))};">
+                          N/A
+                        </td>
+                        </apex:repeat>
+                      </tr>
+                      
+                      <tr  class="dataRow" onmouseover="if (window.hiOn){hiOn(this);}" onmouseout="if (window.hiOff){hiOff(this);}">
+                        <td>Double Scribe at class 1+2+3 Possible ?</td>
+                        <apex:repeat value="{!processTechList}" var="processTech">
+                        <td  id="{!processTech & '--VDSC123'}" style="display:{!if(calcDisplaySetting.Display_only_current_PT_data__c && UPPER(iPAccountKey) = UPPER(processTech),'',if(!calcDisplaySetting.Display_only_current_PT_data__c,'','none'))};">
+                          N/A
+                        </td>
+                        </apex:repeat>
+                      </tr>
+                      
+                      <tr  class="dataRow" onmouseover="if (window.hiOn){hiOn(this);}" onmouseout="if (window.hiOff){hiOff(this);}">
+                        <td>Triple Scribe at class 1+2+3 Possible ?</td>
+                        <apex:repeat value="{!processTechList}" var="processTech">
+                        <td  id="{!processTech & '--VTSC123'}" style="display:{!if(calcDisplaySetting.Display_only_current_PT_data__c && UPPER(iPAccountKey) = UPPER(processTech),'',if(!calcDisplaySetting.Display_only_current_PT_data__c,'','none'))};">
+                          N/A
+                        </td>
+                        </apex:repeat>
+                      </tr>
+                      
+                      <tr  class="dataRow" onmouseover="if (window.hiOn){hiOn(this);}" onmouseout="if (window.hiOff){hiOff(this);}">
+                        <td>Quadro Scribe at class 1+2+3 Possible ?</td>
+                        <apex:repeat value="{!processTechList}" var="processTech">
+                        <td  id="{!processTech & '--VQSC123'}" style="display:{!if(calcDisplaySetting.Display_only_current_PT_data__c && UPPER(iPAccountKey) = UPPER(processTech),'',if(!calcDisplaySetting.Display_only_current_PT_data__c,'','none'))};">
+                          N/A
+                        </td>
+                        </apex:repeat>
+                      </tr>
+                      
+                      
+                      <tr class="dataRow" onmouseover="if (window.hiOn){hiOn(this);}" onmouseout="if (window.hiOff){hiOff(this);}">
+                      <td colspan="2"></td>
+                        <apex:repeat value="{!processTechList}" var="processTech">
+                          <td style="display:{!if(calcDisplaySetting.Display_only_current_PT_data__c && UPPER(iPAccountKey) = UPPER(processTech),'',if(!calcDisplaySetting.Display_only_current_PT_data__c,'','none'))};"></td>
+                        </apex:repeat>
+                      </tr>
+                      <tr  class="dataRow" onmouseover="if (window.hiOn){hiOn(this);}" onmouseout="if (window.hiOff){hiOff(this);}">
+                        <td rowspan="4" style="font-weight:bolder;">Horizontal all classes</td>
+                      <td>Single Scribe at all classes Possible ?</td>
+                        <apex:repeat value="{!processTechList}" var="processTech">
+                        <td  id="{!processTech & '--HSSC'}" style="display:{!if(calcDisplaySetting.Display_only_current_PT_data__c && UPPER(iPAccountKey) = UPPER(processTech),'',if(!calcDisplaySetting.Display_only_current_PT_data__c,'','none'))};">
+                          N/A
+                        </td>
+                        </apex:repeat>
+                      </tr>
+                      
+                      <tr  class="dataRow" onmouseover="if (window.hiOn){hiOn(this);}" onmouseout="if (window.hiOff){hiOff(this);}">
+                        <td>Double Scribe at all classes Possible ?</td>
+                        <apex:repeat value="{!processTechList}" var="processTech">
+                        <td  id="{!processTech & '--HDSC'}" style="display:{!if(calcDisplaySetting.Display_only_current_PT_data__c && UPPER(iPAccountKey) = UPPER(processTech),'',if(!calcDisplaySetting.Display_only_current_PT_data__c,'','none'))};">
+                          N/A
+                        </td>
+                        </apex:repeat>
+                      </tr>
+                      
+                      <tr  class="dataRow" onmouseover="if (window.hiOn){hiOn(this);}" onmouseout="if (window.hiOff){hiOff(this);}">
+                        
+                        <td>Triple Scribe at all classes Possible ?</td>
+                        <apex:repeat value="{!processTechList}" var="processTech">
+                        <td  id="{!processTech & '--HTSC'}" style="display:{!if(calcDisplaySetting.Display_only_current_PT_data__c && UPPER(iPAccountKey) = UPPER(processTech),'',if(!calcDisplaySetting.Display_only_current_PT_data__c,'','none'))};">
+                          N/A
+                        </td>
+                        </apex:repeat>
+                      </tr>
+                      
+                      <tr  class="dataRow" onmouseover="if (window.hiOn){hiOn(this);}" onmouseout="if (window.hiOff){hiOff(this);}">
+                        <td>Quadro Scribe at all classes Possible ?</td>
+                        <apex:repeat value="{!processTechList}" var="processTech">
+                        <td  id="{!processTech & '--HQSC'}" style="display:{!if(calcDisplaySetting.Display_only_current_PT_data__c && UPPER(iPAccountKey) = UPPER(processTech),'',if(!calcDisplaySetting.Display_only_current_PT_data__c,'','none'))};">
+                          N/A
+                        </td>
+                        </apex:repeat>
+                      </tr>
+                      
+                      
+                       <tr class="dataRow" onmouseover="if (window.hiOn){hiOn(this);}" onmouseout="if (window.hiOff){hiOff(this);}">
+                      <td colspan="2"></td>
+                        <apex:repeat value="{!processTechList}" var="processTech">
+                          <td style="display:{!if(calcDisplaySetting.Display_only_current_PT_data__c && UPPER(iPAccountKey) = UPPER(processTech),'',if(!calcDisplaySetting.Display_only_current_PT_data__c,'','none'))};"></td>
+                        </apex:repeat>
+                      </tr>
+                      <tr  class="dataRow" onmouseover="if (window.hiOn){hiOn(this);}" onmouseout="if (window.hiOff){hiOff(this);}">
+                        <td rowspan="4" style="font-weight:bolder;">Vertical all classes</td>
+                      <td>Single Scribe at all classes Possible ?</td>
+                        <apex:repeat value="{!processTechList}" var="processTech">
+                        <td  id="{!processTech & '--VSSC'}" style="display:{!if(calcDisplaySetting.Display_only_current_PT_data__c && UPPER(iPAccountKey) = UPPER(processTech),'',if(!calcDisplaySetting.Display_only_current_PT_data__c,'','none'))};">
+                          N/A
+                        </td>
+                        </apex:repeat>
+                      </tr>
+                      
+                      <tr  class="dataRow" onmouseover="if (window.hiOn){hiOn(this);}" onmouseout="if (window.hiOff){hiOff(this);}">
+                        <td class="boldText">Double Scribe at all classes Possible ?</td>
+                        <apex:repeat value="{!processTechList}" var="processTech">
+                        <td  id="{!processTech & '--VDSC'}" style="display:{!if(calcDisplaySetting.Display_only_current_PT_data__c && UPPER(iPAccountKey) = UPPER(processTech),'',if(!calcDisplaySetting.Display_only_current_PT_data__c,'','none'))};">
+                          N/A
+                        </td>
+                        </apex:repeat>
+                      </tr>
+                      
+                      <tr  class="dataRow" onmouseover="if (window.hiOn){hiOn(this);}" onmouseout="if (window.hiOff){hiOff(this);}">
+                        <td >Triple Scribe at all classes Possible ?</td>
+                        <apex:repeat value="{!processTechList}" var="processTech">
+                        <td  id="{!processTech & '--VTSC'}" style="display:{!if(calcDisplaySetting.Display_only_current_PT_data__c && UPPER(iPAccountKey) = UPPER(processTech),'',if(!calcDisplaySetting.Display_only_current_PT_data__c,'','none'))};">
+                          N/A
+                        </td>
+                        </apex:repeat>
+                      </tr>
+                      
+                      <tr  class="dataRow" onmouseover="if (window.hiOn){hiOn(this);}" onmouseout="if (window.hiOff){hiOff(this);}">
+                        <td >Quadro Scribe at all classes Possible ?</td>
+                        <apex:repeat value="{!processTechList}" var="processTech">
+                        <td  id="{!processTech & '--VQSC'}" style="display:{!if(calcDisplaySetting.Display_only_current_PT_data__c && UPPER(iPAccountKey) = UPPER(processTech),'',if(!calcDisplaySetting.Display_only_current_PT_data__c,'','none'))};">
+                          N/A
+                        </td>
+                        </apex:repeat>
+                      </tr>
+                </table>  
+                
+                
+                
+        </apex:pageBlock>
+    </apex:form>
+
+    <script>
+    
+    var isError;
+    function doScribeWidthCalculation() {
+      isError = 0;
+      $("#preXErrorIMG").hide();
+      $("#preYErrorIMG").hide();
+      if(parseFloat($.trim($('[id="pg:frm:pb:PreX"]').val())) > 25.80) {
+        alert("Die size pre-shrink X cannot be more than 25.80");
+        $("#preXErrorIMG").show();
+        isError = 1;
+        return;
+      }
+      if(parseFloat($.trim($('[id="pg:frm:pb:PreY"]').val())) > 30.83) {
+        alert("Die size pre-shrink Y cannot be more than 30.83");
+        $("#preYErrorIMG").show();
+        isError = 1;
+        return;
+      }
+      $("#postX").html((parseFloat($.trim($('[id="pg:frm:pb:PreX"]').val())) * 0.9).toFixed(6));
+      $("#postY").html((parseFloat($.trim($('[id="pg:frm:pb:PreY"]').val())) * 0.9).toFixed(6));
+      $("#areaPre").html((parseFloat($.trim($('[id="pg:frm:pb:PreX"]').val())) * parseFloat($.trim($('[id="pg:frm:pb:PreY"]').val()))).toFixed(6));
+      $("#areaPost").html((parseFloat($.trim($("#postX").html())) * parseFloat($.trim($("#postY").html()))).toFixed(6));
+      table1();
+      
+    }
+    function table1() { 
+       var minHorizontal123  = 0 ;
+       var minVertical123  = 0;
+       var stdHorizontalAll  = 0;
+       var stdVerticalAll  = 0;
+      <apex:repeat value="{!processTechList}" var="processTech">
+        if("{!calcDisplaySetting.Display_Other_PT_Data__c}" == "true") {
+          $('#'+'{!processTech}'+'--MHHC123').html((parseFloat($.trim($('#'+'{!processTech}'+'--opManStr--H').html())) || 0) + (parseFloat($.trim($('#'+'{!processTech}'+'--elecWatDisStruct--H').html())) || 0) + (parseFloat($.trim($('#'+'{!processTech}'+'--elecWatRelStruct--H').html())) || 0 ));
+            $('#'+'{!processTech}'+'--MHVC123').html((parseFloat($.trim($('#'+'{!processTech}'+'--opManStr--V').html())) || 0) + (parseFloat($.trim($('#'+'{!processTech}'+'--elecWatDisStruct--V').html())) || 0) + (parseFloat($.trim($('#'+'{!processTech}'+'--elecWatRelStruct--V').html())) || 0 ));
+            $('#'+'{!processTech}'+'--RHAC45').html((parseFloat($.trim($('#'+'{!processTech}'+'--elecYieldBrUpStruct--H').html())) || 0) + (parseFloat($.trim($('#'+'{!processTech}'+'--elecDebCustStruct--H').html())) || 0));
+            $('#'+'{!processTech}'+'--RVAC45').html((parseFloat($.trim($('#'+'{!processTech}'+'--elecYieldBrUpStruct--V').html())) || 0) + (parseFloat($.trim($('#'+'{!processTech}'+'--elecDebCustStruct--V').html())) || 0));
+            
+            $('#'+'{!processTech}'+'--CHPIF').html(Math.floor(26000/(parseFloat($.trim($('[id="pg:frm:pb:PreX"]').val())) * 0.9 * 1000)));
+            $('#dieXill').html(Math.floor(26000/(parseFloat($.trim($('[id="pg:frm:pb:PreX"]').val())) * 0.9 * 1000)));
+            $('#'+'{!processTech}'+'--CVPIF').html(Math.floor(33000/(parseFloat($.trim($('[id="pg:frm:pb:PreY"]').val())) * 0.9 * 1000)));
+            $('#dieYill').html(Math.floor(33000/(parseFloat($.trim($('[id="pg:frm:pb:PreY"]').val())) * 0.9 * 1000)));
+            
+            $('#'+'{!processTech}'+'--AHRL').html((parseFloat($.trim($('#'+'{!processTech}'+'--CHPIF').html())) * parseFloat($.trim($('[id="pg:frm:pb:PreX"]').val()))) /* / 1000 */);
+            $('#'+'{!processTech}'+'--AVRL').html((parseFloat($.trim($('#'+'{!processTech}'+'--CVPIF').html())) * parseFloat($.trim($('[id="pg:frm:pb:PreY"]').val()))) /* / 1000 */);
+            
+            $('#'+'{!processTech}'+'--THSS').html(parseFloat($.trim($('#'+'{!processTech}'+'--CVPIF').html())) * parseFloat($.trim($('#'+'{!processTech}'+'--AHRL').html())));
+            $('#'+'{!processTech}'+'--TVSS').html(parseFloat($.trim($('#'+'{!processTech}'+'--CHPIF').html())) * parseFloat($.trim($('#'+'{!processTech}'+'--AVRL').html())));       
+                     
+            $('#'+'{!processTech}'+'--TNSHC123').html(Math.ceil((parseFloat($.trim($('#'+'{!processTech}'+'--MHHC123').html())) / parseFloat($.trim($('#'+'{!processTech}'+'--AHRL').html())))));
+            $('#'+'{!processTech}'+'--TNSVC123').html(Math.ceil((parseFloat($.trim($('#'+'{!processTech}'+'--MHVC123').html())) / parseFloat($.trim($('#'+'{!processTech}'+'--AVRL').html())))));                
+    
+            $('#'+'{!processTech}'+'--TNSH').html(Math.ceil(((parseFloat($.trim($('#'+'{!processTech}'+'--MHHC123').html())) + parseFloat($.trim($('#'+'{!processTech}'+'--RHAC45').html()))) / parseFloat($.trim($('#'+'{!processTech}'+'--AHRL').html())))));
+            $('#'+'{!processTech}'+'--TNSV').html(Math.ceil(((parseFloat($.trim($('#'+'{!processTech}'+'--MHVC123').html())) + parseFloat($.trim($('#'+'{!processTech}'+'--RVAC45').html()))) / parseFloat($.trim($('#'+'{!processTech}'+'--AVRL').html())))));
+            
+            $('#'+'{!processTech}'+'--HSSC123').html((parseFloat($.trim($('#'+'{!processTech}'+'--TNSHC123').html())) < parseFloat($.trim($('#'+'{!processTech}'+'--CVPIF').html()))) ? 'Single' : 'Not Possible' );
+            applyCSS('#'+'{!processTech}'+'--HSSC123');
+            if($.trim($('#'+'{!processTech}'+'--HSSC123').html()) != "Not Possible" && minHorizontal123 == 0 && '{!processTech}'.toUpperCase() == '{!iPAccountKey}'.toUpperCase()) {
+              minHorizontal123 = 1;
+            }
+            $('#'+'{!processTech}'+'--HDSC123').html((parseFloat($.trim($('#'+'{!processTech}'+'--TNSHC123').html())) < 2* parseFloat($.trim($('#'+'{!processTech}'+'--CVPIF').html()))) ? 'Double' : 'Not Possible' );
+            applyCSS('#'+'{!processTech}'+'--HDSC123');
+            if($.trim($('#'+'{!processTech}'+'--HDSC123').html()) != "Not Possible" && minHorizontal123 == 0 && '{!processTech}'.toUpperCase() == '{!iPAccountKey}'.toUpperCase()) {
+              minHorizontal123 = 2;
+            }
+            $('#'+'{!processTech}'+'--HTSC123').html((parseFloat($.trim($('#'+'{!processTech}'+'--TNSHC123').html())) < 3 * parseFloat($.trim($('#'+'{!processTech}'+'--CVPIF').html()))) ? 'Triple' : 'Not Possible' );
+            applyCSS('#'+'{!processTech}'+'--HTSC123');
+            if($.trim($('#'+'{!processTech}'+'--HTSC123').html()) != "Not Possible" && minHorizontal123 == 0 && '{!processTech}'.toUpperCase() == '{!iPAccountKey}'.toUpperCase()) {
+              minHorizontal123 = 3;
+            }
+            $('#'+'{!processTech}'+'--HQSC123').html((parseFloat($.trim($('#'+'{!processTech}'+'--TNSHC123').html())) < 4 * parseFloat($.trim($('#'+'{!processTech}'+'--CVPIF').html()))) ? 'Quadro' : 'Not Possible' );
+            applyCSS('#'+'{!processTech}'+'--HQSC123');
+            if($.trim($('#'+'{!processTech}'+'--HQSC123').html()) != "Not Possible" && minHorizontal123 == 0 && '{!processTech}'.toUpperCase() == '{!iPAccountKey}'.toUpperCase()) {
+              minHorizontal123 = 4;
+            }
+            
+            $('#'+'{!processTech}'+'--VSSC123').html((parseFloat($.trim($('#'+'{!processTech}'+'--TNSVC123').html())) < parseFloat($.trim($('#'+'{!processTech}'+'--CHPIF').html()))) ? 'Single' : 'Not Possible' );
+            applyCSS('#'+'{!processTech}'+'--VSSC123');
+            if($.trim($('#'+'{!processTech}'+'--VSSC123').html()) != "Not Possible" && minVertical123 == 0 && '{!processTech}'.toUpperCase() == '{!iPAccountKey}'.toUpperCase()) {
+              minVertical123 = 1;
+            }
+            $('#'+'{!processTech}'+'--VDSC123').html((parseFloat($.trim($('#'+'{!processTech}'+'--TNSVC123').html())) < 2 * parseFloat($.trim($('#'+'{!processTech}'+'--CHPIF').html()))) ? 'Double' : 'Not Possible' );
+            applyCSS('#'+'{!processTech}'+'--VDSC123');
+            if($.trim($('#'+'{!processTech}'+'--VDSC123').html()) != "Not Possible" && minVertical123 == 0 && '{!processTech}'.toUpperCase() == '{!iPAccountKey}'.toUpperCase()) {
+              minVertical123 = 2;
+            }
+            $('#'+'{!processTech}'+'--VTSC123').html((parseFloat($.trim($('#'+'{!processTech}'+'--TNSVC123').html())) < 3 * parseFloat($.trim($('#'+'{!processTech}'+'--CHPIF').html()))) ? 'Triple' : 'Not Possible' );
+            applyCSS('#'+'{!processTech}'+'--VTSC123');
+            if($.trim($('#'+'{!processTech}'+'--VTSC123').html()) != "Not Possible" && minVertical123 == 0 && '{!processTech}'.toUpperCase() == '{!iPAccountKey}'.toUpperCase()) {
+              minVertical123 = 3;
+            }
+            $('#'+'{!processTech}'+'--VQSC123').html((parseFloat($.trim($('#'+'{!processTech}'+'--TNSVC123').html())) < 4 * parseFloat($.trim($('#'+'{!processTech}'+'--CHPIF').html()))) ? 'Quadro' : 'Not Possible' );
+            applyCSS('#'+'{!processTech}'+'--VQSC123');
+            if($.trim($('#'+'{!processTech}'+'--VQSC123').html()) != "Not Possible" && minVertical123 == 0 && '{!processTech}'.toUpperCase() == '{!iPAccountKey}'.toUpperCase()) {
+              minVertical123 = 4;
+            } 
+            
+            $('#'+'{!processTech}'+'--HSSC').html((parseFloat($.trim($('#'+'{!processTech}'+'--TNSH').html())) < parseFloat($.trim($('#'+'{!processTech}'+'--CVPIF').html()))) ? 'Single' : 'Not Possible' );
+            applyCSS('#'+'{!processTech}'+'--HSSC');
+            if($.trim($('#'+'{!processTech}'+'--HSSC').html()) != "Not Possible" && stdHorizontalAll == 0 && '{!processTech}'.toUpperCase() == '{!iPAccountKey}'.toUpperCase()) {
+              stdHorizontalAll = 1;
+            }
+            $('#'+'{!processTech}'+'--HDSC').html((parseFloat($.trim($('#'+'{!processTech}'+'--TNSH').html())) < 2* parseFloat($.trim($('#'+'{!processTech}'+'--CVPIF').html()))) ? 'Double' : 'Not Possible' );
+            applyCSS('#'+'{!processTech}'+'--HDSC');
+            if($.trim($('#'+'{!processTech}'+'--HDSC').html()) != "Not Possible" && stdHorizontalAll == 0 && '{!processTech}'.toUpperCase() == '{!iPAccountKey}'.toUpperCase()) {
+              stdHorizontalAll = 2;
+            }
+            $('#'+'{!processTech}'+'--HTSC').html((parseFloat($.trim($('#'+'{!processTech}'+'--TNSH').html())) < 3 * parseFloat($.trim($('#'+'{!processTech}'+'--CVPIF').html()))) ? 'Triple' : 'Not Possible' );
+            applyCSS('#'+'{!processTech}'+'--HTSC');
+            if($.trim($('#'+'{!processTech}'+'--HTSC').html()) != "Not Possible" && stdHorizontalAll == 0 && '{!processTech}'.toUpperCase() == '{!iPAccountKey}'.toUpperCase()) {
+              stdHorizontalAll = 3;
+            }
+            $('#'+'{!processTech}'+'--HQSC').html((parseFloat($.trim($('#'+'{!processTech}'+'--TNSH').html())) < 4 * parseFloat($.trim($('#'+'{!processTech}'+'--CVPIF').html()))) ? 'Quadro' : 'Not Possible' );
+            applyCSS('#'+'{!processTech}'+'--HQSC');
+            if($.trim($('#'+'{!processTech}'+'--HQSC').html()) != "Not Possible" && stdHorizontalAll == 0 && '{!processTech}'.toUpperCase() == '{!iPAccountKey}'.toUpperCase()) {
+              stdHorizontalAll = 4;
+            }
+            
+            $('#'+'{!processTech}'+'--VSSC').html((parseFloat($.trim($('#'+'{!processTech}'+'--TNSV').html())) < parseFloat($.trim($('#'+'{!processTech}'+'--CHPIF').html()))) ? 'Single' : 'Not Possible' );
+            applyCSS('#'+'{!processTech}'+'--VSSC');
+            if($.trim($('#'+'{!processTech}'+'--VSSC').html()) != "Not Possible" && stdVerticalAll == 0 && '{!processTech}'.toUpperCase() == '{!iPAccountKey}'.toUpperCase()) {
+              stdVerticalAll = 1;
+            }
+            $('#'+'{!processTech}'+'--VDSC').html((parseFloat($.trim($('#'+'{!processTech}'+'--TNSV').html())) < 2 * parseFloat($.trim($('#'+'{!processTech}'+'--CHPIF').html()))) ? 'Double' : 'Not Possible' );
+            applyCSS('#'+'{!processTech}'+'--VDSC');
+            if($.trim($('#'+'{!processTech}'+'--VDSC').html()) != "Not Possible" && stdVerticalAll == 0 && '{!processTech}'.toUpperCase() == '{!iPAccountKey}'.toUpperCase()) {
+              stdVerticalAll = 2;
+            }
+            $('#'+'{!processTech}'+'--VTSC').html((parseFloat($.trim($('#'+'{!processTech}'+'--TNSV').html())) < 3 * parseFloat($.trim($('#'+'{!processTech}'+'--CHPIF').html()))) ? 'Triple' : 'Not Possible' );
+            applyCSS('#'+'{!processTech}'+'--VTSC');
+            if($.trim($('#'+'{!processTech}'+'--VTSC').html()) != "Not Possible" && stdVerticalAll == 0 && '{!processTech}'.toUpperCase() == '{!iPAccountKey}'.toUpperCase()) {
+              stdVerticalAll = 3;
+            }
+            $('#'+'{!processTech}'+'--VQSC').html((parseFloat($.trim($('#'+'{!processTech}'+'--TNSV').html())) < 4 * parseFloat($.trim($('#'+'{!processTech}'+'--CHPIF').html()))) ? 'Quadro' : 'Not Possible' );
+            applyCSS('#'+'{!processTech}'+'--VQSC');
+            if($.trim($('#'+'{!processTech}'+'--VQSC').html()) != "Not Possible" && stdVerticalAll == 0 && '{!processTech}'.toUpperCase() == '{!iPAccountKey}'.toUpperCase()) {
+              stdVerticalAll = 4;
+            }
+        }
+        else {
+           if('{!processTech}'.toUpperCase() == '{!iPAccountKey}'.toUpperCase()) {
+        
+            $('#'+'{!processTech}'+'--MHHC123').html((parseFloat($.trim($('#'+'{!processTech}'+'--opManStr--H').html())) || 0) + (parseFloat($.trim($('#'+'{!processTech}'+'--elecWatDisStruct--H').html())) || 0) + (parseFloat($.trim($('#'+'{!processTech}'+'--elecWatRelStruct--H').html())) || 0 ));
+            $('#'+'{!processTech}'+'--MHVC123').html((parseFloat($.trim($('#'+'{!processTech}'+'--opManStr--V').html())) || 0) + (parseFloat($.trim($('#'+'{!processTech}'+'--elecWatDisStruct--V').html())) || 0) + (parseFloat($.trim($('#'+'{!processTech}'+'--elecWatRelStruct--V').html())) || 0 ));
+            $('#'+'{!processTech}'+'--RHAC45').html((parseFloat($.trim($('#'+'{!processTech}'+'--elecYieldBrUpStruct--H').html())) || 0) + (parseFloat($.trim($('#'+'{!processTech}'+'--elecDebCustStruct--H').html())) || 0));
+            $('#'+'{!processTech}'+'--RVAC45').html((parseFloat($.trim($('#'+'{!processTech}'+'--elecYieldBrUpStruct--V').html())) || 0) + (parseFloat($.trim($('#'+'{!processTech}'+'--elecDebCustStruct--V').html())) || 0));
+            
+            $('#'+'{!processTech}'+'--CHPIF').html(Math.floor(26000/(parseFloat($.trim($('[id="pg:frm:pb:PreX"]').val())) * 0.9 * 1000)));
+            $('#dieXill').html(Math.floor(26000/(parseFloat($.trim($('[id="pg:frm:pb:PreX"]').val())) * 0.9 * 1000)));
+            $('#'+'{!processTech}'+'--CVPIF').html(Math.floor(33000/(parseFloat($.trim($('[id="pg:frm:pb:PreY"]').val())) * 0.9 * 1000)));
+            $('#dieYill').html(Math.floor(33000/(parseFloat($.trim($('[id="pg:frm:pb:PreY"]').val())) * 0.9 * 1000)));
+            
+            $('#'+'{!processTech}'+'--AHRL').html((parseFloat($.trim($('#'+'{!processTech}'+'--CHPIF').html())) * parseFloat($.trim($('[id="pg:frm:pb:PreX"]').val()))) /* / 1000 */);
+            $('#'+'{!processTech}'+'--AVRL').html((parseFloat($.trim($('#'+'{!processTech}'+'--CVPIF').html())) * parseFloat($.trim($('[id="pg:frm:pb:PreY"]').val()))) /* / 1000 */);
+            
+            $('#'+'{!processTech}'+'--THSS').html(parseFloat($.trim($('#'+'{!processTech}'+'--CVPIF').html())) * parseFloat($.trim($('#'+'{!processTech}'+'--AHRL').html())));
+            $('#'+'{!processTech}'+'--TVSS').html(parseFloat($.trim($('#'+'{!processTech}'+'--CHPIF').html())) * parseFloat($.trim($('#'+'{!processTech}'+'--AVRL').html())));       
+                     
+            $('#'+'{!processTech}'+'--TNSHC123').html(Math.ceil((parseFloat($.trim($('#'+'{!processTech}'+'--MHHC123').html())) / parseFloat($.trim($('#'+'{!processTech}'+'--AHRL').html())))));
+            $('#'+'{!processTech}'+'--TNSVC123').html(Math.ceil((parseFloat($.trim($('#'+'{!processTech}'+'--MHVC123').html())) / parseFloat($.trim($('#'+'{!processTech}'+'--AVRL').html())))));                
+    
+            $('#'+'{!processTech}'+'--TNSH').html(Math.ceil(((parseFloat($.trim($('#'+'{!processTech}'+'--MHHC123').html())) + parseFloat($.trim($('#'+'{!processTech}'+'--RHAC45').html()))) / parseFloat($.trim($('#'+'{!processTech}'+'--AHRL').html())))));
+            $('#'+'{!processTech}'+'--TNSV').html(Math.ceil(((parseFloat($.trim($('#'+'{!processTech}'+'--MHVC123').html())) + parseFloat($.trim($('#'+'{!processTech}'+'--RVAC45').html()))) / parseFloat($.trim($('#'+'{!processTech}'+'--AVRL').html())))));
+            
+            $('#'+'{!processTech}'+'--HSSC123').html((parseFloat($.trim($('#'+'{!processTech}'+'--TNSHC123').html())) < parseFloat($.trim($('#'+'{!processTech}'+'--CVPIF').html()))) ? 'Single' : 'Not Possible' );
+            applyCSS('#'+'{!processTech}'+'--HSSC123');
+            if($.trim($('#'+'{!processTech}'+'--HSSC123').html()) != "Not Possible" && minHorizontal123 == 0) {
+              minHorizontal123 = 1;
+            }
+            $('#'+'{!processTech}'+'--HDSC123').html((parseFloat($.trim($('#'+'{!processTech}'+'--TNSHC123').html())) < 2* parseFloat($.trim($('#'+'{!processTech}'+'--CVPIF').html()))) ? 'Double' : 'Not Possible' );
+            applyCSS('#'+'{!processTech}'+'--HDSC123');
+            if($.trim($('#'+'{!processTech}'+'--HDSC123').html()) != "Not Possible" && minHorizontal123 == 0) {
+              minHorizontal123 = 2;
+            }
+            $('#'+'{!processTech}'+'--HTSC123').html((parseFloat($.trim($('#'+'{!processTech}'+'--TNSHC123').html())) < 3 * parseFloat($.trim($('#'+'{!processTech}'+'--CVPIF').html()))) ? 'Triple' : 'Not Possible' );
+            applyCSS('#'+'{!processTech}'+'--HTSC123');
+            if($.trim($('#'+'{!processTech}'+'--HTSC123').html()) != "Not Possible" && minHorizontal123 == 0) {
+              minHorizontal123 = 3;
+            }
+            $('#'+'{!processTech}'+'--HQSC123').html((parseFloat($.trim($('#'+'{!processTech}'+'--TNSHC123').html())) < 4 * parseFloat($.trim($('#'+'{!processTech}'+'--CVPIF').html()))) ? 'Quadro' : 'Not Possible' );
+            applyCSS('#'+'{!processTech}'+'--HQSC123');
+            if($.trim($('#'+'{!processTech}'+'--HQSC123').html()) != "Not Possible" && minHorizontal123 == 0) {
+              minHorizontal123 = 4;
+            }
+            
+            $('#'+'{!processTech}'+'--VSSC123').html((parseFloat($.trim($('#'+'{!processTech}'+'--TNSVC123').html())) < parseFloat($.trim($('#'+'{!processTech}'+'--CHPIF').html()))) ? 'Single' : 'Not Possible' );
+            applyCSS('#'+'{!processTech}'+'--VSSC123');
+            if($.trim($('#'+'{!processTech}'+'--VSSC123').html()) != "Not Possible" && minVertical123 == 0) {
+              minVertical123 = 1;
+            }
+            $('#'+'{!processTech}'+'--VDSC123').html((parseFloat($.trim($('#'+'{!processTech}'+'--TNSVC123').html())) < 2 * parseFloat($.trim($('#'+'{!processTech}'+'--CHPIF').html()))) ? 'Double' : 'Not Possible' );
+            applyCSS('#'+'{!processTech}'+'--VDSC123');
+            if($.trim($('#'+'{!processTech}'+'--VDSC123').html()) != "Not Possible" && minVertical123 == 0) {
+              minVertical123 = 2;
+            }
+            $('#'+'{!processTech}'+'--VTSC123').html((parseFloat($.trim($('#'+'{!processTech}'+'--TNSVC123').html())) < 3 * parseFloat($.trim($('#'+'{!processTech}'+'--CHPIF').html()))) ? 'Triple' : 'Not Possible' );
+            applyCSS('#'+'{!processTech}'+'--VTSC123');
+            if($.trim($('#'+'{!processTech}'+'--VTSC123').html()) != "Not Possible" && minVertical123 == 0) {
+              minVertical123 = 3;
+            }
+            $('#'+'{!processTech}'+'--VQSC123').html((parseFloat($.trim($('#'+'{!processTech}'+'--TNSVC123').html())) < 4 * parseFloat($.trim($('#'+'{!processTech}'+'--CHPIF').html()))) ? 'Quadro' : 'Not Possible' );
+            applyCSS('#'+'{!processTech}'+'--VQSC123');
+            if($.trim($('#'+'{!processTech}'+'--VQSC123').html()) != "Not Possible" && minVertical123 == 0) {
+              minVertical123 = 4;
+            } 
+            
+            $('#'+'{!processTech}'+'--HSSC').html((parseFloat($.trim($('#'+'{!processTech}'+'--TNSH').html())) < parseFloat($.trim($('#'+'{!processTech}'+'--CVPIF').html()))) ? 'Single' : 'Not Possible' );
+            applyCSS('#'+'{!processTech}'+'--HSSC');
+            if($.trim($('#'+'{!processTech}'+'--HSSC').html()) != "Not Possible" && stdHorizontalAll == 0) {
+              stdHorizontalAll = 1;
+            }
+            $('#'+'{!processTech}'+'--HDSC').html((parseFloat($.trim($('#'+'{!processTech}'+'--TNSH').html())) < 2* parseFloat($.trim($('#'+'{!processTech}'+'--CVPIF').html()))) ? 'Double' : 'Not Possible' );
+            applyCSS('#'+'{!processTech}'+'--HDSC');
+            if($.trim($('#'+'{!processTech}'+'--HDSC').html()) != "Not Possible" && stdHorizontalAll == 0) {
+              stdHorizontalAll = 2;
+            }
+            $('#'+'{!processTech}'+'--HTSC').html((parseFloat($.trim($('#'+'{!processTech}'+'--TNSH').html())) < 3 * parseFloat($.trim($('#'+'{!processTech}'+'--CVPIF').html()))) ? 'Triple' : 'Not Possible' );
+            applyCSS('#'+'{!processTech}'+'--HTSC');
+            if($.trim($('#'+'{!processTech}'+'--HTSC').html()) != "Not Possible" && stdHorizontalAll == 0) {
+              stdHorizontalAll = 3;
+            }
+            $('#'+'{!processTech}'+'--HQSC').html((parseFloat($.trim($('#'+'{!processTech}'+'--TNSH').html())) < 4 * parseFloat($.trim($('#'+'{!processTech}'+'--CVPIF').html()))) ? 'Quadro' : 'Not Possible' );
+            applyCSS('#'+'{!processTech}'+'--HQSC');
+            if($.trim($('#'+'{!processTech}'+'--HQSC').html()) != "Not Possible" && stdHorizontalAll == 0) {
+              stdHorizontalAll = 4;
+            }
+            
+            $('#'+'{!processTech}'+'--VSSC').html((parseFloat($.trim($('#'+'{!processTech}'+'--TNSV').html())) < parseFloat($.trim($('#'+'{!processTech}'+'--CHPIF').html()))) ? 'Single' : 'Not Possible' );
+            applyCSS('#'+'{!processTech}'+'--VSSC');
+            if($.trim($('#'+'{!processTech}'+'--VSSC').html()) != "Not Possible" && stdVerticalAll == 0) {
+              stdVerticalAll = 1;
+            }
+            $('#'+'{!processTech}'+'--VDSC').html((parseFloat($.trim($('#'+'{!processTech}'+'--TNSV').html())) < 2 * parseFloat($.trim($('#'+'{!processTech}'+'--CHPIF').html()))) ? 'Double' : 'Not Possible' );
+            applyCSS('#'+'{!processTech}'+'--VDSC');
+            if($.trim($('#'+'{!processTech}'+'--VDSC').html()) != "Not Possible" && stdVerticalAll == 0) {
+              stdVerticalAll = 2;
+            }
+            $('#'+'{!processTech}'+'--VTSC').html((parseFloat($.trim($('#'+'{!processTech}'+'--TNSV').html())) < 3 * parseFloat($.trim($('#'+'{!processTech}'+'--CHPIF').html()))) ? 'Triple' : 'Not Possible' );
+            applyCSS('#'+'{!processTech}'+'--VTSC');
+            if($.trim($('#'+'{!processTech}'+'--VTSC').html()) != "Not Possible" && stdVerticalAll == 0) {
+              stdVerticalAll = 3;
+            }
+            $('#'+'{!processTech}'+'--VQSC').html((parseFloat($.trim($('#'+'{!processTech}'+'--TNSV').html())) < 4 * parseFloat($.trim($('#'+'{!processTech}'+'--CHPIF').html()))) ? 'Quadro' : 'Not Possible' );
+            applyCSS('#'+'{!processTech}'+'--VQSC');
+            if($.trim($('#'+'{!processTech}'+'--VQSC').html()) != "Not Possible" && stdVerticalAll == 0) {
+              stdVerticalAll = 4;
+            }
+          }
+        }
+       
+        
+      </apex:repeat>
+
+          $('#minXPostShrink123').html(minHorizontal123 * {!mpPTBaseData[Upper(iPAccountKey)].Std_Horizontal_scribe_width_post_shrink__c});
+          $('[id="pg:frm:minWidthXPost"]').val(minHorizontal123 * {!mpPTBaseData[Upper(iPAccountKey)].Std_Horizontal_scribe_width_post_shrink__c});
+          if($('[id="pg:frm:minWidthXPost"]').val() == 0) {
+             $('#minXPostShrink123').html('Not Possible');           
+          }
+          $('#minYPostShrink123').html(minVertical123 * {!mpPTBaseData[Upper(iPAccountKey)].Std_Vertical_scribe_width_post_shrink__c} );
+          $('[id="pg:frm:minWidthYPost"]').val(minVertical123 * {!mpPTBaseData[Upper(iPAccountKey)].Std_Vertical_scribe_width_post_shrink__c});
+          if($('[id="pg:frm:minWidthYPost"]').val() == 0) {
+            $('#minYPostShrink123').html('Not Possible');           
+          }
+          
+          $('#stdXPostShrink').html(stdHorizontalAll * {!mpPTBaseData[Upper(iPAccountKey)].Std_Horizontal_scribe_width_post_shrink__c});
+          $('[id="pg:frm:stdWidthXPost"]').val(stdHorizontalAll * {!mpPTBaseData[Upper(iPAccountKey)].Std_Horizontal_scribe_width_post_shrink__c});
+          if($('[id="pg:frm:stdWidthXPost"]').val() == 0) {
+            $('#stdXPostShrink').html('Not Possible');
+          }
+          $('#stdYPostShrink').html(stdVerticalAll * {!mpPTBaseData[Upper(iPAccountKey)].Std_Vertical_scribe_width_post_shrink__c});
+          $('[id="pg:frm:stdWidthYPost"]').val(stdVerticalAll * {!mpPTBaseData[Upper(iPAccountKey)].Std_Vertical_scribe_width_post_shrink__c});
+          if($('[id="pg:frm:stdWidthYPost"]').val() == 0) {
+            $('#stdYPostShrink').html('Not Possible');
+          }
+          
+          $('[id="pg:frm:dieXIllumination"]').val($.trim($('#dieXill').html()));
+          $('[id="pg:frm:dieYIllumination"]').val($.trim($('#dieYill').html()));
+    }
+    $(document).ready(function(){
+      doScribeWidthCalculation(); 
+    }); 
+    
+    function applyCSS(tagId) {
+      if($.trim($(tagId).html()) == "Not Possible") { 
+          $(tagId).css("background-color", "red");
+        }else {
+          $(tagId).css("background-color", "white");
+        }
+    }
+    function printThisPage() {
+      if(isError == 1) {
+        alert("Cannot print as there is an error in the page, please correct before printing.");
+        return;
+      }
+      var printURL = '/apex/CPQScribeWidthCalculatorPrint?id={!$CurrentPage.parameters.id}&preX='+ $('[id="pg:frm:pb:PreX"]').val() + '&preY='+ $('[id="pg:frm:pb:PreY"]').val();
+      window.open(printURL, "_blank");
+    }
+    </script>
+    <apex:outputPanel rendered="false">
+    {!Device__c.Die_Size_Y_mm__c} {!Device__c.Die_Size_X_mm__c}{!Device__c.Min_scribe_width_X_post_shrink__c}{!Device__c.Min_scribe_width_Y_post_shrink__c}{!Device__c.Std_scribe_width_X_post_shrink__c}{!Device__c.Std_scribe_width_Y_post_shrink__c} {!Device.Pre_PTRF_Validation_Status__c}
+    </apex:outputPanel>
+</apex:page>

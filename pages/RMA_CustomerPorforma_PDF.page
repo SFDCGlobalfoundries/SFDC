@@ -1,0 +1,286 @@
+<apex:page standardController="RMA__c" extensions="RMA_Certificate_Extension" Id="RMA_CustomerPorforma_PDF" renderAs="pdf" applyBodyTag="false">
+    <head>
+        <style type="text/css" media="print">
+            @page {
+                @top-center {
+                    content: element(header);
+                }
+                @bottom-left {
+                    content: element(footer);
+                }
+            }
+            div.header {
+                position: running(header);
+            }
+            div.footer {
+                position: running(footer);
+            }
+            .pagenumber:before {
+                content: counter(page);
+            }
+            .pagecount:before {
+                content: counter(pages);
+            }
+            body {
+                font-family: 'Times New Roman';
+                font-size: 85%;
+            }
+            .table_header {
+                border-bottom: 1pt solid black;
+                width: 100%;
+            }
+            table {
+                width: 100%;
+            }
+            td{
+                text-align: left;
+                vertical-align: top;
+            }
+            div.static {
+                border: solid;
+                position: static;
+                font-weight: bold;
+                padding: 15px;
+            }
+            .right {
+                float: right;
+            }
+        </style>
+    </head>
+    <body>
+        <apex:form >
+            <apex:repeat value="{!$ObjectType.RMA__c.FieldSets.RMA_Fields_For_Certificate}" var="hidField">
+                <apex:inputHidden value="{!RMA__c[hidField]}" />
+            </apex:repeat>
+            <div class="header">
+                <table class="table_header">
+                    <tr>
+                        <td><b>Return Material Authorization Form with Instruction</b></td>
+                        <td style="text-align:right"><b>No Charge Invoice RMA # {!RMA__c.Name}</b></td>
+                    </tr>
+                </table>
+                GLOBALFOUNDRIES<br/>
+            </div>
+            <div class="footer">
+                <div>Page <span class="pagenumber" /> of <span class="pagecount" /> - <apex:outputText value="{!NOW()}" /></div>
+            </div>
+            <table>
+                <col width="33%"/>
+                <col width="33%"/>
+                <col width="33%"/>
+                <tr>
+                    <th>Ship From:</th>
+                    <th>Customer Info:</th>
+                    <th>Importer/Ship To:</th>
+                </tr>   
+                <tr>
+                    <td style="width:33%">
+                        <apex:outputText rendered="{!RMA__c.Fab__c != 'FAB 9' && RMA__c.Fab__c != 'FAB 10' && RMA__c.Fab__c != 'ALTIS'}"><i>(To be filled by the sender)</i></apex:outputText>
+                        <apex:outputText value="{!SUBSTITUTE(JSENCODE(RMA__c.Ship_from_Address__c),'\r\n','<br/>')}" escape="false"/>
+                    </td>
+                    <td style="width:33%"><apex:repeat value="{!lstAddress}" var="add"><apex:outputText value="{!add}"/><br/></apex:repeat></td>
+                    <!--<td><apex:repeat value="{!lstReturnAddress}" var="add"><apex:outputText value="{!add}"/><br/></apex:repeat></td>-->
+                    <td style="width:33%"><apex:outputText value="{!SUBSTITUTE(JSENCODE(RMA__c.Receiver_Address__c),'\r\n','<br/>')}" escape="false"/></td>
+                </tr>
+                <tr>
+                    <td colspan="2"></td>
+                    <td><apex:outputText rendered="{!RMA__c.Fab__c == 'FAB 9' || RMA__c.Fab__c == 'FAB 10' || RMA__c.Fab__c == 'ALTIS'}">
+                        <b>Use Carrier: {!IF(RMA__c.Carrier_Vendor__c != 'Others',RMA__c.Carrier_Vendor__c,RMA__c.New_Carrier_Vendor__c)}</b>
+                        </apex:outputText>
+                    </td>
+                </tr>
+                <tr>
+                    <td colspan="2"></td>
+                    <td><apex:outputText rendered="{!RMA__c.Fab__c == 'FAB 9' || RMA__c.Fab__c == 'FAB 10' || RMA__c.Fab__c == 'ALTIS'}">
+                        <b>Carrier Acct: {!RMA__c.Carrier_Vendor_Account_Number__c}</b>
+                        </apex:outputText>
+                    </td>
+                </tr>
+            </table>
+            <br/>
+            <table>
+                <col width="30%"/>
+                <col width="70%"/>
+                <tr>
+                    <td>
+                        <div><apex:outputText rendered="{!RMA__c.Contact_Information__c != ''}">Contact:</apex:outputText>
+                        <br/><apex:outputText value="{!SUBSTITUTE(JSENCODE(RMA__c.Contact_Information__c),'\r\n','<br/>')}" escape="false"/></div>
+                    </td>
+                    <td>
+                        <div class="static">
+                            IMPORTANT<br/>
+                            - For ALL shipments, a copy of this document must be included inside the shipping parcel.<br/>
+                            - Give copy of this form to the carrier.<br/>
+                            - Ensure a copy of this document is affixed to the outside of the shipping parcel near the shipping label for export/import declarations.<br/>
+                            - Please follow the instructions below for timely arrival of your shipments at our facility.<br/>
+                        </div>
+                    </td>
+                </tr>
+            </table>
+            <br/>
+            <table>
+                <tr>
+                    <td>Date: {!MONTH(TODAY())}/{!DAY(TODAY())}/{!YEAR(TODAY())}</td>
+                    <td><div class="right">CURRENCY: USD</div></td>
+                </tr>
+            </table>
+            <br/>
+            <h3>GLOBALFOUNDRIES Return Number: {!RMA__c.Name} <apex:outputText rendered="{!RMA__c.ReasonCode__c == 'R81'}"> FAILURE ANALYSIS</apex:outputText></h3>
+            
+            <apex:pageBlock >
+                <apex:pageBlockTable value="{!lstInvoicesReturnWrapper}" var="wrapper" border="1" cellpadding="5" style="text-align:center;font-size:10px !important;">
+                    <apex:column style="text-align:center;">
+                        <apex:facet name="header">Original Client<br/>PO Number</apex:facet>
+                        <apex:outputField value="{!wrapper.invoice.Purchase_Order_Number__c}"/>                                                                             
+                    </apex:column>
+                    <!--<apex:column style="text-align:center;">
+                        <apex:facet name="header">Original<br/>PO Date</apex:facet>
+                        <apex:outputField value="{!wrapper.invoice.Invoice_Date__c}"/>                                                                             
+                    </apex:column>-->
+                    <apex:column style="text-align:center;width:75px;">
+                        <apex:facet name="header">Part #<br/>Customer Part #</apex:facet>
+                        <apex:outputText escape="false" value="{!wrapper.invoice.Invoice__r.Part_Number__c +'<br><i>'+
+                            IF( LEN(wrapper.invoice.Cust_Part_Num__c) > 24,
+                                    LEFT(wrapper.invoice.Cust_Part_Num__c,12)+'<br>'+
+                                    LEFT(SUBSTITUTE(wrapper.invoice.Cust_Part_Num__c, LEFT(wrapper.invoice.Cust_Part_Num__c,12),''),12) + '<br>' +
+                                    LEFT(SUBSTITUTE(wrapper.invoice.Cust_Part_Num__c, LEFT(wrapper.invoice.Cust_Part_Num__c,24),''),LEN(wrapper.invoice.Cust_Part_Num__c)),
+                                IF(LEN(wrapper.invoice.Cust_Part_Num__c) > 12,
+                                    LEFT(wrapper.invoice.Cust_Part_Num__c,12)+'<br>'+
+                                    LEFT(SUBSTITUTE(wrapper.invoice.Cust_Part_Num__c, LEFT(wrapper.invoice.Cust_Part_Num__c,12),''),LEN(wrapper.invoice.Cust_Part_Num__c)),
+                                wrapper.invoice.Cust_Part_Num__c))
+                            +'</i>' }"/>                                                                             
+                    </apex:column>
+                    <!--<apex:column style="text-align:center;">
+                        <apex:facet name="header">Customer <br/>Part #</apex:facet>
+                        <apex:outputField value="{!wrapper.invoice.Cust_Part_Num__c}"/>                                                                             
+                    </apex:column>-->
+                    <apex:column style="text-align:center;">
+                        <apex:facet name="header">Type</apex:facet>
+                        <apex:outputField value="{!wrapper.invoice.RMA__r.Compensation_Type__c}"/>                                                                             
+                    </apex:column>
+                    <apex:column style="text-align:center;">
+                        <apex:facet name="header">Origin</apex:facet>
+                        <apex:outputField value="{!wrapper.invoice.Invoice__r.Origin__c}"/>                                                                             
+                    </apex:column>
+                    <apex:column style="text-align:center;">
+                        <apex:facet name="header">Lot #</apex:facet>
+                        <apex:outputField value="{!wrapper.invoice.Lot_Number__c}"/>                                                                             
+                    </apex:column>
+                    <apex:column style="text-align:center;width:45px;">
+                        <apex:facet name="header">Original<br/>Invoice #</apex:facet>
+                        <apex:outputField value="{!wrapper.invoice.Invoice_Number__c}"/>                                                                             
+                    </apex:column>
+                    <apex:column style="text-align:center;">
+                        <apex:facet name="header">Original<br/>SO #</apex:facet>
+                        <apex:outputField value="{!wrapper.invoice.Invoice__r.Sales_Order_Number__c}"/>                                                                             
+                    </apex:column>
+                    <apex:column rendered="{!RMA__c.ReasonCode__c == 'R81'}" style="text-align:center;">
+                        <apex:facet name="header">Existing Form Factor</apex:facet>
+                        <apex:outputField value="{!wrapper.invoice.Existing_Form_Factor__c}"/>                                                                             
+                    </apex:column>
+                    <apex:column style="text-align:center;">
+                        <apex:facet name="header">Qty</apex:facet>
+                        <apex:outputField value="{!wrapper.invoice.Wafer_Quantity__c}"/>                                                                             
+                    </apex:column>
+                    <apex:column rendered="{!RMA__c.ReasonCode__c != 'R81'}" style="text-align:center;">
+                        <apex:facet name="header">Unit Price</apex:facet>
+                        <apex:outputText value="{!wrapper.UnitPrice}"/>                                                                             
+                    </apex:column>
+                    <apex:column rendered="{!RMA__c.ReasonCode__c == 'R81'}"  style="text-align:center;">
+                        <apex:facet name="header">Existing Form Factor Price</apex:facet>
+                        <apex:outputText value="{!wrapper.UnitPrice}"/>                                                                             
+                    </apex:column>
+                    <apex:column style="text-align:center;">
+                        <apex:facet name="header">Item Value</apex:facet>
+                        <apex:outputText value="{!wrapper.ItemValue}"/>                                                                             
+                    </apex:column>
+                </apex:pageBlockTable>
+            </apex:pageBlock>
+            <p align="right">No Charge - Value for Customs Purposes Only</p>
+            
+            <apex:pageBlock rendered="{!RMA__c.RMA_By__c != 'Module'}" >
+                <apex:pageBlockTable value="{!lstInvoicesReturnWrapper}" var="wrapper" border="1" cellpadding="5" 
+                        style="text-align:center;font-size:10px !important;width:500px;">
+                    <apex:column style="text-align:center;" width="15%">
+                        <apex:facet name="header">Original Invoice #</apex:facet>
+                        <apex:outputField value="{!wrapper.invoice.Invoice_Number__c}"/>                                                                             
+                    </apex:column>
+                    <apex:column style="text-align:center;" width="15%">
+                        <apex:facet name="header">Lot #</apex:facet>
+                        <apex:outputField value="{!wrapper.invoice.Lot_Number__c}"/>                                                                             
+                    </apex:column>
+                    <apex:column rendered="{!RMA__c.RMA_By__c != 'Module' && (RMA__c.Fab__c != 'FAB 9' && RMA__c.Fab__c != 'FAB 10' && RMA__c.Fab__c != 'ALTIS')}">
+                        <apex:facet name="header">Wafer Ids</apex:facet>
+                        <apex:outputField value="{!wrapper.invoice.Wafer_Id_CSR_Submission__c}" />
+                    </apex:column>
+                    <apex:column rendered="{!RMA__c.RMA_By__c != 'Module' && (RMA__c.Fab__c == 'FAB 9' || RMA__c.Fab__c == 'FAB 10' || RMA__c.Fab__c == 'ALTIS')}">
+                        <apex:facet name="header">Wafer Ids</apex:facet>
+                        <apex:outputField value="{!wrapper.invoice.Wafer_Id_Fab_9_10_CSR_Submission__c}" />
+                    </apex:column>
+                </apex:pageBlockTable>
+            </apex:pageBlock>
+            <br/>
+            <table style="width:100%">
+                <tr>
+                    <td style="width:60%">
+                        <b>Reason for RMA:</b><br/>
+                        <p><apex:outputText value="{!SUBSTITUTE(JSENCODE(RMA__c.Description_of_Reason_s__c),'\r\n','<br/>')}" escape="false"/></p>
+                        <br/><br/>
+                    </td>
+                    <td><p align="right"><b>Total Value : </b>{!amountReturnInvoices}</p></td>
+                </tr>
+            </table>
+            <p><b>This form includes the authorization for a Material Return to the GLOBALFOUNDRIES Plant.</b></p>
+            
+            <div style="page-break-before: always">
+            <table style="width:50%">
+                <tr>
+                    <th>Ship From:</th>
+                </tr>   
+                <tr>
+                    <td><apex:outputText value="{!SUBSTITUTE(JSENCODE(RMA__c.Ship_from_Address__c),'\r\n','<br/>')}" escape="false"/></td>
+                </tr>
+            </table>
+            <br/>
+            <table class="table_header">
+                <tr>
+                    <td>Date: {!MONTH(TODAY())}/{!DAY(TODAY())}/{!YEAR(TODAY())}</td>
+                    <td><div class="right"><b>GLOBALFOUNDRIES Return Number: {!RMA__c.Name}</b></div></td>
+                </tr>
+            </table>
+            <br/>
+            <table style="border:2px solid black;width:100%;border-collapse: collapse;">
+                <tr>
+                    <td style="text-align:center;font-weight:bold;border: 1px solid black;width:100%;padding:15px;">
+                        ***IMPORTANT***<br/>
+                        Please read and comply with these instructions.
+                    </td>
+                </tr>
+                <tr>
+                    <td style="border: 2px solid black;width:100%;padding:15px;">
+                        - Contact the carrier shown at the top of this form for pickup.<br/>
+                        - Use GLOBALFOUNDRIES' account number (Carrier Acct #) when one is listed.<br/>
+                        - The carrier will require a copy of this form for their records.<br/>
+                        - It is best to use the original shipping containers whenever possible.<br/>
+                        - The country of origin marked on your shipping containers must match the country of origin shown on
+                        this form. In order to be in compliance with import/export laws, you must void or cross out any
+                        references to a country of origin on the shipping containers or boxes which do not match this form.<br/>
+                        - Product must be in same form/condition as originally shipped.<br/>
+                    </td>
+                </tr>
+                <tr>
+                    <td style="border: 2px solid black;width:100%;padding:15px;">
+                        GLOBALFOUNDRIES' issuance of this RMA (Return Materials Authorization Form) authorizes you to return
+                        the product referred to above to GLOBALFOUNDRIES for evaluation purposes. RETURN OF THIS
+                        PRODUCT DOES NOT CONSTITUTE ACCEPTANCE OF THE PRODUCT BY GLOBALFOUNDRIES FOR
+                        WARRANTY PURPOSES. GLOBALFOUNDRIES will notify you when GLOBALFOUNDRIES determines
+                        whether the product will be accepted by GLOBALFOUNDRIES for warranty return under the terms and
+                        conditions of GLOBALFOUNDRIES' Standard Terms and Conditions or applicable Sales Contract.<br/>
+                    </td>
+                </tr>
+            </table>
+            </div>
+        </apex:form>
+    </body>
+    
+</apex:page>

@@ -1,0 +1,558 @@
+<!-- 
+
+ -->
+<apex:page standardController="Wavier_Collaborator__c" 
+            extensions="DesignWaiverCollaboratorDetails" 
+            tabStyle="Wavier_Collaborator__c"
+            doctype="HTML-5.0"
+            sidebar="true"
+            showHeader="true"
+            Id="pageId">
+    
+    <apex:includeScript value="{!URLFOR($Resource.myjQuery, 'js/jquery-1.6.2.min.js')}"/>
+    <apex:includeScript value="{!URLFOR($Resource.myjQuery, 'js/jquery-ui-1.8.16.custom.min.js')}"/> 
+    <apex:stylesheet value="{!URLFOR($Resource.GF_DQ_JQueryLatest, '/jquery-ui-1.10.3/themes/base/jquery-ui.css')}"/>
+    <apex:includeScript value="{!URLFOR($Resource.GF_DQ_jQueryLib, '/jquery.blockUI.js')}"/>
+    <apex:includeScript value="https://code.jquery.com/jquery-1.11.0.min.js"/>
+    
+     <!-- Add common DFM JS file -->
+      
+    <apex:includeScript value="{!URLFOR($Resource.DFM_CommonLib, '/DFM_CommonFiles/dfmCommonJs.js')}"/>
+    <apex:includeScript value="{!URLFOR($Resource.DFM_CommonLib, '/DFM_CommonFiles/Images')}"/>
+    
+    <script type="text/javascript">
+                
+        $( document ).ready(function() {
+            var val = $('[name="piSubmit"]');
+            $('[name="piSubmit"]').hide();
+            $j = jQuery.noConflict();
+            
+            setUpDefaultValues();
+                        
+        });
+        
+        function setUpDefaultValues (){
+            
+            var isStandardUser = "{!isStandardUser}";
+            var isFAE = "{!isFAE}";
+            var isDFM = "{!isDfmUser}";
+            var isDfmManager = "{!isDfmManager}";
+            var isPortal = "{!isPortalUser}";
+            var op1 = document.getElementById("cAcceptId");
+            var op2 = document.getElementById("cAgreeId");
+            var op3 = document.getElementById("gfAcceptId");
+    
+            var isGfAcceptRisk="{!collaborator.IsGfAcceptsRisk__c}";
+            var isCustAcceptRisk="{!collaborator.IsCustomerAcceptsRisk__c}";
+            var isCustAgreeToFix="{!collaborator.IsCustomerAgreeToFix__c}";
+            var waiverStatus ="{!collaborator.Waiver_Status__c}";
+            var isAllPartyApproved = "{!collaborator.isAllPartyApproved__c}";
+            var ptsrStatus = "{!collaborator.PTSR_Status__c}";
+            var isReleasedTocustomer = "{!collaborator.Is_releasedToCustomer__c}";
+       
+            
+            if(isStandardUser == 'true'){
+                
+                $("#btnId1").hide();
+                $("#btnId2").hide();
+                $("#btnId4").hide();
+                
+                if (op1!=null && op2!=null && op3!=null){
+                    op2.disabled=true;
+                    op1.disabled=true;
+                    op3.disabled=true;
+                }
+                if (isDFM=='true'){
+                    if (op3!= null){
+                        op3.disabled=true;  
+                    }           
+                }
+            }
+            
+            if (isPortal == 'true'){
+                $("#btnId1").hide();
+                $("#btnId2").hide();
+                $("#btnId4").hide();
+                
+                op2.disabled=false;
+                op1.disabled=false;
+            }
+            
+            if (isDFM == 'true'){
+                $("#btnId2").hide();
+                $("#btnId4").hide();
+                $("#btnId1").show();
+                if (isAllPartyApproved=='true' || isCustAcceptRisk=='true' || isGfAcceptRisk=='true'){
+                    $("#btnId4").show();
+                    $("#btnId1").hide();
+                }
+                
+                if (op1!=null && op2!=null && op3!=null){
+                    
+                   op2.disabled=true;
+                   op1.disabled=true;
+                   op3.disabled=true;
+               }
+            }
+            
+            if (isDfmManager == 'true'){
+                $("#btnId4").hide();
+                $("#btnId1").hide();
+                $("#btnId2").hide();
+
+                if (op1!=null && op2!=null && op3!=null){
+                    
+                   op2.disabled=true;
+                   op1.disabled=true;
+                   op3.disabled=true;
+               }
+            }
+            
+            if (isFAE == 'true'){
+                $("#btnId4").hide();
+                $("#btnId1").hide();
+                //$("#btnId2").hide();
+                if (waiverStatus =='Rejected'){
+                    $("#btnId2").show(); 
+                } 
+                
+                if (op3!=null){
+                    op3.disabled=false;
+                }
+                if (op2!=null && op1!=null){
+                    //op3.disabled = true;
+                    op2.disabled = true;
+                    op1.disabled = true;
+                }
+                
+                if (isReleasedTocustomer == 'true'){
+                    //op3.disabled = true;
+                    $("#btnId2").hide();
+                } 
+            }
+            
+            if (isGfAcceptRisk=='true'){
+                if(op3!=null){
+                    op3.checked = true;
+                    op3.disabled = true;
+                }
+                if (op2!=null && op1!=null){
+                    op2.disabled = true;
+                    op1.disabled = true;
+                }
+            }
+            
+            if (isCustAcceptRisk=='true'){
+                if (op1!=null){
+                    //alert('Accept Risk ');
+                    op1.checked = true;
+                }
+                if (op2!=null && op1!=null){
+                    //op3.disabled = true;
+                    op2.disabled = true;
+                    op1.disabled = true;
+                }
+                if (op3!=null){
+                    op3.disabled = true;
+                }
+            }
+            
+            if (isCustAgreeToFix=='true'){
+                if (op2!=null){
+                    //alert('Agree To Fix');
+                    op2.checked = true;
+                }
+                if (op2!=null && op1!=null){
+                    //op3.disabled = true;
+                    op2.disabled = true;
+                    op1.disabled = true;
+                }
+                if (op3!=null){
+                    op3.disabled = true;
+                }
+            }
+            
+            if (ptsrStatus=='Closed'){
+                if (op3!=null && op2!=null && op1!=null){
+                    op3.disabled = true;
+                    op2.disabled = true;
+                    op1.disabled = true;
+                }
+                $("#btnId1").hide();
+                $("#btnId2").hide();
+                $("#btnId4").hide();
+                
+            }
+            // This is for testing need to remove later on
+            //$("#btnId2").show();
+            //op3.disabled=false;
+            
+        }
+        
+        
+        function Save(Type,Msg){
+             
+             if (Type.value =='Submit for approval' ||  Type.value =='Proceed to customer' ||
+                 Type.value =='Submit'|| Type.checked){       
+                 
+                  $('<div></div>').appendTo('body')
+                      .html('<div><h6>'+ Msg +'  </h6></div>')
+                      .dialog({
+                              modal: true, 
+                              title: 'message', 
+                              zIndex: 10000, 
+                              autoOpen: true,
+                              width: 500, 
+                              resizable: false,
+                              buttons: {
+                                      Yes: function () {
+                                           if (Type.value =='Submit for approval'){
+                                                submitForApproval();
+                                           } 
+                                           else if (Type.value =='Proceed to customer'){
+                                                releaseToCustomer();
+                                           } 
+                                           else if (Type.checked){
+                                                Submit(Type.name,'');
+                                           }
+                                           else if (Type.value =='Submit'){
+                                                saveByDfm();
+                                           }
+                                           $(this).dialog("close");
+                                      },
+                                      No: function () {
+                                            if (Type.checked){
+                                                Type.checked = false;
+                                            }
+                                          $(this).dialog("close");
+                                      }
+                              },
+                              
+                              close: function (event, ui) {
+                                  if (Type.checked){
+                                    Type.checked = false;
+                                  }
+                                  $(this).remove();
+                              }
+                    });
+                    
+             } else {
+                //alert('Clicked on unchecked!!!!');
+             }
+        }
+       
+       // piSubmit  
+      //function to unblock the page  
+      function unblockPage(){  
+         $.unblockUI();  
+      }
+      
+      function selectAM (Type){
+        //alert('Called select AM');   
+            if (Type.checked){
+                $("#popup_div1").dialog({
+                            modal: true, 
+                            title: 'Select account manager for exceptional arrangement approval.', 
+                            zIndex: 10000, 
+                            autoOpen: true,
+                            width: 1000,
+                            height: 500, 
+                            resizable: true,
+                            buttons: {
+                                        Yes: function () {
+                                            //alert('Development is in progress!!!'+users);
+                                            Submit(Type.name,users);
+                                            $(this).dialog("close");
+                                     },
+                                     No: function () {
+                                        $(this).dialog("close");
+                                        Type.checked = false;
+                                       }
+                                        
+                            }   
+                });
+          }       
+      }
+      
+      function proceedToCustomer(){   
+         $("#popup_div").dialog({
+                            modal: true, 
+                            title: 'Select Customers to release waiver collaborator Report.', 
+                            zIndex: 10000, 
+                            autoOpen: true,
+                            width: 1000,
+                            height: 500, 
+                            resizable: true,
+                            buttons: {
+                                        Yes: function () {
+                                            //alert('Development is in progress!!!'+users);
+                                            releaseToCustomer(users);
+                                            $(this).dialog("close");
+                                     },
+                                     No: function () {
+                                        $(this).dialog("close");
+                                       }
+                                        
+                            }   
+                });
+        }  
+          
+        function selectAllCheckboxes(obj,inputID){
+           var inputCheckBox = document.getElementsByTagName("input"); 
+           for(var i=0; i<inputCheckBox.length; i++){ 
+               if(inputCheckBox[i].id.indexOf(inputID)!=-1){ 
+                   inputCheckBox[i].checked = obj.checked;
+               }
+           }
+       }
+       
+       var users='';
+       function setUserIds(uRecord,status){
+         if (status.checked){
+            if (users==''){
+                users = users+uRecord;
+            } else {
+                users = users+';'+uRecord;
+            }
+         } else {
+            users = removeValue(users,uRecord,';'); 
+         }
+         //alert('uRecord >>>>> '+users);
+      }
+       
+      // function help to remove unChecked user from string 
+      var removeValue = function(list, value, separator) {
+          var values = list.split(separator);
+          for(var i = 0 ; i < values.length ; i++) {
+            if(values[i] == value) {
+              values.splice(i, 1);
+              return values.join(separator);
+            }
+          }
+          return list;
+      }
+      
+      function setSelectedUser(uRecord){
+        users = uRecord;
+        //alert('users @@@@ '+users);
+      }
+      
+      function refreshScreen() {
+        window.location.reload();
+      }
+       
+    </script>
+   
+    <div id="ChatterPanel" >
+         <chatter:feedwithFollowers entityid="{!collaborator.Id}" 
+                                    showHeader="true" rendered="{!isStandardUser}"/>
+    </div>
+    
+    <apex:form id="formId">
+             
+        <apex:outputPanel id="dummyPanel">
+        
+             <script>
+                setUpDefaultValues();
+            </script>
+        
+        </apex:outputPanel>
+        
+        <div id="popup_div" style="display: none;">
+            <apex:pageBlock >
+                 
+                <apex:repeat value="{!customerDetails}" var="customerLst" id="repeat1">
+
+                    <apex:pageBlockTable value="{!customerLst}" var="cust">
+                          
+                         <apex:column headerValue="Select Customer">
+                            <!-- apex:facet name="header">
+                                <apex:inputCheckbox onclick="selectAllCheckboxes(this,'chkBxID1')"/>
+                            </apex:facet-->
+                            <apex:inputCheckbox value="{!cust.isSelected}" id="chkBxID1" onClick="setUserIds('{!cust.userRecord.id}',this);"/>
+                         </apex:column>
+                          
+                          <apex:column headerValue="Name">
+                            <apex:outputText value="{!cust.userRecord.Name}"/>
+                         </apex:column>
+                         
+                         <apex:column headerValue="Email">
+                            <apex:outputText value="{!cust.userRecord.Email}"/>
+                         </apex:column>
+                         
+                         <apex:column headerValue="Phone">
+                            <apex:outputText value="{!cust.userRecord.MobilePhone}"/>
+                         </apex:column>
+                         
+                    </apex:pageBlockTable>  
+                    
+               </apex:repeat>   
+                       
+            </apex:pageBlock>
+        </div>
+        
+        <div id="popup_div1" style="display: none;">
+            <apex:pageBlock >
+                <apex:pageBlockTable value="{!AMDetails}" var="aWrapper">
+                     <apex:column headerValue="Select AM">
+                        <input type="radio" name="AccManager" onClick="setSelectedUser('{!aWrapper.ATP.User__c}');"/>
+                     </apex:column>
+                      
+                      <apex:column headerValue="User Name">
+                        <apex:outputText value="{!aWrapper.ATP.User__r.Name}"/>
+                     </apex:column>
+                     
+                     <apex:column headerValue="Team Role">
+                        <apex:outputText value="{!aWrapper.ATP.Team_Role__c}"/>
+                     </apex:column>
+                     
+                     <apex:column headerValue="Account Full Name">
+                        <apex:outputText value="{!aWrapper.ATP.Account__r.Name}"/>
+                     </apex:column> 
+                     
+                </apex:pageBlockTable>
+            </apex:pageBlock>    
+        </div>
+        
+        <apex:outputPanel id="myPanel">
+            <!-- Empty panel created intentionally. Please don't remove -->
+        </apex:outputPanel>
+        
+        <apex:actionFunction name="submitForApproval" action="{!submitForApproval}" reRender="pMessageId,processId,attachmentId,chipId"/>
+        <apex:actionFunction name="releaseToCustomer" action="{!releaseToCustomer}" reRender="myPanel">
+            <apex:param name="Param1" assignTo="{!hiddenUsrIds}" value="" />
+        </apex:actionFunction>  
+        <apex:actionFunction name="Submit" action="{!saveDRC}" reRender="dummyPanel" oncomplete="refreshScreen();">
+            <apex:param name="Param1" assignTo="{!customerOption}" value="" />
+            <apex:param name="Param2" assignTo="{!hiddenUsrIds}" value="" />
+        </apex:actionFunction>
+        <apex:actionFunction name="saveByDfm" action="{!saveByDfm}" reRender="dummyPanel"/>
+        
+        <!--START OF PROGRESS BAR CREATION COMPONENT-->
+        
+        <c:ProgressBarComponent pBarObject="{!collaborator}" appName="DFM"/>
+           
+        <!-- END OF PROGRESS BAR CREATION COMPONENT -->
+         
+        <apex:pageblock id="pBlockId">
+            <apex:pagemessages id="pMessageId"/>
+            <apex:pageBlockButtons location="top">
+            
+                 <input type="button" class="btn" value="Submit for approval" title="Attach waiver file and sumbit to design waiver team for approval" onclick ="Save(this,'Do you want to submit this waiver report for approval ?');" id="btnId1"/>
+                 <!-- <input type="button" class="btn" value="Proceed to customer" title="Review rejected report from DFM team and release to customer" onclick ="Save(this,'Do you want to release this report to customer ?');" id="btnId2"/>-->
+                 <input type="button" class="btn" value="Proceed to customer" title="Review rejected report from DFM team and release to customer" onclick ="proceedToCustomer();" id="btnId2"/>
+                 <!-- <input type="button" class="btn" value="Save" onclick ="Save(this,'do you want to proceed ?');" title="select customer option and submit waiver report" id="btnId3"/>-->
+                 <input type="button" class="btn" value="Submit" title="Update waiver list and close waiver report" onclick ="Save(this,'Have you updated waiver list in attachment section ?');" id="btnId4"/>
+                
+            </apex:pageBlockButtons>
+            <!--
+            <apex:pageBlockSection title="Customer Options" columns="1" id="pbsection2Id" collapsible="false"
+                                     rendered="{!IF(collaborator.Waiver_Status__c =='Rejected' && collaborator.PTSR_Status__c !='Closed',true,false)}">-->
+                                     
+            <apex:pageBlockSection title="Customer Options" columns="1" id="pbsection2Id" collapsible="false"
+                        rendered="{!IF(collaborator.Is_releasedToCustomer__c,true,false)}">                         
+                 
+                 <apex:pageBlockSectionItem >
+                    <apex:outputText value="NOTE : Your request of DFM waiver has been rejected. Your result file is as attached below. Your prompt choice of action is required to select one of the following action." 
+                                 style="font-weight: bold;color:red;"/>
+                                     
+                </apex:pageBlockSectionItem>
+                
+                <apex:pageBlockSectionItem >
+                     <input type="checkbox" value="{!collaborator.IsCustomerAgreeToFix__c}" id="cAgreeId" 
+                            name="CustomerAgreeToFix" onclick="Save(this,'Do you agree to fix ?');"/> 
+                     <apex:outputLabel value="Customer agrees to fix the non-waived violations and resubmit" for="cAgreeId"/>
+                </apex:pageBlockSectionItem>
+                
+                <apex:pageBlockSectionItem >
+                     <input type="checkbox" value="{!collaborator.IsCustomerAcceptsRisk__c}" id="cAcceptId" 
+                            name="CustomerAcceptsRisk" onclick="Save(this,'Do you accept the risk ?');"/> 
+                     <apex:outputLabel value="Customer wants the device to proceed for manufacturing and accepts risk liability due to the unfixed violations" for="cAcceptId"/>
+                </apex:pageBlockSectionItem>
+                
+                <apex:pageBlockSectionItem rendered="{!isStandardUser}">
+                    <!-- 
+                     <input type="checkbox" value="{!collaborator.IsGfAcceptsRisk__c}" 
+                            name="GfAcceptsRisk" id="gfAcceptId" onclick="Save(this,'Are you ready to do exceptional arrangement?');"/--> 
+                     <input type="checkbox" value="{!collaborator.IsGfAcceptsRisk__c}" 
+                            name="GfAcceptsRisk" id="gfAcceptId" onclick="selectAM(this);"/>
+                     <apex:outputLabel value="Request Foundry-to-risk (FAE to escalate to GF executives only when customer has declined to do any fixing or accept risk liability after discussion)" for="gfAcceptId"/>
+                </apex:pageBlockSectionItem>
+                
+            </apex:pageBlockSection>
+                
+            <apex:pageBlockSection title="Waiver collaborator Details">
+                <apex:repeat value="{!fields}" var="f">
+                    <apex:outputField value="{!collaborator[f.fieldPath]}"/>
+                </apex:repeat>
+            </apex:pageBlockSection>
+            
+            <apex:pageBlockSection title="Design Waiver Attachments" columns="1" rendered="{!isPortalUser}"> 
+            
+                <apex:pageBlockTable value="{!attachments}" var="attachment">
+                    
+                    <apex:column headerValue="Title">
+                        <apex:outputLink value="/{!attachment.id}" target="_blank">{!attachment.Name}</apex:outputLink>
+                    </apex:column> 
+                    <apex:column headerValue="Created Date">
+                        <apex:outputText value="{!attachment.CreatedDate}"/>
+                    </apex:column>
+                    
+                    <apex:column headerValue="Last modify Date">
+                        <apex:outputText value="{!attachment.LastModifiedDate}"/>
+                    </apex:column>
+                    
+                </apex:pageBlockTable>
+            
+            </apex:pageBlockSection>
+            
+        </apex:pageBlock>
+        <!-- Related list provides Chip related details of waiver collaborator -->
+        <apex:pageBlock >
+            <apex:pageBlockTable value="{!lst_Chips}" var="chip">
+                <!-- 
+                 <apex:column headerValue="Title">
+                    <apex:outputLink value="/{!chip.id}" target="_blank">{!chip.Name}</apex:outputLink>
+                 </apex:column>
+               -->   
+                 <apex:column headerValue="Chip Name">
+                    <apex:outputText value="{!chip.Chip_Name__c}"/>
+                 </apex:column>
+                 
+                 <apex:column headerValue="Chip Size X">
+                    <apex:outputText value="{!chip.Chip_Size_X__c}"/>
+                 </apex:column>
+                 
+                 <apex:column headerValue="Chip Size Y">
+                    <apex:outputText value="{!chip.Chip_Size_Y__c}"/>
+                 </apex:column>
+                 
+                 <apex:column headerValue="Database Name">
+                    <apex:outputText value="{!chip.Database_Name__c}"/>
+                 </apex:column>
+                 
+                 <apex:column headerValue="Database Size">
+                    <apex:outputText value="{!chip.Database_Size__c}"/>
+                 </apex:column>
+                 
+                 <apex:column headerValue="Md5Sum">
+                    <apex:outputText value="{!chip.Md5Sum__c}"/>
+                 </apex:column>
+                 
+                 <apex:column headerValue="Source PTSR Number">
+                    <apex:outputText value="{!chip.Source_PTSR_Number__c}"/>
+                 </apex:column>
+                 
+                 <apex:column headerValue="Top Cell Name">
+                    <apex:outputText value="{!chip.Top_Cell_Name__c}"/>
+                 </apex:column>
+                 
+            </apex:pageBlockTable>
+        </apex:pageBlock> 
+    </apex:form>
+    
+    <!--  <apex:relatedList list="Chips__r" id="chipId"/>-->
+    <apex:relatedList subject="{!Wavier_Collaborator__c}" list="CombinedAttachments" rendered="{!isStandardUser}" id="attachmentId"/>
+    <apex:relatedList list="ProcessSteps" id="processId" rendered="{!isStandardUser}"/>
+    
+</apex:page>

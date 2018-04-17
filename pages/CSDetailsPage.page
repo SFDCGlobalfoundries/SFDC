@@ -1,0 +1,268 @@
+<!-- 
+    Type Name: CSDetailsPage.page
+    Author: Manikumar M
+    Created Date: 25, Aug 2015
+    Reason: 
+    Change History:
+    Author: 
+    Modified Date: 
+    Reason: 
+-->
+<apex:page controller="CSDetailsController" action="{!searchCS}" sidebar="false">
+    <script type="text/javascript">
+    window.onload=function() {
+    }   
+
+    <script>        
+    function runScript(obj) {            
+        //alert(obj.keyCode);            
+        if(obj.keyCode == 13) {                
+            callAction();   // call action function                
+            return false;            
+        }
+        else if((obj.keyCode > 34 && obj.keyCode < 40) || (obj.keyCode > 95 && obj.keyCode < 106) || (obj.keyCode > 47 && obj.keyCode < 58) || obj.keyCode == 8 || obj.keyCode == 46 ){  
+            return true;            
+        }else { 
+            return false;            
+        }       
+    }    
+    </script>
+    <apex:sectionHeader title="Custom Setting" subtitle="CSforDefaultownerandteam"/>
+    <p/>
+    <!--<apex:pageMessages id="showmsg"/> -->
+    <apex:outputPanel title="" id="error">
+        <apex:pageMessages />
+    </apex:outputPanel>
+    <BR/>
+    <apex:form >
+        <apex:inputText value="{!searchStr}"/>&nbsp;
+        <apex:commandButton value="Enter text and click to fetch OwnerId" action="{!userSearchMethod}"                
+                            reRender="acct,error,searchPanel" status="actStatusId"/>
+        <apex:actionStatus id="actStatusId">
+            <apex:facet name="start" >
+                <img src="/img/loading.gif"/>                    
+            </apex:facet>
+        </apex:actionStatus>
+    </apex:form>
+    <br/>
+    <apex:outputPanel id="searchPanel">
+        <apex:outputPanel rendered="{!searchSection}">
+            <apex:pageBlock title="User Information" id="acct">
+            <apex:pageblockTable value="{!userList}" var="usr">
+            <apex:column value="{!usr.Id}"/>
+            <apex:column value="{!usr.Name}"/>
+            <apex:column value="{!usr.Username}"/>
+            <apex:column value="{!usr.Email}"/>
+            </apex:pageblockTable>
+            </apex:pageBlock>
+        </apex:outputPanel>
+    </apex:outputPanel>
+     <apex:form >
+        <apex:inputText value="{!searchStr}"/>&nbsp;
+        <apex:commandButton value="Enter text and click to fetch GroupId" action="{!groupSearchMethod}"                
+                            reRender="accts,error,searchPanel1" status="actStatusId"/>
+        <apex:actionStatus id="actStatusId">
+            <apex:facet name="start" >
+                <img src="/img/loading.gif"/>                    
+            </apex:facet>
+        </apex:actionStatus>
+    </apex:form>
+    <br/>
+    <apex:outputPanel id="searchPanel1">
+        <apex:outputPanel rendered="{!searchSection}">
+            <apex:pageBlock title="Public Group Information" id="accts">
+            <apex:pageblockTable value="{!groupList}" var="pgroup">
+            <apex:column value="{!pgroup.Id}"/>
+            <apex:column value="{!pgroup.Name}"/>
+            <apex:column value="{!pgroup.Type}"/>
+            </apex:pageblockTable>
+            </apex:pageBlock>
+        </apex:outputPanel>
+    </apex:outputPanel>
+    <apex:form >
+        <apex:pageBlock id="CSDetail" rendered="{!NOT(csEditFlag)}">
+            <apex:actionStatus id="status">            
+              <apex:facet name="start">                
+              <div style="width: 1300px;">                                      
+               <img src="/img/loading24.gif" style="vertical-align:middle;"/>                    
+               <span style="margin-left: 10px; font-size:12px; font-weight: bold; color:#000000;">Please wait...</span> 
+              </div>
+             </apex:facet>        
+            </apex:actionStatus>
+            <apex:actionFunction name="changeLimit" action="{!changeLimit}" status="status" reRender="CSDetail"/>
+            <apex:actionFunction name="callAction" action="{!pageNavigation}" status="status" reRender="CSDetail"/>
+            <!--- search section start-->
+            <apex:outputPanel id="searchpanel1">
+                <apex:outputPanel rendered="{!recordSearch}">
+                   <div style="display: inline-table">
+                       <span>Product Affected:</span>
+                       <apex:inputText value="{!editCSObj.Product_affected__c}"/>
+                   </div>
+                    <div style="display: inline-table">
+                        <span>Bug Component:</span>
+                       <apex:inputText value="{!editCSObj.Bug_Component__c}" />   
+                    </div>&nbsp;
+                    <apex:commandButton value="Search" action="{!searchCS}" rerender="CSDetail"/>&nbsp;
+                    <apex:commandButton value="Clear All" action="{!ClearAll}" rerender="CSDetail"/>       
+                </apex:outputPanel>
+            </apex:outputPanel>
+            <!--  search section end -->
+            <br/><br/> 
+            <apex:actionFunction name="saveEdit" action="{!saveEdit}"/>
+
+            <apex:outputPanel id="renderPanel">
+                <apex:outputPanel rendered="{!editPanel}">
+                    <apex:pageBlockTable value="{!csObjList}" var="cSet" id="CSList">
+                        <apex:column rendered="{!cSet.Id == editCSObj.Id}">
+                            <apex:facet name="header">Action</apex:facet>
+                            <apex:commandLink action="{!saveEdit}" style="color:blue">Save</apex:commandLink><font color="blue">|</font>&nbsp;
+                            <apex:commandLink action="{!cancelEdit}" style="color:blue" rerender="CSDetail">Cancel</apex:commandLink>&nbsp;
+                        </apex:column>
+                        <apex:column rendered="{!cSet.Id == editCSObj.Id}">
+                            <apex:facet name="header">Name                                       
+                            </apex:facet>
+                            <apex:inputField value="{!editCSObj.Name}"/>
+                        </apex:column>
+                        <apex:column rendered="{!cSet.Id == editCSObj.Id}">
+                            <apex:facet name="header">Bug Admin</apex:facet>
+                            <apex:inputField value="{!editCSObj.Bug_Admin__c}"/>                               
+                        </apex:column>
+                        <apex:column rendered="{!cSet.Id == editCSObj.Id}">
+                            <apex:facet name="header">Bug Admin Name</apex:facet>
+                            <apex:outputText value="{!groupmap[editCSObj.Bug_Admin__c]}"/>                               
+                        </apex:column>
+                        <apex:column rendered="{!cSet.Id == editCSObj.Id}">
+                            <apex:facet name="header">Bug Owner</apex:facet>
+                            <apex:inputField value="{!editCSObj.Bug_Owner__c}"/>                               
+                        </apex:column>
+                        <apex:column rendered="{!cSet.Id == editCSObj.Id}">
+                            <apex:facet name="header">Bug Owner Name</apex:facet>
+                            <apex:outputText value="{!groupmap[editCSObj.Bug_Owner__c]}"/>                               
+                        </apex:column>
+                        <apex:column rendered="{!cSet.Id == editCSObj.Id}">
+                            <apex:facet name="header">Bug BugTeam</apex:facet>
+                            <apex:inputField value="{!editCSObj.Bug_BugTeam__c}"/>                               
+                        </apex:column>
+                        <apex:column rendered="{!cSet.Id == editCSObj.Id}">
+                            <apex:facet name="header">BugTeam Members</apex:facet>
+                            <apex:outputText value="{!groupmap[editCSObj.Id]}"/>                               
+                        </apex:column>
+                        <apex:column rendered="{!cSet.Id == editCSObj.Id}">
+                            <apex:facet name="header">Bug Component</apex:facet>
+                            <apex:inputField value="{!editCSObj.Bug_Component__c}"/>                               
+                        </apex:column>
+                        <apex:column rendered="{!cSet.Id == editCSObj.Id}">
+                            <apex:facet name="header">Product Affected</apex:facet>
+                            <apex:inputField value="{!editCSObj.Product_affected__c}"/>                               
+                        </apex:column>
+                        <apex:column rendered="{!cSet.Id == editCSObj.Id}">
+                            <apex:facet name="header">Additional BugTeam</apex:facet>
+                            <apex:inputField value="{!editCSObj.Additional_Bug_Team__c}"/>                               
+                        </apex:column>
+                        <apex:column rendered="{!cSet.Id == editCSObj.Id}">
+                            <apex:facet name="header">Additional BugTeam Members</apex:facet>
+                            <apex:outputText value="{!addGroupmap[editCSObj.Id]}"/>                               
+                        </apex:column>
+                        <apex:column rendered="{!cSet.Id != editCSObj.Id}">
+                            <apex:facet name="header">Action</apex:facet>
+                            <apex:commandLink action="{!editCS}" style="color:blue" rerender="CSList">Edit
+                                        <apex:param name="editCsId" value="{!cSet.id}"/>
+                                    </apex:commandLink>&nbsp;<font color="blue">|</font>&nbsp;
+                            <apex:commandLink action="{!delCS}" style="color:blue" onclick="return confirm('Are you sure you want to delete?')">Del
+                                        <apex:param name="delCsId" value="{!cSet.Id}"/>
+                                    </apex:commandLink>       
+                            </apex:column>
+                        <apex:column rendered="{!cSet.Id != editCSObj.Id}">
+                            <apex:facet name="header">Name</apex:facet>
+                            <apex:outputField value="{!cSet.Name}"/>                               
+                        </apex:column>
+                        <apex:column rendered="{!cSet.Id != editCSObj.Id}">
+                            <apex:facet name="header">Bug Admin</apex:facet>
+                            <apex:outputField value="{!cSet.Bug_Admin__c}"/>                               
+                        </apex:column>
+                        <apex:column rendered="{!cSet.Id != editCSObj.Id}">
+                            <apex:facet name="header">Bug Admin Name</apex:facet>
+                            <apex:outputText value="{!groupmap[cSet.Bug_Admin__c]}"/>                               
+                        </apex:column>
+                        <apex:column rendered="{!cSet.Id != editCSObj.Id}">
+                            <apex:facet name="header">Bug Owner</apex:facet>
+                            <apex:outputField value="{!cSet.Bug_Owner__c}"/>                               
+                        </apex:column>
+                        <apex:column rendered="{!cSet.Id != editCSObj.Id}">
+                            <apex:facet name="header">Bug Owner Name</apex:facet>
+                            <apex:outputText value="{!groupmap[cSet.Bug_Owner__c]}"/>                               
+                        </apex:column>
+                        <apex:column rendered="{!cSet.Id != editCSObj.Id}">
+                            <apex:facet name="header">Bug BugTeam</apex:facet>
+                            <apex:outputField value="{!cSet.Bug_BugTeam__c}"/>                               
+                        </apex:column>
+                        <apex:column rendered="{!cSet.Id != editCSObj.Id}">
+                            <apex:facet name="header">BugTeam Members</apex:facet>
+                            <apex:outputText value="{!groupmap[cSet.Id]}"/>                               
+                        </apex:column>
+                        <apex:column rendered="{!cSet.Id != editCSObj.Id}">
+                            <apex:facet name="header">Bug Component</apex:facet>
+                            <apex:outputField value="{!cSet.Bug_Component__c}"/>                               
+                        </apex:column>
+                        <apex:column rendered="{!cSet.Id != editCSObj.Id}">
+                            <apex:facet name="header">Product Affected</apex:facet>
+                            <apex:outputField value="{!cSet.Product_affected__c}"/>                               
+                        </apex:column>
+                        <apex:column rendered="{!cSet.Id != editCSObj.Id}">
+                            <apex:facet name="header">Additional BugTeam</apex:facet>
+                            <apex:outputField value="{!cSet.Additional_Bug_Team__c}"/>                               
+                        </apex:column>
+                        <apex:column rendered="{!cSet.Id != editCSObj.Id}">
+                            <apex:facet name="header">Additional BugTeam Members</apex:facet>
+                            <apex:outputText value="{!addGroupmap[cSet.Id]}"/>                               
+                        </apex:column>
+                    </apex:pageBlockTable>
+                    <apex:outputPanel rendered="{! IF( csObjList != null && csObjList.size ==0 , true, false)}" >
+                        <h1>No Records Found </h1>
+                    </apex:outputPanel>
+                </apex:outputPanel>
+            </apex:outputPanel>
+            <br/>
+            <div style="width:750px;">   
+                <span>                
+                    <apex:outputLabel value="{!recordInfo}"/>                       
+                    <apex:selectList value="{!limits}" size="1" onchange="changeLimit();return false;"> 
+                    &nbsp;<apex:selectOptions value="{!items}"/>                
+                    </apex:selectList>            
+                </span>
+            </div>          
+            
+            <apex:pageblockButtons id="pb">
+                <apex:commandButton value="New" action="{!newCS}" />
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                <apex:commandButton styleClass="process-block-button" id="btnExcel" value="Export to Excel" action="{!exportToExcel}"/>
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                <apex:commandButton value="<<" rerender="CSDetail" action="{!first}" disabled="{!prev}"/>
+                <apex:commandButton value="<" rerender="CSDetail" action="{!previous}" disabled="{!prev}"/>
+                <apex:commandButton value=">" rerender="CSDetail" action="{!next}" disabled="{!nxt}"/>
+                <apex:commandButton value=">>" rerender="CSDetail" action="{!last}" disabled="{!nxt}"/>
+            </apex:pageblockButtons>
+        </apex:pageBlock>
+        
+        <apex:outputPanel id="nPanel">
+            <apex:outputPanel rendered="{!newPanel}">
+                <P>Provide values for the fields you created. This data is cached with the application.</P><br/>
+                <apex:pageBlock title="Edit CSforDefaultownerandteam">
+                    <apex:pageBlockButtons >
+                        <apex:commandButton action="{!saveNew}" value="Save" reRender="renderPanel,nPanel,error"/>
+                        <apex:commandButton action="{!cancel}" value="Cancel" reRender="renderPanel,nPanel,showmsg" immediate="true"/>
+                    </apex:pageBlockButtons>
+                    <apex:pageBlockSection columns="1" title="CSforDefaultownerandteam Information" collapsible="false">
+                        <apex:inputText id="csNameId" value="{!csName}" label="Name"/>
+                        <apex:inputText id="adminId" value="{!bugAdmin}" label="Bug Admin" maxlength="15"/>
+                        <apex:inputText id="ownerId" value="{!bugOwner}" label="Bug Owner" />
+                        <apex:inputText id="bugTeamId" value="{!bugTeam}" label="Bug Team" />
+                        <apex:inputText id="addBugTeamId" value="{!addBugTeam}" label="Additional BugTeam" />
+                        <apex:inputText id="bugComId" value="{!bugComponent}" label="Bug Component"/>
+                        <apex:inputText id="productId" value="{!productAffected}" label="Product Affected" />
+                    </apex:pageBlockSection>  
+                </apex:pageBlock>
+            </apex:outputPanel>
+        </apex:outputPanel>
+    </apex:form>
+</apex:page>

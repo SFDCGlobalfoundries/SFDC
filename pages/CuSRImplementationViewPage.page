@@ -1,0 +1,80 @@
+<!--
+Author: Shyam Ravindra Nair
+Description: Custom page to view CuSR Implemention Record
+History:
+SNair     30122014     - code creation
+SNair     09022015     - updated rendering conditions for Edit and Delete buttons
+-->
+<apex:page standardController="CuSR_Implementation__c"
+	extensions="CuSRImplementationExtensions" tabStyle="CuSR_Form__c">
+	<style>
+.customLink {
+	text-decoration: none;
+	color: #015ba7;
+	font-family: 'Verdana', 'Geneva', sans-serif;
+	font-size: 91.3%;
+}
+</style>
+	<apex:form >
+		<apex:sectionHeader title="{!$ObjectType.CuSR_Implementation__c.label}"
+			subtitle="{!implementation.Name}" />
+		<apex:commandLink value="Back to CuSR Form {!cusrForm.Name}"
+			styleClass="customLink" action="{!navigateToCuSRForm}" />
+        &nbsp;
+        <apex:pageBlock title="CuSR Implementation Detail">
+			<apex:pageblockButtons >
+				<apex:commandButton value="Edit"
+					action="/apex/CuSRImplementationEditPage?Id={!implementation.Id}"
+					rendered="{!implementation.Status__c == 'Pending' && enableEdit == true && disableEditWhenVoided==false}" />
+				<!-- <apex:commandButton value="Delete" action="{!deleteImplementation}"
+                    rendered="{!implementation.Status__c == 'Pending'}" /> -->
+				<!-- <apex:commandButton value="Cancelled" action="{!cancelled}"
+                    rendered="{!implementation.Status__c == 'Pending'}" />
+                <apex:commandButton value="Completed" action="{!completed}"
+                    rendered="{!implementation.Status__c != 'Cancelled' && implementation.Status__c != 'Completed'}" /> -->
+			</apex:pageblockButtons>
+			<apex:pageblockSection collapsible="false">
+				<apex:outputField value="{!implementation.Name}" />
+				<apex:outputField value="{!implementation.CuSR_Form__c}" />
+				<apex:outputField value="{!implementation.Assignee__c}" />
+				<apex:outputField value="{!implementation.Status__c}" />
+				<apex:outputField value="{!implementation.Fab__c}" />
+				<br />
+				<apex:outputField value="{!implementation.Action__c}" />
+				<apex:outputField value="{!implementation.Comments__c}" />
+				<apex:outputField value="{!implementation.Planned_End_Date__c}" />
+				<apex:outputField value="{!implementation.Actual_End_Date__c}" />
+			</apex:pageblockSection>
+		</apex:pageBlock>
+		<c:GenericHistoryComponent Limit="20"
+			Object="{!CuSR_Implementation__c}" />
+		<apex:pageBlock rendered="{!implementation.Id != null}"
+			title="Notes & Attachments">
+			<apex:pageBlockButtons location="top" rendered="{!disableEditWhenVoided==false && implementation.Status__c == 'Pending'}">
+				<apex:commandButton value="Add File"
+					action="/apex/CuSRFormAttachmentPage?RecordId={!implementation.Id}&ObjectName=CuSR_Implementation__c&PageType=View" />
+			</apex:pageBlockButtons>
+			<apex:pageBlockTable value="{!attachmentList}" var="attach">
+				<apex:column headerValue="Action" styleClass="actionColumn">
+					<apex:commandLink value="View" action="/{!attach.Id}"
+						target="__blank" styleClass="actionLink" />
+					<apex:outputLabel value=" | "
+						rendered="{!implementation.Status__c != 'Completed' && implementation.Status__c != 'Cancelled'}" />
+					<apex:commandLink value="Del" action="{!deleteAttachment}"
+						styleClass="actionLink"
+						rendered="{!implementation.Status__c != 'Completed' && implementation.Status__c != 'Cancelled'}">
+						<apex:param name="attachmentId" assignTo="{!attachmentId}"
+							value="{!attach.Id}" />
+					</apex:commandLink>
+				</apex:column>
+				<apex:column headerValue="Type">Attachment</apex:column>
+				<apex:column headerValue="Title">
+					<apex:outputField value="{!attach.Name}" />
+				</apex:column>
+				<apex:column headerValue="Created By">
+					<apex:outputField value="{!attach.OwnerId}" />
+				</apex:column>
+			</apex:pageBlockTable>
+		</apex:pageBlock>
+	</apex:form>
+</apex:page>

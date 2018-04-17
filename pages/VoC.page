@@ -1,0 +1,318 @@
+<apex:page standardController="VoC__c" extensions="VoCController" id="mainPage">
+<apex:includeScript value="https://ajax.googleapis.com/ajax/libs/jquery/2.0.0/jquery.min.js"/>
+
+<style>
+       .apexp .bPageBlock.apexDefaultPageBlock .pbBody .pbSubheader {
+             background-color: transparent;
+             background-color: #a8ad00;
+             border-color: #a8ad00; 
+        }                
+        .Custom84Tab .brdPalette{
+            border-top-color: #a8ad00;
+        }
+        body .bPageBlock, body #bodyCell .bResource .secondaryPalette, body .secondaryPalette.bPageBlock, body .individualPalette .secondaryPalette.bPageBlock, body .bodyDiv .genericTable, body .genericPageBlockTable, body .bodyDiv .bSubBlock, body .bComponentBlock .bPageBlock, body .bMyDashboard .bPageBlock, body.rlHoverFrame .bPageBlock, body.subjectSelectionPopup div.choicesBox, body.lookupTab .secondaryPalette.bPageBlock, body.popupTab .secondaryPalette.bPageBlock, body.UserTagStatsPage .secondaryPalette.bPageBlock{
+            border-top-color: #a8ad00;
+        }
+        .headerRow th{
+            text-align:center;
+        }
+        /* iPhone 5s portrait */
+        @media screen 
+        and (device-aspect-ratio: 40/71) 
+        and (orientation : portrait){
+            table [id$='wtable']{
+                width:117%;
+            }
+        }
+                
+        /* iPhone 6 portrait */
+        @media only screen
+        and (min-device-width: 375px)
+        and (max-device-width: 667px)
+        and (orientation: portrait)
+        and (-webkit-min-device-pixel-ratio: 2){ 
+            table [id$='wtable']{
+                width:138%;
+            }
+        }   
+        
+        /* iPhone 6 Plus portrait */
+        @media only screen 
+        and (min-device-width: 414px) 
+        and (max-device-width: 736px) 
+        and (orientation: portrait) 
+        and (-webkit-min-device-pixel-ratio: 3){
+            table [id$='wtable']{
+                width:150%;
+            }
+        }   
+        
+        @media screen 
+        and (device-width: 360px) 
+        and (device-height: 640px) 
+        and (-webkit-device-pixel-ratio: 3)
+        and (orientation : portrait){
+            table [id$='wtable']{
+                width:126%;
+            }
+        }
+</style>
+<Script>
+    function setFocusOnLoad() {}   
+    $(document).ready(function(){   
+             
+        $('select[id*=actionOwner]').find("option").each(function()
+        {        
+            if($(this).text() == 'Partner User' || $(this).text() == 'Customer Portal User'){
+                 //alert('inside each-'+$(this).text());  
+                $(this).css("display","none");
+                $(this).remove();
+            }           
+        });
+        $('div[class*=datePicker]').css("display","none");
+        $('label[class*=assistiveText]').css("display","none");
+    }); 
+</Script>
+
+<apex:outputPanel rendered="{!NOT(isSF1)}">
+    <div class="content" style="padding:1%;">
+    <img src="/s.gif" alt="VoC" class="pageTitleIcon" title="VoC" />
+    <h1 class="pageType">VoC<span class="titleSeparatingColon">:</span></h1><br/>
+    
+    <h1 class="pageDescription" style="font-size: initial;font-weight: 100;">{!voc__c.name}</h1>
+    <div class="blank">&nbsp;</div>
+    </div>
+    <div></div>
+<chatter:feedWithFollowers entityId="{!VoC__c.id}"/>
+<!------------------- FORM for Dekstop Starts----------------------------------------------------------------------->
+ <apex:form >
+     <apex:pageMessages />     
+     <!----------------- Edit Mode -------------------------------------------------------->     
+     <apex:pageBlock id="editMode" rendered="{!editMode}">
+         <apex:pageBlockButtons >
+             <apex:commandButton value="Save" action="{!saveRec}"/>
+             <apex:commandButton value="Cancel" action="{!cancelRec}" immediate="true"/>
+         </apex:pageBlockButtons>                 
+         <apex:pageBlockSection title="Information">
+             <apex:inputField value="{!VoC__c.Contact__c}" />             
+             <apex:inputField value="{!VoC__c.Schedule_Next_Follow_Up__c}" required="true"/>
+             <apex:inputField value="{!VoC__c.How_Person_Contacted__c}" required="true"/>
+             <apex:inputField value="{!VoC__c.Date_Feedback_Provided__c}" required="true"/>
+             <apex:inputField value="{!VoC__c.Account__c}" rendered="{!VoC__c.Account__c == null}" required="true"/>
+             <apex:outputField value="{!VoC__c.Account__c}" rendered="{!NOT(VoC__c.Account__c == null)}"/>           
+         </apex:pageBlockSection>  
+         <apex:pageBlockSection title="Action For Next Call">
+             <apex:inputField value="{!VoC__c.Action_Owner__c}" id="actionOwner"/>
+             <apex:inputField value="{!VoC__c.Actions_to_be_Taken__c}"/>
+         </apex:pageBlockSection>       
+     </apex:pageBlock>
+     
+     <!----------------- View Mode -------------------------------------------------------->
+     <apex:pageBlock id="viewMode" rendered="{!NOT(editMode)}">
+         <apex:pageBlockButtons style="align:center;">
+             <apex:commandButton value="Edit VoC" action="{!editRec}"/>        
+         </apex:pageBlockButtons>         
+         <apex:pageBlockSection title="Information">
+             <apex:outputField value="{!VoC__c.Contact__c}"/>
+             <apex:outputField value="{!VoC__c.Schedule_Next_Follow_Up__c}"/>
+             <apex:outputField value="{!VoC__c.How_Person_Contacted__c}" />
+             <apex:outputField value="{!VoC__c.Date_Feedback_Provided__c}"/>
+             <apex:outputField value="{!VoC__c.Account__c}"/>             
+         </apex:pageBlockSection>  
+         <apex:pageBlockSection title="Action For Next Call">
+             <apex:outputField value="{!VoC__c.Action_Owner__c}"/>
+             <apex:outputText value="{!VoC__c.Actions_to_be_Taken__c}" style="WORD-BREAK: BREAK-ALL;"/>
+         </apex:pageBlockSection>                   
+         <apex:pageBlockSection title="VoC Score" columns="1"  id="scoreEdit"  rendered="{!NOT(editVoCScore)}">
+             <apex:pageBlockTable value="{!wrappers}" var="wrapper" id="wtable" border="1" width="100%">                                 
+                 <apex:column headerValue="Area" style="border-right: 1px solid #ccc;border-bottom: 1px solid #ccc;text-align:center;">
+                     <apex:inputField value="{!wrapper.vocScore.Area__c}"  required="true"/>                     
+                 </apex:column>
+                 <apex:column headerValue="Grade (5 best)" style="border-right: 1px solid #ccc;border-bottom: 1px solid #ccc;text-align:center;">
+                     <apex:inputField value="{!wrapper.vocScore.Grade_5_best__c}" required="true"/>
+                 </apex:column>
+                 <apex:column headerValue="Comments" style="border-right: 1px solid #ccc;border-bottom: 1px solid #ccc;text-align:center;">
+                     <apex:inputField value="{!wrapper.vocScore.Comments__c}"/>
+                 </apex:column> 
+                 <apex:column headerValue="Delete" style="border-right: 1px solid #ccc;border-bottom: 1px solid #ccc;text-align:center;">
+                     <apex:commandButton value="Delete" action="{!delWrapper}" rerender="wtable" style="margin-right: 39%;" immediate="true">
+                         <apex:param name="toDelIdent" value="{!wrapper.ident}" assignTo="{!toDelIdent}"/> 
+                     </apex:commandButton>
+                 </apex:column>                                            
+             </apex:pageBlockTable>
+             <apex:panelGrid columns="4" style="float:left;">
+                 <apex:commandButton value="Add Row" action="{!addRows}" rerender="wtable" >
+                    <apex:param name="addCount" value="1" assignTo="{!addCount}" /> 
+                 </apex:commandButton>      
+                 <apex:commandButton value="Save" action="{!save}"/>
+                 <apex:commandButton value="Cancel" action="{!cancelVoCScore}" immediate="true"/>                 
+            </apex:panelGrid>
+         </apex:pageBlockSection> 
+         <apex:pageblockSection id="scoreView" title="VoC Score" columns="1" rendered="{!editVoCScore}">
+             <apex:pageBlockTable value="{!wrappers}" var="wrapper" id="wtable" border="1" width="100%">                                 
+                 <apex:column headerValue="Area" style="border-right: 1px solid #ccc;border-bottom: 1px solid #ccc;width: 20%;text-align:center;">
+                     <apex:outputField value="{!wrapper.vocScore.Area__c}"/>
+                 </apex:column>
+                 <apex:column headerValue="Grade (5 best)" style="border-right: 1px solid #ccc;border-bottom: 1px solid #ccc;text-align:center;">
+                     <apex:outputField value="{!wrapper.vocScore.Grade_5_best__c}"/>
+                 </apex:column>                 
+                 <apex:column headerValue="Area Average" style="border-right: 1px solid #ccc;border-bottom: 1px solid #ccc;text-align:center;">
+                     <apex:outputField value="{!wrapper.vocScore.Technology_Roadmap_Avg__c}" rendered="{!IF(wrapper.vocScore.Area__c == 'Technology Roadmap',true,false)}"/>
+                     <apex:outputField value="{!wrapper.vocScore.Assurance_of_Supply_Avg__c}" rendered="{!IF(wrapper.vocScore.Area__c == 'Assurance of Supply',true,false)}"/>
+                     <apex:outputField value="{!wrapper.vocScore.Attentiveness_Avg__c}" rendered="{!IF(wrapper.vocScore.Area__c == 'Attentiveness',true,false)}"/>
+                     <apex:outputField value="{!wrapper.vocScore.Capacity_Avg__c}" rendered="{!IF(wrapper.vocScore.Area__c == 'Capacity',true,false)}"/>
+                     <apex:outputField value="{!wrapper.vocScore.Design_Enablement_Avg__c}" rendered="{!IF(wrapper.vocScore.Area__c == 'Design Enablement',true,false)}"/>
+                     <apex:outputField value="{!wrapper.vocScore.Ease_of_Doing_Business_Avg__c}" rendered="{!IF(wrapper.vocScore.Area__c == 'Ease of Doing Business',true,false)}"/>
+                     <apex:outputField value="{!wrapper.vocScore.Fab_Operations_Avg__c}" rendered="{!IF(wrapper.vocScore.Area__c == 'Fab Operations',true,false)}"/>
+                     <apex:outputField value="{!wrapper.vocScore.Price_Avg__c}" rendered="{!IF(wrapper.vocScore.Area__c == 'Price',true,false)}"/>
+                 </apex:column>
+                 <apex:column headerValue="Score Trend" style="border-right: 1px solid #ccc;border-bottom: 1px solid #ccc;text-align:center;">
+                     <apex:outputField value="{!wrapper.vocScore.Area_Score_Trend__c}"/>
+                 </apex:column>
+                 <apex:column headerValue="Comments" style="border-right: 1px solid #ccc;border-bottom: 1px solid #ccc;WORD-BREAK: BREAK-ALL;width:35%;text-align:center;">
+                     <apex:outputText value="{!wrapper.vocScore.Comments__c}"/>
+                 </apex:column>                                                
+             </apex:pageBlockTable>
+             <apex:commandButton value="Add/Update Scores" action="{!addUpdateScore}" style="float:left"/>
+         </apex:pageblockSection>          
+     </apex:pageBlock>   
+ </apex:form>
+ </apex:outputPanel>
+ <!-----------------------FORM FOR SF1 STARTS----------------------------------------------------------------------->
+ <apex:outputpanel rendered="{!isSF1}" id="sf1Panel">
+   <apex:form >
+   <apex:pageMessages />
+   <apex:actionstatus id="statusMain">
+        <apex:facet name="start">
+            <div class="waitingSearchDivMain" id="el_loadingDel" style="background-color: #fbfbfb; height:100%;opacity:0.65;width:100%;">
+                <div class="waitingHolderMain" style="top: 100%; width: 100%;">
+                <img class="waitingImageMain" src="/img/loading.gif" title="Please Wait..." />
+                <span class="waitingDescriptionMain">Please Wait...</span>
+                </div>
+            </div>
+        </apex:facet>
+    </apex:actionstatus>
+     <apex:pageBlock id="editMode" rendered="{!editMode}">                                          
+         <apex:pageBlockSection title="Information">
+             <table style="border-collapse: collapse;border-top:0px;width:102%">
+             <tr style="border-bottom:1px solid #ccc;"><td><apex:inputField value="{!VoC__c.Contact__c}"/></td></tr>
+             <tr style="border-bottom:1px solid #ccc;"><td><apex:inputField value="{!VoC__c.How_Person_Contacted__c}" required="true"/></td></tr>
+             <tr style="border-bottom:1px solid #ccc;"><td><apex:inputField value="{!VoC__c.Schedule_Next_Follow_Up__c}" required="true"/></td></tr>
+             <tr style="border-bottom:1px solid #ccc;"><td><apex:inputField value="{!VoC__c.Account__c}" rendered="{!VoC__c.Account__c == null}" required="true"/><apex:outputField value="{!VoC__c.Account__c}" rendered="{!NOT(VoC__c.Account__c == null)}"/></td></tr>             
+             <tr><td><apex:inputField value="{!VoC__c.Date_Feedback_Provided__c}" required="true"/></td></tr>
+             </table>
+         </apex:pageBlockSection>               
+         <apex:pageBlockSection title="Action For Next Call">
+             <table style="border-collapse: collapse;border-top:0px;width:102%">
+             <tr style="border-bottom:1px solid #ccc;"><td><apex:inputField value="{!VoC__c.Action_Owner__c}" id="actionOwner"/></td></tr>
+             <tr style="border-bottom:1px solid #ccc;"><td><apex:inputField value="{!VoC__c.Actions_to_be_Taken__c}"/></td></tr>
+             </table>
+         </apex:pageBlockSection>  <br/>
+                 
+          <center><apex:commandButton value="Save" action="{!saveRec}" status="statusMain" reRender="sf1Panel"/>&nbsp;
+          <apex:commandButton value="Cancel" action="{!cancelRec}" immediate="true" status="statusMain" reRender="sf1Panel"/><br/> </center>            
+     </apex:pageBlock>
+     <!----------------- View Mode -------------------------------------------------------->
+     <apex:pageBlock id="viewMode" rendered="{!NOT(editMode)}">           
+         <center><apex:commandButton value="Edit VoC" action="{!editRec}" status="statusMain"/></center>                             
+         <apex:pageBlockSection title="Information">             
+             <table style="border-collapse: collapse;border-top:0px;">
+             <tr style="border-bottom:1px solid #ccc;"><td><apex:outputField value="{!VoC__c.Contact__c}"/></td></tr>
+             <tr style="border-bottom:1px solid #ccc;"><td><apex:outputField value="{!VoC__c.How_Person_Contacted__c}"/></td></tr>
+             <tr style="border-bottom:1px solid #ccc;"><td><apex:outputField value="{!VoC__c.Schedule_Next_Follow_Up__c}" style="WORD-BREAK: BREAK-ALL;"/></td></tr>
+             <tr style="border-bottom:1px solid #ccc;"><td><apex:outputField value="{!VoC__c.Account__c}"/></td></tr>
+             <tr><td><apex:outputField value="{!VoC__c.Date_Feedback_Provided__c}"/></td></tr>
+             </table>
+         </apex:pageBlockSection>  
+         <apex:pageBlockSection title="Action For Next Call">
+             <table style="border-collapse: collapse;border-top:0px;">
+             <tr style="border-bottom:1px solid #ccc;"><td><apex:outputField value="{!VoC__c.Action_Owner__c}"/> </td></tr>            
+             <tr><td><apex:outputText value="{!VoC__c.Actions_to_be_Taken__c}" style="WORD-BREAK: BREAK-ALL;"/></td></tr>
+             </table>
+         </apex:pageBlockSection>                   
+         <apex:pageBlockSection title="VoC Score" columns="1"  id="scoreEdit"  rendered="{!NOT(editVoCScore)}">
+             <apex:pageBlockTable value="{!wrappers}" var="wrapper" id="wtable" border="1" style="{!if(wrappers.size>0,'width:100%','')}">                                 
+                 <apex:column headerValue="Area" style="border-right: 1px solid #ccc;border-bottom: 1px solid #ccc;text-align:center;">
+                     <center><apex:inputField value="{!wrapper.vocScore.Area__c}" style="width:80%;" required="true"/></center>                     
+                 </apex:column>
+                 <apex:column headerValue="Grade (5 best)" style="border-right: 1px solid #ccc;border-bottom: 1px solid #ccc;text-align:center;">
+                     <apex:inputField value="{!wrapper.vocScore.Grade_5_best__c}" style="width:80%" required="true"/>
+                 </apex:column>
+                 <apex:column headerValue="Comments" style="border-right: 1px solid #ccc;border-bottom: 1px solid #ccc;text-align:center;">
+                     <apex:inputField value="{!wrapper.vocScore.Comments__c}" style="width:90%"/>
+                 </apex:column> 
+                 <apex:column headerValue="Delete" style="border-right: 1px solid #ccc;border-bottom: 1px solid #ccc;text-align:center;">
+                     <apex:commandButton value="Del" action="{!delWrapper}" rerender="wtable" style="width:90%" status="statusDel" reRender="scoreEdit" immediate="true">
+                         <apex:param name="toDelIdent" value="{!wrapper.ident}" assignTo="{!toDelIdent}"/> 
+                     </apex:commandButton>
+                     <apex:actionstatus id="statusDel">
+                        <apex:facet name="start">
+                            <div class="waitingSearchDivDel" id="el_loadingDel" style="background-color: #fbfbfb; height:100%;opacity:0.65;width:100%;">
+                                <div class="waitingHolderDel" style="top: 100%; width: 100%;margin-left:15%">
+                                <img class="waitingImageDel" src="/img/loading.gif" title="Please Wait..." />
+                                <span class="waitingDescriptionDel">Please Wait...</span>
+                                </div>
+                            </div>
+                        </apex:facet>
+                    </apex:actionstatus>
+                 </apex:column>                                            
+             </apex:pageBlockTable>
+             <apex:panelGrid columns="4" style="float:left;">
+                 <apex:commandButton value="Add Row" action="{!addRows}" rerender="wtable" status="counterStatus">
+                    <apex:param name="addCount" value="1" assignTo="{!addCount}"/> 
+                 </apex:commandButton>                                   
+                 <apex:commandButton value="Save" action="{!save}" status="counterStatus" reRender="sf1Panel"/>
+                 <apex:commandButton value="Cancel" action="{!cancelVoCScore}"  immediate="true" status="counterStatus" reRender="sf1Panel"/> 
+                 <apex:actionstatus id="counterStatus">
+                    <apex:facet name="start">
+                        <div class="waitingSearchDiv" id="el_loading" style="background-color: #fbfbfb; height:100%;opacity:0.65;width:100%;">
+                            <div class="waitingHolder" style="top: 100%; width: 100%;margin-left:70%">
+                            <img class="waitingImage" src="/img/loading.gif" title="Please Wait..." />
+                            <span class="waitingDescription">Please Wait...</span>
+                            </div>
+                        </div>
+                    </apex:facet>
+                </apex:actionstatus>
+            </apex:panelGrid>
+         </apex:pageBlockSection> 
+         <apex:pageblockSection id="scoreView" title="VoC Score" columns="1" rendered="{!editVoCScore}">
+             <apex:pageBlockTable value="{!wrappers}" var="wrapper" id="wtable1" border="1">                                  
+                 <apex:column headerValue="Area" style="border-right: 1px solid #ccc;border-bottom: 1px solid #ccc;text-align:center;">
+                     <center><apex:outputField value="{!wrapper.vocScore.Area__c}" style="width:50%;"/></center>
+                 </apex:column>
+                 <apex:column headerValue="Grade (5 best)" style="border-right: 1px solid #ccc;border-bottom: 1px solid #ccc;text-align:center;">
+                     <apex:outputField value="{!wrapper.vocScore.Grade_5_best__c}" style="width:80%"/>
+                 </apex:column>                 
+                 <apex:column headerValue="Area Average" style="border-right: 1px solid #ccc;border-bottom: 1px solid #ccc;text-align:center;">
+                     <apex:outputField value="{!wrapper.vocScore.Technology_Roadmap_Avg__c}" rendered="{!IF(wrapper.vocScore.Area__c == 'Technology Roadmap',true,false)}"/>
+                     <apex:outputField value="{!wrapper.vocScore.Assurance_of_Supply_Avg__c}" rendered="{!IF(wrapper.vocScore.Area__c == 'Assurance of Supply',true,false)}"/>
+                     <apex:outputField value="{!wrapper.vocScore.Attentiveness_Avg__c}" rendered="{!IF(wrapper.vocScore.Area__c == 'Attentiveness',true,false)}"/>
+                     <apex:outputField value="{!wrapper.vocScore.Capacity_Avg__c}" rendered="{!IF(wrapper.vocScore.Area__c == 'Capacity',true,false)}"/>
+                     <apex:outputField value="{!wrapper.vocScore.Design_Enablement_Avg__c}" rendered="{!IF(wrapper.vocScore.Area__c == 'Design Enablement',true,false)}"/>
+                     <apex:outputField value="{!wrapper.vocScore.Ease_of_Doing_Business_Avg__c}" rendered="{!IF(wrapper.vocScore.Area__c == 'Ease of Doing Business',true,false)}"/>
+                     <apex:outputField value="{!wrapper.vocScore.Fab_Operations_Avg__c}" rendered="{!IF(wrapper.vocScore.Area__c == 'Fab Operations',true,false)}"/>
+                     <apex:outputField value="{!wrapper.vocScore.Price_Avg__c}" rendered="{!IF(wrapper.vocScore.Area__c == 'Price',true,false)}"/>
+                 </apex:column>
+                 <apex:column headerValue="Score Trend" style="border-right: 1px solid #ccc;border-bottom: 1px solid #ccc;text-align:center;">
+                     <apex:outputField value="{!wrapper.vocScore.Area_Score_Trend__c}"/>
+                 </apex:column>
+                 <apex:column headerValue="Comments" style="border-right: 1px solid #ccc;border-bottom: 1px solid #ccc;WORD-BREAK: BREAK-ALL;text-align:center;">
+                     <apex:outputText value="{!wrapper.vocScore.Comments__c}" style="width:70%"/>
+                 </apex:column>                                                
+             </apex:pageBlockTable>
+             <apex:commandButton value="Add/Update Scores" action="{!addUpdateScore}" style="float:left" reRender="sf1Panel" status="statusAddUpdate"/>
+             <apex:actionstatus id="statusAddUpdate">
+                <apex:facet name="start">
+                    <div class="waitingSearchDivAddUpdate" id="el_loadingAddUpdate" style="background-color: #fbfbfb; height:100%;opacity:0.65;width:100%;">
+                        <div class="waitingHolderAddUpdate" style="top: 100%; width: 100%;margin-left:10%">
+                        <img class="waitingImageAddUpdate" src="/img/loading.gif" title="Please Wait..." />
+                        <span class="waitingDescriptionAddUpdate">Please Wait...</span>
+                        </div>
+                    </div>
+                </apex:facet>
+            </apex:actionstatus>
+         </apex:pageblockSection>          
+     </apex:pageBlock> 
+   </apex:form>   
+ </apex:outputpanel>
+</apex:page>

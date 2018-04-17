@@ -1,0 +1,361 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Workflow xmlns="http://soap.sforce.com/2006/04/metadata">
+    <alerts>
+        <fullName>Email_Alert_to_Submitter_after_Approval_Rejection</fullName>
+        <description>Email Alert to Submitter after Approval/Rejection</description>
+        <protected>false</protected>
+        <recipients>
+            <type>creator</type>
+        </recipients>
+        <senderType>CurrentUser</senderType>
+        <template>unfiled$public/Email_Notification_To_Submitter_After_Approval_Rejection</template>
+    </alerts>
+    <alerts>
+        <fullName>FV_Email_Alert_to_Submitter_after_Approval_Rejection</fullName>
+        <description>FV_Email Alert to Submitter after Approval/Rejection</description>
+        <protected>false</protected>
+        <recipients>
+            <type>creator</type>
+        </recipients>
+        <senderType>CurrentUser</senderType>
+        <template>FV_PDK_Approval_Email_Template1/FV_Email_Notification_To_Submitter_After_Approval_Rejection</template>
+    </alerts>
+    <fieldUpdates>
+        <fullName>FUUpdateApprovalStatusApproved</fullName>
+        <field>Approval_Status__c</field>
+        <literalValue>Approved</literalValue>
+        <name>FUUpdateApprovalStatusApproved</name>
+        <notifyAssignee>false</notifyAssignee>
+        <operation>Literal</operation>
+        <protected>false</protected>
+        <reevaluateOnChange>true</reevaluateOnChange>
+    </fieldUpdates>
+    <fieldUpdates>
+        <fullName>FUUpdateApprovalStatusRejected</fullName>
+        <field>Approval_Status__c</field>
+        <literalValue>Rejected</literalValue>
+        <name>FUUpdateApprovalStatusRejected</name>
+        <notifyAssignee>false</notifyAssignee>
+        <operation>Literal</operation>
+        <protected>false</protected>
+        <reevaluateOnChange>true</reevaluateOnChange>
+    </fieldUpdates>
+    <fieldUpdates>
+        <fullName>FUUpdateApprovalStatusSubmitted</fullName>
+        <field>Approval_Status__c</field>
+        <literalValue>submitted</literalValue>
+        <name>FUUpdateApprovalStatusSubmitted</name>
+        <notifyAssignee>false</notifyAssignee>
+        <operation>Literal</operation>
+        <protected>false</protected>
+        <reevaluateOnChange>true</reevaluateOnChange>
+    </fieldUpdates>
+    <fieldUpdates>
+        <fullName>FUUpdateDocProvStatusProvisioned</fullName>
+        <field>Status__c</field>
+        <literalValue>Provisioned</literalValue>
+        <name>FUUpdateDocProvStatusProvisioned</name>
+        <notifyAssignee>false</notifyAssignee>
+        <operation>Literal</operation>
+        <protected>false</protected>
+        <reevaluateOnChange>true</reevaluateOnChange>
+    </fieldUpdates>
+    <fieldUpdates>
+        <fullName>FUUpdateDocProvStatusRejected</fullName>
+        <field>Status__c</field>
+        <literalValue>Rejected</literalValue>
+        <name>FUUpdateDocProvStatusRejected</name>
+        <notifyAssignee>false</notifyAssignee>
+        <operation>Literal</operation>
+        <protected>false</protected>
+        <reevaluateOnChange>true</reevaluateOnChange>
+    </fieldUpdates>
+    <fieldUpdates>
+        <fullName>FV_StatusToDeprovision</fullName>
+        <field>Status__c</field>
+        <literalValue>De-Provisioned</literalValue>
+        <name>FV_StatusToDeprovision</name>
+        <notifyAssignee>false</notifyAssignee>
+        <operation>Literal</operation>
+        <protected>false</protected>
+    </fieldUpdates>
+    <fieldUpdates>
+        <fullName>FV_StatusToIPLADeprovision</fullName>
+        <field>Status__c</field>
+        <literalValue>IPLADeprovision</literalValue>
+        <name>FV_StatusToIPLADeprovision</name>
+        <notifyAssignee>false</notifyAssignee>
+        <operation>Literal</operation>
+        <protected>false</protected>
+    </fieldUpdates>
+    <fieldUpdates>
+        <fullName>FV_StatusToIPLAProvision</fullName>
+        <field>Status__c</field>
+        <literalValue>IPLAProvision</literalValue>
+        <name>FV_StatusToIPLAProvision</name>
+        <notifyAssignee>false</notifyAssignee>
+        <operation>Literal</operation>
+        <protected>false</protected>
+    </fieldUpdates>
+    <fieldUpdates>
+        <fullName>FV_UpdateDocProvStatusInProgress</fullName>
+        <description>Update status from send for approval to In Progress.</description>
+        <field>Status__c</field>
+        <literalValue>Provisioning In Progress</literalValue>
+        <name>FV UpdateDocProvStatusInProgress</name>
+        <notifyAssignee>false</notifyAssignee>
+        <operation>Literal</operation>
+        <protected>false</protected>
+        <reevaluateOnChange>true</reevaluateOnChange>
+    </fieldUpdates>
+    <fieldUpdates>
+        <fullName>Unique_Id_Pplte</fullName>
+        <field>Unique_Id__c</field>
+        <formula>Account__c</formula>
+        <name>Unique Id Populate</name>
+        <notifyAssignee>false</notifyAssignee>
+        <operation>Formula</operation>
+        <protected>false</protected>
+    </fieldUpdates>
+    <outboundMessages>
+        <fullName>FV_DesignSpec_Document_Provisioning_Rule</fullName>
+        <apiVersion>33.0</apiVersion>
+        <description>https://www.foundryview.com/sfaia/soa-infra/services/SF/SFDocumentProvisioning/SFDocumentProvisioning_client</description>
+        <endpointUrl>https://preprod.foundryview.com/aianoauth/soa-infra/services/SF/SFDocumentProvisioning/SFDocumentProvisioning_client</endpointUrl>
+        <fields>Acc_Short_Name__c</fields>
+        <fields>DSpecOTId__c</fields>
+        <fields>Design_Spec_OpenText_Id__c</fields>
+        <fields>Id</fields>
+        <fields>Status__c</fields>
+        <includeSessionId>true</includeSessionId>
+        <integrationUser>crmonlineuser@globalfoundries.com</integrationUser>
+        <name>FV DesignSpec Document Provisioning Rule</name>
+        <protected>false</protected>
+        <useDeadLetterQueue>false</useDeadLetterQueue>
+    </outboundMessages>
+    <outboundMessages>
+        <fullName>FV_DesignSpec_Document_de_Provisioning</fullName>
+        <apiVersion>33.0</apiVersion>
+        <description>https://www.foundryview.com/sfaia/soa-infra/services/SF/SFDocumentProvisioning/SFDocumentProvisioning_client</description>
+        <endpointUrl>https://preprod.foundryview.com/aianoauth/soa-infra/services/SF/SFDocumentProvisioning/SFDocumentProvisioning_client</endpointUrl>
+        <fields>Acc_Short_Name__c</fields>
+        <fields>DSpecOTId__c</fields>
+        <fields>Design_Spec_OpenText_Id__c</fields>
+        <fields>Id</fields>
+        <fields>Status__c</fields>
+        <includeSessionId>true</includeSessionId>
+        <integrationUser>crmonlineuser@globalfoundries.com</integrationUser>
+        <name>FV DesignSpec Document de-Provisioning</name>
+        <protected>false</protected>
+        <useDeadLetterQueue>false</useDeadLetterQueue>
+    </outboundMessages>
+    <outboundMessages>
+        <fullName>FV_OBMSendProvisionInfoToOTCSforIPLA</fullName>
+        <apiVersion>32.0</apiVersion>
+        <endpointUrl>https://preprod.foundryview.com/aianoauth/soa-infra/services/SF/SFIPDKProvisionService/SFIPDKProvisionService_Client</endpointUrl>
+        <fields>Acc_Short_Name__c</fields>
+        <fields>DSpecOTId__c</fields>
+        <fields>Design_Spec_OpenText_Id__c</fields>
+        <fields>IPLA__c</fields>
+        <fields>Id</fields>
+        <fields>Status__c</fields>
+        <includeSessionId>true</includeSessionId>
+        <integrationUser>crmonlineuser@globalfoundries.com</integrationUser>
+        <name>FV_OBMSendProvisionInfoToOTCSforIPLA</name>
+        <protected>false</protected>
+        <useDeadLetterQueue>false</useDeadLetterQueue>
+    </outboundMessages>
+    <outboundMessages>
+        <fullName>FV_PDK_DeProvisioning</fullName>
+        <apiVersion>32.0</apiVersion>
+        <description>This OM will be help to deprovision PDK bundle with list of design specs</description>
+        <endpointUrl>https://preprod.foundryview.com/aianoauth/soa-infra/services/SF/SFPDKDeProvisionService/SFPDKDeProvisionService_client</endpointUrl>
+        <fields>Acc_Short_Name__c</fields>
+        <fields>Bundle_OT_ID__c</fields>
+        <fields>Id</fields>
+        <fields>PdkSpecs__c</fields>
+        <fields>Pdk_Specs_DeProvisioned__c</fields>
+        <fields>Status__c</fields>
+        <fields>Sub_PDK_OpenText_Id__c</fields>
+        <fields>Sub_PDK__c</fields>
+        <fields>isDeProUpdate__c</fields>
+        <fields>isDeletionNeeded__c</fields>
+        <includeSessionId>true</includeSessionId>
+        <integrationUser>crmonlineuser@globalfoundries.com</integrationUser>
+        <name>FV PDK DeProvisioning</name>
+        <protected>false</protected>
+        <useDeadLetterQueue>false</useDeadLetterQueue>
+    </outboundMessages>
+    <outboundMessages>
+        <fullName>FV_PDK_Document_Provisioning</fullName>
+        <apiVersion>32.0</apiVersion>
+        <endpointUrl>https://preprod.foundryview.com/aianoauth/soa-infra/services/SF/SFPDKProvisionService/SFPDKProvisionService_client</endpointUrl>
+        <fields>Acc_Short_Name__c</fields>
+        <fields>Id</fields>
+        <fields>PDK_Provisoin_To_Updated_Specs__c</fields>
+        <fields>PdkSpecs__c</fields>
+        <fields>Status__c</fields>
+        <fields>Sub_PDK_OpenText_Id__c</fields>
+        <fields>Sub_PDK__c</fields>
+        <fields>isProvUpdate__c</fields>
+        <includeSessionId>true</includeSessionId>
+        <integrationUser>crmonlineuser@globalfoundries.com</integrationUser>
+        <name>FV PDK Document Provisioning</name>
+        <protected>false</protected>
+        <useDeadLetterQueue>false</useDeadLetterQueue>
+    </outboundMessages>
+    <outboundMessages>
+        <fullName>OBMSendProvisionInfoToOTCS</fullName>
+        <apiVersion>28.0</apiVersion>
+        <description>https://www.foundryview.com/sfaia/soa-infra/services/SF/SFDocumentProvisioning/SFDocumentProvisioning_client</description>
+        <endpointUrl>https://preprod.foundryview.com/aianoauth/soa-infra/services/SF/SFDocumentProvisioning/SFDocumentProvisioning_client</endpointUrl>
+        <fields>Design_Package__c</fields>
+        <fields>Design_Spec_OpenText_Id__c</fields>
+        <fields>Design_Spec__c</fields>
+        <fields>Final_User_Access__c</fields>
+        <fields>Id</fields>
+        <fields>NDA_Coverage__c</fields>
+        <fields>Package_OpenText_Id__c</fields>
+        <fields>Status__c</fields>
+        <fields>Sub_PDK_OpenText_Id__c</fields>
+        <fields>Sub_PDK__c</fields>
+        <fields>Tech_Geo_Granted_to_Account__c</fields>
+        <fields>User_Short_Name__c</fields>
+        <fields>User__c</fields>
+        <includeSessionId>true</includeSessionId>
+        <integrationUser>crmonlineuser@globalfoundries.com</integrationUser>
+        <name>OBMSendProvisionInfoToOTCS</name>
+        <protected>false</protected>
+        <useDeadLetterQueue>false</useDeadLetterQueue>
+    </outboundMessages>
+    <rules>
+        <fullName>FV DesignSpec Document Provisioning Rule</fullName>
+        <actions>
+            <name>FV_DesignSpec_Document_Provisioning_Rule</name>
+            <type>OutboundMessage</type>
+        </actions>
+        <active>true</active>
+        <description>Work Flow rule for DesignSpec document provisioning.</description>
+        <formula>NOT(ISCHANGED(DateTime_Last_Synced_With_OpenText__c))       &amp;&amp;   ((ISPICKVAL(Status__c, &apos;Provisioning In Progress&apos;) &amp;&amp;  (OR (AND(ISNEW(),Final_User_Access__c),ISCHANGED( Final_User_Access__c )))  || (ISPICKVAL(Status__c, &apos;Provisioning In Progress&apos;) &amp;&amp; Final_User_Access__c  = True &amp;&amp; ISCHANGED( Status__c) ))      &amp;&amp;    Design_Spec__c &lt;&gt;&apos;&apos;&amp;&amp; Design_Spec__r.Specification_Type__c &lt;&gt; &apos;IP Design Kit&apos;)  &amp;&amp; NOT(RecordType.Name =&apos;PDK Record Type&apos;)</formula>
+        <triggerType>onAllChanges</triggerType>
+    </rules>
+    <rules>
+        <fullName>FV DesignSpec Document de-Provisioning Rule</fullName>
+        <actions>
+            <name>FV_DesignSpec_Document_de_Provisioning</name>
+            <type>OutboundMessage</type>
+        </actions>
+        <active>true</active>
+        <description>Work Flow rule for DesignSpec document de-Provisioning.</description>
+        <formula>NOT(ISCHANGED(DateTime_Last_Synced_With_OpenText__c)) &amp;&amp;  ISPICKVAL(Status__c, &apos;De-Provisioning In Progress&apos;)&amp;&amp; NOT(Final_User_Access__c) &amp;&amp; Design_Spec__c &lt;&gt;&apos;&apos;&amp;&amp; Design_Spec__r.Specification_Type__c &lt;&gt; &apos;IP Design Kit&apos;  &amp;&amp; NOT(RecordType.Name =&apos;PDK Record Type&apos;)</formula>
+        <triggerType>onAllChanges</triggerType>
+    </rules>
+    <rules>
+        <fullName>FV PDK Document Provisioning Rule</fullName>
+        <actions>
+            <name>FV_PDK_Document_Provisioning</name>
+            <type>OutboundMessage</type>
+        </actions>
+        <active>true</active>
+        <description>Work Flow rule for PDK document provisioning.</description>
+        <formula>AND( 		OR( 			AND(ISPICKVAL(Status__c, &apos;Provisioning In Progress&apos;), Final_User_Access__c), 			AND(ISPICKVAL(Status__c, &apos;Provisioned&apos;), Final_User_Access__c, isProvUpdate__c) 		), 		NOT(ISCHANGED(DateTime_Last_Synced_With_OpenText__c)), RecordType.Name =&apos;PDK Record Type&apos;, Sub_PDK__c &lt;&gt; &apos;&apos;  	)</formula>
+        <triggerType>onAllChanges</triggerType>
+    </rules>
+    <rules>
+        <fullName>FV PDKde-Provisioning Rule</fullName>
+        <actions>
+            <name>FV_PDK_DeProvisioning</name>
+            <type>OutboundMessage</type>
+        </actions>
+        <active>true</active>
+        <description>Work Flow rule trigger  PDK deprovisioning and PDK deProvisioning update.</description>
+        <formula>AND( 		OR( 			AND(ISPICKVAL(Status__c, &apos;De-Provisioning In Progress&apos;), NOT(Final_User_Access__c)), 			AND(ISPICKVAL(Status__c, &apos;Provisioned&apos;), Final_User_Access__c, isDeProUpdate__c) 		), 		NOT(ISCHANGED(DateTime_Last_Synced_With_OpenText__c)), RecordType.Name =&apos;PDK Record Type&apos;, Sub_PDK__c &lt;&gt; &apos;&apos; 	)</formula>
+        <triggerType>onAllChanges</triggerType>
+    </rules>
+    <rules>
+        <fullName>FV_WFChangeStatusToIPLAIPLADeProvision</fullName>
+        <actions>
+            <name>FV_StatusToIPLADeprovision</name>
+            <type>FieldUpdate</type>
+        </actions>
+        <active>true</active>
+        <formula>OR( ISPICKVAL(Status__c ,&apos;Provisioned&apos;), ISPICKVAL(Status__c ,&apos;IPLAProvision&apos;) ) &amp;&amp; ISCHANGED(IPLA__c) &amp;&amp; IPLA__c =false &amp;&amp; Design_Spec__c &lt;&gt; null &amp;&amp; Design_Spec__r.Specification_Type__c =&apos;IP Design Kit&apos;</formula>
+        <triggerType>onAllChanges</triggerType>
+    </rules>
+    <rules>
+        <fullName>FV_WFChangeStatusToIPLAIPLAProvision</fullName>
+        <actions>
+            <name>FV_StatusToIPLAProvision</name>
+            <type>FieldUpdate</type>
+        </actions>
+        <actions>
+            <name>FV_OBMSendProvisionInfoToOTCSforIPLA</name>
+            <type>OutboundMessage</type>
+        </actions>
+        <active>true</active>
+        <formula>OR( ISPICKVAL(Status__c ,&apos;Provisioned&apos;), ISPICKVAL(Status__c ,&apos;IPLADeprovision&apos;) ) &amp;&amp;   ISCHANGED(IPLA__c) &amp;&amp; IPLA__c =True &amp;&amp; Design_Spec__c  &lt;&gt; null &amp;&amp; Design_Spec__r.Specification_Type__c =&apos;IP Design Kit&apos;</formula>
+        <triggerType>onAllChanges</triggerType>
+    </rules>
+    <rules>
+        <fullName>FV_WFSendEmailToSubmitterApprovalRejection</fullName>
+        <actions>
+            <name>FV_Email_Alert_to_Submitter_after_Approval_Rejection</name>
+            <type>Alert</type>
+        </actions>
+        <active>true</active>
+        <formula>((ISPICKVAL(Approval_Status__c,&apos;approved&apos;))||(ISPICKVAL(Approval_Status__c,&apos;rejected&apos;))) &amp;&amp; RecordType.DeveloperName=&apos;PDK_Record_Type&apos; &amp;&amp; Sub_PDK__c &lt;&gt;NULL</formula>
+        <triggerType>onCreateOrTriggeringUpdate</triggerType>
+    </rules>
+    <rules>
+        <fullName>FV_WFSendProvisionInfoToOTCSforIPLA</fullName>
+        <actions>
+            <name>FV_OBMSendProvisionInfoToOTCSforIPLA</name>
+            <type>OutboundMessage</type>
+        </actions>
+        <active>true</active>
+        <description>When a Document Provisioning record is created or edited, this workflow will be triggered which will in turn send an outbound message OBMSendProvisionInfoToOTCS.</description>
+        <formula>Design_Spec__r.Specification_Type__c =&apos;IP Design Kit&apos; &amp;&amp;  NOT(ISCHANGED(DateTime_Last_Synced_With_OpenText__c)) &amp;&amp;   IF(ISPICKVAL(Status__c, &apos;Provisioning In Progress&apos;),  IF(Final_User_Access__c, true, false) , true)</formula>
+        <triggerType>onAllChanges</triggerType>
+    </rules>
+    <rules>
+        <fullName>FV_WF_ChangeStatusToDeprovision</fullName>
+        <actions>
+            <name>FV_StatusToDeprovision</name>
+            <type>FieldUpdate</type>
+        </actions>
+        <active>false</active>
+        <formula>$Profile.Name != &apos;GF Integration&apos; &amp;&amp;  ( OR  (   (ISCHANGED( Tech_Geo_Granted_to_Account__c ) &amp;&amp; Tech_Geo_Granted_to_Account__c =false),   (ISCHANGED( NDA_Coverage__c ) &amp;&amp; NDA_Coverage__c =false),   (ISCHANGED( Final_User_Access__c ) &amp;&amp; Final_User_Access__c   =false)  ) )</formula>
+        <triggerType>onAllChanges</triggerType>
+    </rules>
+    <rules>
+        <fullName>Populate Unique Id</fullName>
+        <actions>
+            <name>Unique_Id_Pplte</name>
+            <type>FieldUpdate</type>
+        </actions>
+        <active>true</active>
+        <formula>TRUE</formula>
+        <triggerType>onAllChanges</triggerType>
+    </rules>
+    <rules>
+        <fullName>WFSendEmailToSubmitter</fullName>
+        <actions>
+            <name>Email_Alert_to_Submitter_after_Approval_Rejection</name>
+            <type>Alert</type>
+        </actions>
+        <active>true</active>
+        <formula>((ISPICKVAL(Approval_Status__c,&apos;approved&apos;))||(ISPICKVAL(Approval_Status__c,&apos;rejected&apos;))) &amp;&amp; Design_Spec__c &lt;&gt;NULL</formula>
+        <triggerType>onCreateOrTriggeringUpdate</triggerType>
+    </rules>
+    <rules>
+        <fullName>WFSendProvisionInfoToOTCS</fullName>
+        <actions>
+            <name>OBMSendProvisionInfoToOTCS</name>
+            <type>OutboundMessage</type>
+        </actions>
+        <active>false</active>
+        <description>When a Document Provisioning record is created or edited, this workflow will be triggered which will in turn send an outbound message OBMSendProvisionInfoToOTCS.</description>
+        <formula>NOT(ISCHANGED(DateTime_Last_Synced_With_OpenText__c)) &amp;&amp;  (   (OR (AND(ISNEW(),Final_User_Access__c),ISCHANGED( Final_User_Access__c )) &amp;&amp; Design_Spec__c =&apos;&apos;) ||   (OR (AND(ISNEW(),Final_User_Access__c),ISCHANGED( Final_User_Access__c )) &amp;&amp; Design_Spec__c &lt;&gt;&apos;&apos;&amp;&amp; Design_Spec__r.Specification_Type__c &lt;&gt; &apos;IP Design Kit&apos;)  )&amp;&amp; NOT(RecordType.Name =&apos;PDK Record Type&apos;)</formula>
+        <triggerType>onAllChanges</triggerType>
+    </rules>
+</Workflow>

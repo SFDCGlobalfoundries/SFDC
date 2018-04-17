@@ -1,0 +1,428 @@
+<!--
+    Author: Abhita Bansal
+    Description: This page is used as the main page for Search MPW Reservation Forms.
+    History: 
+        ABansal      06052015    - Page creation.
+        SNAIR        10162015    - Updated logic using StandardSetController
+-->
+<apex:page id="MPWSearchReservationFormVF"
+    standardController="MPW_Reservation__c"
+    extensions="MPWSeachReservationFormController" sidebar="false"
+    showHeader="{! !isPortalUser}" tabstyle="MPW_Reservation__c">
+
+    <apex:stylesheet value="/sCSS/21.0/sprites/1297816277000/Theme3/default/gc/versioning.css" />
+
+    <apex:stylesheet value="{!URLFOR($Resource.MPWRelatedCSS, '/MPWRelatedCSS/MPWSearchReservationFormVF.css')}" />
+
+    <!-- Javascript -->
+    <!-- <script src="//ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script> -->
+    <apex:includeScript value="{!URLFOR($Resource.jQuery_1_11_3_min, '/jquery-1.11.3.min/jquery-1.11.3.min.js')}" />
+    <script type="text/javascript">
+        function startLoading(){
+            $('#load_scrl').css('top', $(document).scrollTop() + 200);
+            $('.loadingBox').show(); 
+        }
+        
+        function endLoading(){
+             $('.loadingBox').hide();
+        }
+    </script>
+
+    <apex:sectionHeader title="Search MPW Tapeout" subtitle="Search"
+        help="https://help.salesforce.com/htviewhelpdoc?id=co_edit.htm&siteLang=en_US"
+        rendered="{! !isPortalUser}" />
+    <apex:pageMessages id="errorSection" />
+
+
+    <apex:form id="form">
+
+        <apex:pageBlock >
+            <apex:pageBlockButtons location="bottom">
+                <apex:commandButton value="Search" action="{!searchMethod}"
+                    reRender="searchMPWSchedule" />
+            </apex:pageBlockButtons>
+
+            <apex:pageBlockSection id="filters" columns="2"
+                title="Search MPW Tapeout" collapsible="false">
+                <apex:pageBlockSectionItem >
+                    <apex:outputLabel value="MPW#" />
+                    <apex:inputText value="{!mpwName}" />
+                </apex:pageBlockSectionItem>
+                <apex:pageBlockSectionItem helpText="(YYYY-MM-DD-XXXX)">
+                    <apex:outputLabel value="Form#" />
+                    <apex:inputText value="{!mpwResf.Name}" />
+                </apex:pageBlockSectionItem>
+                <apex:pageBlockSectionItem >
+                    <apex:outputLabel value="{!$ObjectType.MPW_Reservation__c.fields.Geometry__c.label}" />
+                    <apex:selectList id="geometry" value="{!geometrySelectedValue }"
+                        size="1">
+                        <apex:selectOptions value="{!geometryValues}" />
+                        <apex:actionSupport event="onchange" action="{!geometrySelected}"
+                            reRender="filters" />
+                    </apex:selectList>
+                </apex:pageBlockSectionItem>
+                <apex:pageBlockSectionItem >
+                    <apex:outputLabel value="{!$ObjectType.MPW_Reservation__c.fields.Form_Status__c.label}" />
+                    <apex:inputField value="{!mpwResf.Form_Status__c}" />
+                </apex:pageBlockSectionItem>
+                <apex:pageBlockSectionItem >
+                    <apex:outputLabel value="{!$ObjectType.MPW_Reservation__c.fields.Process_Type__c.label}" />
+                    <apex:selectList id="geometry" value="{!mpwResf.Process_Type__c}"
+                        size="1">
+                        <apex:selectOptions value="{!processValues}" />
+                    </apex:selectList>
+                </apex:pageBlockSectionItem>
+                <apex:pageBlockSectionItem >
+                    <apex:outputLabel value="GLOBALFOUNDRIES FAE" />
+                    <apex:inputText value="{!feName}" />
+                </apex:pageBlockSectionItem>
+                <apex:pageBlockSectionItem >
+                    <apex:outputLabel value="{!$ObjectType.MPW_Reservation__c.fields.Customer_Company_Name__c.label}" />
+                    <apex:inputText value="{!custCompanyName}" />
+                </apex:pageBlockSectionItem>
+                <apex:pageBlockSectionItem >
+                    <apex:outputLabel value="GLOBALFOUNDRIES Customer Sales Rep." />
+                    <apex:inputText value="{!csrName}" />
+                </apex:pageBlockSectionItem>
+                <apex:pageBlockSectionItem >
+                    <apex:outputLabel value="Form Originator" />
+                    <apex:inputText value="{!ownerName}" />
+                </apex:pageBlockSectionItem>
+            </apex:pageBlockSection>
+
+            <div align="right">
+                <apex:outputLink value="https://globalfoundries.my.salesforce.com/_ui/core/chatter/groups/GroupProfilePage?g=0F990000000fyZh"
+                    target="_blank">Help for Reservation Form</apex:outputLink>
+            </div>
+        </apex:pageBlock>
+
+        <apex:pageBlock id="searchMPWSchedule">
+            <apex:pageBlockButtons location="top">
+                <apex:commandButton value="Export To CSV" action="{!exportCsvFile}" />
+            </apex:pageBlockButtons>
+
+            <apex:pageBlockSection id="Forms" columns="1"
+                title="MPW Reservation Forms" collapsible="false">
+                <apex:pageBlockTable id="mpwSchTb" value="{!listMPWReservationForms}" var="f">
+                  <apex:column >
+                        <apex:facet name="header">Action</apex:facet>
+                        <apex:commandLink value="Copy"
+                            action="/apex/MPWReservationFormVF?Id={!f.mpwReservationForm.Id}&intpoint=mpwtrain&mode=Edit&Clone=1&Search=1"
+                            rendered="{!f.isCopy}" />
+                        &nbsp;
+                        <apex:commandLink value="Edit"
+                            action="/apex/MPWReservationFormVF?Id={!f.mpwReservationForm.Id}&intpoint=mpwtrain&mode=Edit&Search=1"
+                            rendered="{!f.isEdit}" />
+                        &nbsp;
+                        <apex:commandLink value="Change Request"
+                            action="/apex/MPWReservationFormVF?Id={!f.mpwReservationForm.Id}&intpoint=mpwtrain&mode=View&ChangeRequest=1&Search=1"
+                            rendered="{!f.isChange}" />
+                        &nbsp;
+                        <apex:commandLink value="Void Reservation"
+                            action="/apex/MPWReservationFormVF?Id={!f.mpwReservationForm.Id}&intpoint=mpwtrain&mode=View&voidtheform=true&Search=1"
+                            rendered="{!f.isVoid}" />
+                    </apex:column> 
+                    <apex:column value="{!f.mpwReservationForm.MPW_Train_Name__r.Name}"
+                        headerClass="{!IF(sortField == 'MPW_Train_Name__c', 'TableTitle', '')}">
+                        <apex:facet name="header">
+                            <apex:outputLabel styleClass="hand colDiv"
+                                onclick="sortRecords('MPW_Train_Name__c');">
+                                MPW#
+                                <apex:image value="data:image/gif;base64,R0lGODlhAQABAID/AMDAwAAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw=="
+                                    rendered="{!IF(AND(sortField == 'MPW_Train_Name__c', sortType == 'ASC'), true, false)}"
+                                    styleClass="sortASC" />
+                                <apex:image value="data:image/gif;base64,R0lGODlhAQABAID/AMDAwAAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw=="
+                                    rendered="{!IF(AND(sortField == 'MPW_Train_Name__c', sortType == 'DESC'), true, false)}"
+                                    styleClass="sortDESC" />
+                            </apex:outputLabel>
+                        </apex:facet>
+                    </apex:column>
+
+                    <apex:column headerClass="{!IF(sortField == 'Name', 'TableTitle', '')}">
+                        <apex:facet name="header">
+                            <apex:outputLabel onclick="sortRecords('Name');"
+                                styleClass="hand colDiv">
+                                Form#
+                                <apex:image value="data:image/gif;base64,R0lGODlhAQABAID/AMDAwAAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw=="
+                                    rendered="{!IF(AND(sortField == 'Name', sortType == 'ASC'), true, false)}"
+                                    styleClass="sortASC" />
+                                <apex:image value="data:image/gif;base64,R0lGODlhAQABAID/AMDAwAAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw=="
+                                    rendered="{!IF(AND(sortField == 'Name', sortType == 'DESC'), true, false)}"
+                                    styleClass="sortDESC" />
+                            </apex:outputLabel>
+                        </apex:facet> 
+                        <apex:outputLink value="/apex/MPWReservationFormVF?id={!f.mpwReservationForm.Id}&Search=1&mode=View&query={!strEncodedUserSearchFilter}">{!f.mpwReservationForm.Name}</apex:outputLink>
+                    </apex:column>
+
+                    <apex:column value="{!f.mpwReservationForm.Customer_Company_Name__c}"
+                        headerClass="{!IF(sortField == 'Customer_Company_Name__c', 'TableTitle', '')}">
+                        <apex:facet name="header">
+                            <apex:outputLabel styleClass="hand colDiv"
+                                onclick="sortRecords('Customer_Company_Name__c');">
+                                {!$ObjectType.MPW_Reservation__c.fields.Customer_Company_Name__c.label}
+                                <apex:image value="data:image/gif;base64,R0lGODlhAQABAID/AMDAwAAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw=="
+                                    rendered="{!IF(AND(sortField == 'Customer_Company_Name__c', sortType == 'ASC'), true, false)}"
+                                    styleClass="sortASC" />
+                                <apex:image value="data:image/gif;base64,R0lGODlhAQABAID/AMDAwAAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw=="
+                                    rendered="{!IF(AND(sortField == 'Customer_Company_Name__c', sortType == 'DESC'), true, false)}"
+                                    styleClass="sortDESC" />
+                            </apex:outputLabel>
+                        </apex:facet>
+                    </apex:column>
+                     <apex:column >
+                           <apex:facet name="header">Process Offering</apex:facet>
+                      {!f.mpwReservationForm.Process_Type__r.Name}                     
+                    </apex:column>
+
+                    <apex:column headerValue="Prime Die Name">
+                        <apex:repeat value="{!f.mpwReservationForm.MPW_Prime_Dies__r}"
+                            var="child">
+                            <BR />
+                            <apex:outputField value="{!child.Prime_Die_Name__c}" />
+                        </apex:repeat>
+                    </apex:column>
+
+                    <apex:column headerValue="Die Size(X)">
+                        <apex:repeat value="{!f.mpwReservationForm.MPW_Prime_Dies__r}"
+                            var="child">
+                            <BR />
+                            <apex:outputField value="{!child.Drawn_Die_Size_X_um__c}" />
+                        </apex:repeat>
+                    </apex:column>
+                     <apex:column headerValue="Die Size(Y) ">
+                        <apex:repeat value="{!f.mpwReservationForm.MPW_Prime_Dies__r}"
+                            var="child">
+                            <BR />
+                            <apex:outputField value="{!child.Drawn_Die_Size_Y_um__c}" />
+                        </apex:repeat>
+                    </apex:column>
+
+                   
+                    <apex:column value="{!f.mpwReservationForm.Form_Status__c}"
+                        headerClass="{!IF(sortField == 'Form_Status__c', 'TableTitle', '')}">
+                        <apex:facet name="header">
+                            <apex:outputLabel styleClass="hand colDiv"
+                                onclick="sortRecords('Form_Status__c');">
+                                {!$ObjectType.MPW_Reservation__c.fields.Form_Status__c.label}
+                                <apex:image value="data:image/gif;base64,R0lGODlhAQABAID/AMDAwAAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw=="
+                                    rendered="{!IF(AND(sortField == 'Form_Status__c', sortType == 'ASC'), true, false)}"
+                                    styleClass="sortASC" />
+                                <apex:image value="data:image/gif;base64,R0lGODlhAQABAID/AMDAwAAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw=="
+                                    rendered="{!IF(AND(sortField == 'Form_Status__c', sortType == 'DESC'), true, false)}"
+                                    styleClass="sortDESC" />
+                            </apex:outputLabel>
+                        </apex:facet>
+                    </apex:column>
+
+                   <!--  <apex:column value="{!f.mpwReservationForm.LastModifiedDate}"
+                        headerClass="{!IF(sortField == 'LastModifiedDate', 'TableTitle', '')}">
+                        <apex:facet name="header">
+                            <apex:outputLabel styleClass="hand colDiv"
+                                onclick="sortRecords('LastModifiedDate');">
+                                Last Executed Date
+                                <apex:image value="data:image/gif;base64,R0lGODlhAQABAID/AMDAwAAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw=="
+                                    rendered="{!IF(AND(sortField == 'LastModifiedDate', sortType == 'ASC'), true, false)}"
+                                    styleClass="sortASC" />
+                                <apex:image value="data:image/gif;base64,R0lGODlhAQABAID/AMDAwAAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw=="
+                                    rendered="{!IF(AND(sortField == 'LastModifiedDate', sortType == 'DESC'), true, false)}"
+                                    styleClass="sortDESC" />
+                            </apex:outputLabel>
+                        </apex:facet>
+                    </apex:column> -->
+
+                    <!--  <apex:column value="{!f.mpwReservationForm.Extra_Die_Qty_Total__c}"
+                        headerClass="{!IF(sortField == 'Extra_Die_Qty_Total__c', 'TableTitle', '')}">
+                        <apex:facet name="header">
+                            <apex:outputLabel styleClass="hand colDiv"
+                                onclick="sortRecords('Extra_Die_Qty_Total__c');">
+                                Extra Die Qty
+                                <apex:image value="data:image/gif;base64,R0lGODlhAQABAID/AMDAwAAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw=="
+                                    rendered="{!IF(AND(sortField == 'Extra_Die_Qty_Total__c', sortType == 'ASC'), true, false)}"
+                                    styleClass="sortASC" />
+                                <apex:image value="data:image/gif;base64,R0lGODlhAQABAID/AMDAwAAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw=="
+                                    rendered="{!IF(AND(sortField == 'Extra_Die_Qty_Total__c', sortType == 'DESC'), true, false)}"
+                                    styleClass="sortDESC" />
+                            </apex:outputLabel>
+                        </apex:facet>
+                    </apex:column>-->
+                    
+                    <apex:column >
+                        <apex:facet name="header">
+                            <apex:outputLabel >
+                            Total Quantity <br />(Dies)
+                        </apex:outputLabel>
+                        </apex:facet>
+                        <apex:variable var="totald" value="{!0}" />
+                        <apex:repeat value="{!f.mpwReservationForm.MPW_Prime_Dies__r}"
+                            var="child">
+                            <br/> 
+                              <apex:variable var="totald" value="{!mapPrimeExtraDie[child.id][DIE]}" />
+                             {!VALUE(child.Delivery_Qty_Die_Form__c)+totald}
+                        </apex:repeat>
+                      
+                    </apex:column>
+                     <apex:column >
+                        <apex:facet name="header">
+                            <apex:outputLabel >
+                            Total Quantity <br />(Wafer)
+                        </apex:outputLabel>
+                        </apex:facet>
+                        <apex:variable var="totald" value="{!0}" />
+                        <apex:repeat value="{!f.mpwReservationForm.MPW_Prime_Dies__r}"
+                            var="child">
+                             <apex:variable var="totald" value="{!mapPrimeExtraDie[child.id][WAFER]}" />
+                             <br/>
+                             {!VALUE(child.Delivery_Qty_Wafer_Form__c)+totald}
+                        </apex:repeat>
+                       
+                    </apex:column>
+                    <apex:column >
+                        <apex:facet name="header">
+                            <apex:outputLabel >
+                            Initial Quantity <br /> (Dies)
+                        </apex:outputLabel>
+                        </apex:facet>
+                        <apex:repeat value="{!f.mpwReservationForm.MPW_Prime_Dies__r}"
+                            var="child">
+                            <BR />
+                            <apex:outputField value="{!child.Delivery_Qty_Die_Form__c}" />
+                        </apex:repeat>
+                    </apex:column>
+
+                    <apex:column >
+                        <apex:facet name="header">
+                            <apex:outputLabel >
+                            Initial Quantity <br /> (Wafer)
+                        </apex:outputLabel>
+                        </apex:facet>
+                        <apex:repeat value="{!f.mpwReservationForm.MPW_Prime_Dies__r}"
+                            var="child">
+                            <BR />
+                            <apex:outputField value="{!child.Delivery_Qty_Wafer_Form__c}" />
+                        </apex:repeat>
+                    </apex:column>
+                     <apex:column value="{!f.feName}"
+                        headerClass="{!IF(sortField == 'FE_Name__c', 'TableTitle', '')}">
+                        <apex:facet name="header">
+                            <apex:outputLabel styleClass="hand colDiv"
+                                onclick="sortRecords('FE_Name__c');">
+                                GLOBALFOUNDRIES<br />FAE
+                                <apex:image value="data:image/gif;base64,R0lGODlhAQABAID/AMDAwAAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw=="
+                                    rendered="{!IF(AND(sortField == 'FE_Name__c', sortType == 'ASC'), true, false)}"
+                                    styleClass="sortASC" />
+                                <apex:image value="data:image/gif;base64,R0lGODlhAQABAID/AMDAwAAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw=="
+                                    rendered="{!IF(AND(sortField == 'FE_Name__c', sortType == 'DESC'), true, false)}"
+                                    styleClass="sortDESC" />
+                            </apex:outputLabel>
+                        </apex:facet>
+                    </apex:column>
+
+                    <apex:column value="{!f.amName}"
+                        headerClass="{!IF(sortField == 'AM_Name__c', 'TableTitle', '')}">
+                        <apex:facet name="header">
+                            <apex:outputLabel styleClass="hand colDiv"
+                                onclick="sortRecords('AM_Name__c');">
+                                GLOBALFOUNDRIES<br />Account Manager                                
+                                <apex:image value="data:image/gif;base64,R0lGODlhAQABAID/AMDAwAAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw=="
+                                    rendered="{!IF(AND(sortField == 'AM_Name__c', sortType == 'ASC'), true, false)}"
+                                    styleClass="sortASC" />
+                                <apex:image value="data:image/gif;base64,R0lGODlhAQABAID/AMDAwAAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw=="
+                                    rendered="{!IF(AND(sortField == 'AM_Name__c', sortType == 'DESC'), true, false)}"
+                                    styleClass="sortDESC" />
+                            </apex:outputLabel>
+                        </apex:facet>
+                    </apex:column>
+
+                    <apex:column value="{!f.csrName}"
+                        headerClass="{!IF(sortField == 'CSR_Name__c', 'TableTitle', '')}">
+                        <apex:facet name="header">
+                            <apex:outputLabel styleClass="hand colDiv"
+                                onclick="sortRecords('CSR_Name__c');">
+                                GLOBALFOUNDRIES Customer <br /> Service Rep                               
+                                <apex:image value="data:image/gif;base64,R0lGODlhAQABAID/AMDAwAAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw=="
+                                    rendered="{!IF(AND(sortField == 'CSR_Name__c', sortType == 'ASC'), true, false)}"
+                                    styleClass="sortASC" />
+                                <apex:image value="data:image/gif;base64,R0lGODlhAQABAID/AMDAwAAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw=="
+                                    rendered="{!IF(AND(sortField == 'CSR_Name__c', sortType == 'DESC'), true, false)}"
+                                    styleClass="sortDESC" />
+                            </apex:outputLabel>
+                        </apex:facet>
+                    </apex:column>
+                    
+                  
+                    <apex:facet name="footer">
+                        <apex:outputPanel >
+                            <apex:outputLabel >Showing Page {!currentPageNo} of {!totalNoOfPages} ({!totalNoOfRecords} Records)</apex:outputlabel>
+                                &nbsp;&nbsp;
+                                <apex:outputLabel >Page Size: </apex:outputLabel>
+                                &nbsp;
+                                <apex:selectList size="1" value="{!selectedVal}">
+                                    <apex:selectOptions value="{!pageList}"></apex:selectOptions>
+                                </apex:selectList>
+                                <apex:actionSupport event="onchange" action="{!searchMethod}"
+                                    reRender="searchMPWSchedule" status="loadStatus" />
+                        </apex:outputPanel>
+                    </apex:facet>
+                </apex:pageBlockTable>
+            </apex:pageBlockSection>
+
+            <apex:outputPanel id="controlPanel" layout="block">
+                <center>
+                    <apex:commandLink action="{!getFirst}"
+                        style="text-decoration: none;"
+                        rendered="{!IF(hasPrevious, true, false)}"
+                        rerender="controlPanel, mpwSchTb" status="loadStatus">
+                        <apex:image value="/s.gif" styleClass="first1" alt="First Page" />
+                    </apex:commandLink>
+                    <apex:outputPanel rendered="{!IF(NOT(hasPrevious), true, false)}">
+                        <apex:image value="/s.gif" styleClass="firstoff1" alt="First Page" />
+                    </apex:outputPanel>
+                    &nbsp;
+                    <apex:commandLink action="{!getPrevious}"
+                        style="text-decoration: none;"
+                        rendered="{!IF(hasPrevious, true, false)}"
+                        rerender="controlPanel, mpwSchTb" status="loadStatus">
+                        <apex:image value="/s.gif" styleClass="prev1" alt="Previous" />Previous
+                        </apex:commandLink>
+                    <apex:outputPanel rendered="{!IF(NOT(hasPrevious), true, false)}">
+                        <apex:image value="/s.gif" styleClass="prevoff1" alt="Previous" />Previous
+                        </apex:outputPanel>
+                    &nbsp;&nbsp;
+                    <apex:commandLink action="{!getNext}"
+                        style="text-decoration: none;"
+                        rendered="{!IF(hasNext, true, false)}"
+                        rerender="controlPanel, mpwSchTb" status="loadStatus">
+                            Next<apex:image value="/s.gif"
+                            styleClass="next1" alt="Next" />
+                    </apex:commandLink>
+                    <apex:outputPanel rendered="{!IF(NOT(hasNext), true, false)}">
+                            Next<apex:image value="/s.gif"
+                            styleClass="nextoff1" alt="Next" />
+                    </apex:outputPanel>
+                    &nbsp;
+                    <apex:commandLink action="{!getLast}"
+                        style="text-decoration: none;"
+                        rendered="{!IF(hasNext, true, false)}"
+                        rerender="controlPanel, mpwSchTb" status="loadStatus">
+                        <apex:image value="/s.gif" styleClass="last1" alt="Last Page" />
+                    </apex:commandLink>
+                    <apex:outputPanel rendered="{!IF(NOT(hasNext), true, false)}">
+                        <apex:image value="/s.gif" styleClass="lastoff1" alt="Last Page" />
+                    </apex:outputPanel>
+                </center>
+            </apex:outputPanel>
+        </apex:pageBlock>
+
+        <apex:actionfunction name="sortRecords" action="{!sortRecords}"
+            rerender="searchMPWSchedule, errorSection" status="loadStatus">
+            <apex:param name="sortField" value="" />
+        </apex:actionfunction>
+
+        <apex:actionStatus onstart="startLoading();" onstop="endLoading();"
+            id="loadStatus" />
+        <div id="load_scrl" class="loadingBox loader" style="display: none" />
+        <div class="loadingBox overlay" />
+
+
+    </apex:form>
+</apex:page>

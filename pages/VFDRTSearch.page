@@ -1,0 +1,369 @@
+<apex:page standardController="DRT__c" extensions="DRTSearchExtn" showHeader="false" sideBar="false" standardStylesheets="false" id="searchDRTPageId" cache="true">
+<apex:stylesheet value="{!URLFOR($Resource.Swift_DRT,'css/jquery.scombobox.min.css')}"/>
+<apex:stylesheet value="{!URLFOR($Resource.Swift_DRT,'css/jquery.loader.min.css')}"/>
+<apex:stylesheet value="{!URLFOR($Resource.Swift_DRT,'css/style.css')}"/>
+<apex:stylesheet value="{!$Resource.VFDRTSearchStyle}"/>
+<apex:stylesheet value="{!URLFOR($Resource.Swift_DRT,'css/jquery-ui.css')}"/>
+
+<apex:includeScript value="{!URLFOR($Resource.Swift_DRT,'js/jquery.min.js')}"/>
+
+<apex:form id="searchDRTformId">
+<apex:messages id="messageId"/>
+<apex:outputPanel id="searchDRTOutputPaneld">
+    
+    <apex:inputHidden value="{!customerName}" id="selectedCustomerId"/>
+    <apex:inputHidden value="{!drtType}" id="selectedDRTType"/>
+    <apex:inputHidden value="{!maskSetTitle}" id="selectedDRTMst"/>
+    <apex:inputHidden value="{!nextPreviousPage}" id="nextPreviousPageId"/>
+    <apex:inputHidden value="{!selectedCounter}" id="selectedCounterId"/>
+    <apex:inputHidden value="{!counter}" id="counterId"/>
+    <apex:inputHidden value="{!numberOfRecordsPerPage}" id="noOfRecordsPerPageId"/>
+    <apex:inputHidden value="{!countOfTotalDrt}" id="totalDrtId"/>
+    <apex:inputHidden value="{!drtStatus}" id="selectedDRTStatus"/>
+    <apex:inputHidden value="{!drtNumber}" id="selectedDRTNumber"/>
+    
+    <div id="wrapper">
+                <!--Breadcrumb Starts-->
+                <apex:outputPanel rendered="{!isBreadcrumbActive}">
+                <div class="breadcrumb" id="breadcrumbDiv">
+                    <label><a href="javascript:void(0);" onclick="openMyDevices();"><u>My Devices</u></a></label> &gt;
+                    <label>Tapeout</label> &gt;
+                    <label>DRT</label> &gt;
+                    <label><apex:outputLink value="{!$Page.VFDRTSearch}"><u>Search</u></apex:outputLink></label>
+                </div>
+                </apex:outputPanel>
+                <apex:outputPanel rendered="{!NOT(isBreadcrumbActive)}">
+                <div class="breadcrumb" id="breadcrumbDivInternal">
+                    <label>DRT</label> &gt;
+                    <label><apex:outputLink value="{!$Page.VFDRTSearch}"><u>Search</u></apex:outputLink></label>
+                </div>
+                </apex:outputPanel>
+                <!--Breadcrumb Ends-->
+                <div id="searchDRT" class="right-panel-section">
+                    <!-- Start DRT Right side Header-->
+                    <h3>Search DRT</h3> 
+                    <!-- End Right side Header-->                 
+                <div class="quicklinks">
+                    <a href="#" onclick="OpenExcelOrPdf('excel');"><img src="{!URLFOR($Resource.Swift_DRT,'images/excel-icon.png')}" width="23" height="23" alt="Export to Excel" title="Export to Excel" /></a>
+                    <a href="#" onclick="window.print();"><img src="{!URLFOR($Resource.Swift_DRT,'images/print-icon.png')}" width="23" height="23" alt="Print" title="Print" /></a>
+                    <a href="#"><img src="{!URLFOR($Resource.Swift_DRT,'images/help-icon.png')}" width="23" height="23" alt="Help" title="Help" /></a>
+                </div>
+                    <!-- --------------- First Row Starts --------------- -->
+                    <div id="firstRowContentDiv" class="right-section-row right-section-row-borderbottom">  
+                    <dl>
+                        <dt class="bold-font min-width-inputLabel">Customer Name:</dt>
+                        <dd class="pading-left">
+                             <apex:outputPanel id="searchDRTCustomerid" rendered="{!NOT(isCustomerNameActive)}">
+                                 <div class="vfdrt-search-dropdown-size-big"  id="divCustdropdown" >
+                                     <select id="custdropdown" class="combo-01" onchange="getDRTCustomer();">
+                                         <apex:repeat var="acct" value="{!customerNameListToDisplay}">
+                                             <option value="{!acct.value}">{!acct.label}</option>
+                                         </apex:repeat>
+                                     </select>
+                                 </div>
+                             </apex:outputPanel>
+                             <apex:outputText id="searchDRTCustomerLabel" rendered="{!isCustomerNameActive}" value="{!customerNametoDisplay}"/> 
+                        </dd>
+                    </dl>
+                    <dl>
+                        <dt class="bold-font min-width-inputLabel">Mask Set Title:</dt>
+                        <dd class="pading-left dd-width-245">
+                             <apex:outputPanel id="searchDRTMSTId">
+                                    <div class="vfdrt-search-dropdown-combobox-size"  id="divMSTDropdown">
+                                        <select id="mstdropdown" class="combo-01 dropdown-size-align" onchange="getDRTMst();">
+                                            <option value="All" selected="selected">All</option>
+                                            <apex:repeat var="mst" value="{!maskSetTitleOption}">
+                                                <option value="{!mst.value}">{!mst.label}</option>
+                                            </apex:repeat>
+                                        </select>
+                                    </div>                                                  
+                                </apex:outputPanel>
+                        </dd>
+                        <dt class="dt-style-margin bold-font">DRT Type:</dt>
+                        <dd class="no-padding">
+                             <apex:outputPanel id="searchDRTTypeId">
+                                 <div class="vfdrt-search-dropdown-combobox-size"  id="divDrtdropdown" >
+                                     <select id="drtdropdown" class="combo-01 dropdown-size-align" onchange="getDRTType();" >
+                                     <option value="All" selected="selected">All</option>
+                                         <apex:repeat var="drtType" value="{!drtTypeSet}">
+                                             <option value="{!drtType}">{!drtType}</option>
+                                         </apex:repeat>
+                                     </select>
+                                 </div>
+                             </apex:outputPanel>
+                        </dd> 
+                        
+                    </dl>
+                    <dl>
+                        <dt class="bold-font min-width-inputLabel">Status:</dt>
+                        <apex:outputPanel id="statusPanel">
+                        <dd class="pading-left dd-width-245">
+                            <div class="vfdrt-search-dropdown-combobox-size">
+                                 <select id="searchDRTStatusid"  class="combo-01 dropdown-size dropdown-size-210" onchange="getDRTStatus();">
+                                    <option value="All" selected="selected">All</option>
+                                    <apex:repeat var="status1" value="{!statusListToDisplay}">
+                                        <option value="{!status1.value}">{!status1.label}</option>
+                                    </apex:repeat>
+                                 </select>
+                            </div>
+                        </dd> 
+                         </apex:outputPanel>
+                        <dt class="dt-style-margin bold-font">DRT Number:</dt>
+                         <apex:outputPanel id="drtnumberPanel">
+                        <dd class="no-padding">
+                            <div class="vfdrt-search-dropdown-combobox-size">
+                             <select id="searchDRTNumberid" class="combo-01 vfdrt-search-dropdown-size" onchange="getDRTNumber();">
+                                 <option value="All" selected="selected">All</option>
+                                 <apex:repeat var="drtNumber1" value="{!drtNumberList}">
+                                    <option value="{!drtNumber1.value}">{!drtNumber1.label}</option> 
+                                 </apex:repeat> 
+                             </select>    
+                            </div>
+                        </dd>
+                         </apex:outputPanel>
+                    </dl>
+                    <div class="clear"></div>
+                </div>
+                    <!-- --------------- First Row Ends --------------- -->
+                    <!-- --------------- Second Row Starts --------------- -->
+                    <div id="secondRowContentDiv" class="right-section-row">
+                        <!--Start of Tables-->
+                        <apex:outputPanel id="drtTableOutputPanelId">
+                            <apex:outputPanel id="drtTableOutputPanel" rendered="{!isDrtTableActive}">
+                                <table class="data-table">
+                                    <thead>
+                                        <tr>
+                                            <th class="tcell_width_255"><span>DRT</span><span class="sorter"><a href="javascript:void(0);" title="Sort in Ascending Order" class="sortArrow upArrow" onclick="acfn_sortAscending('drt');"></a><a href="javascript:void(0);" title="Sort in Descending Order" class="sortArrow downArrow" onclick="acfn_sortDescending('drt');">&nbsp;</a></span></th>
+                                            <th class="tcell_width_120"><span>Status</span><span class="sorter"><a href="javascript:void(0);" title="Sort in Ascending Order" class="sortArrow upArrow" onclick="acfn_sortAscending('status');"></a><a href="javascript:void(0);" title="Sort in Descending Order" class="sortArrow downArrow" onclick="acfn_sortDescending('status');"></a></span></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <apex:repeat value="{!drtTodisplay}" var="wrapper">
+                                        <apex:outputLabel rendered="{!wrapper.isEven}">
+                                            <tr class="alt-row-bgcolor">
+                                                <td>
+                                                    <apex:outputLink rendered="{!isBreadcrumbActive}" value="{!$Label.SWIFT_Community_URL+'vfdrtdetail?id='+wrapper.drtId+'&urlFromPage=Search'}" target="_blank">{!wrapper.drtName}</apex:outputLink>
+                                                    <apex:outputLink rendered="{!NOT(isBreadcrumbActive)}" value="{!$Label.Internal_URL+'vfdrtdetail?id='+wrapper.drtId+'&urlFromPage=Search'}" target="_blank">{!wrapper.drtName}</apex:outputLink>
+                                                </td>
+                                                <td>{!wrapper.status}</td>
+                                            </tr>
+                                        </apex:outputLabel>
+                                        <apex:outputLabel rendered="{!NOT(wrapper.isEven)}">
+                                            <tr>
+                                                <td>
+                                                    <apex:outputLink rendered="{!isBreadcrumbActive}" value="{!$Label.SWIFT_Community_URL+'vfdrtdetail?id='+wrapper.drtId+'&urlFromPage=Search'}" target="_blank">{!wrapper.drtName}</apex:outputLink>
+                                                    <apex:outputLink rendered="{!NOT(isBreadcrumbActive)}" value="{!$Label.Internal_URL+'vfdrtdetail?id='+wrapper.drtId+'&urlFromPage=Search'}" target="_blank">{!wrapper.drtName}</apex:outputLink>
+                                                </td>
+                                                <td>{!wrapper.status}</td>
+                                            </tr>
+                                        </apex:outputLabel>
+                                        </apex:repeat>
+                                    </tbody>
+                                    <tfoot>
+                                        <tr>
+                                            <td colspan="3">
+                                                <div class="data-table-pagination">
+                                                <span class="float-left padding-top-5">{!counter}-{!endOfDisplay} of {!countOfTotalDrt}</span> 
+                                                    <apex:selectList id="showRecordNumberId" value="{!numberOfRecordsPerPage}" styleClass="float-left pagination-drpdwn" size="1" onchange="retrieveRecords();" disabled="{!disableList}">
+                                                        <apex:selectOptions value="{!noOfRecordsPerPage}"/>
+                                                    </apex:selectList> 
+                                                    
+                                                    <a id="previousId" href="#" onclick="previousPage();return false;" class="previous" title="Previous">Previous</a>                          
+                                                    <a id="nextId" href="#" onclick="nextPage();return false;" class="next" style="color:black;" title="Next">Next</a>
+                                                    <span class="float-right">
+                                                        <label for="">Page</label>
+                                                        <input type="text" size="1" value="{!selectedCounter}" class="text-center" onkeyup="saveCounter(this);"/>
+                                                        <span>of {!totalPages}</span>
+                                                    </span>
+                                                </div>
+                                            </td>   
+                                        </tr>
+                                    </tfoot>
+                                </table>
+                            </apex:outputPanel>
+                            <apex:outputPanel rendered="{!NOT(isDrtTableActive)}">
+                                <apex:outputText style="color:#e41b17" value="{!noRecordToDisplay}"></apex:outputText>
+                            </apex:outputPanel>
+                        </apex:outputPanel>
+                    </div>
+                    <!-- --------------- Second Row Ends --------------- -->        
+                    <div class="clear"></div>                 
+                </div>     
+        </div>
+        <!--End of content-->
+        <div class="clear"></div>
+</apex:outputPanel>
+
+<apex:includeScript value="{!URLFOR($Resource.Swift_DRT,'js/jquery.scombobox.min.js')}"/>
+<script src="{!URLFOR($Resource.Swift_DRT,'js/jquery.loader.min.js')}"></script>
+<apex:includeScript value="{!URLFOR($Resource.Swift_DRT,'js/advancedDataGrid.js')}"/>
+<script src="{!URLFOR($Resource.Swift_DRT,'js/jquery-ui.min.js')}"></script>
+<apex:includeScript value="{!URLFOR($Resource.Swift_DRT,'js/common-script.js')}"/>
+<script>
+    var swiftCommunityUrl = "{!$Label.SWIFT_Community_URL}";
+    function OpenExcel() {
+        exportExcel();            
+    }
+
+    $(document).ready(function() {
+        var custId =document.getElementById('{!$Component.searchDRTPageId:searchDRTformId:selectedCustomerId}').value;
+        if(custId==null || custId==''){
+            $("#drtdropdown").prop('disabled',true);
+            $("#mstdropdown").prop('disabled',true);
+        }
+    });
+    
+    function getDRTCustomer() {
+        var acctId = jQuery("#custdropdown").find("input:hidden").val();
+        jQuery('[id$=selectedCustomerId]').attr("value",acctId);
+        var drtMst = jQuery("#mstdropdown").find("input:hidden").val();
+        jQuery('[id$=selectedDRTMst]').attr("value",drtMst);
+        var drtType = jQuery("#drtdropdown").find("input:hidden").val();
+        jQuery('[id$=selectedDRTType]').attr("value",drtType);
+        var drtStatus = jQuery("#searchDRTStatusid").find("input:hidden").val(); 
+        jQuery('[id$=selectedDRTStatus]').attr("value",drtStatus );
+        var drtnumber1 = jQuery("#searchDRTNumberid").find("input:hidden").val(); 
+        jQuery('[id$=selectedDRTNumber]').attr("value",drtnumber1);
+        document.getElementById('{!$Component.searchDRTPageId:searchDRTformId:nextPreviousPageId}').value = null;
+        retrievDRT();
+    }
+    
+    function getDRTType() {
+        var drtType = jQuery("#drtdropdown").find("input:hidden").val();
+        jQuery('[id$=selectedDRTType]').attr("value",drtType);
+        var drtStatus = jQuery("#searchDRTStatusid").find("input:hidden").val(); 
+        jQuery('[id$=selectedDRTStatus]').attr("value",drtStatus );
+        var drtnumber1 = jQuery("#searchDRTNumberid").find("input:hidden").val(); 
+        jQuery('[id$=selectedDRTNumber]').attr("value",drtnumber1);
+        document.getElementById('{!$Component.searchDRTPageId:searchDRTformId:nextPreviousPageId}').value = null;
+        retrievDRTType();
+    }
+    
+    function getDRTMst() {
+        var drtMst = jQuery("#mstdropdown").find("input:hidden").val();
+        jQuery('[id$=selectedDRTMst]').attr("value",drtMst);
+        var drtType = jQuery("#drtdropdown").find("input:hidden").val();
+        jQuery('[id$=selectedDRTType]').attr("value",drtType);
+        var drtStatus = jQuery("#searchDRTStatusid").find("input:hidden").val(); 
+        jQuery('[id$=selectedDRTStatus]').attr("value",drtStatus );
+        var drtnumber1 = jQuery("#searchDRTNumberid").find("input:hidden").val(); 
+        jQuery('[id$=selectedDRTNumber]').attr("value",drtnumber1);
+        document.getElementById('{!$Component.searchDRTPageId:searchDRTformId:nextPreviousPageId}').value = null;
+        retrievStatusDrtNumber();
+    }
+    
+    function getDRTStatus() {
+        var drtStatus = jQuery("#searchDRTStatusid").find("input:hidden").val(); 
+        jQuery('[id$=selectedDRTStatus]').attr("value",drtStatus );
+        var drtnumber1 = jQuery("#searchDRTNumberid").find("input:hidden").val(); 
+        jQuery('[id$=selectedDRTNumber]').attr("value",drtnumber1);
+        document.getElementById('{!$Component.searchDRTPageId:searchDRTformId:nextPreviousPageId}').value = null;
+        retrievDRTNumber();
+    }
+    
+    function getDRTNumber(){
+        var drtnumber1 = jQuery("#searchDRTNumberid").find("input:hidden").val(); 
+        jQuery('[id$=selectedDRTNumber]').attr("value",drtnumber1);
+        var drtStatus = jQuery("#searchDRTStatusid").find("input:hidden").val(); 
+        jQuery('[id$=selectedDRTStatus]').attr("value",drtStatus );
+        document.getElementById('{!$Component.searchDRTPageId:searchDRTformId:nextPreviousPageId}').value = null;
+        retrievetable();
+    }
+    
+    function disablePrevious() {
+        var counterElem = document.getElementById('{!$Component.searchDRTPageId:searchDRTformId:counterId}');
+        var noOfRecordElem = document.getElementById('{!$Component.searchDRTPageId:searchDRTformId:noOfRecordsPerPageId}');
+        var totalDrtElem = document.getElementById('{!$Component.searchDRTPageId:searchDRTformId:totalDrtId}');
+        
+        var counter,noOfRecord,totalDrt;
+        if(counterElem != null) {
+            counter = counterElem.value;
+        }
+        if(noOfRecordElem != null) {
+            noOfRecord = noOfRecordElem.value;
+        }
+        if(totalDrtElem != null) {
+            totalDrt = totalDrtElem.value;
+        }
+        if(counter == 1 && (parseInt(counter) + parseInt(noOfRecord) <= parseInt(totalDrt)) ){
+            document.getElementById("previousId").removeAttribute('href');
+            document.getElementById("previousId").removeAttribute('onclick');
+            document.getElementById("previousId").style.color="gray";
+        }    
+        else  if(counter !=1 && (parseInt(counter) + parseInt(noOfRecord) <= parseInt(totalDrt))){
+            document.getElementById("previousId").setAttribute('href','#');
+            document.getElementById("previousId").setAttribute('onclick','previousPage();return false;');
+            document.getElementById("previousId").style.color="black";
+            
+            document.getElementById("nextId").setAttribute('href','#');
+            document.getElementById("nextId").setAttribute('onclick','nextPage();return false;');
+            document.getElementById("nextId").style.color="black";
+            
+        }
+        else if((parseInt(counter) + parseInt(noOfRecord) > parseInt(totalDrt)) && counter==1) {
+            document.getElementById("previousId").removeAttribute('href');
+            document.getElementById("previousId").removeAttribute('onclick');
+            document.getElementById("previousId").style.color="gray";
+            
+            document.getElementById("nextId").removeAttribute('href');
+            document.getElementById("nextId").removeAttribute('onclick');
+            document.getElementById("nextId").style.color="gray";
+        }
+        else if(counter!=1 && (parseInt(counter) + parseInt(noOfRecord) > parseInt(totalDrt)) ) {
+            document.getElementById("nextId").removeAttribute('href');
+            document.getElementById("nextId").removeAttribute('onclick');
+            document.getElementById("nextId").style.color="gray";
+        }
+    }
+    
+    function nextPage() {
+        document.getElementById('{!$Component.searchDRTPageId:searchDRTformId:nextPreviousPageId}').value='next';
+        var selectedCounter =document.getElementById('{!$Component.searchDRTPageId:searchDRTformId:selectedCounterId}').value;
+        document.getElementById('{!$Component.searchDRTPageId:searchDRTformId:selectedCounterId}').value=parseInt(selectedCounter)+1;
+        retrievePage();
+    }
+    
+    function previousPage() {
+        document.getElementById('{!$Component.searchDRTPageId:searchDRTformId:nextPreviousPageId}').value='previous';
+        var selectedCounter =document.getElementById('{!$Component.searchDRTPageId:searchDRTformId:selectedCounterId}').value;
+        document.getElementById('{!$Component.searchDRTPageId:searchDRTformId:selectedCounterId}').value=parseInt(selectedCounter)-1;
+        retrievePage();
+        
+    }
+    
+    function saveCounter(idx) {
+        document.getElementById('{!$Component.searchDRTPageId:searchDRTformId:selectedCounterId}').value=idx.value;
+        document.getElementById('{!$Component.searchDRTPageId:searchDRTformId:nextPreviousPageId}').value='selectedCounter';
+        retrievePage();
+    }
+    
+    function OpenExcelOrPdf(renderType) {
+      if(renderType=='excel')
+          exportExcel();
+      else if(renderType=='pdf')
+         exportPdf();
+    }
+</script>
+        <apex:actionStatus id="searchStatus"  onstart="showLoader('gf-bigcircle');" onstop="hideLoader();" />
+        
+        <apex:actionFunction name="retrievDRT" action="{!searchDRTCustomer}" status="searchStatus" reRender="drtnumberPanel,searchDRTTypeId,searchDRTMSTId,statusPanel,drtTableOutputPanelId,counterId,showRecordNumberId,messageId,noOfRecordsPerPageId,totalDrtId,selectedCounterId" oncomplete="disablePrevious();SwiftGen.rowHover();SwiftGen.includeCustomComboAndSetVal('mstdropdown','All');SwiftGen.includeCustomComboAndSetVal('drtdropdown','All');SwiftGen.includeCustomComboAndSetVal('searchDRTNumberid','All'); SwiftGen.includeCustomComboAndSetVal('searchDRTStatusid','All');parent.iframeLoaded();"/>
+        <apex:actionFunction name="retrievDRTType" action="{!searchDRTType}" status="searchStatus" reRender="statusPanel,drtnumberPanel,drtTableOutputPanelId,counterId,showRecordNumberId,messageId,noOfRecordsPerPageId,totalDrtId,selectedCounterId" oncomplete="SwiftGen.includeCustomComboAndSetVal('searchDRTNumberid','All');SwiftGen.includeCustomComboAndSetVal('searchDRTStatusid','All');disablePrevious();SwiftGen.rowHover();"/>
+        <apex:actionFunction name="retrievStatusDrtNumber" action="{!searchDRTMST}" status="searchStatus" reRender="pg,searchDRTTypeId,statusPanel,drtnumberPanel,drtTableOutputPanelId,counterId,showRecordNumberId,messageId,noOfRecordsPerPageId,totalDrtId,selectedCounterId" oncomplete="SwiftGen.includeCustomComboAndSetVal('drtdropdown','All');SwiftGen.includeCustomComboAndSetVal('searchDRTStatusid','All');SwiftGen.includeCustomComboAndSetVal('searchDRTNumberid','All');disablePrevious();SwiftGen.rowHover();parent.iframeLoaded();"/>
+        <apex:actionFunction name="retrievDRTNumber" action="{!searchDRTStatus}" status="searchStatus" reRender="drtnumberPanel,drtTableOutputPanelId,showRecordNumberId,counterId,messageId,noOfRecordsPerPageId,totalDrtId,selectedCounterId" oncomplete="SwiftGen.includeCustomComboAndSetVal('searchDRTNumberid','All');disablePrevious();SwiftGen.rowHover();"/>
+        <apex:actionFunction name="retrievetable" action="{!searchDRTNumber}" status="searchStatus" reRender="drtTableOutputPanelId,showRecordNumberId,messageId,counterId,noOfRecordsPerPageId,totalDrtId,selectedCounterId" oncomplete="disablePrevious();SwiftGen.rowHover();"/>
+        <apex:actionFunction name="retrievePage" action="{!pagination}" status="searchStatus" reRender="drtTableOutputPanelId,showRecordNumberId,counterId,noOfRecordsPerPageId,totalDrtId,selectedCounterId" oncomplete="SwiftGen.rowHover();disablePrevious();" />
+        <apex:actionFunction name="retrieveRecords" action="{!callPagination}" status="searchStatus" reRender="drtTableOutputPanelId,showRecordNumberId,counterId,noOfRecordsPerPageId,totalDrtId,selectedCounterId" oncomplete="disablePrevious();SwiftGen.rowHover();parent.iframeLoaded();" />
+        <apex:actionFunction name="exportExcel" action="{!exportToExcel}"/>
+        <apex:actionFunction name="exportPdf" action="{!exportToPdf}"/>
+        
+        <apex:actionFunction name="acfn_sortAscending" action="{!sortAscending}" status="searchStatus" reRender="drtTableOutputPanelId" oncomplete="disablePrevious();SwiftGen.rowHover();">
+            <apex:param id="columnAsc" name="column1" assignTo="{!columnName}" value=""/>
+        </apex:actionFunction>
+        <apex:actionFunction name="acfn_sortDescending" action="{!sortDescending}" status="searchStatus" reRender="drtTableOutputPanelId" oncomplete="disablePrevious();SwiftGen.rowHover();">
+            <apex:param id="columnDesc" name="column2" assignTo="{!columnName}" value=""/>
+        </apex:actionFunction>
+        <apex:actionFunction name="openDRT" action="{!openDRT}">
+            <apex:param name="paramDRTId" assignTo="{!clickedDRTId}" value=""/>
+        </apex:actionFunction>
+    </apex:form>
+</apex:page>

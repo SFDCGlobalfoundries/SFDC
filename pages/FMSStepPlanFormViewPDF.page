@@ -1,0 +1,197 @@
+<!--
+    @ Author :- Cognizant
+    @ History:         
+        10-July-2017        Ram Rai             Added the PDF fix for Step Plan. Issue #402
+        15-July-2017        Ram Rai            PDF Fix for StepPlan Issue #402.  
+        
+-->
+<apex:page standardController="Form_Management_System__c" renderAs="PDF" extensions="FMSStepPlanViewExtPDF" >
+
+<apex:form id="stForm" >
+    <table width="100%" style="border: 1px solid black;">
+            <tr>
+                <td>
+                    <c:FMSNameDesc ></c:FMSNameDesc>
+                </td>
+            </tr>
+        </table>
+    <br/> 
+        <apex:outputLabel style="font-weight:bold;font-size:18pt;"> View Form Data</apex:outputLabel>
+        <br/> 
+         <apex:pageBlock id="pb1" rendered="{!!popupVal}" >
+        <h3>Step Plan Approval Form:</h3>
+        <p>This form is used to review, communicate your acceptance/rejection and store the final Step Plan. The published Step Plan is based upon inputs provided in the FMS Main Form.</p>     
+        <hr style="border-top: dotted 1px;" />
+        <apex:outputLabel style="font-weight:bold;font-size:18pt;"> Form page 1</apex:outputLabel>
+         <apex:pageBlock >
+          
+          <table width="100%" style="border: 1px solid black;" >
+            
+            <apex:repeat value="{!wrapperList}" var="row" >
+             <tr>
+        
+                  <apex:repeat value="{!row}" var="value" rendered="{!(row.counterWrap!=1 && row.wrapFmObj.PrelimOrFinal__c =='Preliminary')}">
+           <td colspan="3"><h4> Preliminary Step Plan {!value.counterWrap} </h4>
+             
+           </td>
+          
+         </apex:repeat>
+         
+           <apex:repeat value="{!row}" var="value" rendered="{!(row.counterWrap==1 && row.wrapFmObj.PrelimOrFinal__c =='Preliminary')}">
+           <td ><h4> Preliminary Step Plan</h4>
+            
+           </td>
+          
+         </apex:repeat>
+       </tr>
+              
+       <tr>        
+        <apex:repeat value="{!row}" var="value" rendered="{!row.wrapFmObj.PrelimOrFinal__c!='Preliminary'}">
+           
+        <td colspan="3"><h4> Final Step Plan</h4>            
+         </td>
+          
+         </apex:repeat>    
+       </tr>       
+       <tr>
+         <apex:repeat value="{!row.prelimPara}" var="value" rendered="{!row.wrapFmObj.PrelimOrFinal__c!='Preliminary'}">
+           <td colspan="3">
+             This represents the approved and finalized version of the layout for your wafers. To ensure that you have all required information for your dicing requirements,please download this finalized version, replacing your preliminary Step Plan.
+           </td>
+         </apex:repeat>
+         
+         <apex:repeat value="{!row.prelimPara}" var="value" rendered="{!row.wrapFmObj.PrelimOrFinal__c=='Preliminary'}">
+           <td colspan="3">
+           <p>  Please review the attached Preliminary Step Plan at your earliest convenience. In order to complete the approval or rejection of this Prelimnary Step Plan, <b>Save and Exit</b> the completed form, then select either <b>Submit Step Plan Approval</b> or <b>Step Plan Rejection</b> from the <b> Possible Form Actions  </b> menu. Please note that delayed approvals will affect the Release cycle times.</p>
+           </td>
+         </apex:repeat>
+       </tr>
+            
+       
+       <tr> 
+        <apex:repeat value="{!row.wrapFmObj}" var="value">
+               <td colspan="1"><apex:outputLabel style="font-weight:bold;font-size:16pt;text-decoration: none;">
+             Published:  </apex:outputLabel>       </td><td> {!row.wrapFmObj.LastModifiedDate} </td>
+         </apex:repeat>
+       </tr>    
+       
+        <tr> 
+        <apex:repeat value="{!row.wrapFmObj}" var="value">
+               <td colspan="1">
+           <apex:outputLabel style="font-weight:bold;font-size:16pt;text-decoration: none;">  Step Plan for Review: </apex:outputLabel>
+           </td>
+         </apex:repeat>
+       </tr>   
+       
+           <tr> 
+        <apex:repeat value="{!row.wrapFmObj}" var="value">
+              
+          <!-- <td style="width: 232px;"></td>-->
+            <td colspan="1"> <h3>Step Plan File:</h3></td>          </apex:repeat>
+       </tr>  
+       <apex:repeat value="{!row.lstattch}" var="value" rendered="{!row.lstattch !=null}" >
+        <tr>          
+            
+        <td  style="{!if(value.ContentType =='application/pdf','display:block;', 'display:none;')}">{!value.name }</td>       
+        </tr>
+       </apex:repeat>
+       
+                  <tr> 
+        <apex:repeat value="{!row.wrapFmObj}" var="value">
+              
+          <!-- <td style="width: 232px;"></td>-->
+            <td colspan="1"> <h3>Size:</h3></td> 
+         </apex:repeat>
+       </tr>  
+       <apex:repeat value="{!row.lstattch}" var="value" rendered="{!row.lstattch !=null}" >
+        <tr>          
+            
+        <td  style="{!if(value.ContentType =='application/pdf','display:block;', 'display:none;')}">{!value.BodyLength} KB</td>       
+        </tr>
+       </apex:repeat>
+          <!-- Code Added by Ram Rai to Fix PDF issue #402 -->
+           <tr> 
+          <apex:repeat value="{!row.wrapFmObj}" var="value">
+             <!--<td style="width: 232px;"></td>  -->
+            <td colspan="1"> <h3>Reticle Layout File:</h3></td> 
+         </apex:repeat>
+       </tr>  
+       
+        <tr > 
+        <apex:repeat value="{!row.lstattch}" var="value" rendered="{!row.lstattch !=null}">
+                         
+         <td  colspan="1" style="{!if(value.ContentType =='text/xml','display:block;', 'display:none;')}">{!value.name }</td>
+  
+       </apex:repeat>
+       </tr>         
+
+           <tr> 
+          <apex:repeat value="{!row.wrapFmObj}" var="value">
+             <!--<td style="width: 232px;"></td>  -->
+            
+            <td><h3>Size:</h3> </td>
+         </apex:repeat>
+       </tr>  
+        <tr > 
+        <apex:repeat value="{!row.lstattch}" var="value" rendered="{!row.lstattch !=null}">
+                         
+         
+         <td  style="{!if(value.ContentType =='text/xml','display:block;', 'display:none;')}">{!value.BodyLength} KB</td>
+  
+       </apex:repeat>
+       </tr>        
+      <!--PDF fix issue 389 for Final Step Plan. -->
+      <tr> 
+        <apex:repeat value="{!row.wrapFmObj}" var="value" rendered="{!row.wrapFmObj.PrelimOrFinal__c=='Preliminary' }">
+               <td colspan="1"><apex:outputLabel style="font-weight:bold;font-size:16pt;text-decoration: none;">
+             Select One:  </apex:outputLabel>                 
+           <apex:outputPanel ><div style="font-size: 1.5em; font-weight: bold; color: #c00;margin-left: 102px;width: 10px; margin-top: -27px; ">*</div>  
+               </apex:outputPanel>    
+            </td>  
+            <td>{!value.Selection__c}</td>
+         </apex:repeat>
+       </tr> 
+       
+      <tr> 
+        <apex:repeat value="{!row.prelimName}" var="value" rendered="{!row.wrapFmObj.Selection__c=='Reject Preliminary Step Plan' && row.wrapFmObj.PrelimOrFinal__c=='Preliminary'}" >
+
+        <td colspan="2"><apex:outputLabel style="font-weight:bold;font-size:16pt;text-decoration: none;">
+             Reason(s) for Rejection. Please enter specific changes required:  </apex:outputLabel>     
+            <apex:outputtext value="{!row.wrapFmObj.RejectionReason__c}" /> 
+            </td>
+         </apex:repeat>
+       </tr> 
+       
+  
+       
+       
+       <tr style="height: 60px;"> 
+        <apex:repeat value="{!row}" var="value"  rendered="{!row.wrapFmObj.PrelimOrFinal__c !='Preliminary'}">
+               <td colspan="1" >
+            <apex:outputLabel style="font-weight:bold;font-size:16pt;text-decoration: none;">Approved By: </apex:outputLabel>  </td>
+          
+           <td><apex:outputText value="{!approvedBy }"/>  </td>
+         </apex:repeat>
+         
+                 <apex:repeat value="{!row.wrapFmObj}" var="value" rendered="{!row.wrapFmObj.PrelimOrFinal__c=='Preliminary'}">
+               <td colspan="1" >
+            <apex:outputLabel style="font-weight:bold;font-size:16pt;text-decoration: none;">Reviewed By: </apex:outputLabel>  </td>
+          
+           <td><apex:outputText value="{!value.Reviewed_By__c }"/>  </td>
+         </apex:repeat>
+         
+         
+       </tr> 
+      
+    </apex:repeat>        
+         
+    
+          </table>
+</apex:pageBlock>
+               
+         
+         </apex:pageBlock> 
+        
+        </apex:form>
+
+</apex:page>

@@ -1,0 +1,861 @@
+<apex:page standardController="MRS__c" showHeader="false" sideBar="false" standardStylesheets="false" extensions="MRSCustomerFrameMockupReviewExtn">    
+<apex:stylesheet value="{!URLFOR($Resource.Swift_MRS,'css/FrameMockup.css')}"/>   
+<apex:stylesheet value="{!URLFOR($Resource.Swift_MRS,'css/jquery.scombobox.min.css')}"/>
+<apex:stylesheet value="{!URLFOR($Resource.Swift_MRS,'css/jquery.multiselect.css')}"/> 
+<apex:stylesheet value="{!URLFOR($Resource.Swift_MRS,'css/style.css')}"/>
+<apex:stylesheet value="{!URLFOR($Resource.SWIFT_MRS_Changed,'css/jquery-ui.css')}"/>
+<!--[if IE]>
+  <link rel="stylesheet" type="text/css" href="{!URLFOR($Resource.SWIFT_MRS_Changed, 'css/styleIE.css')}" />
+<![endif]-->
+<style>
+ .error-container{float:left;width:100%!important;font-weight: bold;}
+ 
+</style>
+<script type="text/javascript" src="{!URLFOR($Resource.Swift_MRS,'js/jquery.min.js')}"></script>
+<script type="text/javascript" src="{!URLFOR($Resource.Swift_MRS,'js/leftmenu.js')}"></script>
+<script type="text/javascript" src="{!URLFOR($Resource.Swift_MRS,'js/jquery.scombobox.min.js')}"></script>
+<script type="text/javascript" src="{!URLFOR($Resource.Swift_MRS,'js/advancedDataGrid.js')}"></script>
+<script type="text/javascript" src="{!URLFOR($Resource.Swift_MRS,'js/jquery-ui.min.js')}"></script>
+<script type="text/javascript" src="{!URLFOR($Resource.Swift_MRS,'js/jquery.multiselect.js')}"></script>
+<script type="text/javascript" src="{!URLFOR($Resource.SWIFT_MRS_Changed,'js/jquery.loader.min.js')}"></script>
+<script type="text/javascript" src="{!URLFOR($Resource.Swift_MRS,'js/common-script.js')}"></script>
+<script type="text/javascript" src="{!URLFOR($Resource.Swift_MRS,'js/sort.js')}"></script>
+<script type="text/javascript">
+var approveTicker = "{!URLFOR($Resource.Swift_MRS,'images/Checked_img.png')}";
+window.onload=showLoader('gf-bigcircle');
+</script>
+<apex:form id="frm">
+<!--Wrapper Div Starts-->
+<div id="wrapper">
+<apex:inputHidden value="{!reticleType}" id="reticleTypeId"/>
+<apex:inputHidden value="{!selectedmst}" id="selectedmstId"/>
+
+<apex:outputPanel id="mstLookupPanel">
+        <apex:inputHidden id="hiddenPage" value="{!page}"/>
+        <apex:inputHidden id="hiddenJobviewer" value="{!isJobViewer}"/>
+</apex:outputPanel>
+    <!--Container Div Starts-->
+   
+    
+            <!--Breadcrumb Starts-->
+            <div class="breadcrumb" id="breadcrumbDiv">
+                  <apex:outputLabel rendered="{!isBreadcrumbActive}">     
+                    <label><a href="javascript:void(0);" onclick="openMyDevices();"><u>My Devices</u></a></label> &gt;
+                    Tapeout &gt;
+                    MRS &gt;
+                   </apex:outputLabel>
+                   <apex:outputLabel rendered="{!!isBreadcrumbActive}">  
+                     MRS &gt;   
+                   </apex:outputLabel>
+                   <apex:outputLabel rendered="{!customerOrFoundary}">
+                    Frame Mockup Review - Customer
+                   </apex:outputLabel>
+                   <apex:outputLabel rendered="{!!customerOrFoundary}">
+                    Frame Mockup Review - Foundry
+                   </apex:outputLabel>
+            </div>
+            <!--Breadcrumb Ends-->
+            
+            <div id="frameMockup" class="right-panel-section">
+                <!-- Start DRT Right side Header-->
+                <apex:outputLabel rendered="{!customerOrFoundary}">
+                <h3>Frame Mockup Review - Customer</h3> 
+                </apex:outputLabel>
+                <apex:outputLabel rendered="{!!customerOrFoundary}">
+                <h3>Frame Mockup Review - Foundry</h3> 
+                </apex:outputLabel>
+                <!-- End Right side Header--> 
+             
+        <div class="quicklinks">
+        <apex:outputPanel id="imageId">  
+           
+         <apex:outputPanel rendered="{!IF(approveTableFlag,false,true)}" >  
+        
+            <a href="javascript:OpenExcelOrPdf('PDF');"><img src="{!URLFOR($Resource.Swift_MRS,'images/expToCsv.png')}" width="24" height="24" alt="Export to CSV" title="Export to CSV" /></a>
+            <a href="javascript:OpenExcelOrPdf('excel');"><img src="{!URLFOR($Resource.Swift_MRS,'images/excel-icon.png')}" width="23" height="23" alt="Export to Excel" title="Export to Excel"/></a>          
+            <a href="{!$Label.SWIFT_Support_Link}" target="_blank"><img src="{!URLFOR($Resource.Swift_MRS,'images/help-icon.png')}" width="23" height="23" alt="Help"  title="Help"/></a>
+          </apex:outputPanel>
+      </apex:outputPanel> 
+        </div>
+      
+        
+                <!-- --------------- First Row Starts --------------- -->
+                <div id="firstRowContentDiv" class="right-section-row right-section-row-borderbottom"> 
+                   <apex:outputPanel id="topSectionId"> 
+                    <dl><dt class="bold-font min-width-cust-name">Customer Name:</dt>
+                    <dd class="pading-left tcell_width_190"> 
+                   
+              <!--      <apex:outputLabel id="lstaccountId"> -->
+                    
+                    <apex:outputPanel rendered="{!(NOT(showLabel))}">
+                        <div class="dropdown-size" id="divMSTTxtbox">  
+                            <label class="custNameLbl lookupLbl" id="customerLabel">{!customerNameAfterSave}</label>   
+                            <a href="" class="lookupCustName"><img src="{!URLFOR($Resource.SWIFT_MRS,'images/icon/lookup.png')}" width="17" height="17" alt="lookup" class="lookupImg"/></a>
+                        </div>
+                       
+                    </apex:outputPanel>
+                  <!--  <apex:outputLabel rendered="{!(NOT(showLabel) && (approveTableFlag))}">
+                         {!selectedCustomerName}
+                    </apex:outputLabel>
+                    <apex:outputLabel rendered="{!(isQuickLinkChecked)}" id="cutomerAccId">
+                        {!selectedCustomerName}
+                    </apex:outputLabel> -->
+                    
+                   <!-- <apex:outputLabel id="labelaccountId"> -->
+                    <apex:outputLabel rendered="{!(showLabel)}">
+                        {!selectedCustomerName}
+                    </apex:outputLabel>
+                   <!-- </apex:outputLabel> -->
+                    </dd>
+                    
+                    </dl>
+                    </apex:outputpanel>
+                    <apex:outputpanel id="mstId">
+                    <dl>
+                        <dt class="bold-font min-width-cust-name">Mask Set Title:</dt>
+                        <dd class="pading-left">
+                              <apex:outputPanel rendered="{!(NOT(approveTableFlag))}">
+                                   <div class="dropdown-size" id="divMSTTxtbox2">
+                                     <label class="mstLbl lookupLbl" id="mstLabel">{!mstNameAfterSave}</label>   
+                                     <a href="" class="lookupMST"><img src="{!URLFOR($Resource.SWIFT_MRS,'images/icon/lookup.png')}" width="17" height="17" alt="lookup" class="lookupImg"/></a>
+                                   </div>
+                               </apex:outputPanel> 
+                              <apex:outputPanel rendered="{!(approveTableFlag)}">
+                                {!maskSetTitleName}
+                              </apex:outputPanel> 
+                             <!-- <apex:outputPanel rendered="{!(isQuickLinkChecked)}">
+                                {!maskSetTitleName}
+                              </apex:outputPanel> -->
+                                                            
+                           
+                        
+                        </dd>
+                    </dl>
+                    </apex:outputPanel> 
+                    <div class="clear"></div>
+                </div>
+                <!-- --------------- First Row Ends --------------- -->
+                            <!--Filters goes here................. -->
+       <div class="right-section-panel border-bottom">
+        <div id="filters" class="right-section-row-filter-border" title="filterContent">                
+                <a href="javascript:void(0)" id="filter_anchor" name="filterContent" class="filters_slideDown">Filters</a>
+                        </div>
+                     
+                     <div id="filterContent">
+                        <dl class="margin-top-5">
+                                <dt class="bold-font">Layer Status</dt>
+                                <dd class="pading-left">
+
+                                <!--    <apex:selectList value="{!selectedLayerStatus}" styleClass="dropdown-size-big-normal" size="1"  id="layerStatusId" disabled="{!!isFilterActive }">
+                                        <apex:selectOptions value="{!lstLayerStatus}"/>
+                                    </apex:selectList> --> 
+                                  <apex:outputLabel id="layerStatusId">
+                                   <select id="layersummarydropdown" class="layerStatus-drpdwn-size multiSelect" multiple="multiple" >
+                                      <apex:repeat value="{!lstLayerStatus}" var="layerVal">
+                                              <!-- <apex:variable var="sel" value="{!IF(layerVal.value==ValueCatcher,true,false)}"/> -->
+                                             <!-- <apex:variable var="sel" value="{!IF(CONTAINS(ValueCatcher,layerVal.value),true,false)}"/> -->                  
+                                            <!--  <apex:repeat var="l" value="{!lstSizeOne}" rendered="{!sel}">
+                                                  <option value="{!layerVal.value}" selected="selected">{!layerVal.label}</option>
+                                              </apex:repeat> -->
+                                             <!-- <apex:repeat var="l" value="{!lstSizeOne}" rendered="{!NOT(sel)}"> -->
+                                                  <option value="{!layerVal.value}">{!layerVal.label}</option>
+                                              <!--</apex:repeat> -->
+                                              <!--<option value="{!layerVal.value}">{!layerVal.label}</option> -->
+                                      </apex:repeat>
+                                    
+                                  </select>
+                                </apex:outputLabel>
+                                </dd>
+                        </dl>
+                        <dl ><dt class="bold-font">Mask Layer</dt>
+                            <dd class="pading-left">
+                                <apex:selectList value="{!selectedMaskLayer}" styleClass="dropdown-size-big-normal" size="1"  id="maskLayerId" disabled="{!!isFilterActive }">
+                                    <apex:selectOptions value="{!lstMaskLayer}"/>
+                                </apex:selectList>
+                         
+                            </dd></dl>
+                          <!--  <dl>
+                                <dt class="bold-font">Layer Status</dt>
+                                <dd class="pading-left">
+
+                                   <apex:selectList value="{!selectedLayerStatus}" styleClass="dropdown-size-big-normal" size="1"  id="layerStatusId" disabled="{!!isFilterActive }">
+                                        <apex:selectOptions value="{!lstLayerStatus}"/>
+                                    </apex:selectList>
+                               
+                                </dd>
+                            </dl>-->
+                            <dl>
+                                <dt class="bold-font">Device ID</dt>
+                                <dd class="pading-left">
+
+                                     <apex:selectList value="{!selectedDeviceId}" styleClass="dropdown-size-big-normal" size="1"  id="mrsdeviceId" disabled="{!!isFilterActive }">
+                                        <apex:selectOptions value="{!lstDeviceId}"/>
+                                    </apex:selectList>
+                               
+                                </dd>
+                            </dl>
+                            <dl>
+                                <dt class="line-height-15 bold-font">Frame Status</dt>
+                                <dd class="float-left">
+
+                                   <apex:selectList value="{!selectedFrameStatus}" styleClass="dropdown-size-big-normal" size="1" id="frameStatusId" disabled="{!!isFilterActive }">
+                                        <apex:selectOptions value="{!lstFrameStatus}"/>
+                                    </apex:selectList>
+                               
+                                </dd>
+                                <dd class="pading-left float-left">
+                                    <input type="button" id="apply" value="Apply" class="no-margin" onclick="retrieveTable()"/>
+                                </dd>
+                                <dd class="pading-left float-left">
+                                    <input type="button" id="clear" value="Clear" class="no-margin" onclick ="clearFilter()"/>
+                                </dd>
+                        </dl> 
+            </div>
+         <div class="clear"></div>
+         </div>  
+         
+        
+     
+        <!--Filters ends here...................-->
+    <!-- --------------- Second Row Starts --------------- -->
+     
+    <div id="secondRowContentDivid" class="right-section-row no-padding-top">
+      <!--   <div class="advance-datagrid no-padding" id="advanceGrid"> -->
+        <br/>
+        
+       <apex:outputPanel id="performReviewIdButtonId">
+       <apex:outputPanel rendered="{!noRecords}">
+          <div class="error-container margin-top-10" style="color:#000000">No records to display</div>
+        </apex:outputPanel>
+        <apex:pageMessages id="drtMessage" rendered="{!errorMessage}"/>
+         
+        <apex:outputPanel rendered="{!IF(performReviewFlag,true,false)}">
+         <input type="button" id="perform_review_button_n" value="Perform Approval" class="margin-top-10 no-margin-left" onclick="getApproveBuutonEnabled()"/>  
+        </apex:outputPanel>
+       </apex:outputPanel>
+           <apex:outputPanel id="chipLayerId"> 
+               <apex:outputPanel rendered="{!IF(layerChipSummarTbl,true,false) }"> 
+            
+                <table class="data-table" id="review-customer-table-n">
+                    <thead>
+                      <tr class="tcell-height-48">
+                        <th class="tcell-width-28">No.</th>
+                        <th class="tcell-width-192" >PTRF Number</th>
+                        <apex:outputLabel rendered="{!reticleType}">
+                        <th class="tcell-width-80"><span class="bold-font tcell_width_80">Tech Geo</span></th>
+                        </apex:outputLabel>
+                        <th class="tcell_width_80">Frame</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                   
+                    <apex:repeat value="{!lstframeTableWrapper}" var="frame" >
+                     <apex:outputLabel rendered="{!frame.color}">
+                          <tr class="tcell-height-30">
+                            <td class="text-align-centre">{!frame.srlNo}</td>
+                            
+                            <!-- TASK-2469 -->
+                            <!--
+							 <td class="text-align-left"><apex:outputLink value="{!if(isBreadcrumbActive,'/GlobalfoundryView','')}/apex/VFMRSPTRFDetail?ptrfURL={!frame.ptrfId}" title="{!frame.ptrf}" target="_blank">{!frame.ptrf}</apex:outputLink>
+							-->
+							<td class="text-align-left"><apex:outputLink value="{! $Label.HYPERLINK_TO_SWIFT + frame.ptrf }" title="{!frame.ptrf}" target="_blank">{!frame.ptrf}</apex:outputLink>
+                            <!-- TASK-2469 END -->
+                            
+                            <!--<a href="javascript:redirectToPTRF();" title="{!frame.ptrf}">{!frame.ptrf}</a>--></td>
+                            <apex:outputLabel rendered="{!reticleType}">
+                            <td class="text-align-left">{!frame.techGeo}</td>
+                            </apex:outputLabel>
+                            <td title="{!mapIdAnddate[frame.recordId]}"><center>{!frame.status}</center></td>
+                          </tr>
+                      </apex:outputLabel>
+                      <apex:outputLabel rendered="{!!frame.color}">
+                          <tr class="alt-row-bgcolor tcell-height-30">
+                            <td class="text-align-centre">{!frame.srlNo}</td>
+                            
+                            <td><!--<a href="#" title="{!frame.ptrf}">{!frame.ptrf}</a>-->
+                            <!-- TASK-2469 -->
+                            <!-- <apex:outputLink value="{!if(isBreadcrumbActive,'/GlobalfoundryView','')}/apex/VFMRSPTRFDetail?ptrfURL={!frame.ptrfId}" title="{!frame.ptrf}" target="_blank">{!frame.ptrf}</apex:outputLink> 
+                            -->
+                            <apex:outputLink value="{! $Label.HYPERLINK_TO_SWIFT + frame.ptrf }" title="{!frame.ptrf}" target="_blank">{!frame.ptrf}</apex:outputLink>
+                            <!-- TASK-2469 END -->
+                            </td>
+                            
+                            <apex:outputLabel rendered="{!reticleType}">
+                            <td class="text-align-left">{!frame.techGeo}</td>
+                            </apex:outputLabel>
+                            <td title="{!mapIdAnddate[frame.recordId]}"><center>{!frame.status}</center></td>
+                          </tr>
+                      </apex:outputLabel>
+                     </apex:repeat>
+                    
+         
+                    </tbody>
+                    </table>
+             </apex:outputPanel>
+            </apex:outputPanel>
+            <!--</div> -->
+           <apex:outputPanel id="approvalTableId">
+           <apex:outputPanel rendered="{!IF(approveTableFlag ,true,false)}">
+            <div class="perform_table review-customer-table" id="perform-table-ready-n">
+              <div>
+             
+                <table class="data-table approve-button-1" id="review-customer-table-1">
+                    <thead>
+                    <tr class="tcell-height-48">
+                    <th class="tcell-width-28 fixedHeaderChecked">No.</th>
+                    <th class="tcell-width-192 fixedHeaderChecked">PTRF Number</th>
+                    <apex:outputLabel rendered="{!reticleType}">
+                    <th class="tcell-width-80 fixedHeaderChecked"><span class="bold-font tcell_width_80">Tech Geo</span></th>
+                    </apex:outputLabel>
+                    <th class="tcell_width_80 hasCheckbox line-height-22">
+                       <input type="checkbox"  id="checkAllId" onclick="javascript:checkedAllFrame();" />  
+                        Frame
+                    </th>
+                    </tr>
+                    </thead>
+                   <tbody>
+                    <apex:repeat value="{!lstframeTableWrapper}" var="frameTable">
+                       <apex:outputLabel rendered="{!frameTable.color}">
+                         <tr class="tcell-height-30">
+                           <td><center>{!frameTable.srlNo}</center></td>
+                           
+                           <td>                           
+                           
+                            <!-- TASK-2469 -->
+                            <!-- <apex:outputLink value="{!if(isBreadcrumbActive,'/GlobalfoundryView','')}/apex/VFMRSPTRFDetail?ptrfURL={!frameTable.ptrfId}" title="{!frameTable.ptrf}" target="_blank">{!frameTable.ptrf}</apex:outputLink> 
+                            -->
+                            <apex:outputLink value="{! $Label.HYPERLINK_TO_SWIFT + frameTable.ptrf }" title="{!frameTable.ptrf}" target="_blank">{!frameTable.ptrf}</apex:outputLink>
+                            <!-- TASK-2469 END -->
+                           
+                           </td>
+                           
+                           <apex:outputLabel rendered="{!reticleType}">
+                            <td class="text-align-centre">{!frameTable.techGeo}</td>
+                           </apex:outputLabel>
+                           <apex:outputLabel rendered="{!IF(frameTable.status=='Ready',true,false)}"> 
+                            <td><center> 
+                            <apex:inputCheckbox value="{!frameTable.checkedValue}"  onclick="enableApproveDisapproveBtn()"/><span>
+                             {!frameTable.status}</span></center>
+                            </td>
+                            </apex:outputLabel>
+                            <apex:outputLabel rendered="{!IF(frameTable.status!='Ready',true,false)}"> 
+                            <td><center>{!frameTable.status}</center></td>
+                            </apex:outputLabel>
+                         </tr>
+                       </apex:outputLabel>
+                       <apex:outputLabel rendered="{!!frameTable.color}">
+                          <tr class="alt-row-bgcolor tcell-height-30">
+                            <td><center>{!frameTable.srlNo}</center></td>
+                            
+                            <td>                            
+                            <!-- TASK-2469 -->
+                            <!-- <apex:outputLink value="{!if(isBreadcrumbActive,'/GlobalfoundryView','')}/apex/VFMRSPTRFDetail?ptrfURL={!frameTable.ptrfId}" title="{!frameTable.ptrf}" target="_blank">{!frameTable.ptrf}</apex:outputLink> 
+                            -->                            
+                            <apex:outputLink value="{! $Label.HYPERLINK_TO_SWIFT + frameTable.ptrf }" title="{!frameTable.ptrf}" target="_blank">{!frameTable.ptrf}</apex:outputLink>
+                            <!-- TASK-2469 END -->
+                            
+                            
+                            </td>
+                            
+                            <apex:outputLabel rendered="{!reticleType}">
+                            <td class="text-align-centre">{!frameTable.techGeo}</td>
+                            </apex:outputLabel>
+                            <apex:outputLabel rendered="{!IF(frameTable.status=='Ready',true,false)}"> 
+                            <td><center><!-- <input type="checkbox" name="Sd1[]"/> -->
+                            <apex:inputCheckbox value="{!frameTable.checkedValue}" onclick="enableApproveDisapproveBtn()"/><span>
+                             {!frameTable.status}</span></center>
+                            </td>
+                            </apex:outputLabel>
+                           <apex:outputLabel rendered="{!IF(frameTable.status!='Ready',true,false)}"> 
+                            <td><center>{!frameTable.status}</center></td> 
+                            </apex:outputLabel>
+                           </tr>
+                        </apex:outputLabel>
+                        
+                    </apex:repeat>
+                   </tbody>
+                </table>
+              </div>
+               <div class="clear"></div>
+               <br/>
+             <apex:outputLabel id="approveId">
+              <apex:outputLabel rendered="{!rerenderApproveButton}">
+                  <input type="button" value="Approve" class="approve-button-style review-customer-table-1" id="approve-button-2" onclick="getApproveButton()" disabled="true"/>
+                  <input type="button" value="Disapprove" class="disapprove-button-style disapprove-customer-table-1 margin-left-30" id="disapprove-button-1"  onclick="getCheckedDisApproveElement()" disabled="true"/>
+              </apex:outputLabel>
+          </apex:outputLabel>
+            </div>
+            
+           </apex:outputPanel>
+          </apex:outputPanel>
+          <div class="button-spacer"></div>
+        
+             <apex:outputPanel id="dataTobeSaved">  
+              <apex:outputPanel id="approveDataTableId" rendered="{!renderedApproveData}">
+                  <div id="approved-table-data-1" >
+               <!--<div id="approved-table-data" > -->
+               <apex:outputLabel rendered="{!!disapproveReason}" styleClass="error-container margin-top-10 black-font">
+                   {!$Label.SWIFT_Confirm_Approve_Selection}
+               </apex:outputLabel>
+               <apex:outputLabel rendered="{!disapproveReason}" styleClass="error-container margin-top-10 black-font">
+                   {!$Label.SWIFT_Confirm_Disapprove_Selection}
+               </apex:outputLabel>
+                   <div class="clear"></div>
+                   <br/>
+                   <table class="data-table approve-button-1" id="review-customer-table-1-approved">
+                    <thead>
+                      <tr class="">
+                      <th class="tcell-width-28 fixedHeaderChecked">No.</th>
+                      <th class="tcell-width-192 fixedHeaderChecked">PTRF Number</th>
+                      <apex:outputLabel rendered="{!reticleType}">
+                      <th class="tcell-width-80 fixedHeaderChecked"><span class="bold tcell_width_80">Tech Geo</span></th>
+                      </apex:outputLabel>
+                      <th class="tcell_width_80 hasCheckbox checkedHeader line-height-22"><input type="checkbox" class="Sd1 display-none"/>Frame</th>
+                      </tr>
+                      </thead>
+                    <tbody>
+                    <apex:variable value="{!1}" var="counter"/>
+                    <apex:repeat value="{!lstframeTableWrapper}" var="frameWrapper">
+                     <apex:outputLabel rendered="{!IF(frameWrapper.checkedValue==true,true,false)}">
+                        <apex:outputLabel rendered="{!IF((mod(counter,2)) != 0,true,false)}">
+                         <tr class="checkboxClass">
+                         <td><center>{!counter}</center></td>
+                       
+                         <td>
+                         	<!-- TASK-2469 -->
+                            <!-- <apex:outputLink value="{!if(isBreadcrumbActive,'/GlobalfoundryView','')}/apex/VFMRSPTRFDetail?ptrfURL={!frameWrapper.ptrfId}" title="{!frameWrapper.ptrf}" target="_blank" >{!frameWrapper.ptrf}</apex:outputLink> 
+                            -->
+                            <apex:outputLink value="{! $Label.HYPERLINK_TO_SWIFT + frameWrapper.ptrf }" title="{!frameWrapper.ptrf}" target="_blank" >{!frameWrapper.ptrf}</apex:outputLink>
+                            <!-- TASK-2469 END -->                         
+                         </td>
+                         
+                         <apex:outputLabel rendered="{!reticleType}">
+                            <td>{!frameWrapper.techGeo}</td>
+                          </apex:outputLabel>
+                        
+                          <td><center><img src="{!URLFOR($Resource.Swift_MRS,'images/Checked_img.png')}" alt="checked" style="float:none;"/></center></td>
+                         
+                      
+                        </tr>
+                        </apex:outputLabel>
+                         <apex:outputLabel rendered="{!IF((mod(counter,2)) == 0,true,false)}">
+                         <tr class="checkboxClass alt-row-bgcolor">
+                         <td><center>{!counter}</center></td>
+                       
+                         <td>
+                         	
+                         	<!-- TASK-2469 -->
+                            <!-- <apex:outputLink value="{!if(isBreadcrumbActive,'/GlobalfoundryView','')}/apex/VFMRSPTRFDetail?ptrfURL={!frameWrapper.ptrfId}" title="{!frameWrapper.ptrf}"  target="_blank">{!frameWrapper.ptrf}</apex:outputLink> 
+                            -->
+                            <apex:outputLink value="{! $Label.HYPERLINK_TO_SWIFT + frameWrapper.ptrf }" title="{!frameWrapper.ptrf}" target="_blank">{!frameWrapper.ptrf}</apex:outputLink>
+                            <!-- TASK-2469 END -->  	
+                         </td>
+                         
+                         <apex:outputLabel rendered="{!reticleType}">
+                            <td>{!frameWrapper.techGeo}</td>
+                          </apex:outputLabel>
+                        
+                          <td><center><img src="{!URLFOR($Resource.Swift_MRS,'images/Checked_img.png')}" alt="checked" style="float:none;"/></center></td>
+                         
+                      
+                        </tr>
+                        </apex:outputLabel>
+                    <apex:variable value="{!counter+1}" var="counter"/>
+                    </apex:outputLabel>
+                   </apex:repeat>
+               
+                </tbody>
+               </table>
+               </div>
+              </apex:outputPanel>
+            </apex:outputPanel>
+         <apex:outputPanel id="disapproveTextId">
+            <apex:outputPanel rendered="{!disapproveReason}" id="disapproveText"> 
+                <div class="textarea-holder margin-top-9">
+                   <dl id="secondcreatedrt"></dl>
+                   <dt class="full-width no-margin-top">
+                   <span class="no-padding commentDisapproveReason bold-font">Disapprove Reason:</span>
+                   <span class="red-font no-padding">*</span></dt><dd class="full-width">
+                   <apex:inputTextarea id="descriprionArea" value="{!disApproveReasonTxt}"/>
+                   </dd>
+                   <div class="clear">
+                   </div>
+                   <dt class="comment-note error-container margin-top-5 red-font"> {!$Label.SWIFT_PTRF_Cancellation_Message}</dt>
+                   <div class="clear">
+                   </div>
+               </div>
+           </apex:outputPanel>
+          </apex:outputPanel> 
+          <br/>
+          <apex:outputPanel id="proceedId">
+           
+              <apex:outputPanel rendered="{!renderedApproveData}">
+                   <input type="button" value="Proceed" class="proceed-approved-button-style" id="proceed-review-customer-table-1" onclick="saveData()"/>
+                   <input type="button" value="Discard" class="discard-approved-button-style" id="discard-review-customer-table-1" onclick="discardData()"/>
+              </apex:outputPanel>
+         </apex:outputPanel> 
+         
+      
+        <div class="clear"></div>
+    </div>
+    <!-- --------------- Second Row Ends --------------- -->    
+      </div>     
+        <!-- </div>--> 
+        <!--End of content-->
+    <div class="clear"></div>
+    <div class="button-spacer"></div>
+    <!-- </div>--> 
+    <!--End of container div--> 
+</div>
+<apex:inputHidden value="{!selectedLayerStatus}" id="SelectedLayerStatusValue"/>
+<apex:inputHidden id="selectedCustomerId" value="{!selectedCustomer}"  />
+<apex:inputHidden id="approveOrDosapprove"  value="{!approveOrDisapprove}"/>
+ <apex:inputHidden id="selectedCustomerNameId"  value="{!customerNameAfterSave}"/>
+<apex:inputHidden id="selectedMSTNameId"  value="{!mstNameAfterSave}"/> 
+<apex:inputHidden id="filterIdToRender" value="{!errorMessage}"/>
+<apex:actionFunction name="getMST" action="{!getMST}" reRender="maskLayerId,layerStatusId,mrsdeviceId,frameStatusId,chipLayerId,approvalTableId,performReviewIdButtonId,selectedCustomerNameId,drtMessage" oncomplete="SwiftGen.includeCustomCombo('mstdropdown');callIncreaseIframe();hideLoader();makeMultipleDrpDwn();"/>
+<apex:actionFunction name="getMaskLayer" action="{!getMaskLayer}" reRender="maskLayerId,layerStatusId,mrsdeviceId,frameStatusId,chipLayerId,approvalTableId,performReviewIdButtonId,imageId,selectedMSTNameId,layerStatusId,drtMessage,SelectedLayerStatusValue"  oncomplete="SwiftGen.rowHover();callIncreaseIframe();hideLoader();makeMultipleDrpDwn();"/>
+
+<apex:actionFunction name="getApproveButtonEnabled" reRender="mstLookupPanel,imageId,chipLayerId,approveId,approvalTableId,performReviewIdButtonId,reticleTypeId,lstaccountId,mstId,labelaccountId,topSectionId" action="{!getApproveButtonEnabled}" oncomplete="rerenderApproveTable();callIncreaseIframe();hideLoader();"/>
+<apex:actionFunction name="acfn_rerenderApproveTable" reRender="imageId,chipLayerId,approveId,approvalTableId,performReviewIdButtonId,lstaccountId,mstId,selectedCustomerNameId,selectedMSTNameId" oncomplete="SwiftGen.rowHover();callIncreaseIframe();"/>
+<apex:actionFunction name="getTblData"   rerender="chipLayerId,performReviewIdButtonId,drtMessage,imageId" action="{!getTblData}" oncomplete="renderFilter();SwiftGen.rowHover();callIncreaseIframe();hideLoader();"/> 
+<apex:actionFunction name="saveTheData"  rerender="mstLookupPanel,chipLayerId,approveId,proceedId,disapproveTextId,dataTobeSaved,performReviewIdButtonId,drtMessage,filterIdToRender,imageId,maskLayerId,layerStatusId,mrsdeviceId,frameStatusId,chipLayerId,topSectionId,mstId" action="{!saveTheData}" oncomplete="renderFilter(); SwiftGen.rowHover();SwiftGen.includeCustomCombo('mstdropdown');SwiftGen.includeCustomCombo('drtdropdown');showSelectedValue();callIncreaseIframe();hideLoader();"/> 
+
+<apex:actionFunction name="checkDisapprove" reRender="dataTobeSaved,proceedId,disapproveTextId,approveId,approvalTableId" action="{!checkDisapprove}" oncomplete="SwiftGen.rowHover();callIncreaseIframe();hideLoader();"/> 
+<apex:actionFunction name="checkApproveBuuton" reRender="dataTobeSaved,disapproveTextId,approveId,proceedId,approvalTableId" action="{!checkApproveBuuton}" oncomplete="SwiftGen.rowHover();callIncreaseIframe();hideLoader();"/>
+<!-- Discard Data--------------------->
+<apex:actionFunction name="discardDataFrom" reRender="dataTobeSaved,approvalTableId,approveDataTableId,disapproveTextId,approveId,proceedId,disapproveTextId,drtMessage" action="{!discardDataFrom}" oncomplete="enableApproveDisapproveBtn();SwiftGen.rowHover();callIncreaseIframe();hideLoader();"/>
+<apex:actionFunction name="acfn_exportToCSV"  action="{!exportToCSV}"/> 
+<apex:actionFunction name="acfn_exportToPDF"  action="{!exportToPDF}"/> 
+<apex:actionFunction name="resetLSPCookies" action="{!resetLSPCookies}" onComplete="SwiftGen.includeCustomCombo('drtdropdown2');callIncreaseIframe();makeMultipleDrpDwn();"/>
+
+
+
+</apex:form>
+<!--End of Wrapper div-->
+<script>
+
+    var lookupCustomerURL = "{!lookupCustomerURL}";
+    var lookupMSTURL = "{!lookupMSTURL}";
+        
+ $(function() {
+        $(document).tooltip();
+     });
+    function getmstList(idx)
+    {
+        showLoader('gf-bigcircle'); 
+        document.getElementById("{!$Component.frm:selectedCustomerId}").value = idx.value;
+        resetLSPCookies();
+        getMST();
+    }
+    function rerenderApproveTable()
+    {
+        
+        acfn_rerenderApproveTable();
+        
+        
+    }
+    function showSelectedValue()
+    {
+         var accId = jQuery('[id$=selectedCustomerNameId]').val();
+         var mst = jQuery('[id$=selectedMSTNameId]').val(); 
+         jQuery('#drtdropdown').find('input.scombobox-display').prop("value",accId);
+         jQuery('#drtdropdown').find('input.scombobox-value:hidden').prop("value",accId);
+         jQuery('#mstdropdown').find('input.scombobox-display').prop("value",mst);
+         jQuery('#mstdropdown').find('input.scombobox-value:hidden').prop("value",mst);
+
+         
+    }
+    function getMaskLayerJS(idx)
+    {
+        showLoader('gf-bigcircle'); 
+        document.getElementById("{!$Component.frm:selectedmstId}").value = idx.value;
+        resetLSPCookies();
+        getMaskLayer();
+    }
+    function checkedAllFrame()
+    {
+        
+      
+      if(document.getElementById('{!$Component.frm:reticleTypeId}').value=='true'){
+          var flag;
+         jQuery('#perform-table-ready-n thead tr').each(function(index){
+               
+               flag= jQuery(this).find("th").eq(3).find('input').is(':checked');
+               
+           }); 
+          
+         
+          jQuery('#perform-table-ready-n table tbody tr').each(function(index){
+              
+                  if(flag)
+                  {
+                  
+                   jQuery('#approve-button-2').removeAttr('disabled');
+                  jQuery('#disapprove-button-1').removeAttr('disabled');
+                  jQuery(this).find("td").eq(3).find("input:checkbox").prop('checked',true);
+                  
+                 
+                  }else{
+                  
+                  jQuery('#approve-button-2').attr('disabled','disabled');
+                   jQuery('#disapprove-button-1').attr('disabled','disabled');
+                  jQuery(this).find("td").eq(3).find("input:checkbox").prop('checked', false);
+                  }
+                  
+                  
+          });
+           
+      }else
+      {
+          var flag;
+          jQuery('#perform-table-ready-n table thead tr').each(function(index){
+               flag= jQuery(this).find("th").eq(2).find('input').is(':checked');
+           }); 
+           jQuery('#perform-table-ready-n table tbody tr').each(function(index){
+            
+               if(flag)
+               {
+                  jQuery('#approve-button-2').removeAttr('disabled');
+                  jQuery('#disapprove-button-1').removeAttr('disabled');
+                  jQuery(this).find("td").eq(2).find("input:checkbox").prop('checked', true);
+               }else
+               {
+                    jQuery('#approve-button-2').attr('disabled','disabled');
+                    jQuery('#disapprove-button-1').attr('disabled','disabled');
+                    jQuery(this).find("td").eq(2).find("input:checkbox").prop('checked', false);
+               }
+                  
+                  
+          });
+      }
+      
+    }
+ 
+   
+  function getApproveBuutonEnabled()
+  {
+      
+    showLoader('gf-bigcircle');
+   jQuery('.data-table').addClass('display-none');
+    getApproveButtonEnabled();
+
+  }
+  
+  function retrieveTable()
+  {
+      var str_array= $("#layersummarydropdown").val();
+        if(str_array==null)str_array="";
+        else {
+            for(var i = 0; i < str_array.length; i++) {
+               str_array[i] = str_array[i].replace(/^\s*/, "").replace(/\s*$/, "");
+            }
+        }
+      document.getElementById("j_id0:frm:SelectedLayerStatusValue").value = str_array;
+      //alert('$$$$$str_array$$$'+str_array);
+      showLoader('gf-bigcircle'); 
+      getTblData();
+  }
+  function saveData()
+  {
+      showLoader('gf-bigcircle'); 
+      jQuery('#perform-table-ready').addClass('display-none');
+      saveTheData();
+  }
+  function renderFilter()
+  {
+      var errorMessage =document.getElementById("{!$Component.frm:filterIdToRender}").value ;
+    
+      if(errorMessage=='true')
+      {
+          jQuery('.right-section-panel').addClass('display-none');
+         
+          
+      }else
+      {
+          jQuery('.right-section-panel').removeClass('display-none');
+          
+      }
+      
+      $('#customerLabel').text($('[id$=selectedCustomerNameId]').val());
+      $('#mstLabel').text($('[id$=selectedMSTNameId]').val());
+  }
+  function getCheckedDisApproveElement()
+  {
+     showLoader('gf-bigcircle');
+      document.getElementById("{!$Component.frm:approveOrDosapprove}").value = 'Disapprove';   
+       jQuery('#perform-table-ready').addClass('display-none');
+      checkDisapprove();
+     
+      
+  }
+  function openMyDevices() {
+    try {
+        parent.refreshPage();
+    }catch(e) {
+        window.location.reload($label.SWIFT_COMMUNITY_URL+'MyDevices');
+    }
+  }
+  function getApproveButton()
+  {
+       showLoader('gf-bigcircle');
+       document.getElementById("{!$Component.frm:approveOrDosapprove}").value = 'Approve';
+       
+       jQuery('#perform-table-ready').addClass('display-none');
+       checkApproveBuuton(); 
+  }
+  
+  function clearFilter()
+  {
+      showLoader('gf-bigcircle'); 
+      document.getElementById("{!$Component.frm:maskLayerId}").value = '';
+      //document.getElementById("{!$Component.frm:layerStatusId}").value = '';
+      document.getElementById("{!$Component.frm:mrsdeviceId}").value = '';
+      document.getElementById("{!$Component.frm:frameStatusId}").value = '';
+      document.getElementById("layersummarydropdown").value = '';
+      
+      getMaskLayer();
+  }
+  
+ function discardData()
+ {
+     showLoader('gf-bigcircle');
+     discardDataFrom();
+     jQuery('#perform-table-ready').removeClass('display-none');
+     
+    
+ }
+ function enableApproveDisapproveBtn(){
+        var flag=false;
+        var  allCheckBoxChecked;
+        var counter = 0;
+        var totalReady = 0;
+          if(document.getElementById('{!$Component.frm:reticleTypeId}').value=='true'){
+              jQuery('#perform-table-ready-n table tbody tr').each(function(index){
+                   if(jQuery(this).find("td").eq(3).find('input:checkbox').length>0){
+                        counter++;
+                   }
+                   if(jQuery(this).find("td").eq(3).find('input').is(':checked')){
+                       flag=true;
+                       totalReady++;
+                   } 
+               });
+          }else{
+              jQuery('#perform-table-ready-n table tbody tr').each(function(index){
+                   if(jQuery(this).find("td").eq(2).find('input:checkbox').length>0){
+                        counter++;
+                   }
+                   if(jQuery(this).find("td").eq(2).find('input').is(':checked')){
+                       flag=true;
+                       totalReady++;
+                   }
+               }); 
+          }
+          if(flag)
+          {
+              jQuery('#approve-button-2').removeAttr('disabled');
+              jQuery('#disapprove-button-1').removeAttr('disabled');
+          }else
+          {
+              jQuery('#approve-button-2').attr('disabled','disabled');
+              jQuery('#disapprove-button-1').attr('disabled','disabled');
+          }
+        
+          if(totalReady == counter){             
+              jQuery('#checkAllId').attr('checked','checked');             
+          }else{             
+              jQuery('#checkAllId').removeAttr('checked');
+          }
+   
+ }
+ 
+ function OpenExcelOrPdf(exportTo)
+ {
+ 
+    
+     if(exportTo=='excel')
+        {    
+          acfn_exportToCSV();
+        }else
+        {
+            acfn_exportToPDF();
+        }
+ }  
+ function redirectToPTRF()
+ {
+     acfn_redirectToPTRF();
+ } 
+ 
+  /*increase Iframe starts*/
+    function callIncreaseIframe() {
+        try{
+            parent.iframeLoaded();
+        }catch(err){}
+    }
+    /*increase Iframe ends*/
+   function makeMultipleDrpDwn() {
+    if($("#filterContent").is(":visible") && $("#layersummarydropdown").length>0){
+        $("#layersummarydropdown").multiselect({
+            selectedList:10,
+            header:false,
+            minWidth:140,
+            height:'auto',
+            noneSelectedText:'-Select-'
+        });
+    }
+    callIncreaseIframe();
+   
+} 
+/*increase Iframe ends*/
+    /*Loader*/
+    function showLoader(e) {
+        jQuery.loader({className: e,content: ""});
+    }
+                
+    function hideLoader() {
+        
+        jQuery.loader("close");
+    }
+    /*Loader*/
+
+    function sendSelectedAccount(accId,accName,accSName){
+        showLoader('gf-bigcircle');
+        
+        var page = $('[id$=hiddenPage]').val();
+        var jobviewer = $('[id$=hiddenJobviewer]').val();
+        
+        lookupMSTURL = "{!lookupMSTURL}";
+        
+        var pos = lookupMSTURL.indexOf("?");
+        if(pos == -1){
+            lookupMSTURL = lookupMSTURL + '?aid=' + accId + '&pg=' + page + '&jv=' + jobviewer;
+        }
+        else {
+            lookupMSTURL = lookupMSTURL.substring(0,pos) + '?aid=' + accId + '&pg=' + page + '&jv=' + jobviewer;
+        }
+        
+        $('[id$=selectedCustomerId]').val(accId);
+        $('#customerLabel').text(accName+' ('+accSName+')');
+        $('[id$=selectedCustomerNameId]').val(accName+' ('+accSName+')');
+        
+        $('[id$=hiddenMSTId]').val('');
+        $('#mstLabel').text('');
+        
+        resetLSPCookies();
+        getMST(); 
+    }
+    
+    function sendSelectedMST(mstId,mstName) {
+        showLoader('gf-bigcircle');
+        $('[id$=selectedmstId]').val(mstId);
+        $('#mstLabel').text(mstName);
+        $('[id$=selectedMSTNameId]').val(mstName);
+        
+        resetLSPCookies();
+        getMaskLayer();
+        
+    }    
+  
+</script>
+
+</apex:page>

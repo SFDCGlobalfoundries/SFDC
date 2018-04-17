@@ -1,0 +1,232 @@
+<!--
+    Author: Deepti Narayan Biswal
+    Description: This is a page for mass editing Action Managements.
+    History:
+        DBiswal    07292016    Created.
+        DBiswal    05312017    Added select All feature.
+-->
+<apex:page id="cxmMassedit" sidebar="false" controller="CXM_actionMgmtmassEditController" standardStylesheets="true" showchat="false" showHeader="{!NOT(isSF1flag)}">
+    
+    <apex:includeScript value="//code.jquery.com/jquery-1.10.2.js"/>
+    <apex:includeScript value="//code.jquery.com/ui/1.11.4/jquery-ui.js"/>
+    <apex:includeScript value="//cdn.datatables.net/1.10.13/js/jquery.dataTables.min.js"/>
+    <apex:stylesheet value="//cdn.datatables.net/1.10.13/css/jquery.dataTables.min.css"/>
+        
+    <apex:sectionHeader title="{!AccountName}"/>
+    <apex:form id="frm">
+        <apex:pageMessages id="pgmsg"/>
+        <apex:pageBlock tabStyle="Escalation_Complaint__c">
+        <apex:pageBlockButtons >
+            <apex:commandButton onclick="cancelredirect();return false;" value="Back To Account" />
+        </apex:pageBlockButtons>
+        <apex:outputPanel id="addNewActnMgmt">
+            <apex:variable value="{!0}" var="rowNum"/>
+            <apex:pageBlockSection title="New Action Management" columns="1">
+                 <apex:pageBlockTable value="{!waActnMgmtList}" var="eachRecord">       
+                 <apex:column >
+                     <apex:commandLink value="Remove" style="color:red" action="{!removeRowFromActnMgmtList}" immediate="true" reRender="addNewActnMgmt">
+                         <apex:param value="{!rowNum}" name="rowToRemove" assignTo="{!rowToRemove}"/>
+                     </apex:commandLink>
+                     <apex:variable var="rowNum" value="{!rowNum + 1}"/>
+                 </apex:column> 
+                 <apex:column headerValue="Account">
+                     <apex:outputField value="{!eachRecord.record.Account__c}"/>
+                 </apex:column>     
+                 <apex:column headerValue="Action">
+                     <apex:inputField value="{!eachRecord.record.Subject__c}" required="true"/>
+                 </apex:column>
+                 <apex:column headerValue="Action Severity">
+                     <apex:inputField value="{!eachRecord.record.Escalation_Severity__c}" required="true"/>
+                 </apex:column>
+                 <apex:column headerValue="Action Details">
+                     <apex:inputField value="{!eachRecord.record.Description__c}"/>
+                 </apex:column>
+                 <apex:column headerValue="Action Owner">
+                     <apex:inputField value="{!eachRecord.record.Assigned_Resolution_Owner__c}"/>
+                 </apex:column>
+                 <apex:column headerValue="Department">
+                     <apex:inputField value="{!eachRecord.record.Department__c}" required="true"/>
+                 </apex:column> 
+                 <apex:column headerValue="Expected Close Date">
+                     <apex:inputField value="{!eachRecord.record.Expected_Close_Date__c}" required="true"/>
+                 </apex:column> 
+                 <apex:column headerValue="Stage">
+                     <apex:inputField value="{!eachRecord.record.Stage__c}" required="true"/>
+                 </apex:column>
+                 <apex:column headerValue="Escalation Level">
+                     <apex:inputField value="{!eachRecord.record.Escalation_Level__c}" required="true"/>
+                 </apex:column>
+                 <apex:column headerValue="Type">
+                     <apex:inputField value="{!eachRecord.record.Type__c}" required="true"/>
+                 </apex:column>                  
+                </apex:pageBlockTable>
+            </apex:pageBlockSection>
+            
+            <apex:commandButton value="Add More" action="{!addNewRowToActnMgmtList}" Status="status" immediate="true" reRender="addNewActnMgmt" status="saveActn"/>
+              
+            <apex:commandButton value="Save" action="{!SaveMultipleAcntMgmt}" oncomplete="acntMgmtPag()" rendered="{!rowNum > 0}" reRender="etop2,addNewActnMgmt,pgmsg,escTeam" status="saveActn"/>
+            <apex:actionStatus id="saveActn">
+                <apex:facet name="start" >
+                    <img src="/img/loading.gif" />                    
+                </apex:facet>
+            </apex:actionStatus>
+        </apex:outputPanel>
+        
+        <br/>
+        <apex:outputPanel id="escTeam">
+            <apex:pageblockSection id="addNewTeam" title="Add Escalation Team" columns="1" rendered="{!escTeamFlag}">
+                <apex:outputPanel layout="block" style="overflow:auto;">
+                    <apex:variable value="{!0}" var="rowCount"/>
+                    <apex:pageBlockTable value="{!escTeamwrapList}" var="eachRec">
+                        <apex:column >
+                            <apex:commandLink value="Remove" style="color:red" action="{!removeRowFromescTeam}" immediate="true" reRender="addNewTeam">
+                                <apex:param value="{!rowCount}" name="teamRowremove" assignTo="{!teamRowremove}"/>
+                            </apex:commandLink>
+                            <apex:variable var="rowCount" value="{!rowCount + 1}"/>
+                        </apex:column>
+                        <apex:column headerValue="User">
+                            <apex:inputField value="{!eachRec.escTeam.User__c}" required="true"/>
+                        </apex:column>
+                        <apex:column headerValue="Escalation Level">
+                            <apex:inputField value="{!eachRec.escTeam.Escalation_Level__c}" required="true"/>
+                        </apex:column>
+                    </apex:pageBlockTable>
+                    
+                    <apex:commandButton value="Add Team" action="{!addEscTeam}" immediate="true" reRender="addNewTeam" status="saveTm"/>
+                    <apex:commandButton value="Save Team" action="{!saveEscTeam}" rendered="{!AND(rowCount > 0, NOT(newActionflag))}" reRender="frm" status="saveTm"/>
+                    <apex:actionStatus id="saveTm">
+                        <apex:facet name="start" >
+                            <img src="/img/loading.gif" />                    
+                        </apex:facet>
+                    </apex:actionStatus>
+                </apex:outputPanel>
+            </apex:pageblockSection>
+            
+            <apex:pageblockSection id="removeTeam" title="Remove existing Escalation Team" columns="1" rendered="{!escTeamRemoveFlag}">
+                <apex:outputPanel layout="block" style="overflow:auto;">
+                    <apex:variable value="{!0}" var="rowCount"/>
+                    <apex:pageBlockTable value="{!escTeamwrapRemovalList}" var="eachRec">
+                        <apex:column >
+                            <apex:facet name="header">
+                                <apex:inputCheckbox id="remAll" value="{!AllselectedRem}" onclick="checkAll(this,'remOne')"/>
+                            </apex:facet>
+                            <apex:inputcheckbox id="remOne" value="{!eachRec.isSelected}"/>
+                        </apex:column>
+                        <apex:column headerValue="User">
+                            <apex:outputField value="{!eachRec.escTeam.User__c}"/>
+                        </apex:column>
+                        <apex:column headerValue="Escalation Level">
+                            <apex:outputField value="{!eachRec.escTeam.Escalation_Level__c}"/>
+                        </apex:column>
+                    </apex:pageBlockTable>
+                    
+                    <apex:commandButton value="Remove Team" action="{!removeTeammethod}" reRender="frm" status="remTm"/>
+                    <apex:actionStatus id="remTm">
+                        <apex:facet name="start" >
+                            <img src="/img/loading.gif" />                    
+                        </apex:facet>
+                    </apex:actionStatus>
+                </apex:outputPanel>
+            </apex:pageblockSection>
+        </apex:outputPanel>
+        
+        <br/>
+        <apex:commandButton value="Escalation Team Assignment" immediate="true" action="{!setescTeamSection}" status="escTeamassign" reRender="escTeam,pgmsg"/>
+        <apex:commandButton value="Escalation Team Removal" action="{!setescTeamRemovalSection}" status="escTeamassign" reRender="escTeam,pgmsg"/>
+        <apex:actionStatus id="escTeamassign" >
+            <apex:facet name="start" >
+              <img src="/img/loading.gif" />                    
+            </apex:facet>
+        </apex:actionStatus>
+        <br/>
+        
+        <apex:pageBlockSection title="Update Existing Action Managements" columns="1">                                
+            <apex:commandButton onclick="recordSelected('checkedone');return false;" value="Update"/>
+            <apex:actionStatus id="save" >
+                <apex:facet name="start" >
+                  <img src="/img/loading.gif" />                    
+                </apex:facet>
+            </apex:actionStatus>                  
+            <apex:outputPanel id="etop2" layout="block" style="overflow:auto;">
+                <apex:pageBlockTable value="{!actionmgmtwrapperList}" var="actmwrap" width="100%" columnsWidth="3%,8%,10%,6%,16%,12%,17%,10%,13%,5%" id="existActionMgmt">
+                    <apex:column >
+                        <apex:facet name="header">
+                            <apex:inputCheckbox id="pickAll" value="{!Allselected}" onclick="checkAll(this,'checkedone')"/>
+                        </apex:facet>
+                        <apex:inputCheckbox id="checkedone" value="{!actmwrap.isSelected}" />
+                    </apex:column>
+                    <apex:column >
+                        <apex:facet name="header">
+                            Action <br/>Management <br/>Name
+                        </apex:facet>
+                        <apex:outputLink value="/{!actmwrap.actmObj.Id}" target="blank">{!actmwrap.actmObj.Name}</apex:outputLink>
+                    </apex:column>
+                    <apex:column headerValue="Action" value="{!actmwrap.actmObj.Subject__c}" />
+                    <apex:column headerValue="Action Severity" value="{!actmwrap.actmObj.Severity__c}" />
+                    <apex:column headerValue="Action Details">
+                        <apex:inputField value="{!actmwrap.actmObj.Description__c}" />
+                    </apex:column>
+                    <apex:column headerValue="Action Owner" value="{!actmwrap.actionOwner}"/>
+                    <apex:column headerValue="Department" value="{!actmwrap.actmObj.Department__c}"/>                    
+                    <apex:column headerValue="Expected Close Date">
+                        <apex:inputField value="{!actmwrap.actmObj.Expected_Close_Date__c}" />
+                    </apex:column>
+                    <apex:column headerValue="Stage">
+                        <apex:inputField value="{!actmwrap.actmObj.Stage__c}" />
+                    </apex:column>
+                    <apex:column headerValue="Escalation Level">
+                        <apex:inputField value="{!actmwrap.actmObj.Escalation_Level__c}" />
+                    </apex:column>
+                    <apex:column headerValue="Type" value="{!actmwrap.actmObj.Type__c}"/>                                          
+                    <apex:column headerValue="Actual Date Closed" value="{!actmwrap.actmObj.Closed_Date__c}"/>
+                </apex:pageBlockTable>
+            </apex:outputPanel>
+            </apex:pageBlockSection>
+            
+            
+        </apex:pageBlock>
+        <apex:actionFunction action="{!SaveActions}" name="SaveActions" oncomplete="acntMgmtPag()" reRender="etop2" status="save"/>
+    </apex:form>
+    <script>
+        $(document).ready(function(){
+            $("[id$='existActionMgmt']").DataTable();
+        });
+        function checkAll(cb,cbid){
+            var inputElem = document.getElementsByTagName("input");                    
+            for(var i=0; i<inputElem.length; i++)
+            {            
+                if(inputElem[i].id.indexOf(cbid)!=-1){                                       
+                    inputElem[i].checked = cb.checked;
+                }
+            }
+        }
+        function cancelredirect(){
+            var navigateURL = '/{!accountId}';
+            if( (typeof sforce != 'undefined') && (sforce != null) ) {
+                sforce.one.navigateToURL(navigateURL);
+            }
+            else {
+                window.top.location=navigateURL;
+            }
+        }
+        function recordSelected(cbid){
+            var inputElem = document.getElementsByTagName("input");
+            var count = 0;                               
+            for(var i=0; i<inputElem.length; i++)
+            {                           
+                if(inputElem[i].checked){  
+                    count++;                                                         
+                }                
+            }             
+            if(count <= 0){
+                alert('Please select atleast one action management before clicking save');
+            }
+            else{
+                SaveActions();
+            }
+        }
+        function acntMgmtPag(){
+            $("[id$='existActionMgmt']").DataTable();
+        }
+    </script>
+</apex:page>

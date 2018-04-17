@@ -1,0 +1,142 @@
+<!--
+ Type Name: VFR_TeamRoomManageMembership
+ Author: Global Foundries(Dinesh Suggala)
+ Created Date: 14-June-2017
+ Reason: This page is used to add the Team room members to Team room.
+ Change History:
+ Author: 
+ Modified Date: 
+ Reason: 
+ …….. 
+ ……..
+-->
+
+
+<apex:page sidebar="true"  controller="clsRTeamRoomManageMembership" >
+<script type="text/javascript">
+        function selectAllCheckboxes(obj,receivedInputID){
+            var inputCheckBox = document.getElementsByTagName("input");                  
+            for(var i=0; i<inputCheckBox.length; i++){          
+                if(inputCheckBox[i].id.indexOf(receivedInputID)!=-1){                                     
+                    inputCheckBox[i].checked = obj.checked;
+                }
+            }
+        }
+</script>
+
+<style>  
+    .hideDropdown select{
+        visibility: hidden !important;
+        display: block !important;
+    }
+    
+    .apexp .bPageBlock.apexDefaultPageBlock .pbBody .pbSubheader{
+    background-color: #e59a0b;
+    }
+</style>
+
+ <apex:sectionHeader title="New R Team Room Member"/>
+ <apex:form id="frm">   
+  <apex:pageBlock id="block1">
+   <apex:pageBlockButtons >
+      <apex:commandButton value="Save" action="{!save}" />
+      <apex:commandButton value="Cancel" action="{!Cancel}"/>
+      <apex:commandButton value="Delete" action="{!DeleteUser}" />
+      <apex:commandButton value="Return" action="{!back}"/>
+   </apex:pageBlockButtons>
+   <apex:pageMessages id="msgid"></apex:pageMessages>
+   
+    <apex:pageBlockSection title="Restricted Team Room Name" >
+      <apex:outputField value="{!rteam.Restricted_Team_Room__c}" />
+    </apex:pageBlockSection>
+    
+    <apex:pageBlockSection title="GF Users" columns="1" rendered="{!Isportal}">
+    <apex:commandButton value="Add GF User" action="{!addUserRow}" rerender="userTable" />
+    <apex:pageBlockTable value="{!IndividualMemberList}" var="individualMember" id="userTable">  
+             
+       <apex:column width="30%">
+         <apex:facet name="header">Internal Team Member</apex:facet>
+         <apex:outputField rendered="{!individualMember.id!=''}" value="{!individualMember.User__c}"/>
+         <apex:inputField rendered="{!individualMember.id=''}" value="{!individualMember.User__c}" id="UserInput" styleClass="hideDropdown" />
+         
+        </apex:column>
+                    
+       <apex:column width="30%">
+         <apex:facet name="header">Team Member Role</apex:facet>
+         <apex:outputText value="Moderator" rendered="{!IF((individualMember.Team_Room_Role__c=='Owner'),true,false)}"></apex:outputText>
+         
+         <apex:selectList value="{!individualMember.Team_Room_Role__c}" size="1" rendered="{!IF((individualMember.Team_Room_Role__c!='Owner'),true,false)}">
+          <apex:selectOptions value="{!MemberRoleList}"></apex:selectOptions>
+         </apex:selectList>
+         
+       </apex:column> 
+       
+        <apex:column width="0%" >
+          <apex:facet name="header">           
+               Delete All
+          </apex:facet>
+        <apex:inputCheckbox id="SearchList" value="{!individualMember.User_Selected__c}" selected="{!individualMember.User_Selected__c}"  />
+        </apex:column>                 
+     </apex:pageBlockTable>              
+    </apex:pageBlockSection>
+    
+    <apex:pageBlockSection title="Customer Users"  columns="1" rendered="{!NOT(Hideportalsection)}" >
+    <apex:pageBlockTable value="{!CustIndividualMemberList}" var="CustindividualMember" id="AlreadyCustAddedTable">
+
+        <apex:column width="30%">
+         <apex:facet name="header">External Team Member</apex:facet>
+         <apex:outputField rendered="{!CustindividualMember.id!=''}" value="{!CustindividualMember.User__c}"/>
+        </apex:column>
+        <apex:column width="30%">
+         <apex:facet name="header">Team Member Role</apex:facet>
+         <apex:outputText value="Moderator" rendered="{!IF((CustindividualMember.Team_Room_Role__c=='Owner'),true,false)}"></apex:outputText>
+         <apex:selectList value="{!CustindividualMember.Team_Room_Role__c}" size="1" rendered="{!IF((CustindividualMember.Team_Room_Role__c!='Owner'),true,false)}">
+          <apex:selectOptions value="{!MemberRoleList}"></apex:selectOptions>
+         </apex:selectList>
+       </apex:column>  
+        <apex:column >
+         <apex:facet name="header">Account</apex:facet>
+         <apex:outputtext value="{!CustindividualMember.Account__r.Name}"/>
+        </apex:column>
+        
+        <apex:column width="25%" >
+          <apex:facet name="header">Select</apex:facet>
+        <apex:inputCheckbox id="SearchList" value="{!CustindividualMember.User_Selected__c}" selected="{!CustindividualMember.User_Selected__c}" />
+        </apex:column>
+     
+    </apex:pageBlockTable>
+    </apex:pageBlockSection>
+    <apex:pageBlockSection title="Add Customer Users" columns="1" rendered="{!NOT(Hideportalsection)}">  
+     
+     <apex:selectList value="{!selectedAccId}" size="1" >
+          <apex:selectOptions value="{!AccountNames}" id="accountname"/>
+          <apex:actionSupport event="onchange" action="{!fetchportalusers}" reRender="portalusertable,msgid" />
+     </apex:selectList>
+    
+    
+     <apex:pageBlockTable value="{!listwrapper}" var="portalMember" id="portalusertable" >        
+        
+       <apex:column width="30%">
+         <apex:facet name="header">External Team Member</apex:facet>
+         <apex:outputlink value="/{!portalMember.User.Id}" target="_blank" >{!portalMember.User.Name} </apex:outputLink>
+        </apex:column>
+                    
+       <apex:column width="30%">
+         <apex:facet name="header">Team Member Role</apex:facet>     
+         <apex:selectList value="{!portalMember.memberadd}" size="1" >
+          <apex:selectOptions value="{!MemberRoleList}"></apex:selectOptions>
+         </apex:selectList>
+       </apex:column>  
+       
+           
+       <apex:column width="0%" >
+       <apex:facet name="header">Add</apex:facet>
+       <apex:inputCheckbox value="{!portalMember.selectedportaluser}"/>
+      </apex:column>           
+                               
+     </apex:pageBlockTable>               
+    
+    </apex:pageBlockSection>
+  </apex:pageBlock>
+ </apex:form>
+</apex:page>

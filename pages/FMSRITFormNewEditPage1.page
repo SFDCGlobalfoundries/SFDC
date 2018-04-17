@@ -1,0 +1,938 @@
+<!--Modification History:
+Inshu Misra         13-10-2016      modified the Save button action...#IM
+Anil Kumar Reddy L  19-10-2016      Added number field clientSide validations.
+Anil Kumar Reddy L  06-01-2017      Modified code to block ui while values loading,
+                               fix for invalid issue.
+Inshu Misra         06-06-2017      UAT UI related defects fixed
+Inshu Misra         12-06-2017      Commented code against Issue#285...#IM
+-->
+<apex:page standardController="Form_Management_System__c" extensions="FMSRITFormController" showHeader="true" id="RITFormPage">
+    <!--Anil Kumar Reddy L 6/1/2016 Start Modified code for Blocking UI-->
+    <apex:includeScript value="{!URLFOR($Resource.jquery, 'js/jquery-1.8.3.min.js')}"/>
+    <apex:includeScript value="{!URLFOR($Resource.jquery, 'js/jquery-ui-1.9.2.custom.js')}"/>
+    <apex:includeScript value="{!URLFOR($Resource.jqPlugin, '/jquery.blockUI.js')}"/>
+
+    <style>
+        a{
+            text-decoration: none;
+        }
+        .brwn{
+        padding-top: 42px;
+        padding-bottom: 30px;
+        color:brown;
+        }
+    </style>
+    <script>
+        $j = jQuery.noConflict();        
+        //function to block the whole page
+        function blockPage(){ 
+            $j.blockUI({ message: '<img src="/img/loading32.gif" /><h1> Refreshing...</h1>', 
+                css: { 
+                 border: 'none', 
+                 padding: '15px',  
+                 '-webkit-border-radius': '10px', 
+                 '-moz-border-radius': '10px', 
+                 opacity: .9
+                } 
+            }); 
+            return false;
+        }
+        //function to unblock the page
+        function unblockPage(){
+            $j.unblockUI();
+        }
+    </script>
+    <!--Anil Kumar Reddy L 6/1/2016 End Modified code for Blocking UI-->
+     <Script>
+        function inputLimiter(e,allow) {
+            var AllowableCharacters = '';
+
+            if (allow == 'Letters'){AllowableCharacters=' ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';}
+            if (allow == 'Numbers'){AllowableCharacters='1234567890.';} //Added exception for decimal point InputField check -- Ashwin Dash
+            if (allow == 'NameCharacters'){AllowableCharacters=' ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz-.\'';}
+            if (allow == 'NameCharactersAndNumbers'){AllowableCharacters='1234567890 ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz-\'';}
+            if (allow == 'Currency'){AllowableCharacters='1234567890.';}
+
+            var k = document.all?parseInt(e.keyCode): parseInt(e.which);
+            if (k!=13 && k!=8 && k!=0){
+                if ((e.ctrlKey==false) && (e.altKey==false)) {
+                return (AllowableCharacters.indexOf(String.fromCharCode(k))!=-1);
+                } else {
+                return true;
+                }
+            } else {
+                return true;
+            }
+        } 
+    </script>
+    <!--Anil Kumar Reddy L 6/1/2016 Start Adding fieldname parameter -->
+    <script>
+        $j = jQuery.noConflict();   
+        function initialise(){
+            $j('.coordinatefldxllClass').on('change',function() {
+                var v = $j(this).val().replace(/,/g,'');            
+                if(!v.match(/^0*([1-9]\d{0,17})$/)){
+                    console.log('Not Match!!..');
+                    $j('.item1').text('Coordinates should be an integer, 0 or greater');
+                    invalidInput('true001','LeftXCoordinate__c');
+                }else if(v.match(/^0*([1-9]\d{0,17})$/)){
+                    console.log('Matched!!..');
+                    $j('.item1').text('');
+                    invalidInput('false001','LeftXCoordinate__c');
+                }
+            }); 
+           $j('.coordinatefldyllClass').on('change',function() {
+                var v = $j(this).val().replace(/,/g,'');            
+                if(!v.match(/^0*([1-9]\d{0,17})$/)){
+                    console.log('Not Match!!..');
+                    $j('.item2').text('Coordinates should be an integer, 0 or greater');
+                    invalidInput('true002','LeftYCoordinate__c');
+                }else if(v.match(/^0*([1-9]\d{0,17})$/)){
+                    console.log('Matched!!..');
+                    $j('.item2').text('');
+                    invalidInput('false002','LeftYCoordinate__c');
+                }
+            });
+            $j('.coordinatefldxurClass').on('change',function() {
+                var v = $j(this).val().replace(/,/g,'');            
+                if(!v.match(/^0*([1-9]\d{0,17})$/)){
+                    console.log('Not Match!!..');
+                    $j('.item3').text('Coordinates should be an integer, 0 or greater');
+                    invalidInput('true003','RightXCoordinate__c');
+                }else if(v.match(/^0*([1-9]\d{0,4})$/)){
+                    console.log('Matched!!..');
+                    $j('.item3').text('');
+                    invalidInput('false003','RightXCoordinate__c');
+                }
+            }); 
+            $j('.coordinatefldyurClass').on('change',function() {
+                var v = $j(this).val().replace(/,/g,'');            
+                if(!v.match(/^0*([1-9]\d{0,17})$/)){
+                    console.log('Not Match!!..');
+                    $j('.item4').text('Coordinates should be an integer, 0 or greater');
+                    invalidInput('true004','RightYCoordinate__c');
+                }else if(v.match(/^0*([1-9]\d{0,4})$/)){
+                    console.log('Matched!!..');
+                    $j('.item4').text('');
+                    invalidInput('false004','RightYCoordinate__c');
+                }
+            }); 
+        };
+        $j(document).ready(function () {  
+            initialise();
+        });
+        $j(document).ajaxComplete(function () {
+            initialise();
+        });
+    </script>
+    <apex:outputPanel id="nonePnl">
+        <script>
+            $j(function() {        
+                $j("select.RemoveNone option[value='']").text("=== Select a Value ===");       
+            }); 
+        </script>
+    </apex:outputPanel>
+    <!--Anil Kumar Reddy L 6/1/2016 End Adding fieldname parameter -->
+    <apex:pagemessages id="errorMsg"/>
+    
+    <apex:form id="ritForm">
+        <apex:actionFunction name="saveandExit" action="{!saveandExit}">
+            <apex:param assignTo="{!pageN}" name="page" value=""/>
+        </apex:actionFunction>
+        
+        <apex:actionFunction name="invalidInput" action="{!invInput}" reRender="false" > 
+            <apex:param id="aname" name="inpVal" value="" />
+            <apex:param id="fname" name="fieldName" value=""/>
+        </apex:actionFunction>
+        
+        <apex:actionFunction name="cancelFormFunct" action="{!cancelForm}" status="blockUI"/> 
+
+        <apex:actionStatus onstart="blockPage()" onstop="unblockPage()" id="blockUI"/>
+        <!--Anil Kumar Reddy L 6/1/2016 End Adding fieldname parameter -->
+        
+        <c:FMSNameDesc ></c:FMSNameDesc>
+        <apex:pageBlock title="Form Page 1" id="pb1">
+            <h1>
+                Foundry Design Data Submission Form
+            </h1>
+            <p style="color:black;">
+                This form provides key data to the Foundry Release Team in order to begin data processing from data
+                submitted through the GLOBALFOUNDRIES dropbox.
+            </p>
+            <br/>
+            <apex:pageblockSection title="Prerequisites" columns="1" id="pbs1" collapsible="false">
+                <apex:actionRegion >
+                    <apex:outputPanel >
+                        <apex:pageBlockSection >
+                            <apex:pageblocksectionItem >
+                                <apex:outputlabel value="Have you read and do you understand the Design Data Submission (Tapeout) Process Education Package?"/>
+                                <apex:outputPanel >
+                                    <div class = "requiredInput">
+                                        <div class = "requiredBlock"></div>
+                                        <apex:inputField styleClass="RemoveNone" value="{!formObj.ReleaseAutomationTraining__c}" />
+                                        <apex:actionSupport event="onchange" rerender="releaseAuto,nonePnl" status="releaseStatus"/>
+                                        <img src="/img/alohaSkin/help_orange.png" title="{!$ObjectType.Form_Management_System__c.fields.ReleaseAutomationTraining__c.InlineHelpText}" height="13" width="13" /> <!--Added by Abhita for new UAT Issue #216-->
+                                    </div>
+                                    <apex:actionStatus id="releaseStatus" startText="Refreshing..." stopText=""/>
+                                </apex:outputPanel>
+                            </apex:pageblocksectionItem>
+                        </apex:pageBlockSection>
+                    </apex:outputPanel>
+                    
+                    <apex:outputPanel id="releaseAuto">
+                        <apex:outputPanel rendered="{!(formObj.ReleaseAutomationTraining__c == 'No')}" >
+                            <p> You answered "no" that you have not received or understood the Release Automation Training
+                                Package. This training package is critical to a successful automation. Please download and review it
+                                before continuing. You can save this form, review the training package, and change your answer to "yes" when ready. Thank you.
+                            </p>
+                        </apex:outputPanel>
+                    </apex:outputPanel>
+                    
+                    <apex:outputPanel id="automationTrngpnl">
+                        <br/>
+                        <apex:outputLink style="margin-left:320px;color:blue;" value="{!FMSdocuments['ReleaseAutomationTraining']}" id="theLink">Link to Data Submission (Tapeout) Training</apex:outputLink>
+                        <br/>
+                    </apex:outputPanel>
+                    <br/>
+                    <br/>
+                    
+                    <apex:outputPanel >
+                        <apex:pageBlockSection >
+                            <apex:pageblocksectionItem rendered="{!(formObj.Parent_Form_Id__r.Waivers__c == 'Yes')}">
+                                <apex:outputLabel value="You answered in your parent form that you will require waivers for DRC violations. Have you submitted requests for all waivers to your Foundry Technical Representative?"/>
+                                <apex:outputPanel >
+                                    <div class = "requiredInput">
+                                        <div class = "requiredBlock"></div>
+                                        <apex:inputField styleClass="RemoveNone" value="{!formObj.Waivers__c}" />
+                                        <apex:actionSupport event="onchange" rerender="waiver, nonePnl" status="waiverStatus"/>
+                                        <img src="/img/alohaSkin/help_orange.png" title="{!$ObjectType.Form_Management_System__c.fields.Waivers__c.InlineHelpText}" height="13" width="13" /> <!--Added by Abhita for new UAT Issue #216-->
+                                    </div>
+                                    <apex:actionStatus id="waiverStatus" startText="Refreshing..." stopText=""/>
+                                </apex:outputPanel>
+                            </apex:pageblocksectionItem>
+                        </apex:pageBlockSection>
+                    </apex:outputPanel>
+                    
+                    <apex:outputPanel id="waiver">
+                        <apex:outputPanel rendered="{!(AND(formObj.Waivers__c == 'No',formObj.Parent_Form_Id__r.Waivers__c == 'Yes'))}" >
+                            <p>
+                                Waiver requests must be submitted to your Foundry Technical Representative at least 8 business days prior to tapeout to prevent delays. 
+                                Please submit your waiver requests as soon as possible.
+                            </p>
+                        </apex:outputPanel>
+                    </apex:outputPanel>
+                </apex:actionRegion>
+            </apex:pageBlockSection>
+            
+            <apex:pageBlockSection title="General Information" columns="1" id="pbs2" collapsible="false">       
+                <apex:actionRegion >
+                    <apex:outputPanel >
+                        <apex:pageblockSection columns="1">
+                            <apex:outputField value="{!formObj.RITProductName__c}" id="prodName" label="Product Name:" />
+                            <apex:outputField value="{!formObj.Parent_Form_Id__r.ProductRevision__c}" id="productRev" label="Product Revision:" />
+                            <apex:outputField value="{!formObj.Main_Form_Id__r.Technology__c}" id="tech" label="Technology:" />
+                            <apex:outputField value="{!formObj.Main_Form_Id__r.ItarData__c}" id="ITRAdata" label="Does this product fall under the International Traffic in Arms Regulations (ITAR)?" />
+                            <apex:outputField value="{!formObj.Main_Form_Id__r.ReleaseProcessFlow__c}" id="releasepro" label="Release Process:" />
+                        </apex:pageblockSection>
+                    </apex:outputPanel>
+                    <apex:outputPanel >
+                        <apex:pageblockSection >
+                            <apex:pageblocksectionItem rendered="{!(formObj.Main_Form_Id__r.ReleaseProcessFlow__c == 'Enhanced Flow' 
+                                && (soldTo != null && soldTo != '' && (contains('0000008944',soldTo)|| contains('0000012768',soldTo))))}">
+                                <apex:outputLabel value="Is a purge map for features extraction required?"/>
+                                <apex:outputPanel >
+                                    <div class = "requiredInput">
+                                        <div class = "requiredBlock"></div>
+                                        <apex:inputField styleClass="RemoveNone" value="{!formObj.IsPurge__c}" />
+                                        <apex:actionSupport event="onchange" rerender="purgeMapFile, nonePnl" status="purgeStatus" action="{!resetDependentFields}">
+                                            <apex:param assignTo="{!fieldAPI}" name="fieldAPI" value="IsPurge__c"/>
+                                        </apex:actionSupport>
+                                    </div>
+                                    <apex:actionStatus id="purgeStatus" startText="Refreshing..." stopText=""/>
+                                </apex:outputPanel>
+                            </apex:pageblocksectionItem>
+                        </apex:pageblockSection>
+                    </apex:outputPanel>
+                    <!--mod-->
+                    <apex:outputPanel id="purgeMapFile">
+                        <apex:pageBlockSection >
+                            <apex:pageblocksectionItem rendered="{!(AND(formObj.Main_Form_Id__r.ReleaseProcessFlow__c == 'Enhanced Flow', formObj.IsPurge__c == 'Yes' , (soldTo != null && soldTo != '' && (contains('0000008944',soldTo)|| contains('0000012768',soldTo)))))}">
+                                <apex:outputLabel value="List purge mapfile name included in package:"/>
+                                <apex:outputPanel >
+                                    <div class = "requiredInput">
+                                        <div class = "requiredBlock"></div>
+                                        <apex:inputField styleClass="RemoveNone" value="{!formObj.PurgeMapFile__c}" />
+                                    </div>
+                                </apex:outputPanel>
+                            </apex:pageblocksectionItem>
+                        </apex:pageBlockSection>
+                    </apex:outputPanel>
+                    
+                    <apex:outputPanel >
+                        <apex:pageblockSection >
+                            <apex:pageblocksectionItem >
+                                <apex:outputLabel value="Type of Data Submission:"/>
+                                <apex:outputPanel >
+                                    <div class = "requiredInput">
+                                        <div class = "requiredBlock"></div>
+                                        <apex:selectList styleClass="RemoveNone" value="{!formObj.SubmissionType__c}" multiselect="false" size="1">
+                                            <apex:selectOptions value="{!typeSubList}"/>
+                                        </apex:selectList>
+                                        <apex:actionSupport event="onchange" rerender="SubType,purchaseOrder,hold,purOrder,ritHold,holdReason,pbs3,extReport,extWarningMessage,nonePnl" status="subStatus1" action="{!setExtReportDisabled}">
+                                            <apex:param assignTo="{!fieldAPI}" name="fieldAPI" value="SubmissionType__c"/>
+                                        </apex:actionSupport><!--Changed By Abhita for new UAT Issue #230, 288-->
+                                        <!--<apex:actionSupport event="onchange" rerender="extReport,extWarningMessage,nonePnl" status="subStatus1" action="{!setExtReportDisabled}"/>-->
+                                        <img src="/img/alohaSkin/help_orange.png" title="{!$ObjectType.Form_Management_System__c.fields.SubmissionType__c.InlineHelpText}" height="13" width="13" /> <!--Added by Abhita for new UAT Issue #216-->
+                                    </div>
+                                    <apex:actionStatus id="subStatus1" startText="Refreshing..." stopText=""/>
+                                </apex:outputPanel>
+                            </apex:pageblocksectionItem>
+                        </apex:pageblockSection>
+                    </apex:outputPanel>
+                    
+                    <apex:outputPanel id="SubType">
+                        <apex:outputPanel rendered="{!(formObj.SubmissionType__c == 'Final Submission')}" >
+                            <apex:outputText value="{!SubmssnMessg}" styleClass="brwn" ></apex:outputText>
+                        </apex:outputPanel>
+                        <apex:outputPanel rendered="{!(formObj.SubmissionType__c == 'Preliminary - Checking Only')}" >
+                            <apex:outputText value="{!SubmssnMessg}" styleClass="brwn" ></apex:outputText>
+                        </apex:outputPanel>
+                        <apex:outputPanel rendered="{!(formObj.SubmissionType__c == 'Preliminary - Checking and Design Services')}" >
+                            <apex:outputText value="{!SubmssnMessg}" styleClass="brwn" ></apex:outputText>
+                        </apex:outputPanel>
+                        <apex:outputPanel rendered="{!(formObj.SubmissionType__c == 'Preliminary - Design Services only')}" >
+                            <apex:outputText value="{!SubmssnMessg}" styleClass="brwn" ></apex:outputText>
+                        </apex:outputPanel>
+                    </apex:outputPanel>
+                    <!--mod-->
+                    <apex:outputPanel id="extReport">
+                        <br/>
+                        <apex:pageblockSection >
+                            <apex:pageblocksectionItem rendered="{!(formObj.Main_Form_Id__r.ReleaseProcessFlow__c == 'Enhanced Flow' && soldTo != null && soldTo !='' && (contains('0000008944',soldTo)|| contains('0000012768',soldTo)))}">
+                                <apex:outputLabel value="Check here if you want a features extraction report from this design data submission:"/>
+                                <apex:outputPanel >
+                                    <apex:inputCheckbox value="{!formObj.ExtractionReport__c}" disabled="{!selCheckExtReport}"/>
+                                    <apex:actionSupport event="onchange" rerender="extWarningMessage" action="{!setExtMessage}" status="warStatus"/>
+                                </apex:outputPanel>
+                            </apex:pageblocksectionItem>
+                        </apex:pageblockSection>
+                    </apex:outputPanel>
+                    <apex:actionStatus id="warStatus" startText="Refreshing..." stopText=""/>
+                    <apex:outputPanel id="extWarningMessage">
+                        <apex:outputPanel rendered="{!selExtMessage}">
+                            <p>
+                                This selection will trigger the return of an individual technology Features Extraction report for each submitted GDS file.
+                            </p>
+                            <br/>
+                        </apex:outputPanel>
+                    </apex:outputPanel>
+                    <!--mod-->
+                    <apex:outputPanel id="purchaseOrder">
+                        <apex:pageBlockSection >
+                            <apex:pageblocksectionItem rendered="{!(formObj.SubmissionType__c == 'Final Submission')}">
+                                <apex:outputLabel value="Has a Purchase Order been submitted to support this final data submission?"/>
+                                <apex:outputPanel >
+                                    <div class = "requiredInput">
+                                        <div class = "requiredBlock"></div>                                    
+                                        <apex:inputField value="{!formObj.PurchaseOrder__c}" styleClass="RemoveNone"/>
+                                        <apex:actionSupport event="onchange" rerender="purOrder" status="purStatus" />
+                                        <img src="/img/alohaSkin/help_orange.png" title="{!$ObjectType.Form_Management_System__c.Fields.PurchaseOrder__c.inlineHelpText}" height="13" width="13"/>
+                                    </div>
+                                    <apex:actionStatus id="purStatus" startText="Refreshing..." stopText=""/>
+                                </apex:outputPanel>
+                            </apex:pageblocksectionItem>
+                        </apex:pageBlockSection>
+                    </apex:outputPanel>
+                    
+                    <apex:outputPanel id="purOrder">
+                        <apex:outputPanel rendered="{!(AND(formObj.PurchaseOrder__c == 'No', formObj.SubmissionType__c == 'Final Submission'))}" >
+                            <p>
+                                Warning: You have indicated that a purchase order has not been submitted. The Release to Mask (RTM) for this program may be delayed.
+                            </p>
+                        </apex:outputPanel>
+                        <apex:outputPanel rendered="{!(AND(formObj.PurchaseOrder__c == 'Unsure', formObj.SubmissionType__c == 'Final Submission'))}" >
+                            <p>
+                                Warning: You have indicated that you are unsure if a PO has been submitted. If the PO has not been submitted, the Release to Mask (RTM) for 
+                                this program may be delayed.
+                            </p>
+                        </apex:outputPanel>
+                    </apex:outputPanel>
+                    <br/>
+                    <apex:outputPanel id="hold">
+                        <apex:pageBlockSection >
+                            <apex:pageblocksectionItem rendered="{!(formObj.SubmissionType__c == 'Final Submission')}">
+                                <apex:outputLabel value="Do you require GLOBALFOUNDRIES to HOLD your design for your review prior to mask build?"/>
+                                <apex:outputPanel >
+                                    <div class = "requiredInput">
+                                        <div class = "requiredBlock"></div>
+                                        <apex:inputField styleClass="RemoveNone" value="{!formObj.RitHold__c}" />                                    
+                                        <apex:actionSupport event="onchange" rerender="ritHold, holdReason" status="holdStatus" action="{!resetDependentFields}">
+                                            <apex:param assignTo="{!fieldAPI}" name="fieldAPI" value="RitHold__c"/>
+                                        </apex:actionSupport> 
+                                        <img src="/img/alohaSkin/help_orange.png" title="{!$ObjectType.Form_Management_System__c.fields.RitHold__c.InlineHelpText}" height="13" width="13" /> <!--Added by Abhita for new UAT Issue #216-->                                     
+                                    </div>
+                                    <apex:actionStatus id="holdStatus" startText="Refreshing..." stopText=""/>
+                                </apex:outputPanel>
+                            </apex:pageblocksectionItem>
+                        </apex:pageBlockSection>
+                    </apex:outputPanel>
+                    
+                    <apex:outputPanel id="ritHold">
+                        <apex:outputPanel rendered="{!(AND(formObj.RitHold__c == 'Yes', formObj.SubmissionType__c == 'Final Submission'))}" >
+                            <p style="color:brown;">
+                                WARNING: RTM target will not be set until your review has been completed. To remove the "HOLD", select "Proceed to RTM" from the Possible Form 
+                                Actions menu at the top of this RIT form.
+                            </p>
+                            <br/>
+                            <apex:pageBlockSection columns="2" >
+                                <apex:pageBlockSectionItem >
+                                    <apex:outputLabel value="Why are you requesting a hold?"/>
+                                    <apex:outputPanel >
+                                        <div class = "requiredInput">
+                                            <div class = "requiredBlock"></div>
+                                            <!--<apex:inputField value="{!formObj.HoldReason__c}" />-->
+                                            <apex:selectCheckboxes value="{!holdReason}" layout="pageDirection" style="margin-top:-8px;" styleClass="selServClass">
+                                                <apex:selectOptions value="{!holdReasonsList}" />
+                                            </apex:selectCheckboxes> 
+                                            <apex:actionSupport event="onchange" rerender="holdReason" status="reasonStatus" action="{!resetDependentFields}">
+                                                <apex:param assignTo="{!fieldAPI}" name="fieldAPI" value="HoldReason__c"/>
+                                            </apex:actionSupport>
+                                            <img src="/img/alohaSkin/help_orange.png" title="{!$ObjectType.Form_Management_System__c.fields.HoldReason__c.InlineHelpText}" height="13" width="13" style="margin-top:-21px; margin-left:76px;"/> <!--Added by Abhita for new UAT Issue #216-->
+                                        </div>
+                                        <apex:actionStatus id="reasonStatus" startText="Refreshing..." stopText=""/>
+                                    </apex:outputPanel>                                                                      
+                                </apex:pageBlockSectionItem>
+                            </apex:pageBlockSection>
+                        </apex:outputPanel>
+                    </apex:outputPanel>
+                    
+                    <apex:outputPanel id="holdReason">
+                        <apex:pageBlockSection rendered="{!OtherReason}"> 
+                            <apex:pageblocksectionItem rendered="{!(AND(formObj.SubmissionType__c == 'Final Submission', formObj.RitHold__c == 'Yes'))}">
+                                <apex:outputLabel value="Other:"/>
+                                <apex:outputPanel >
+                                    <div class = "requiredInput">
+                                        <div class = "requiredBlock"></div>
+                                        <apex:inputField value="{!formObj.OtherReason__c}" />
+                                        <img src="/img/alohaSkin/help_orange.png" title="{!$ObjectType.Form_Management_System__c.fields.OtherReason__c.InlineHelpText}" height="13" width="13" /> <!--Added by Abhita for new UAT Issue #216-->
+                                    </div>
+                                </apex:outputPanel>
+                            </apex:pageblocksectionItem>
+                        </apex:pageBlockSection>
+                    </apex:outputPanel> 
+                </apex:actionRegion>
+            </apex:pageBlockSection>
+            
+            <apex:outputPanel id="pbs3">
+                <apex:pageBlockSection title="Data Return Request" columns="1" rendered="{!formObj.SubmissionType__c == 'Final Submission'}" collapsible="false">
+                    <apex:actionRegion >
+                        <apex:outputPanel >
+                            <apex:pageblockSection >
+                                <apex:pageblocksectionItem >
+                                    <apex:outputlabel value="Would you like the Post Design Service (Cheese and Fill) data returned?"/>
+                                    <apex:outputPanel >
+                                        <div class = "requiredInput">
+                                            <div class = "requiredBlock"></div>
+                                            <apex:inputField styleClass="RemoveNone" value="{!formObj.PostDesignServices__c}" />
+                                            <!--<apex:selectList value="{!formObj.PostDesignServices__c}" multiselect="false" size="1">
+                                                <apex:selectOptions value="{!PostDesignList}"/>
+                                            </apex:selectList>-->
+                                            <apex:actionSupport event="onchange" rerender="gdsSubset,cordinates,nonePnl" status="postStatus" oncomplete="initialise();" action="{!resetDependentFields}">
+                                                <apex:param assignTo="{!fieldAPI}" name="fieldAPI" value="PostDesignServices__c"/>
+                                            </apex:actionSupport>
+                                            <img src="/img/alohaSkin/help_orange.png" title="{!$ObjectType.Form_Management_System__c.fields.PostDesignServices__c.InlineHelpText}" height="13" width="13" /> <!--Added by Abhita for new UAT Issue #216-->
+                                        </div>
+                                        <apex:actionStatus id="postStatus" startText="Refreshing..." stopText=""/>
+                                    </apex:outputPanel>
+                                </apex:pageblocksectionItem>
+                            </apex:pageblockSection>
+                        </apex:outputPanel> 
+                    
+                        <apex:outputPanel id="gdsSubset">
+                            <apex:pageBlockSection rendered="{!AND(formObj.PostDesignServices__c == 'Yes', formObj.SubmissionType__c == 'Final Submission')}">
+                                <apex:pageblocksectionItem >
+                                    <apex:outputlabel value="Do you need a subset of the submitted GDS?"/>
+                                    <apex:outputPanel >
+                                        <div class = "requiredInput">
+                                            <div class = "requiredBlock"></div>
+                                            <apex:inputField styleClass="RemoveNone" value="{!formObj.GdsSubset__c}" />
+                                            <!--<apex:selectList value="{!formObj.GdsSubset__c}" multiselect="false" size="1">
+                                                <apex:selectOptions value="{!gdSubList}"/>
+                                            </apex:selectList>-->
+                                            <apex:actionSupport event="onchange" rerender="cordinates" status="corStatus" oncomplete="initialise();" action="{!resetDependentFields}">
+                                                <apex:param assignTo="{!fieldAPI}" name="fieldAPI" value="GdsSubset__c"/>
+                                            </apex:actionSupport>
+                                            <img src="/img/alohaSkin/help_orange.png" title="{!$ObjectType.Form_Management_System__c.fields.GdsSubset__c.InlineHelpText}" height="13" width="13" /> <!--Added by Abhita for new UAT Issue #216-->
+                                        </div>
+                                        <apex:actionStatus id="corStatus" startText="Refreshing..." stopText=""/>
+                                    </apex:outputPanel>
+                                </apex:pageblocksectionItem>
+                            </apex:pageBlockSection>
+                        </apex:outputPanel>
+                    
+                        <apex:outputPanel id="cordinates">
+                            <apex:pageBlockSection columns="1" rendered="{!AND(formObj.GdsSubset__c == 'Yes',formObj.PostDesignServices__c == 'Yes')}">
+                                <apex:pageblocksectionItem >
+                                    <p style="color:black;">
+                                        Please define the subset using the Lower Left and Upper Right Corners:
+                                    </p>
+                                    <p style="color:black;">
+                                        Lower Left Corner:
+                                    </p>
+                                </apex:pageblocksectionItem>
+                                
+                                <apex:pageblocksectionItem >
+                                    <apex:outputlabel value="X coordinate LL Corner (um):"/>
+                                    <apex:outputPanel >
+                                        <div class = "requiredInput">
+                                            <div class = "requiredBlock"></div>
+                                            <apex:inputField value="{!formObj.LeftXCoordinate__c}" onkeypress="return inputLimiter(event,'Numbers');" styleClass="coordinatefldxllClass"/>
+                                        </div>
+                                        <label id="msg1" class="item1" style="color:red;"> </label> 
+                                    </apex:outputPanel>
+                                </apex:pageblocksectionItem>
+                                
+                                <apex:pageblocksectionItem >
+                                    <apex:outputlabel value="Y coordinate LL Corner (um):"/>
+                                    <apex:outputPanel >
+                                        <div class = "requiredInput">
+                                            <div class = "requiredBlock"></div>
+                                            <apex:inputField value="{!formObj.LeftYCoordinate__c}" onkeypress="return inputLimiter(event,'Numbers');" styleClass="coordinatefldyllClass"/>
+                                        </div>
+                                        <label id="msg2" class="item2" style="color:red;"> </label> 
+                                    </apex:outputPanel>
+                                </apex:pageblocksectionItem>
+                                
+                                <p style="color:black;">
+                                    Upper Right Corner:
+                                </p>
+                                <apex:pageblocksectionItem >
+                                    <apex:outputlabel value="X coordinate UR Corner (um):"/>
+                                    <apex:outputPanel >
+                                        <div class = "requiredInput">
+                                            <div class = "requiredBlock"></div>
+                                            <apex:inputField value="{!formObj.RightXCoordinate__c}" onkeypress="return inputLimiter(event,'Numbers');" styleClass="coordinatefldxurClass"/>
+                                        </div>
+                                        <label id="msg3" class="item3" style="color:red;"> </label> 
+                                    </apex:outputPanel>
+                                </apex:pageblocksectionItem>
+                                
+                                <apex:pageblocksectionItem >
+                                    <apex:outputlabel value="Y coordinate UR Corner (um):"/>
+                                    <apex:outputPanel >
+                                        <div class = "requiredInput">
+                                            <div class = "requiredBlock"></div>
+                                            <apex:inputField value="{!formObj.RightYCoordinate__c}" onkeypress="return inputLimiter(event,'Numbers');" styleClass="coordinatefldyurClass"/>
+                                        </div>
+                                        <label id="msg4" class="item4" style="color:red;"> </label> 
+                                    </apex:outputPanel>
+                                </apex:pageblocksectionItem>
+                            </apex:pageBlockSection>
+                        </apex:outputPanel>
+                    </apex:actionRegion>
+                </apex:pageBlockSection>
+            </apex:outputPanel>
+            <apex:pageBlockSection title="Drop Box Information" columns="1" id="pbs5" collapsible="false">
+                <p style="color:brown;">
+                    **At least one design file is required. Please only select your design files (or archives with design files in
+                    them). Do not select files which only contain checking logs or other miscellaneous information. Available
+                    selections are based on what you have access to in the Dropbox, such as non-expired packages that you have sent or received.
+                </p>
+                <apex:outputPanel id="myPanel1">
+                    <apex:outputText value="No dropbox file(s) selected" rendered="{!showMessage && NOT(showEditView)}"/>
+                    <apex:outputText rendered="{!showCallOutExMessage && NOT(showReadOnlyView)}">
+                        <span style="color:brown"><center><br/><b>Dropbox Interface is under maintenance, we apologize for inconvenience</b><br/></center></span>
+                    </apex:outputText><br/>
+                    <apex:variable value="{!0}" var="packNum"/>
+                    <apex:repeat value="{!navPackWrapperMap}" var="p" id="packagesRep" rendered="{!NOT(showCallOutExMessage) && showEditView}">
+                        <apex:outputPanel rendered = "{!p.dropBoxFilesW.size > 0}">
+                            <apex:variable value="{!packNum+1}" var="packNum"/>
+                            <apex:pageBlockSection columns="2" >
+                                <apex:pageBlockSectionItem dataStyle="width:50%;" labelStyle="width:10%" >
+                                    <apex:outputLabel style="bold;  margin-left: -29px;" id="packSection" value="{!packNum})Package Name(ID):"/>
+                                    <apex:outputPanel >   
+                                        <apex:outputText value="{!p.PackageName}" />(<apex:outputText value="{!p.PackageId}" />)
+                                    </apex:outputPanel>  
+                                </apex:pageBlockSectionItem>
+                                <apex:pageBlockSectionItem dataStyle="width:100%" labelStyle="width:0%">
+                                    <apex:outputPanel >   
+                                        <apex:outputText style="" value="" />
+                                    </apex:outputPanel>
+                                    <apex:outputLabel rendered="{!p.PackageName != null && p.PackageName != '' && BEGINS(p.PackageName, 'ITAR_')}" style="color:brown;font-weight: bold;" value="Contains ITAR sensitive data"/>
+                                </apex:pageBlockSectionItem>
+                                <apex:pageBlockSectionItem dataStyle="width:20%" labelStyle="width:10%">
+                                    <apex:outputLabel style="bold" value="Sender:"/>
+                                    <apex:outputPanel >   
+                                        <apex:outputText value="{!p.senderInfo}" />
+                                    </apex:outputPanel>  
+                                </apex:pageBlockSectionItem>
+                                <apex:pageBlockSectionItem dataStyle="width:20%" labelStyle="width:10%">
+                                    <apex:outputLabel style="bold" value="Sent:"/>
+                                    <apex:outputPanel >   
+                                        <apex:outputText value="{!p.sentDate}" />
+                                    </apex:outputPanel>  
+                                </apex:pageBlockSectionItem>
+                            </apex:pageBlockSection>
+                            <apex:outputPanel rendered="{!p.showTable && showEditView}" id="tabSection">
+                                <apex:pageBlockSection showHeader="true" collapsible="true" columns="0" >
+                                    <apex:facet name="header">
+                                        Expand file information 
+                                        <span style="color:brown" class="chkbox-sel-text"/>
+                                        <span style="color:brown" class="chkbox-sel-text2">{!p.packageText}</span>
+                                    </apex:facet>
+                                    <apex:outputPanel id="dropBoxFileTable" styleclass="checkTable" >
+                                        <table id="dropBoxFileTable1" border="1" class="list main-data-table" cellspacing="0" cellpadding="0" style="width:100%" >
+                                            <tr class="headerrows" align="left" style="  width: 12%;">
+                                                <td style="font-size: 8pt; padding-right: 79px;">
+                                                    <font color="#fff">Select</font><apex:inputCheckbox disabled="{!NOT(p.packageToUser)}" id="allcb" value="{!p.isSelected}" onchange="checkAll(this)"/>
+                                                    <!--<apex:actionSupport status="dropStatus" event="onclick" action="{!p.selectAllDropBoxFile}" rerender="tabSection, tables"/>-->
+                                                </td>
+                                                <td style="font-size: 8pt;padding-left: 481pt;"><font color="#fff" style="margin-left: -269px;">File Name (ID)</font></td>
+                                                <td style="font-size: 8pt;padding-left: 319pt;"><font color="#fff" style="margin-left: -238px;">File Size</font></td>
+                                            </tr>
+                                            <apex:repeat value="{!p.dropBoxFilesW}" var="dfr" id="tables">
+                                                <tr class="datarow">
+                                                    <td class="datacell child-checkbox">
+                                                        <apex:inputCheckbox disabled="{!NOT(p.packageToUser)}" value="{!dfr.isSelected}" onchange="chkBoxChange(this)"/>
+                                                    </td>
+                                                    <td class="datacell">
+                                                        <apex:outputField value="{!dfr.dropBoxFile.Drop_Box_File_Name__c}"/>&nbsp;(<apex:outputField value="{!dfr.dropBoxFile.File_Id__c}"/>)
+                                                    </td>
+                                                    <td class="datacell">
+                                                        <apex:outputText value="{!dfr.size}"/>&nbsp;(<apex:outputField value="{!dfr.dropBoxFile.Drop_Box_File_Size__c}"/>)
+                                                    </td>
+                                                </tr>        
+                                            </apex:repeat>
+                                        </table>
+                                        <br/> 
+                                    </apex:outputPanel>
+                                </apex:pageBlockSection>
+                            </apex:outputPanel>
+                        </apex:outputPanel>
+                    </apex:repeat>
+                    <apex:repeat value="{!navPackWrapper}" var="p" id="packagesRep1" rendered="{!NOT(showCallOutExMessage) && showReadOnlyView}">
+                        <apex:outputPanel rendered = "{!p.dropBoxFilesW.size > 0}">
+                            <apex:variable value="{!packNum+1}" var="packNum"/>
+                            <apex:pageBlockSection columns="2" >
+                                <apex:pageBlockSectionItem dataStyle="width:50%;" labelStyle="width:10%" >
+                                    <apex:outputLabel style="bold;  margin-left: -29px;" id="packSection" value="{!packNum})Package Name(ID):"/>
+                                    <apex:outputPanel >   
+                                        <apex:outputText value="{!p.PackageName}" />(<apex:outputText value="{!p.PackageId}" />)
+                                    </apex:outputPanel>  
+                                </apex:pageBlockSectionItem>
+                                <apex:pageBlockSectionItem dataStyle="width:100%" labelStyle="width:0%">
+                                    <apex:outputPanel >   
+                                        <apex:outputText style="" value="" />
+                                    </apex:outputPanel>
+                                    <apex:outputLabel rendered="{!BEGINS(p.PackageName, 'ITAR_')}" style="color:brown;font-weight: bold;" value="Contains ITAR sensitive data"/>
+                                </apex:pageBlockSectionItem>
+                                <apex:pageBlockSectionItem dataStyle="width:20%" labelStyle="width:10%">
+                                    <apex:outputLabel style="bold" value="Sender:"/>
+                                    <apex:outputPanel >   
+                                        <apex:outputText value="{!p.senderInfo}" />
+                                    </apex:outputPanel>  
+                                </apex:pageBlockSectionItem>
+                                <apex:pageBlockSectionItem dataStyle="width:20%" labelStyle="width:10%">
+                                    <apex:outputLabel style="bold" value="Sent:"/>
+                                    <apex:outputPanel >   
+                                        <apex:outputText value="{!p.sentDate}" />
+                                    </apex:outputPanel>  
+                                </apex:pageBlockSectionItem>
+                            </apex:pageBlockSection>
+                            <apex:outputPanel rendered="{!p.showTable && showReadOnlyView && p.dropBoxFilesW.size > 0}">
+                                <apex:outputPanel id="dropBoxFileTable" styleclass="checkTable" >
+                                    <table border="1" class="list" cellspacing="0" cellpadding="0" style="width:100%" >
+                                        <tr class="headerrows" align="left">
+                                            <td style="font-size: 8pt;  width: 37%;"><font color="#fff">File Name (ID)</font></td>
+                                            <td style="font-size: 8pt;  width: 40%;"><font color="#fff">File Size</font></td>
+                                            <td style="font-size: 8pt;"><font color="#fff">Action</font></td>
+                                        </tr>
+                                        <apex:repeat value="{!p.dropBoxFilesW}" var="dfr">
+                                            <tr class="datarow">
+                                                <td class="datacell">
+                                                   <apex:outputField value="{!dfr.dropBoxFile.Drop_Box_File_Name__c}"/>&nbsp;(<apex:outputField value="{!dfr.dropBoxFile.File_Id__c}"/>)
+                                                </td>
+                                                <td class="datacell">
+                                                   <apex:outputText value="{!dfr.size}"/>&nbsp;(<apex:outputField value="{!dfr.dropBoxFile.Drop_Box_File_Size__c}"/>)
+                                                </td>
+                                                <td class="datacell">
+                                                    <apex:commandLink value="Remove" reRender="myPanel1, packSection" status="refresh" action="{!p.delRowFromDropBoxFile}">
+                                                        <apex:param value="{!dfr.dropBoxFile.File_Id__c}" name="index" />
+                                                        <apex:param value="{!dfr.dropBoxFile.Id}" name="fileRecordId" />
+                                                    </apex:commandLink>
+                                                    <!--<apex:variable var="rowNum" value="{!rowNum+1}" />-->
+                                                </td>
+                                            </tr>                               
+                                        </apex:repeat>
+                                    </table>
+                                    <apex:actionStatus id="refresh" startText="Refreshing..." stopText=""/>
+                                    <br/> 
+                                </apex:outputPanel>
+                            </apex:outputPanel>
+                        </apex:outputPanel>
+                    </apex:repeat>
+                    <apex:pageBlockSection >
+                        <apex:panelGrid columns="8" rendered="{!showEditView && NOT(showCallOutExMessage)}">
+                            <apex:commandButton status="fetchStatus" reRender="myPanel1" value="|<" action="{!first}" disabled="{!!hasPrevious}" title="First Page"/>
+                            <apex:commandButton status="fetchStatus" reRender="myPanel1" value="prev" action="{!previous}" disabled="{!!hasPrevious}" title="Previous Page"/>
+                            <apex:commandButton status="fetchStatus" reRender="myPanel1" value="{!num1}" rendered="{!num1 != 0 && numberOfPages > 1 && !num1Sel}" action="{!pageCall}" title="{!num1}" style="margin-left: -2px;">
+                                <apex:param assignTo="{!selPage}" name="selPage" value="{!num1}" />
+                            </apex:commandButton>
+                            <apex:commandButton status="fetchStatus" reRender="myPanel1" value="{!num1}" rendered="{!num1 != 0 && numberOfPages > 1 && num1Sel}" action="{!pageCall}" title="{!num1}" style="background: lightgray;color: #222;border-bottom-width: 2px;margin-left: -2px;">
+                                <apex:param assignTo="{!selPage}" name="selPage" value="{!num1}" />
+                            </apex:commandButton>
+                            <apex:commandButton status="fetchStatus" reRender="myPanel1" value="{!num2}" rendered="{!num1 != 0 && num2 != 0 && !num2Sel}" action="{!pageCall}" title="{!num2}" id="two" style="  margin-left: -3px;">
+                                <apex:param assignTo="{!selPage}" name="selPage" value="{!num2}"/>
+                            </apex:commandButton>
+                            <apex:commandButton status="fetchStatus" reRender="myPanel1" value="{!num2}" rendered="{!num1 != 0 && num2 != 0 && num2Sel}" action="{!pageCall}" title="{!num2}" style="background: lightgray;color: #222;border-bottom-width: 2px;margin-left: -3px;">
+                                <apex:param assignTo="{!selPage}" name="selPage" value="{!num2}" />
+                            </apex:commandButton>
+                            <apex:commandButton status="fetchStatus" reRender="myPanel1" value="{!num3}" rendered="{!num1 != 0 && num2 != 0 && num3 != 0 && !num3Sel}" action="{!pageCall}" title="{!num3}" id="three" style="  margin-left: -4px;">
+                                <apex:param assignTo="{!selPage}" name="selPage" value="{!num3}"/>
+                            </apex:commandButton>
+                            <apex:commandButton status="fetchStatus" reRender="myPanel1" value="{!num3}" rendered="{!num1 != 0 && num2 != 0 && num3 != 0 && num3Sel}" action="{!pageCall}" title="{!num3}" style="background: lightgray;color: #222;border-bottom-width: 2px;margin-left: -3px;">
+                                <apex:param assignTo="{!selPage}" name="selPage" value="{!num3}" />
+                            </apex:commandButton>
+                            <apex:commandButton status="fetchStatus" reRender="myPanel1" value="next" action="{!next}" disabled="{!!hasNext}" title="Next Page" style="margin-left: -2px;"/>
+                            <apex:commandButton status="fetchStatus" reRender="myPanel1" value=">|" action="{!last}" disabled="{!!hasNext}" title="Last Page"/>
+                            <apex:outputPanel style="color:black;font-weight:bold;">
+                                <apex:actionStatus id="fetchStatus" startText="Fetching..." stopText=""/>
+                            </apex:outputPanel>
+                        </apex:panelGrid>
+                        <br/><br/>
+                        <apex:pageBlockSection >
+                           <apex:commandButton rendered="{!showEditView}" action="{!readOnlyPackage}" value="View selections" reRender="nonePnl,pbs5, myPanel1, packagesPanel" style="padding:4px 19px;border-radius: 6px;border-bottom-width: 3px;">
+                                <apex:param assignTo="{!readOnlyClick}" name="roc" value="true"/>
+                            </apex:commandButton>
+                            <apex:commandButton rendered="{!showReadOnlyView}" action="{!editPackage}" value="Edit selections" reRender="nonePnl,pbs5, myPanel1, packagesPanel" style="  margin-left: -269%;  padding: 5px;border-radius: 5px;border-bottom-width: 2px;"/>
+                            <apex:commandButton rendered="{!showEditView}" action="{!editPackage}" value="Refresh dropbox data" rerender="nonePnl,pbs5, myPanel1, packagesPanel" style=" padding: 4px 19px;border-radius: 6px;border-bottom-width: 3px;  margin-left: -102px;"/>
+                        </apex:pageBlockSection>
+                    </apex:pageBlockSection>
+                </apex:outputPanel>
+                
+                <apex:pageblocksectionItem >
+                    <apex:outputlabel value="Are any of the files you selected a TAR, TGZ, ZIP  or other archive?"/>
+                    <apex:outputPanel >
+                        <div class = "requiredInput">
+                            <div class = "requiredBlock"></div>
+                            <apex:inputField styleClass="RemoveNone" value="{!formObj.IsArchive__c}" />
+                            <img src="/img/alohaSkin/help_orange.png" title="{!$ObjectType.Form_Management_System__c.Fields.IsArchive__c.inlineHelpText}" height="13" width="13"/>
+                            <apex:actionSupport event="onchange" rerender="totPage, saveMsg" status="totStatus" action="{!resetDependentFields}">
+                                <apex:param assignTo="{!fieldAPI}" name="fieldAPI" value="IsArchive__c"/>
+                            </apex:actionSupport>
+                        </div>
+                        <apex:actionStatus id="totStatus" startText="Refreshing..." stopText=""/>
+                    </apex:outputPanel>
+                </apex:pageblocksectionItem>
+                <p style="color:black;"> 
+                    Note: An archive is a collection of multiple files bundled into one. Answer "Yes" if you have selected any archive files. 
+                    Files can also be simply compressed, but not an archive, such as GZ. Select "No" if all your selected files are single (non-grouped) files either 
+                    with or without compression.
+                </p>
+                
+                <apex:pageblocksectionItem >
+                    <apex:outputlabel value="Our automated checking will find your design file's topcell if it only has one.  Do you wish to specify a subcell, or do you have multiple topcells in any of the design files?"/>
+                    <apex:outputPanel >
+                        <div class = "requiredInput">
+                            <div class = "requiredBlock"></div>
+                            <apex:inputField styleClass="RemoveNone" value="{!formObj.IsMultipleTopCell__c}" />
+                            <apex:actionSupport event="onchange" rerender="totPage, saveMsg" status="tostatus" />
+                            <img src="/img/alohaSkin/help_orange.png" title="{!$ObjectType.Form_Management_System__c.fields.IsMultipleTopCell__c.InlineHelpText}" height="13" width="13" /> <!--Added by Abhita for new UAT Issue #216-->
+                        </div>
+                        <apex:actionStatus id="toStatus" startText="Refreshing..." stopText=""/>
+                    </apex:outputPanel>
+                </apex:pageblocksectionItem>
+            </apex:pageBlockSection>
+            
+            <apex:outputPanel id="saveMsg">
+                <apex:pageblocksection rendered="{!(OR(formObj.IsMultipleTopCell__c == 'Yes', formObj.IsArchive__c == 'Yes'))}" columns="1">
+                   <p style="color:black;font-weight: bold;">Use Next / Previous to navigate through the form. Use 'Save' or 'Save and Exit' to permanently save your edits.</p>
+                </apex:pageblocksection>
+                <apex:pageblocksection rendered="{!(AND(formObj.IsMultipleTopCell__c != 'Yes', formObj.IsArchive__c != 'Yes'))}" columns="1">
+                   <p style="color:black;font-weight: bold;">Use 'Save' or 'Save and Exit' to permanently save your edits.</p>
+                </apex:pageblocksection>
+            </apex:outputPanel>
+            <br/>
+            <apex:outputPanel id="totPage">
+                <apex:outputText >Page &nbsp;{!pageNum}  of  {!totalPageNums} &nbsp; </apex:outputText>
+                <apex:commandlink value="Next" action="{!nextPage}" rendered="{!(OR(formObj.IsMultipleTopCell__c == 'Yes', formObj.IsArchive__c == 'Yes'))}" style="color:blue;">
+                    <apex:param assignTo="{!pageN}" name="page" value="page1"/>
+                </apex:commandlink>
+            </apex:outputPanel>
+            <apex:pageBlockButtons location="bottom">
+                <apex:commandButton action="{!validateSave}" value="Save and Exit" reRender="errorMsg" oncomplete="window.scrollTo(0,0);showSimpleDialog();" >
+                    <apex:param assignTo="{!pageN}" name="page" value="page1"/>
+                </apex:commandButton>
+                <apex:commandButton action="{!saveForm}" value="Save" id="saveForm" reRender="errorMsg" oncomplete="window.scrollTo(0,0);">
+                    <apex:param assignTo="{!pageN}" name="page" value="page1"/>
+                </apex:commandButton>
+                <apex:commandButton value="Cancel" immediate="true" onclick="showDialogForCancel('Cancel'); window.scrollTo(0,0); return false;"/>
+            </apex:pageBlockButtons>
+        </apex:pageBlock>
+    </apex:form>
+    <style>  
+        .bPageBlock .requiredInput .requiredBlock{background-color: #F6FBF6;}  
+        .requiredInput .requiredBlock::before { display: block; content: "*"; font-size: 1.5em; font-weight: bold; color: #c00; margin-left: -8px; margin-top: -2px; }  
+        p {
+            color:brown;
+        }
+        .headerrows {
+        background: #8bbec1;
+        border-width: 0 0 1px 1px;
+        border-color: #8bbec1;
+        color: #000;
+        font-size: .9em;
+        font-weight: bold;
+        padding: 5px 2px 4px 5px;
+        }  
+    </style>
+    <script>
+        $j = jQuery.noConflict(); 
+        /*$j(document).ready(function(){
+            sampleMethod();
+        });*/
+        function sampleMethod(obj){
+            console.log('Method called...');
+            $j('.checkTable').find('input[type=checkbox]').each(function(){
+                console.log('changing for all other values...');
+                if($j(obj).prop('checked')){
+                    console.log('Checkbox true...');
+                    $j(this).prop('checked', true);
+                }else{
+                    console.log('Checkbox false...');
+                    $j(this).prop('checked', false);
+                }
+            });
+            /*$j('#allcb').on('click',function(){
+                console.log('inside change function...');
+                if($j(this).prop('checked')){
+                    console.log('Checkbox true...');
+                    $j('.checkTable').find('input[type=checkbox]').each(function(){
+                        console.log('changing for all other values...');
+                        $j(this).prop('checked', true);
+                    });
+                }else{
+                    console.log('Checkbox false...');
+                    $j('.checkTable').find('input[type=checkbox]').each(function(){
+                        $j(this).prop('checked', false);
+                    });
+                }
+            });*/
+        }
+    </script>
+    <script type="text/javascript">
+        var recIds ='';
+        var selectAll='';
+        
+        function chkBoxChange(ele) {
+            
+              var parentTable = $j(ele).parents("table:first")
+              var childChkBox = $j(parentTable).find('td:first-child.child-checkbox');
+              var checkBoxCount= $j(childChkBox).find('input:checked').length
+              if(childChkBox.length <= checkBoxCount){
+                  $j($j(parentTable).find('td:first-child')[0]).find('input').attr('checked',true);
+              } else {
+                  $j($j(parentTable).find('td:first-child')[0]).find('input').attr('checked',false);
+              }
+               $j(parentTable).parents('.pbSubsection').each(function(index){
+                    if(index === 0) {
+                         $j(this).prev().find('.chkbox-sel-text').html(checkBoxCount != 0?checkBoxCount+' selected files':'');
+                    }
+                   $j(this).prev().find('.chkbox-sel-text2').html('');
+                });
+        };
+        function checkAll(ele) { 
+            
+            selectAll = ele.checked;
+            var parentTable = $j(ele).parents("table:first");
+            var checkBoxCount = 0
+            $j(parentTable).find('td:first-child').each(function(index){
+                if(index !== 0) {
+                    ele.checked ? checkBoxCount++ : 0;
+                    var chkBox= $j(this).find('input');
+                    $j(chkBox).attr('checked', ele.checked);
+                }
+            });
+            $j(parentTable).parents('.pbSubsection').each(function(index){
+                if(index === 0) {
+                     $j(this).prev().find('.chkbox-sel-text').html(checkBoxCount != 0?checkBoxCount+' selected files':'');
+                }
+                $j(this).prev().find('.chkbox-sel-text2').html('');
+            });
+           
+        }
+     
+     
+    
+        
+        function selectedCheck(Type, fileIds) {
+        
+            if(Type) {
+                if(recIds==''){
+                    recIds = recIds + fileIds;
+                    console.log(recIds);
+                } else {
+                    recIds = recIds +';'+fileIds;
+                }
+            } else {
+                recIds = removeValue(recIds,fileIds,';');
+            }          
+        }
+        
+        // function help to remove unChecked user from string 
+        var removeValue = function(list, value, separator) {
+            var values = list.split(separator);
+            for(var i = 0 ; i < values.length ; i++) {
+                if(values[i] == value) {
+                    values.splice(i, 1);
+                    return values.join(separator);
+                }
+            }
+            return list;
+        }
+        
+        function nextPage() {
+            console.log(recIds);
+            if(recIds == '' && (selectAll == 'true' || selectAll == 'false')) {
+                nextPage1('', selectAll);
+            } else if(recIds != '') {
+                console.log('inside If:'+recIds);
+                nextPage1(recIds, '');
+            } else {
+                alert('Please select one file to proceed further');
+            }
+        } 
+        
+        function showSimpleDialog(){    
+           var sd = new SimpleDialog("Test"+Dialogs.getNextId(), true);    
+           sd.createDialog();   
+           window.parent.sd = sd;   
+           var ex = sd.setContentInnerHTML("<p align='center' ><img src='/img/msg_icons/warning24.png'/> <b>Warning!</b> <br/></p><p align='center'>The data you are attempting to save is either incomplete or has errors. <br/> <br/> You can either go back and correct the errors, or proceed to save this form anyway (this will save only the fields with valid data).</p><p align='center'><br /><button class='btn' onclick='window.parent.sd.hide(); return false;'>Back to the form</button> &nbsp; &nbsp; &nbsp; &nbsp; <button class='btn' onclick='saveandExit(\"page1\"); return true;'>Save Anyway</button></p>"); 
+           sd.show();   
+           return ex;
+        }  
+        
+        function showDialogforActions(actionName){            
+            var sd = new SimpleDialog("Test"+Dialogs.getNextId(), true);    
+            sd.createDialog(); 
+            sd.setWidth(325);               
+            window.parent.sd = sd;
+            if(actionName == 'Cancel'){
+                var ex = sd.setContentInnerHTML("<img src='/img/msg_icons/warning24.png'/>&nbsp;<b>Warning!</b> <br/><br/>Are you sure you want to complete this form action? <br/> <br/> Cancels the design submission related to this form. <br/><br/><p align='center'><button class='btn' onclick='cancelFormFunct(); window.parent.sd.hide(); return true;'>Continue</button>&nbsp; &nbsp; &nbsp; &nbsp; <button class='btn' onclick='window.parent.sd.hide(); return false;'>Cancel</button></p>"); 
+                sd.show();   
+                return ex;
+            }                        
+        }
+        function showDialogForCancel(actionName){            
+            var sd = new SimpleDialog("Test"+Dialogs.getNextId(), true);    
+            sd.createDialog(); 
+            sd.setWidth(325);               
+            window.parent.sd = sd;
+            if(actionName == 'Cancel'){
+                var ex = sd.setContentInnerHTML("<img src='/img/msg_icons/warning24.png'/>&nbsp;<b>Warning!</b> <br/><br/>Are you sure you want to Cancel your Changes? <br/> Any changes that you made to this form since the last <br/> Save will be lost. <br/><br/><p align='center'><button class='btn' onclick='cancelFormFunct(); window.parent.sd.hide(); return true;'>Continue</button>&nbsp; &nbsp; &nbsp; &nbsp; <button class='btn' onclick='window.parent.sd.hide(); return false;'>Cancel</button></p>"); 
+                sd.show();
+                return ex;
+            }                        
+        }
+    </script>
+</apex:page>

@@ -1,0 +1,98 @@
+<!--
+  Author: Surendranadh Nune
+  Company: GlobalFoundries,India
+  Project: Return Material Authorization
+  Description: This visualforce page is used to display the cycle time history records 
+			   of RMA using field sets.
+  History:
+     SurendranadhNune 09122015  -   Created.
+-->
+<apex:page standardcontroller="RMA__c" extensions="RMA_CycleTimeHistoryExt">
+	<apex:form >
+		<apex:pageblock title="Cycle time History">
+			<apex:inputHidden value="{!RMA__c.Fab__c}" />
+			<apex:variable value="{!1}" var="rowNum"/>
+			<apex:repeat value="{!CycleTimeLogs}" var="cycleTimeLog">
+				<apex:pageblockSection title="Cycle time Rejection {!IF(cycleTimelogs.size == 1, '', rowNum)}" columns="1">
+					<apex:outputPanel >
+						<table class="list" border="0" cellpadding="0" cellspacing="0">
+                   			 <tr class="headerRow ">
+                   			 	<th class="headerRow ">Queue Name</th>
+                   			 	<th class="headerRow ">Queue In time</th>
+                   			 	<th class="headerRow ">Queue Out time</th>
+                   			 	<th class="headerRow">Desired Cycle time</th>
+                   			 	<th class="headerRow">Consumed Cycle time</th>
+                   			 </tr>
+                   			 <tr class="dataRow">
+                   			    <td class="dataCell">CSR Submission</td>
+                    			<apex:repeat value="{!$Objecttype.RMA_Audit_log__c.Fieldsets.RMA_CSR_Submission_Cycle_time}" var="csrField">
+                    				<td class="dataCell">
+                    					<apex:outputText value="{!cycleTimeLog[csrField]}" rendered="{!csrField.Type != 'datetime'}"/>
+		                    			<c:RMA_UserLocaleDateTimeFormatter date_Timevalue="{!cycleTimeLog[csrField]}" rendered="{!csrField.Type == 'datetime'}"/>
+                    				</td>
+                    			</apex:repeat>
+                    		</tr>
+                    		<tr class="dataRow">
+                   			    <td class="dataCell">Quality Validation</td>
+                    			<apex:repeat value="{!$Objecttype.RMA_Audit_log__c.Fieldsets.RMA_CQ_Validation_Cycle_Time}" var="csrField">
+                    				<td class="dataCell">
+                    					<apex:outputText value="{!cycleTimeLog[csrField]}" rendered="{!csrField.Type != 'datetime'}"/>
+		                    			<c:RMA_UserLocaleDateTimeFormatter date_Timevalue="{!cycleTimeLog[csrField]}" rendered="{!csrField.Type == 'datetime'}"/>
+                    				</td>
+                    			</apex:repeat>
+                    		</tr>
+                    		<tr class="dataRow">
+                   			    <!-- <td class="dataCell">Fab Validation</td> -->
+                   			    <td class="dataCell">
+                                    <apex:outputText value="{!IF(RMA__c.Is_SMPLSI__c, 'PE Manager', 'Fab Validation' )}" rendered="{! NOT(RMA__c.Extension_Status__c == 'Approved')}"/>
+                                    <apex:outputText value="PE Manager (Extended by {!RMA__c.Number_of_Days__c} days)" rendered="{!RMA__c.Is_SMPLSI__c && RMA__c.Extension_Status__c == 'Approved'}"/>
+                                    <apex:outputText value="Fab Validation (Extended by {!RMA__c.Number_of_Days__c} days)" rendered="{!Not(RMA__c.Is_SMPLSI__c) && RMA__c.Extension_Status__c == 'Approved'}"/>
+                                </td>
+                    			<apex:repeat value="{!$Objecttype.RMA_Audit_log__c.Fieldsets.RMA_Fab_Validation_Cycle_time}" var="fabField">
+                    				<td class="dataCell">
+                    					<apex:outputText value="{!cycleTimeLog[fabField]}" rendered="{!fabField.Type != 'datetime'}"/>
+		                    			<c:RMA_UserLocaleDateTimeFormatter date_Timevalue="{!cycleTimeLog[fabField]}" rendered="{!fabField.Type == 'datetime'}"/>
+                    				</td>
+                    			</apex:repeat>
+                    		</tr>
+                    		<tr class="dataRow">
+                   			    <!-- <td class="dataCell">Regional Approval</td> -->
+                   			    <td class="dataCell">{!IF(AND(isFab9or10,RMA__c.RMA_Category__c == 'Business',RMA__c.ReasonCode__c == 'R25'),
+                                       						'CSR Manager/Logistics Approval',IF(AND(isFab9or10,RMA__c.RMA_Category__c == 'Business',
+                                       						RMA__c.ReasonCode__c == 'R30'),'CSR Manager Approval','Regional Approval'))}</td>
+                    			<apex:repeat value="{!$Objecttype.RMA_Audit_log__c.Fieldsets.RMA_Regional_Approval_Cycle_Time}" var="regionalField">
+                    				<td class="dataCell">
+                    					<apex:outputText value="{!cycleTimeLog[regionalField]}" rendered="{!regionalField.Type != 'datetime'}"/>
+		                    			<c:RMA_UserLocaleDateTimeFormatter date_Timevalue="{!cycleTimeLog[regionalField]}" rendered="{!regionalField.Type == 'datetime'}"/>
+                    				</td>
+                    			</apex:repeat>
+                    		</tr>
+                    		<tr class="dataRow">
+                   			    <td class="dataCell">Finance Approval</td>
+                    			<apex:repeat value="{!$Objecttype.RMA_Audit_log__c.Fieldsets.RMA_Finance_Approval_Cycle_Time}" var="financeField">
+                    				<td class="dataCell">
+                    					<apex:outputText value="{!cycleTimeLog[financeField]}" rendered="{!financeField.Type != 'datetime'}"/>
+		                    			<c:RMA_UserLocaleDateTimeFormatter date_Timevalue="{!cycleTimeLog[financeField]}" rendered="{!financeField.Type == 'datetime'}"/>
+                    				</td>
+                    			</apex:repeat>
+                    		</tr>
+                    		<tr class="dataRow">
+                   			    <td class="dataCell">Wafer Acknowledgement</td>
+                    			<apex:repeat value="{!$Objecttype.RMA_Audit_log__c.Fieldsets.RMA_Wafer_Acknowledgement_Cycle_Time}" var="waferAckField">
+                    				<td class="dataCell">
+                    					<apex:outputText value="{!cycleTimeLog[waferAckField]}" rendered="{!waferAckField.Type != 'datetime'}"/>
+		                    			<c:RMA_UserLocaleDateTimeFormatter date_Timevalue="{!cycleTimeLog[waferAckField]}" rendered="{!waferAckField.Type == 'datetime'}"/>
+                    				</td>
+                    			</apex:repeat>
+                    		</tr>
+                   		</table>
+					</apex:outputPanel>
+				</apex:pageblockSection>
+				<apex:variable var="rowNum" value="{!rowNum + 1}"/>
+			</apex:repeat>
+			<apex:pageblockbuttons location="top">
+				<apex:commandButton value="Back to RMA" action="{!view}"/>
+			</apex:pageblockbuttons>
+		</apex:pageblock>
+	</apex:form>
+</apex:page>

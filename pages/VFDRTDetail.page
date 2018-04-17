@@ -1,0 +1,450 @@
+<apex:page standardController="DRT__c" extensions="DRTDetailExtn"  showHeader="false" sideBar="false" standardStylesheets="false" cache="true">
+<apex:stylesheet value="{!URLFOR($Resource.Swift_DRT,'css/jquery.loader.min.css')}"/>
+<apex:stylesheet value="{!URLFOR($Resource.Swift_DRT,'css/style.css')}"/>
+<apex:stylesheet value="{!URLFOR($Resource.Swift_DRT,'css/jquery-ui.css')}"/>
+<style>
+    #frameLayerTable {
+        font-size:12px!important;
+    }
+</style>
+<!--[if IE]>
+  <link rel="stylesheet" type="text/css" href="{!URLFOR($Resource.Swift_DRT, 'css/styleIE.css')}" />
+<![endif]-->
+<script type="text/javascript" src="{!URLFOR($Resource.Swift_DRT,'js/jquery.min.js')}"></script>
+<script src="{!URLFOR($Resource.Swift_DRT,'js/jquery-ui.min.js')}"></script>
+<script type="text/javascript" src="{!URLFOR($Resource.Swift_DRT,'js/common-script.js')}"></script>
+<script src="{!URLFOR($Resource.Swift_DRT,'js/jquery.loader.min.js')}"></script>
+<script> var swiftCommunityUrl = "{!$Label.SWIFT_Community_URL}"; showLoader('gf-bigcircle');</script>
+<apex:form id="detailDRTformId">
+<!--Wrapper Div Starts-->
+<div id="wrapper">
+            <!--Breadcrumb Starts-->            
+            <apex:outputPanel rendered="{!isBreadcrumbActive && IF(fromPage!='Search', true, false)}">
+                <div class="breadcrumb" id="breadcrumbDiv">
+                    <label><a href="javascript:void(0);" onclick="openMyDevices();"><u>My Devices</u></a></label> &gt;
+                    <label>Tapeout</label> &gt;
+                    <label>DRT</label> &gt;
+                    <label><apex:outputLink value="{!$Page.VFDRTDetail}?id={!drtId}"><u>{!drtName}</u></apex:outputLink></label>
+                </div>
+            </apex:outputPanel>
+            <apex:outputPanel rendered="{!isBreadcrumbActive && IF(fromPage=='Search', true, false)}">
+                <div class="breadcrumb" id="breadcrumbDiv">
+                    <label><apex:outputLink value="{!$Label.SWIFT_Community_URL+'MyDevices'}"><u>My Devices</u></apex:outputLink></label> &gt;
+                    <label>Tapeout</label> &gt;
+                    <label>DRT</label> &gt;
+                    <label><apex:outputLink value="{!$Page.VFDRTDetail}?id={!drtId}"><u>{!drtName}</u></apex:outputLink></label>
+                </div>
+            </apex:outputPanel>
+            <apex:outputPanel rendered="{!NOT(isBreadcrumbActive) && IF(fromPage=='Search', true, false)}">
+                <div class="breadcrumb" id="breadcrumbDivInternal">
+                    <label>DRT</label> &gt;
+                    <label><apex:outputLink value="{!$Page.VFDRTDetail}?id={!drtId}"><u>{!drtName}</u></apex:outputLink></label>
+                </div>
+            </apex:outputPanel>  
+            <apex:outputPanel rendered="{!NOT(isBreadcrumbActive) && IF(fromPage!='Search', true, false)}">
+                <div class="breadcrumb" id="breadcrumbDivInternal">
+                    <label>DRT</label> &gt;
+                    <label><apex:outputLink value="{!$Page.VFDRTDetail}?id={!drtId}"><u>{!drtName}</u></apex:outputLink></label>
+                </div>
+            </apex:outputPanel>           
+            <!--Breadcrumb Ends-->
+            
+            <div id="drtDetailsActive" class="right-panel-section">
+                <!-- Start DRT Right side Header-->                
+                <h3>{!drtName}</h3>                
+                <input type="hidden" id="hiddenDrtName" value="{!drtName}"/>                
+                <!-- End Right side Header-->                 
+                
+                <div class="quicklinks">
+                    <apex:variable var="excelURL" value="{!currentUrl+'VFDRTDetailToExcel?id='+drtId}"/>
+                    <apex:variable var="pdfURL" value="{!currentUrl+'VFDRTDetailToExcelOrPDF?id='+drtId}"/>
+                    
+                    <a href="{!excelURL}" target="_blank"><img src="{!URLFOR($Resource.Swift_DRT,'images/excel-icon.png')}" width="23" height="23" alt="Export to Excel" title="Export to Excel" /></a>
+                    <a href="{!pdfURL}" target="_blank"><img src="{!URLFOR($Resource.Swift_DRT,'images/print-icon.png')}" width="23" height="23" alt="Print" title="Print" /></a> 
+                    <a href="#"><img src="{!URLFOR($Resource.Swift_DRT,'images/help-icon.png')}" width="23" height="23" alt="Help" title="Help" /></a>
+                </div>
+                
+                
+                <!-- --------------- First Row Starts --------------- -->
+                <div id="firstRowContentDiv" class="right-section-row right-section-row-borderbottom">
+                    <div class="details-button-style"> 
+                        <apex:outputPanel rendered="{!isCopyActive}">
+                            <input type="button" value="Copy" id="drtCopyButton"/>
+                        </apex:outputPanel>                 
+                        <apex:outputPanel rendered="{!isReviseActive}">
+                            <input type="button" value="Revise" id="ReviseButton" onclick="redirectRevise();"/>
+                        </apex:outputPanel>    
+                        <apex:outputPanel rendered="{!isUpdateActive}">
+                            <input type="button" value="Update" id="UpdateButton"  onclick="redirectUpdate();"/>
+                        </apex:outputPanel>
+                        <apex:outputPanel rendered="{!isCancelActive}">              
+                            <input type="button" value="Cancel" id="drtCancelButton"/>
+                        </apex:outputPanel>
+                        <apex:outputPanel rendered="{!isDeleteActive}">
+                            <input type="button" value="Delete" id="drtDeleteButton"/>
+                        </apex:outputPanel>
+                    </div>
+                    <apex:outputPanel id="errorPanel">
+                            <apex:repeat var="errorMsg" value="{!lstDRTErrorMessage}" rendered="{!lstDRTErrorMessage.size>0}">
+                                <div class="messages error">{!errorMsg}</div>
+                                <div class="clear"/>
+                            </apex:repeat>
+                    </apex:outputPanel>
+                    <div class="clear"/>
+                </div>
+                <!-- --------------- First Row Ends --------------- -->
+                    
+                <!-- --------------- Second Row Starts --------------- -->
+               
+            <div id="secondRowContentDiv" class="right-section-row">    
+            <apex:pageMessages id="pageMessageId"/>            
+            <!------ Details tab to be included---->
+            <div class="details-tab-content" style="height:auto;">
+                <apex:tabPanel tabClass="activeTab" inactiveTabClass="inactiveTab" switchType="client" immediate="true" headerClass="headerPanel">
+                    <apex:tab id="detailsTab" label="Details" name="details" styleClass="detailsContent">                        
+                        <div class="detailsWrapper">                        
+                        <div id="firstRowContentDiv" class="right-section-row right-section-row-borderbottom">
+                            <table id="detailFirstRowTbl"> 
+                            <tr>
+                                <td>                    
+                                    <dl><dt class="bold-font fontSize-12 min-width-inputLabel">Customer Name:</dt><dd class="pading-left">{!savedCustomerName}</dd></dl>
+                                </td>
+                                <td>
+                                    <dl><dt class="dt-style-margin bold-font fontSize-12">Status:</dt><dd class="pading-left">{!savedStatus}</dd></dl>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <dl><dt class="bold-font fontSize-12 min-width-inputLabel">Mask Set Title:</dt><dd class="pading-left">{!savedMaskSetTitle}</dd></dl>
+                                </td>
+                                <td>
+                                    <dl><dt class="dt-style-margin bold-font fontSize-12">DRT Type:</dt><dd class="pading-left">{!savedDRTType}</dd></dl>
+                                </td>
+                            </tr>
+                            <apex:outputPanel rendered="{!isTechGeoNull}">
+                            <tr>
+                                <td>
+                                   <dl><dt class="bold-font fontSize-12 min-width-inputLabel">Tech Geo:</dt><dd class="pading-left"> {!savedTechGeo}</dd></dl>
+                                </td>
+                                <td>
+                                      <dl><dt class="bold-font fontSize-12"></dt><dd class="pading-left"> &nbsp;</dd></dl>
+                                </td>
+                            </tr>
+                           </apex:outputPanel>   
+                            </table>                    
+                        <div class="clear"></div>
+                    </div>                    
+                    <div class="right-section-row no-padding-bottom">
+                        <dl id="secondcreatedrt"></dl>
+                        <dl><dt class="no-margin-top bold-font fontSize-12">Description:</dt><dd class="pading-left">{!description}</dd></dl> 
+                    </div>                        
+                 <!--Start of Tables-->
+                    <div class="right-section-row">                    
+                        <div class="advance-datagrid" id="primeDRTWrapper">                        
+                        <apex:outputPanel id="primeDRTOutputId"> 
+                          <apex:outputpanel id="primeDRTId" rendered="{!drtPrimeType}">
+                            <div class="add-row-container">
+                            <div class="mask-scrooler" id="scroller" style="height:299px;">
+                                <div class="dummy-cont"></div>
+                            </div>
+                            <div class="main-tbl-wrapper border-bottom">
+                                <div class="tabl-header-wrapper">
+                                <table class="gen-table main-Tbl header-tbl">
+                                     <tbody>
+                                     <tr>
+                                         <td class="tcell-width-20 no-border-left">No.</td>
+                                         <td class="tcell-width-83">Mask Set Title</td>
+                                         <td class="tcell-width-141">Prime Die/<br/>Scribeline Drop-in</td>
+                                     </tr>
+                                     </tbody>
+                                 </table> 
+                                </div>
+                                <div class="clear"></div>                                
+                                <div class="tbl-content-wrapper min-height300">
+                                    <table  id="main-tbl-content"  class="gen-table main-Tbl border-bottom" >
+                                         <tbody>
+                                             <apex:repeat value="{!chipWrapperList}" var="chip" >               
+                                                 <tr class="tcell-height-30 {!chip.colorClass}">
+                                                     <td class="tcell-width-20 text-align-centre no-border-left">{!chip.counter}</td>
+                                                     <td class="tcell-width-83">{!chip.mstName}</td>
+                                                     <td class="tcell-width-141">{!chip.chipName} </td>
+                                                 </tr>
+                                             </apex:repeat>
+                                         </tbody> 
+                                    </table>
+                                </div>                                
+                                <div class="clear"></div>
+                                <div class="spacer"></div>
+                            </div>
+                            <div class="mask-layer-tbl-wrapper" style="width:0px;display:hidden;">                                
+                                <div class="mask-tbl-hdr-cont">
+                              <apex:repeat value="{!maskLayerHeaderWrapperList}" var="m"> 
+                                <div class="mask-tbl-header-wrapper">
+                                    <table class="gen-table mask-tbl header-tbl table-height-74 IE-table-height-72">
+                                        <tbody>
+                                            <tr>
+                                                <td colspan="2" class="tcell-width-150">
+                                                    <span class="table-lable"><strong>Mask Layer : {!m.layerNo}</strong></span>
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td class="tcell_width_75 no-padding header-txt">
+                                                    <input type="text"   class="tbl-txt-box {!IF(m.isEdited_retrofitMaskRev,'edited-text','')}" readonly="true" value="{!m.retroftMaskRev}"/><!-- swgp-2 prime header -->
+                                                </td>
+                                                <td class="tcell_width_75 no-padding header-txt">
+                                                    <input type="text" class="tbl-txt-box {!IF(m.isEdited_retrofitROMCode,'edited-text','')}" readonly="true" value="{!m.retroftRomCode}"/><!-- swgp-2 prime header -->
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td class="tcell_width_75">Mask Rev</td>
+                                                <td class="tcell_width_75">ROM Code</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                              </apex:repeat>
+                              </div>
+                              <div class="clear"></div> 
+                            <div class="mask-tbl-btm-container min-height300 border-bottom" id="mask-tbl-btm-containerId">
+                                <apex:repeat value="{!maskLayerHeaderWrapperList}" var="layer" >        
+                                    <div class="mask-tbl-content-wrapper min-height300">
+                                        <table class="gen-table mask-tbl border-bottom">
+                                            <tbody>                            
+                                                <apex:repeat value="{!chipWrapperList}" var="chip">
+                                                        <apex:variable var="cell" value="{!mapDisplayedMaskLayerData[layer.layerID][chip.chipID]}"/>
+                                                        <tr class="tcell-height-30 {!chip.colorClass}">
+                                                            <td class="tcell_width_75 {!IF(cell['isEdited_maskRev'],'edited-text','')}">{!cell['MaskRev']}</td><!-- swgp-2 prime chip -->
+                                                            <td class="tcell_width_75 {!IF(cell['isEdited_romCode'],'edited-text','')}">{!cell['RomCode']}</td><!-- swgp-2 prime chip -->
+                                                         </tr>
+                                             </apex:repeat>
+                                             </tbody>
+                                        </table>
+                                    </div>
+                                </apex:repeat>
+                            </div>                                
+                            </div>
+                            </div>
+                    </apex:outputpanel>
+                   </apex:outputPanel>
+                    <!---Start of Frame-------------->
+                 <apex:outputPanel id="frameDRTOutputId">
+                 <apex:outputPanel id="frameDRTId" rendered="{!drtFrameType}">
+                 <div id="frameLayerTable">              
+                 <table class="data-table border-1" id="frameDRTTable">
+                  <thead class="thead_height_68">
+                            <tr class="alt-row-bgcolor">
+                                <th class="tcell-width-20">No.</th>
+                                <th class="tcell-width-83">Mask Set Title</th>
+                                <th class="tcell-width-83">Mask Layer</th>
+                                <th class="tcell_width_80">Retrofit PTRF Mask Rev</th>
+                                <th class="tcell_width_80">Retrofit PTRF ROM Code</th>
+                                <th class="tcell_width_68">Mask Rev</th>
+                                <th class="tcell_width_68">ROM Code</th>
+                                </tr>
+                        </thead>
+                  <tbody>
+                    <apex:repeat value="{!lstframe }"  var="frameDrt">
+                       <apex:variable var="colorClass" value="{!IF(frameDrt.color,'alt-row-bgcolor','')}"/>
+                       <tr class="tcell-height-35 {!colorClass}">
+                            <td class="tcell-width-20 text-align-centre">{!frameDrt.counter}</td>  
+                            <td class="tcell-width-83 padding-left-10">{!frameDrt.mst}</td>
+                            <td class="tcell-width-83 padding-left-12">{!frameDrt.maskLayer}</td>
+                            <td class="tcell_width_80 {!IF(frameDrt.isEdited_retroMaskRev,'edited-text','')}">{!frameDrt.retrofitMaskRev}</td><!-- swgp-2 frame -->
+                            <td class="tcell_width_80 {!IF(frameDrt.isEdited_retroROMCode,'edited-text','')}">{!frameDrt.retrofitRomCode }</td><!-- swgp-2 frame -->
+                            <td class="tcell_width_68 padding-left-12">{!frameDrt.maskRev}</td>
+                            <td class="tcell_width_68 padding-left-12">{!frameDrt.romCode}</td>                    
+                        </tr>
+                     </apex:repeat>
+                </tbody>                
+            </table>
+            </div>
+            </apex:outputPanel> 
+            </apex:outputPanel>
+                    <!-----End of Frame--------------->
+                    </div>
+                     </div>
+                      </div>
+                    </apex:tab>
+                    <apex:tab label="Where Use" name="where_used" styleClass="detailsContent">
+                        <div style="background-color:white;">
+                            <div id="firstRowContentDiv" class="right-section-row right-section-row-borderbottom">
+                                    <table> 
+                                        <tr>
+                                            <td>                    
+                                                <dl><dt class="bold-font fontSize-12 min-width-inputLabel">Customer Name:</dt><dd class="pading-left">{!savedCustomerName}</dd></dl>
+                                            </td>
+                                            <td>
+                                                <dl><dt class="dt-style-margin bold-font fontSize-12">Status:</dt><dd class="pading-left">{!savedStatus}</dd></dl>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>
+                                                <dl><dt class="bold-font fontSize-12 min-width-inputLabel">Mask Set Title:</dt><dd class="pading-left">{!savedMaskSetTitle}</dd></dl>
+                                            </td>
+                                            <td>
+                                                <dl><dt class="dt-style-margin bold-font fontSize-12">DRT Type:</dt><dd class="pading-left">{!savedDRTType}</dd></dl>
+                                            </td>
+                                        </tr>
+                                        <apex:outputPanel rendered="{!isTechGeoNull}">
+                                        <tr>
+                                            <td>
+                                               <dl><dt class="bold-font fontSize-12 min-width-inputLabel">Tech Geo:</dt><dd class="pading-left"> {!savedTechGeo}</dd></dl>
+                                            </td>
+                                            <td>
+                                                  <dl><dt class="bold-font fontSize-12"></dt><dd class="pading-left"> &nbsp;</dd></dl>
+                                            </td>
+                                        </tr>
+                                       </apex:outputPanel>
+                                    </table>                    
+                                <div class="clear"></div>
+                            </div>
+                            <div class="right-section-row">
+                        <!--Start of  Where use Table section-->
+                              <div id="whereUseTable" class="detail-table-style">  
+                                    <table class="data-table">
+                                        <thead>
+                                            <tr>
+                                                 <th class="tcell-width-83" rowspan="2"><span>PTRF Number</span></th>
+                                                 <th class="tcell-width-120" rowspan="2"><span>Order Status</span></th>
+                                                 <th class="tcell-width-83" rowspan="2"><span>Mask Set Title</span></th>
+                                                 <th class="tcell-width-91" rowspan="2"><span>Device ID</span></th>
+                                                 <th colspan="5"><span>Tapeout Options</span></th>
+                                            </tr>
+                                            <tr>
+                                                  <th class="tcell-width-78"><span>Frame Tapeout</span></th>
+                                                  <th class="tcell-width-78"><span>Frame Mockup</span></th>
+                                                  <th class="tcell-width-78"><span>Prime Tapeout</span></th>
+                                                  <th class="tcell-width-110"><span>Prime GDSOUT Review</span></th>
+                                                  <th class="tcell-width-73"><span>DRC</span></th>                    
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <apex:repeat value="{!PTRFDrtAssoWrapperlst}" var="drtptrf">
+                                                <apex:variable var="colorClass" value="{!IF(drtptrf.color,'alt-row-bgcolor','')}"/>
+                                                <tr class="{!colorClass}"> 
+                                                
+                                                    <td class="tcell-width-73">
+                                                        <!-- TASK-2469 -->
+                                                        <!--  
+                                                        <a href="{!currentUrl}VFPTRFDetail?ptrfURL={!drtptrf.ptrfId}"  target="_blank" class="tcell-width-74">{!drtptrf.ptrf}</a>
+                                                        -->
+                                                        <a href="{! $Label.HYPERLINK_TO_SWIFT + drtptrf.ptrf }" title="{!drtptrf.ptrf}" target="_blank">{!drtptrf.ptrf}</a>
+                                                        <!-- TASK-2469 END -->
+                                                    </td>
+                                                    
+                                                    
+                                                    <td  class="tcell-width-110">{!drtptrf.orderStatus}</td>
+                                                    <td class="tcell_width_80">{!drtptrf.mst}</td>
+                                                    <td class="tcell-width-91">{!drtptrf.deviceId }</td>
+                                                    <td class="tcell-width-74"> <apex:image alt="Checked image" styleClass="float-none" url="{!URLFOR($Resource.Swift_DRT,'images/Checked_img.png')}" width="13" height="7" rendered="{!drtptrf.frameTapeOut}"/>
+                                                    </td>
+                                                    <td class="tcell_width_80">
+                                                    <apex:image alt="Checked image" styleClass="float-none" url="{!URLFOR($Resource.Swift_DRT,'images/Checked_img.png')}" width="13" height="7" rendered="{!drtptrf.frameMockup}"/>
+                                                    </td>
+                                                    <td class="tcell_width_25">
+                                                    <apex:image alt="Checked image" styleClass="float-none" url="{!URLFOR($Resource.Swift_DRT,'images/Checked_img.png')}" width="13" height="7" rendered="{!drtptrf.primeTapeOut}"/>
+                                                    </td>
+                                                    <td class="tcell_width_112">
+                                                    <apex:image alt="Checked image" styleClass="float-none" url="{!URLFOR($Resource.Swift_DRT,'images/Checked_img.png')}" width="13" height="7" rendered="{!drtptrf.primeGDSOUTReview}"/>
+                                                    </td>
+                                                    <td class="tcell-width-73">
+                                                    <apex:image alt="Checked image" styleClass="float-none" url="{!URLFOR($Resource.Swift_DRT,'images/Checked_img.png')}" width="13" height="7" rendered="{!drtptrf.drc}"/>
+                                                    </td>
+                                                </tr>
+                                            </apex:repeat>
+                                        </tbody>
+                                </table>
+                          </div>
+                      </div>
+                      </div>
+                    </apex:tab>
+                    <apex:tab label="Audit Trail" name="audit_trail" styleClass="detailsContent">
+                          <div style="background-color:white;">
+                              <div id="firstRowContentDiv" class="right-section-row right-section-row-borderbottom">
+                                    <table> 
+                                        <tr>
+                                            <td>                    
+                                                <dl><dt class="bold-font fontSize-12 min-width-inputLabel">Customer Name:</dt><dd class="pading-left">{!savedCustomerName}</dd></dl>
+                                            </td>
+                                            <td>
+                                                <dl><dt class="dt-style-margin bold-font fontSize-12">Status:</dt><dd class="pading-left">{!savedStatus}</dd></dl>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>
+                                                <dl><dt class="bold-font fontSize-12 min-width-inputLabel">Mask Set Title:</dt><dd class="pading-left">{!savedMaskSetTitle}</dd></dl>
+                                            </td>
+                                            <td>
+                                                <dl><dt class="dt-style-margin bold-font fontSize-12">DRT Type:</dt><dd class="pading-left">{!savedDRTType}</dd></dl>
+                                            </td>
+                                        </tr>
+                                        <apex:outputPanel rendered="{!isTechGeoNull}">
+                                        <tr>
+                                            <td>
+                                               <dl><dt class="bold-font fontSize-12 min-width-inputLabel">Tech Geo:</dt><dd class="pading-left"> {!savedTechGeo}</dd></dl>
+                                            </td>
+                                            <td>
+                                                  <dl><dt class="bold-font fontSize-12"></dt><dd class="pading-left"> &nbsp;</dd></dl>
+                                            </td>
+                                        </tr>
+                                       </apex:outputPanel>
+                                    </table>                    
+                                <div class="clear"></div>
+                            </div>
+                          <div class="right-section-row">
+                          <!--Start of Audit Trail Table-->
+                          <div id="drtAuditTrailTable">
+                                        <table class="data-table">
+                                            <thead>
+                                                <tr>
+                                                    <th class="tcell-width-114" rowspan="2"><span>Date</span></th>
+                                                    <th class="tcell-width-91" rowspan="2"><span>User</span></th>
+                                                    <th class="tcell-width-200" rowspan="2"><span>Description</span></th>
+                                                    <th colspan="3"><span>Action</span></th>                     
+                                                </tr>
+                                                <tr>
+                                                  <th class="tcell-width-355"><span>Field Change</span></th>
+                                                  <th><span>Old Val</span></th>
+                                                  <th><span>New Val</span></th>                                        
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                    <apex:variable value="{!1}" var="counter"/>
+                                                    <apex:repeat value="{!drtAuditTrailWrappLst}" var="drtAuditTrailWrapp">
+                                                        <apex:variable var="colorClass" value="{!IF(mod(counter,2)==0,'alt-row-bgcolor','')}"/>
+                                                        <tr class="{!colorClass}"> 
+                                                            <td class="tcell-width-114">{!drtAuditTrailWrapp.createdDate}</td>
+                                                            <td  class="tcell-width-91">{!drtAuditTrailWrapp.userName}</td>
+                                                            <td class="tcell_width_94">{!drtAuditTrailWrapp.description}</td>                                        
+                                                            <td class="tcell-width-91">{!drtAuditTrailWrapp.fieldChange}</td>
+                                                            <td class="tcell-width-74">{!drtAuditTrailWrapp.oldValue}</td>
+                                                            <td class="tcell_width_80">{!drtAuditTrailWrapp.newValue}</td>
+                                                        </tr>
+                                                       <apex:variable var="counter" value="{!counter+ 1}"/>
+                                                   </apex:repeat>
+                                             </tbody>                        
+                                          </table>
+                                     </div>
+                                 </div>
+                         </div>
+                    </apex:tab>
+                </apex:tabPanel>
+        <!--End of Tables-->
+        <br/>
+   </div>
+   <!------ End of Details tab ------->            
+   </div>
+    <!-- --------------- Second Row Ends --------------- -->
+    <div class="clear"></div>                 
+    </div> 
+</div>
+<!--End of Wrapper div-->
+<script type="text/javascript" src="{!URLFOR($Resource.Swift_DRT,'js/advancedDataGrid.js')}"></script>
+    
+<apex:actionFunction name="redirectRevise" action="{!redirectToRevise}" reRender="errorPanel"/>
+<apex:actionFunction name="redirectUpdate" action="{!redirectToUpdate}" reRender="errorPanel"/>
+<apex:actionFunction name="redirectCancel" action="{!redirectToCancel}" reRender="drtDetailId,errorPanel" oncomplete="enableButton('drtCancelButton');hideLoader();"/>
+<apex:actionFunction name="redirectDelete" action="{!redirectToDelete}" reRender="errorPanel" oncomplete="hideLoader();"/>
+<apex:actionFunction name="redirectCopy" action="{!redirectToCopy}" reRender="errorPanel" oncomplete="enableButton('drtCopyButton');hideLoader();"/>
+</apex:form>
+</apex:page>

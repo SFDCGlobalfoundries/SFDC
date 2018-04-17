@@ -1,0 +1,146 @@
+<!----
+   *  Author : Ravikiran Nadella
+       *  Created Date : 23/09/2017
+           *  Description : Visualforce page for displaying customer score card
+               ---->
+<apex:page controller="CustSatisfaction_SCardController"  showChat="false" id="thePage"  action="{!getData}" >
+   <html>
+      <head>
+       <apex:includeScript value="{!$Resource.JqueryD}"/>
+        <apex:includeScript value="{!$Resource.JqueryDatatable}"/>
+        <apex:Stylesheet value="{!$Resource.JqueryDatatableCSS}"/>
+        
+        <script>
+            j$ = jQuery.noConflict();
+            j$(document).ready( function () {
+             addSearchBox();
+             j$("table").find("th").off("click.DT");   
+            });
+            function addSearchBox(){
+             
+            j$('[id$="devTable"]').DataTable({
+              "order": [[ 1, "desc" ]],
+              "paging": false,
+              "info":   false
+           
+            });
+            j$('.dataTables_length').hide();
+            j$("table").find("th").off("click.DT"); 
+            }
+            
+        </script>
+         <style>
+            table.dataTable thead th, table.dataTable thead td{
+            text-align: center !important;
+            }
+            tr:nth-child(even) {
+            background-color: #F2DCDB !important;
+            }
+            .dataTables_filter{
+              padding: 5px;
+              float: left !important;
+              display: none;
+            }
+         </style>
+      </head>
+      <body>
+         <center>
+            <p style="font-size:24px;font-weight:bold;">{!Title}</p>
+         </center>
+          <center>
+            <apex:form id="theForm">
+            <apex:selectList value="{!cust}" size="1">&nbsp;&nbsp;
+                  <apex:selectOptions value="{!Csites}" />
+               </apex:selectList>&nbsp;&nbsp;
+               <apex:selectList value="{!quater}" size="1">
+                  <apex:selectOptions value="{!Qtrs}" />
+               </apex:selectList>&nbsp;&nbsp;
+               <apex:selectList value="{!year}" size="1">
+                  <apex:selectOptions value="{!yrs}" />
+               </apex:selectList>&nbsp;&nbsp;
+               <apex:commandButton value="Go" action="{!getData}" reRender="thePanel1,thePanel2" oncomplete="addSearchBox();" />&nbsp;&nbsp;
+               <apex:outputPanel id="thePanel1">
+                  <apex:outputPanel id="thePanel2" rendered="{!qtyrList.size>1}">
+                     <table border="1" style="border-collapse: collapse;MARGIN: auto;TEXT-ALIGN: center;MARGIN-TOP: 30px;" id="devTable">
+                        <thead align="center">
+                           <tr >
+                              <th align="center"  rowspan="2" width="91">
+                                 <p><strong>Customer</strong></p>
+                              </th>
+                              <th align="center"  rowspan="2" width="132">
+                                 <p><strong>Approved Operation Plan ($ M)</strong></p>
+                              </th>
+                              <th align="center"  rowspan="2" width="52">
+                                 <p><strong>Site</strong></p>
+                              </th>
+                              <th align="center"  colspan="5" width="489">
+                                 <p><strong>Actual (Score / Rank)</strong></p>
+                              </th>
+                              <th align="center"  colspan="2" width="81">
+                                 <p><strong>Merit Range</strong></p>
+                              </th>
+                              <th align="center"  rowspan="2" width="91">
+                                 <p><strong>Merit Index  </strong></p>
+                              </th>
+                           </tr>
+                           <tr >
+                              <apex:repeat value="{!qtyrList}" var="qyt">
+                                 <th align="center"  width="70">
+                                    <p><strong>{!qyt}</strong></p>
+                                 </th>
+                              </apex:repeat>
+                              <th align="center"  width="70">
+                                 <p><strong>Red <br /> (&lt;)</strong></p>
+                              </th>
+                              <th align="center"  width="70">
+                                 <p><strong>Green (&gt;=)</strong></p>
+                              </th>
+                           </tr>
+                           </thead>
+                           <tbody>
+                           <apex:repeat value="{!custList}" var="cus">
+                              <tr >
+                                 <td align="center" >
+                                    <p><strong>{!cus.name}</strong></p>
+                                 </td>
+                                 <td align="center" >
+                                     <p>{!mrtIdMap[cus.name+cus.site__c] }</p>
+                                 </td>
+                                 <td align="center" >
+                                     <p>{!custmap[cus.name+cus.site__c].Site__c }</p>
+                                 </td>
+                                 <td align="center" >
+                                     <p><apex:outputText escape="false" value="{!qtrsMap[cus.name+cus.Site__c].Qtr1}"/></p>
+                                 </td>
+                                 <td align="center" >
+                                     <p><apex:outputText escape="false" value="{!qtrsMap[cus.name+cus.Site__c].Qtr2}"/></p>
+                                 </td>
+                                 <td align="center" >
+                                     <p><apex:outputText escape="false" value="{!qtrsMap[cus.name+cus.Site__c].Qtr3}"/></p>
+                                 </td>
+                                 <td align="center" >
+                                     <p><apex:outputText escape="false" value="{!qtrsMap[cus.name+cus.Site__c].Qtr4}"/></p>
+                                 </td>
+                                 <td align="center" >
+                                     <p><apex:outputText escape="false" value="{!qtrsMap[cus.name+cus.Site__c].Qtr5}"/></p>
+                                 </td>
+                                 <td align="center" >
+                                     <p>{!custmap[cus.name+cus.site__c].RED__c }</p>
+                                 </td>
+                                 <td align="center" >
+                                     <p>{!custmap[cus.name+cus.site__c].GREEN__c }</p>
+                                 </td>
+                                 <td align="center" >
+                                     <p><apex:outputText escape="false" value="{!qtrsMap[cus.name+cus.Site__c].mrtIdx}"/> </p>
+                                 </td>
+                              </tr>
+                           </apex:repeat>
+                        </tbody>
+                     </table>
+                  </apex:outputPanel>
+               </apex:outputPanel>
+          </apex:form>
+        </center>  
+      </body>
+   </html>
+</apex:page>

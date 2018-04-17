@@ -1,0 +1,142 @@
+<apex:page standardController="Device__c" extensions="DeviceChecklistCreateCtrlExt" tabStyle="DeviceChecklist__tab">
+<head>
+  <apex:stylesheet value="{!URLFOR($Resource.ChecklistResouces, 'ChecklistResouces/css/npi.css')}" />
+  <apex:includeScript value="{!URLFOR($Resource.ChecklistResouces, 'ChecklistResouces/js/jquery-1.10.2.min.js')}" />
+  <style>
+    /* This is for the full screen DIV */
+    .popupBackground {
+        /* Background color */
+        background-color:black;
+        opacity: 0.20;
+        filter: alpha(opacity = 20);
+        
+        /* Dimensions */
+        width: 100%;
+        height: 100%;
+        top: 0;
+        left: 0;
+        z-index: 998;
+        position: absolute;
+        
+        /* Mouse */
+        cursor:wait;
+    }
+        
+    /* This is for the message DIV */
+    .PopupPanel {
+        /* Background color */
+        border: solid 2px blue;
+        background-color: white;
+        
+        /* Dimensions */
+        left: 50%;
+        width: 200px;
+        margin-left: -100px;
+        top: 50%;
+        height: 50px;
+        margin-top: -25px;
+        z-index: 999;
+        position: fixed;
+        
+        /* Mouse */
+        cursor:pointer;
+    }
+  </style>
+</head>
+    <apex:pageMessages />
+    <apex:pageBlock rendered="{!IF(Device__c.Checklist__c== null, false, true)}">
+       <script>
+            window.location.replace('/apex/DeviceChecklistHierarchyView?id={!Device__c.Checklist__c}');
+       </script>
+    </apex:pageBlock>
+    <apex:outputPanel rendered="{!!showMessage}">
+      <apex:pageMessage summary="{!$Label.Device_Checklist_Message_to_NonAdmin_users}" severity="warning" strength="3" />
+      <apex:pageBlock >
+        <apex:pageBlockTable value="{!UserWhoCanCreateChecklist}" var="user">
+          <apex:column headerValue="User" value="{!user}"/>
+        </apex:pageBlockTable>
+      </apex:pageBlock>
+    </apex:outputPanel>
+    <apex:outputPanel rendered="{!showMessage}">
+      <apex:pageBlock id="templateSelection" rendered="{!IF(Device__c.Checklist__c== null, true, false)}" >
+             <apex:form >
+              <apex:actionFunction name="cloneTemplate" action="{!selectTemplate}" reRender="templateSelection,newChecklistdetails" >
+                  <apex:param name="firstParam" assignTo="{!selectedTemplateId}" value=""/>
+              </apex:actionFunction>
+              <apex:actionStatus id="createChecklist" stopText="">
+                <apex:facet name="start">
+                    <div>
+                        <div class="popupBackground" />
+                        <div class="PopupPanel">
+                            <table border="0" width="100%" height="100%">
+                                <tr>
+                                    <td align="center"><b>Checklist being created... Please Wait...</b></td>
+                                </tr>
+                                <tr>
+                                    <td align="center"><img src="{!URLFOR($Resource.ChecklistResouces, 'Processing.gif')}"/></td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                </apex:facet>
+            </apex:actionStatus>
+          </apex:form>
+           <apex:pageMessage summary="{!$Label.Device_Checklist_Template_Select_Message}" severity="warning" strength="3" />
+          <apex:pageBlockSection title="Select a Checklist" columns="1" rendered="{!IF(selectedTemplateId != null, false, true)}">
+              <apex:pageBlockTable value="{!availableTemplates}" var="template">
+                  <apex:column >
+                      <button title='Select to Create Checklist' onClick="cloneTemplate('{!availableTemplates[template].id}');">Select</button>
+                  </apex:column>
+                  <apex:column >
+                      <a href='/apex/DeviceChecklistHierarchyView?id={!availableTemplates[template].id}'>{!availableTemplates[template].name}</a>
+                  </apex:column>
+                  <apex:column value="{!availableTemplates[template].Description__c}"/>
+                  <apex:column value="{!availableTemplates[template].OwnerId}"/>
+              </apex:pageBlockTable>
+          </apex:pageBlockSection>
+          </apex:pageBlock>
+          <apex:form >
+          <apex:pageBlock id="newChecklistdetails" rendered="{!IF(Device__c.Device_Checklist__c== null, true, false)}">
+              <apex:pageBlockSection title="Enter Checklist Details" columns="2" rendered="{!IF(selectedTemplateId != null, true, false)}">
+                  <apex:inputText value="{!newChecklistName}" label="New Checklist Name" required="true"/>
+                  <apex:outputField value="{!availableTemplates[selectedTemplateId].Name}" label="Checklist Type"/>
+                  <!-- <apex:inputText value="{!newChecklistStartDate}" id="startDate" label="Start Date" onfocus="DatePicker.pickDate(true, '{!$Component.startDate}', false);" required="false"/>
+                  <apex:inputText value="{!newChecklistEndDate}" id="endDate" label="End Date" onfocus="DatePicker.pickDate(true, '{!$Component.endDate}', false);" required="false"/> -->
+              </apex:pageBlockSection>
+              <apex:pageBlockButtons location="bottom" rendered="{!IF(selectedTemplateId != null, true, false)}">
+                  <apex:commandButton action="{!cloneTemplateChecklist}" value="Create Checklist" onclick=" return promptUserOnCreateChecklist()"/>
+                  <apex:commandButton action="{!cancel}" value="Cancel" reRender="templateSelection,newChecklistdetails"/>
+              </apex:pageBlockButtons>
+          </apex:pageBlock>
+          </apex:form>
+
+        <div id='saveWaiting' style='display:none'>
+          <div  id='waitPanel1'>
+              <div class="popupBackground" />
+              <div class="PopupPanel">
+                  <table border="0" width="100%" height="100%">
+                      <tr>
+                          <td align="center"><b>Save is inprogress.. Please Wait..</b></td>
+                      </tr>
+                      <tr>
+                          <td align="center"><img src="{!URLFOR($Resource.ChecklistResouces, 'ChecklistResouces/Processing.gif')}"/></td>
+                      </tr>
+                  </table>
+              </div>
+          </div>
+      </div>
+      <script>
+          function promptUserOnCreateChecklist(){
+              var r=confirm("{!$Label.Device_Checklist_Checklist_Create_Alert_Message}");
+              if (r==true){
+                  $('#saveWaiting').show();
+                  return true;
+              }else{
+                return false;
+              }
+              
+          }
+      </script>
+    </apex:outputPanel>
+    
+</apex:page>

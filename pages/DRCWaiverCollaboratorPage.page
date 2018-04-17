@@ -1,0 +1,3117 @@
+<!-- 
+    Author: Abhita Bansal
+    Company: GLOBALFOUNDRIES
+    Project: DRC Application
+    Description: This page is used to view the DRC / DFM record along with rule list and associated snapshots.
+    History: Navneet Rajput,8/16/2016
+-->
+<apex:page id="DRCPage" standardController="Wavier_Collaborator__c" extensions="DRCWaiverCollaboratorController"  action="{!recallDecision}" >
+    <apex:includeScript value="{!URLFOR($Resource.myjQuery, 'js/jquery-1.6.2.min.js')}"/>
+    <apex:includeScript value="{!URLFOR($Resource.myjQuery, 'js/jquery-ui-1.8.16.custom.min.js')}"/> 
+    <apex:stylesheet value="{!URLFOR($Resource.GF_DQ_JQueryLatest, '/jquery-ui-1.10.3/themes/base/jquery-ui.css')}"/>
+    <apex:includeScript value="{!URLFOR($Resource.GF_DQ_jQueryLib, '/jquery.blockUI.js')}"/>
+    <apex:includeScript value="https://code.jquery.com/jquery-1.11.0.min.js"/>
+    
+    <apex:includeScript value="{!URLFOR($Resource.DFM_CommonLib, '/DFM_CommonFiles/Images')}"/>
+     
+    <style>
+        label.required:after {content: " *"; color: red;font-size:20px;}
+        .mandatory{
+            border: 1px solid red !important;
+        }
+        /* Copyright 2013-2015 etc Chris Tabor. Licensed under MIT. */
+            /*css for progressbar-------------start */
+            .flexer,
+	.progress-indicator {
+	    display: -webkit-box;
+	    display: -moz-box;
+	    display: -ms-flexbox;
+	    display: -webkit-flex;
+	    display: flex;
+	}
+	.no-flexer,
+	.progress-indicator.stacked {
+	    display: block;
+	}
+	.no-flexer-element {
+	    -ms-flex: 0;
+	    -webkit-flex: 0;
+	    -moz-flex: 0;
+	    flex: 0;
+	}
+	.flexer-element,
+	.progress-indicator > li {
+	    -ms-flex: 1;
+	    -webkit-flex: 1;
+	    -moz-flex: 1;
+	    flex: 1;
+	}
+	.progress-indicator {
+	    margin: 0;
+	    padding: 0;
+	    font-size: 100%;
+	    font-weight:bold;
+	    text-transform: uppercase;
+	    margin-bottom: 1em;
+	}
+	.progress-indicator > li {
+	    list-style: none;
+	    text-align: center;
+	    width: auto;
+	    padding: 0;
+	    margin: 0;
+	    position: relative;
+	    text-overflow: ellipsis;
+	    color: #bbbbbb;
+	    display: block;
+	}
+	.progress-indicator > li:hover {
+	    color: #6e6e6e;
+	}
+	.progress-indicator > li .bubble {
+	    width: 20px;
+	    height: 20px;
+	    background-color: #bbbbbb;
+	    display: block;
+	    margin: 0 auto 0.5em auto;
+	    border-bottom: 1px solid #888888;
+	}
+	.progress-indicator > li .bubble:before,
+	.progress-indicator > li .bubble:after {
+	    display: block;
+	    position: absolute;
+	    top: 9px;
+	    width: 100%;
+	    height: 3px;
+	    content: '';
+	    background-color: #bbbbbb;
+	}
+	.progress-indicator > li .bubble:before {
+	    left: 0;
+	}
+	.progress-indicator > li .bubble:after {
+	    right: 0;
+	}
+	.progress-indicator > li.completed {
+	    color: green;
+	}
+	.progress-indicator > li.completed .bubble {
+	    background-color: #65d074;
+	    color: #65d074;
+	    border-color: #247830;
+	}
+	.progress-indicator > li.completed .bubble:before,
+	.progress-indicator > li.completed .bubble:after {
+	    background-color: #65d074;
+	    border-color: #247830;
+	}
+	/* css for removing horizontal line in the beginning and last---start----*/
+	.progress-indicator > li .bubblefirst {
+	    width: 20px;
+	    height: 20px;
+	    background-color: #bbbbbb;
+	    display: block;
+	    margin: 0 auto 0.5em auto;
+	    border-bottom: 1px solid #888888;
+	}
+	.progress-indicator > li .bubblefirst:before{
+	    display: block;
+	    position: absolute;
+	    top: 9px;
+	    width: 0%;
+	    height: 3px;
+	    content: '';
+	    background-color: #bbbbbb;
+	}
+	.progress-indicator > li .bubblefirst:after {
+	    display: block;
+	    position: absolute;
+	    top: 9px;
+	    width: 50%;
+	    height: 3px;
+	    content: '';
+	    background-color: #bbbbbb;
+	}
+	.progress-indicator > li .bubblefirst:before {
+	    left: 0;
+	}
+	.progress-indicator > li .bubblefirst:after {
+	    right: 0;
+	}
+	.progress-indicator > li.completed {
+	    color: green;
+	}
+	.progress-indicator > li.completed .bubblefirst {
+	    background-color: #65d074;
+	    color: #65d074;
+	    border-color: #247830;
+	}
+	.progress-indicator > li.completed .bubblefirst:after {
+	    background-color: #65d074;
+	    border-color: #247830;
+	}
+	.progress-indicator > li.completed .bubblefirst:before {
+	    background-color: #65d074;
+	    border-color: #247830;
+	}
+	.progress-indicator > li .bubblelast {
+	    width: 20px;
+	    height: 20px;
+	    background-color: #bbbbbb;
+	    display: block;
+	    margin: 0 auto 0.5em auto;
+	    border-bottom: 1px solid #888888;
+	}
+	.progress-indicator > li .bubblelast:before{
+	    display: block;
+	    position: absolute;
+	    top: 9px;
+	    width: 50%;
+	    height: 3px;
+	    content: '';
+	    background-color: #bbbbbb;
+	}
+	.progress-indicator > li .bubblelast:after {
+	    display: block;
+	    position: absolute;
+	    top: 9px;
+	    width: 0%;
+	    height: 3px;
+	    content: '';
+	    background-color: #bbbbbb;
+	}
+	.progress-indicator > li .bubblelast:before {
+	    left: 0;
+	}
+	.progress-indicator > li .bubblelast:after {
+	    right: 0;
+	}
+	.progress-indicator > li.completed {
+	    color: green;
+	}
+	.progress-indicator > li.completed .bubblelast {
+	    background-color: #65d074;
+	    color: #65d074;
+	    border-color: #247830;
+	}
+	.progress-indicator > li.completed .bubblelast:after {
+	    background-color: #65d074;
+	    border-color: #247830;
+	}
+	.progress-indicator > li.completed .bubblelast:before {
+	    background-color: #65d074;
+	    border-color: #247830;
+	}
+	.progress-indicator > li.pending {
+	    color: #ccc;
+	}
+	.progress-indicator > li.pending .bubblefirst {
+	    background-color: #ccc;
+	    color: #ccc;
+	    border-color: #595959;
+	}
+	.progress-indicator > li.pending .bubblefirst:before{
+	    background-color: #ccc;
+	    border-color: #595959;
+	}
+	.progress-indicator > li.pending .bubblefirst:after {
+	    background-color: #ccc;
+	    border-color: #595959;
+	}
+	
+	.progress-indicator > li.cancelled {
+	    color: #FF0000;
+	}
+	.progress-indicator > li.cancelled .bubblefirst {
+	    background-color: #FF0000;
+	    color: #FF0000;
+	    border-color: #595959;
+	}
+	.progress-indicator > li.cancelled .bubblefirst:after {
+	    background-color: #FF0000;
+	    border-color: #595959;
+	}
+	.progress-indicator > li.cancelled .bubblefirst:before{
+	    background-color: #FF0000;
+	    border-color: #595959;
+	}
+	
+	.progress-indicator > li.current {
+	    color: #4285f4;
+	}
+	.progress-indicator > li.current .bubblefirst {
+	    background-color: #4285f4;
+	    color: #4285f4;
+	    border-color: #152e8c;
+	}
+	.progress-indicator > li.current .bubblefirst:after {
+	    background-color: #4285f4;
+	    border-color: #152e8c;
+	}
+	.progress-indicator > li.current .bubblefirst:before{
+	    background-color: #4285f4;
+	    border-color: #152e8c;
+	}
+	.progress-indicator > li.pending {
+	    color: #ccc;
+	}
+	.progress-indicator > li.pending .bubblelast {
+	    background-color: #ccc;
+	    color: #ccc;
+	    border-color: #595959;
+	}
+	.progress-indicator > li.pending .bubblelast:before{
+	    background-color: #ccc;
+	    border-color: #595959;
+	}
+	.progress-indicator > li.pending .bubblelast:after {
+	    background-color: #ccc;
+	    border-color: #595959;
+	}
+	
+	.progress-indicator > li.cancelled {
+	    color: #FF0000;
+	}
+	.progress-indicator > li.cancelled .bubblelast {
+	    background-color: #FF0000;
+	    color: #FF0000;
+	    border-color: #595959;
+	}
+	.progress-indicator > li.cancelled .bubblelast:after {
+	    background-color: #FF0000;
+	    border-color: #595959;
+	}
+	.progress-indicator > li.cancelled .bubblelast:before{
+	    background-color: #FF0000;
+	    border-color: #595959;
+	}
+	
+	.progress-indicator > li.current {
+	    color: #4285f4;
+	}
+	.progress-indicator > li.current .bubblelast {
+	    background-color: #4285f4;
+	    color: #4285f4;
+	    border-color: #152e8c;
+	}
+	.progress-indicator > li.current .bubblelast:after {
+	    background-color: #4285f4;
+	    border-color: #152e8c;
+	}
+	.progress-indicator > li.current .bubblelast:before{
+	    background-color: #4285f4;
+	    border-color: #152e8c;
+	}
+	/* css for removing horizontal line in the beginning and last---end----*/
+	
+	.progress-indicator > li.pending {
+	    color: #ccc;
+	}
+	.progress-indicator > li.pending .bubble {
+	    background-color: #ccc;
+	    color: #ccc;
+	    border-color: #595959;
+	}
+	.progress-indicator > li.pending .bubble:before,
+	.progress-indicator > li.pending .bubble:after {
+	    background-color: #ccc;
+	    border-color: #595959;
+	}
+	
+	.progress-indicator > li.cancelled {
+	    color: #FF0000;
+	}
+	.progress-indicator > li.cancelled .bubble {
+	    background-color: #FF0000;
+	    color: #FF0000;
+	    border-color: #595959;
+	}
+	.progress-indicator > li.cancelled .bubble:before,
+	.progress-indicator > li.cancelled .bubble:after {
+	    background-color: #FF0000;
+	    border-color: #595959;
+	}
+	
+	.progress-indicator > li.current {
+	    color: #4285f4;
+	}
+	.progress-indicator > li.current .bubble {
+	    background-color: #4285f4;
+	    color: #4285f4;
+	    border-color: #152e8c;
+	}
+	.progress-indicator > li.current .bubble:before,
+	.progress-indicator > li.current .bubble:after {
+	    background-color: #4285f4;
+	    border-color: #152e8c;
+	}
+	.progress-indicator > li a:hover .bubble {
+	    background-color: #5671d0;
+	    color: #5671d0;
+	    border-color: #1f306e;
+	}
+	.progress-indicator > li a:hover .bubble:before,
+	.progress-indicator > li a:hover .bubble:after {
+	    background-color: #5671d0;
+	    border-color: #1f306e;
+	}
+	.progress-indicator > li.danger .bubble {
+	    background-color: #d3140f;
+	    color: #d3140f;
+	    border-color: #440605;
+	}
+	.progress-indicator > li.danger .bubble:before,
+	.progress-indicator > li.danger .bubble:after {
+	    background-color: #d3140f;
+	    border-color: #440605;
+	}
+	.progress-indicator > li.warning .bubble {
+	    background-color: #edb10a;
+	    color: #edb10a;
+	    border-color: #5a4304;
+	}
+	.progress-indicator > li.warning .bubble:before,
+	.progress-indicator > li.warning .bubble:after {
+	    background-color: #edb10a;
+	    border-color: #5a4304;
+	}
+	.progress-indicator > li.info .bubble {
+	    background-color: #5b32d6;
+	    color: #5b32d6;
+	    border-color: #25135d;
+	}
+	.progress-indicator > li.info .bubble:before,
+	.progress-indicator > li.info .bubble:after {
+	    background-color: #5b32d6;
+	    border-color: #25135d;
+	}
+	.progress-indicator.stacked > li {
+	    text-indent: -10px;
+	    text-align: center;
+	    display: block;
+	}
+	.progress-indicator.stacked > li .bubble:before,
+	.progress-indicator.stacked > li .bubble:after {
+	    left: 50%;
+	    margin-left: -1.5px;
+	    width: 3px;
+	    height: 100%;
+	}
+	.progress-indicator.stacked .stacked-text {
+	    position: relative;
+	    z-index: 10;
+	    top: 0;
+	    margin-left: 60% !important;
+	    width: 45% !important;
+	    display: inline-block;
+	    text-align: left;
+	    line-height: 1.2em;
+	}
+	.progress-indicator.stacked > li a {
+	    border: none;
+	}
+	.box{
+	  height:15px;
+	  width:15px;
+	  display: inline-block;
+	  margin-left:6em;
+	}
+	.left20{
+	  padding-left:25px;
+	}
+	.green{
+		background-color: #65d074;
+		border-color: #247830;
+	}
+	.grey{
+		background-color: #ccc;
+		border-color: #595959;
+	}
+	
+	.red{
+		background-color: #FF0000;
+		border-color: #595959;
+	}
+	
+	.blue{
+		background-color: #4285f4;
+		border-color: #152e8c;
+	}
+	@media handheld,
+	screen and (max-width: 400px) {
+	    .progress-indicator {
+	        font-size: 60%;
+	    }
+	}
+	/*css for progressbar-------------End */
+    </style>
+    
+    <div id="ChatterPanel" >
+         <chatter:feedwithFollowers entityid="{!waiverCollaborator.Id}" showHeader="true"/>
+    </div>
+    
+    <apex:form id="formDRC" > 
+        
+        <div id="popup_div1" style="display: none;">           
+            <apex:pageBlock id="thePageBlock">                 
+                <apex:repeat value="{!customerDetails}" var="customerLst" id="customerDiv">
+                    <apex:pageBlockTable value="{!customerLst}" var="cust" id="thePageTable">    
+                       
+                   <apex:column >
+                        
+                        <apex:facet name="header">
+                            <apex:inputCheckbox onclick="selectAllCheckboxes1();" styleClass="theCheckParent" >
+                            </apex:inputCheckbox>
+                        </apex:facet>
+                       
+                        <apex:inputCheckbox value="{!cust.isSelected}" id="chkCustBxId" onClick="setCustomerUserIds('{!cust.userRecord.id}',this);" styleClass="{!cust.userRecord.Id} theCheckBox"/>
+                      </apex:column>  
+                      
+                       <apex:column headerValue="Name">
+                          <apex:outputText value="{!cust.userRecord.Name}"/>
+                       </apex:column>                         
+                       <apex:column headerValue="Email">
+                          <apex:outputText value="{!cust.userRecord.Email}"/>
+                       </apex:column>                         
+                       <apex:column headerValue="Phone">   
+                          <apex:outputText value="{!cust.userRecord.MobilePhone}"/>
+                       </apex:column>         
+                                             
+                    </apex:pageBlockTable>                      
+                </apex:repeat>                           
+            </apex:pageBlock>
+        </div>
+        
+        <div id="popup_div2" style="display: none;">
+            <apex:pageBlock >
+                <apex:pageBlockTable value="{!AMDetails}" var="amlst">
+                    <apex:column headerValue="Select AM">
+                        <input type="radio" name="AccManager" onClick="setAMUser('{!amlst.ATP.User__c}', this);"/>
+                    </apex:column>                     
+                    <apex:column headerValue="User Name">
+                        <apex:outputText value="{!amlst.ATP.User__r.Name}"/>
+                    </apex:column>                    
+                    <apex:column headerValue="Team Role">
+                        <apex:outputText value="{!amlst.ATP.Team_Role__c}"/>
+                    </apex:column>                   
+                    <apex:column headerValue="Account Full Name">
+                        <apex:outputText value="{!amlst.ATP.Account__r.Name}"/>
+                    </apex:column>                      
+                </apex:pageBlockTable>
+            </apex:pageBlock>    
+        </div>
+    
+        <div id="popup_div3" style="display: none; overflow: hidden;">
+            <div id="pdfDivId">
+                <iframe id="pdfId" width="760px" height="500px" ></iframe>
+                <br/>
+                <br/>
+                <a id="dnldattachPdf" target="_blank" class="myLinkButton">Download</a>
+            </div>
+            <div id="imageDivId">
+                <img id="imageId" width="760px" height="500px" /> 
+                <br/>
+                <br/>
+                <a id="dnldattachImg" target="_blank" class="myLinkButton">Download</a>
+            </div>
+        </div>                   
+        
+        <apex:outputPanel id="myPanel">
+            <!-- Empty panel created intentionally. Please don't remove -->
+        </apex:outputPanel>
+      <c:LoadingStatusSpinner />
+      <apex:actionFunction name="sendNotificationToFAE" action="{!sendNotificationToFAE}" reRender="ruleListId1,table1, table2, hdnPageNum, hdnCurrPageNum, hdnJsonList,hdnFinalStatus" />  
+      <apex:actionFunction name="changeCountFunc" action="{!countOfRows}" reRender="ruleListId1,table1, table2, hdnPageNum, hdnCurrPageNum, hdnJsonList,hdnFinalStatus,resetJSON" oncomplete="refreshScreen();" >
+            <apex:param name="Param3" assignTo="{!countValue}" value="" />
+        </apex:actionFunction>
+        
+        <apex:actionFunction name="releaseToCustomerFunc" action="{!releaseToCustomer}" reRender="myPanel" status="LoadingStatusSpinner">
+            <apex:param name="Param1" assignTo="{!hiddenUsrIds}" value="" />
+        </apex:actionFunction>
+        
+        <apex:actionFunction name="cancel" action="{!cancelWorkflow}" reRender="myPanel" status="LoadingStatusSpinner">
+            <apex:param name="CReasonParam" assignTo="{!wfCancelationReason}" value=""/>
+        </apex:actionFunction>
+        
+        <apex:actionFunction name="revertActionFunc" action="{!revertCollaborator}" reRender="myPanel" status="LoadingStatusSpinner">
+            <apex:param name="RevertReasonParam" assignTo="{!wfRevertReason}" value=""/>
+            <apex:param name="RevertOptionParam" assignTo="{!revertOption}" value=""/>
+        </apex:actionFunction>
+        
+        <apex:actionFunction name="changeFinalStatFunc" action="{!changeFinalStatus}" reRender="ruleListId, hdnPageNum, hdnCurrPageNum, hdnJsonList, hdnFinalStatus" oncomplete="refreshScreen();" status="LoadingStatusSpinner">
+            <apex:param name="Param3" assignTo="{!finalStatusValue}" value="" />
+        </apex:actionFunction>
+        
+        <apex:actionFunction name="srchRuleDataFunc" action="{!searchRule}" reRender="ruleListId, hdnPageNum, hdnCurrPageNum, hdnJsonList, hdnSearchValue" oncomplete="refreshScreen();" status="LoadingStatusSpinner">
+            <apex:param name="Param4" value="" assignTo="{!searchValue}" />
+        </apex:actionFunction>
+        
+        <apex:actionFunction name="firstPage" action="{!first}" reRender="ruleListId, hdnPageNum, hdnCurrPageNum, hdnJsonList,resetJSON" oncomplete="refreshScreen();"/>
+        <apex:actionFunction name="previousPage" action="{!previous}" reRender="ruleListId, hdnPageNum, hdnCurrPageNum, hdnJsonList,resetJSON" oncomplete="refreshScreen();"/>
+        <apex:actionFunction name="nextPage" action="{!next}" reRender="ruleListId, hdnPageNum, hdnCurrPageNum, hdnJsonList,resetJSON" oncomplete="refreshScreen();"/>
+        <apex:actionFunction name="lastPage" action="{!last}" reRender="ruleListId, hdnPageNum, hdnCurrPageNum, hdnJsonList,resetJSON" oncomplete="refreshScreen();"/> 
+        
+        <apex:actionFunction name="changePageNoFunc" action="{!pageNumberChange}" reRender="ruleListId,hdnCurrPageNum, hdnJsonList" oncomplete="refreshScreen();">
+            <apex:param name="Param5" assignTo="{!pageValue}" value="" />
+        </apex:actionFunction>     
+
+        <apex:actionFunction name="submitBtnFunc" action="{!submitRules}" reRender="ruleListId, hdnPageNum, hdnCurrPageNum, hdnJsonList" oncomplete="refreshScreen();location.href=location.href;" status="LoadingStatusSpinner">
+            <apex:param name="ParamN6" assignTo="{!customerOptions}" value="" />
+            <apex:param name="ParamN7" assignTo="{!hiddenUsrIds}" value="" />
+            <apex:param name="ParamN8" assignTo="{!singleRecId}" value="" />
+        </apex:actionFunction>
+        
+        <apex:actionFunction name="saveBtnFunc" action="{!saveRules}" reRender="ruleListId, hdnPageNum, hdnCurrPageNum, hdnJsonList" oncomplete="refreshScreen();location.href=location.href;" status="LoadingStatusSpinner">
+            <apex:param name="ParamN6" assignTo="{!customerOptions}" value="" />
+            <apex:param name="ParamN7" assignTo="{!hiddenUsrIds}" value="" />
+            <apex:param name="ParamN8" assignTo="{!singleRecId}" value="" />
+        </apex:actionFunction>
+
+
+        <apex:actionFunction name="backbtnFunc" action="{!backToList}" reRender="ruleListId, hdnPageNum, hdnCurrPageNum, hdnJsonList" oncomplete="refreshScreen();" status="LoadingStatusSpinner"/>
+        <apex:actionFunction name="revertButtonFunction" action="{!revertButtonFunction}" reRender="myPanel"/>
+		<apex:actionFunction name="submitRevertStage" action="{!finalRevertSubmit}" reRender="myPanel" oncomplete="refreshScreen();location.href=location.href;" status="LoadingStatusSpinner"/>        
+        <apex:actionFunction name="backToPageList" action="{!backToMainPage}"/>
+        <apex:actionFunction name="pdfDownloadButtonFunc" action="{!pdfDownload}" />
+        <apex:actionFunction name="submitForApproval" action="{!submitForApproval}" reRender="pblkId" status="LoadingStatusSpinner"/>
+        
+        <!--START OF PROGRESS BAR CREATION COMPONENT--> 
+        <c:ProgressBarComponent pBarObject="{!waiverCollaborator}" appName="DRC" />
+        <div style="float:left;margin-top:-15px;padding-bottom:5px;">
+ 
+		  <div  class="green box">
+		  <label class="left20">Completed</label>
+		  </div>
+		  <div class="blue box">
+		  <label class="left20">Inprogress</label>
+		  </div>
+		  <div class="grey box">
+		  <label class="left20">Future</label>
+		  </div>
+		  <div class="red box">
+		  <label class="left20">Cancelled</label>
+		  </div>
+		 
+		</div>  
+        <apex:outputLink value="/apex/DWC_superuser"  rendered="{!isSuperUser}" target="_blank" styleClass="btn" style="float: right;text-decoration:none;padding:4px;margin-bottom:5px;margin-top: -15px;"> FAB group subscribe/unsubscribe </apex:outputLink>
+        <!-- END OF PROGRESS BAR CREATION COMPONENT -->
+        
+        <apex:pageBlock id="pblkId">
+            <apex:pageMessages />
+            
+              <apex:pageBlockButtons location="top">
+                      
+                      <apex:outputpanel rendered="{!IF(waiverCollaborator.Is_Sync_with_AIA__c,true,false)}">   
+                          <input type="button" class="btn" value="Proceed to customer" 
+                                 title="Release DRC report to customer" onclick ="proceedToCustomer();" id="processCustBtnId" />               
+                     </apex:outputpanel>
+                     
+                                            
+                     <apex:commandButton action="{!submitForApproval}" value="Submit for approval" rendered="{!IF(AND(!isLongFlow,isTypeDFM,!isPortalUser,!isFAE,!isDRBUser,!isSubmitForApproval,isDFMUser), true, false)}"
+                                                        title="Attach waiver file and sumbit to design waiver team for approval" id="theButton"/>
+                      
+                      
+                  <apex:commandLink value="Export to PDF" action="{!pdfDownload}" target="_blank" styleClass="btn" style="text-decoration:none;padding:4px;" />
+                   
+                  
+                    <apex:outputpanel rendered="{!IF(OR(waiverCollaborator.Workflow_Status__c == 'Closed',waiverCollaborator.Workflow_Status__c=='Cancel'), false, true)}">    
+                      <input type="button" class="btn" value="Job Cancel" 
+                                title="This will cancel Waiver collaborator and send notification to Mantis and PTSR systems" onclick ="CancelWF();" id="btnId2"/>
+                    </apex:outputpanel> 
+                   <!-- <input type ="button" value ="RevertStage" class="myButton" onclick="revertStage();"/> -->
+                   
+                 <apex:outputpanel rendered="{!IF(AND(!isTypeDFM),true,false)}">     
+                <a href="{!$label.DRC_Help_Link}" target="_blank" style="margin-left:150px">
+                        <span class="helpLink" style="font-size: 11px">User Guide</span></a>
+                  &nbsp;&nbsp;
+                </apex:outputpanel>
+                
+                <apex:outputpanel rendered="{!IF(AND(!isTypeDRC),true,false)}">     
+                <a href="{!$Setup.DWC_DFM_User_Guide__c.DFM_Customer_Guide__c}" target="_blank" style="margin-left:150px">
+                        <span class="helpLink" style="font-size: 11px">User Guide</span></a>
+                  &nbsp;&nbsp;
+                </apex:outputpanel>
+                
+                 <apex:outputpanel rendered="{!IF(AND(!isTypeDRC,!isPortalUser),true,false)}">     
+                <a href="{!$Setup.DWC_DFM_User_Guide__c.DFM_User_Guide__c}" target="_blank" style="margin-left:0px">
+                        <span class="helpLink" style="font-size: 11px">User Guide(Internal)</span></a>
+                  &nbsp;&nbsp;
+                </apex:outputpanel>
+                
+                  <apex:outputpanel rendered="{!IF(AND(!isTypeDFM,!isPortalUser),true,false)}"> 
+                <a href="{!$label.DRC_UserGuide}" target="_blank" style="margin-top:-25px;text-align:top" >
+                        <span class="helpLink" style="font-size: 11px">User Guide(Internal)</span></a>&nbsp;&nbsp;
+                
+                </apex:outputpanel>
+                <!--  <apex:outputpanel rendered="{!IF(AND(!isTypeDFM,isPortalUser),true,false)}" >
+                <a href="{!$label.DRC_externaluserguide}" target="_blank" style="margin-top:-25px;text-align:top" >
+                        <span class="helpLink" style="font-size: 11px">DRC User Guide for External Users</span></a>
+                
+                </apex:outputpanel> -->
+                  
+                  <apex:outputpanel rendered="{!IF(AND(!isPortalUser),true,false)}" >
+                      <a href="{!$label.Collaborator_User_Group}" target="_blank" style="margin-top:-25px;text-align:top" >
+                          <span class="helpLink" style="font-size: 11px">Help for DWC</span></a>
+                      
+                  </apex:outputpanel>
+              </apex:pageBlockButtons>
+              <!-- 
+            <div style="margin-left:500px">
+                <input type="button" class="btn" value="Proceed to customer" 
+                       title="Release DRC report to customer" onclick ="proceedToCustomer();" id="processCustBtnId"/>
+                
+                 <input type="button" class="btn" value="Submit for approval" 
+                                title="Attach waiver file and sumbit to design waiver team for approval" onclick ="submitForApproval();" id="btnId1"/>
+                
+                   
+                <a href="{!$label.DRC_Help_Link}" target="_blank" style="margin-left:380px">
+                        <span class="helpLink" style="font-size: 11px">Help Link</span></a>
+                <img src="/s.gif" class="helpIcon" style="padding-top: 10px"/>
+            </div>
+            -->
+            <br/>
+            <apex:pageBlockSection title="Waiver collaborator Details" >
+                    <apex:repeat value="{!fields}" var="f">
+                        <apex:outputField value="{!waiverCollaborator[f.fieldPath]}" rendered="{!f.fieldPath!='Is_Sync_with_AIA__c' && f.fieldPath!='Workflow_Status__c' && f.fieldPath!='IsGfAcceptsRisk__c' && f.fieldPath!='DFMServiceOption__c' && f.fieldPath!='Mask_Set_Title_ID__c' && f.fieldPath!='Mask_Set_Title__c' && f.fieldPath!='DFM_Design_Type__c'}"/>                    
+                        <apex:outputField value="{!waiverCollaborator[f.fieldPath]}"  rendered="{!(f.fieldPath=='DFMServiceOption__c' || f.fieldPath=='DFM_Design_Type__c') && isTypeDFM}"/>  
+                        <apex:outputField value="{!waiverCollaborator[f.fieldPath]}"  rendered="{!(f.fieldPath=='Mask_Set_Title_ID__c') && !isPortalUser}"/>  
+                        <apex:outputField value="{!waiverCollaborator[f.fieldPath]}"  rendered="{!(f.fieldPath=='Mask_Set_Title__c') && isPortalUser}"/>  
+                    </apex:repeat>
+            </apex:pageBlockSection>
+        </apex:pageBlock>
+      <apex:pageBlock >
+      
+          <apex:pageblocksection title="Review Summary" columns="1"  rendered="{! !waiverCollaborator.Is_Sync_with_AIA__c &&  (isLongFlow || isTypeDRC )}">
+              
+              <apex:outputpanel >   
+                  <b>Task Message :</b><br/>
+                  <apex:outputpanel rendered="{! waiverCollaborator.Progressbar_staus__c !='Review_Disposition' && waiverCollaborator.Workflow_Status__c != 'Closed' && waiverCollaborator.Workflow_Status__c != 'Cancel'}" >
+                      <apex:outputText value="Execution is in progress. No action is required from customer yet." escape="false" /> 
+                  </apex:outputpanel> 
+                  <apex:outputpanel rendered="{!waiverCollaborator.Progressbar_staus__c =='Review_Disposition' && isTypeDFM}" >
+                      <apex:outputText value="DFM review result will be available after foundry review. No action is required from customer yet." escape="false" /> 
+                  </apex:outputpanel>
+                  <apex:outputpanel rendered="{!waiverCollaborator.Progressbar_staus__c =='Review_Disposition' && isTypeDRC}" >
+                      <apex:outputText value="DRC review result will be available after foundry review. No action is required from customer yet." escape="false" /> 
+                  </apex:outputpanel>
+                  <apex:outputpanel rendered="{!waiverCollaborator.Workflow_Status__c=='Closed' }" >
+                      <apex:outputText value="Waiver Collaborator Review Final results are ready. No action is required from customer." escape="false" /> 
+                  </apex:outputpanel>
+                  <apex:outputpanel rendered="{!waiverCollaborator.Workflow_Status__c=='Cancel'}" >
+                      <apex:outputText value="Collaborator Services/Review Request has been cancelled. No action is required." escape="false" /> 
+                  </apex:outputpanel>
+                  <div></div>
+                  <br/>
+                  
+              </apex:outputpanel> 
+          </apex:pageblocksection> 
+      
+             <apex:pageblocksection title="Review Summary" columns="1" rendered="{!IF(AND(!isPortalUser,waiverCollaborator.Is_Sync_with_AIA__c),true,false)}">
+              
+             <apex:outputpanel >   
+             <b>Task Message :</b><br/>
+            
+                 <apex:outputText value="{!taskMessage}" escape="false" /> 
+                
+                <div></div>
+                <br/>
+            <table class="list" border="1" cellpadding="0" cellspacing="0" height="20">
+                
+                <thead class="rich-table-thead">
+                    <tr class="headerRow">
+                        <td class="headerRow" scope="col"  width="10%">
+                        <div ><B>Final Status</B></div>
+                        </td> 
+                        <td class="headerRow" scope="col" colspan="1" width="10%" align="center">
+                        <div><B>No. of Rules</B></div>
+                        </td> 
+                        <td class="headerRow" scope="col" width="5%">
+                        <div><B>Short Description</B></div>
+                        </td>
+                        <td class="headerRow" scope="col" width="75%">
+                        <div><B>Required Action</B></div>
+                        </td>
+                        
+                    </tr>
+                </thead>
+                
+                <apex:outputpanel rendered="{!isTypeDRC}" >
+                <tr class="dataRow odd"> <!-- -->
+                    <td class="dataCell" colspan="1"><span><a href="#TableRedirect" onclick="changeFinalStatusJsMap('PI');"><b>PI : Pass Ignore</b></a></span></td>
+                    <td class="dataCell" colspan="1" align="center"><span><b>{!countMap['PI']}</b></span></td>
+                    <td class="datacell">
+                        <apex:outputpanel rendered="{!IF(AND(!isFoundryView),true,false)}" >
+                            <span><img src="/resource/DWC/DWC/PI.JPG" alt=" " height="25" width="50"/></span>
+                        </apex:outputpanel>  
+                        <apex:outputpanel rendered="{!IF(AND(!isFoundryView),false,true)}" >
+                            <span><img src="/GlobalfoundryView/resource/DWC/DWC/PI.JPG" alt=" " height="25" width="50"/></span>
+                        </apex:outputpanel>  
+                    </td>
+                    <td class="dataCell" colspan="1"><span><b>No review requested by Customer,GLOBALFOUNDRIES expectation is that violation is absent in final TO or requested in additional waiver request.</b></span></td>
+                    
+                </tr>
+                </apex:outputpanel>
+                <tr class="dataRow odd">
+                <td class="dataCell" colspan="1"><span><a href="#TableRedirect" onclick="changeFinalStatusJsMap('PW');"><b>PW : Pass Waive</b></a></span></td>
+                    <td class="dataCell" colspan="1" align="center"><span><b>{!countMap['PW']}</b></span></td>
+                    
+                <td class="datacell">
+                        <apex:outputpanel rendered="{!IF(AND(!isFoundryView),true,false)}" >
+                            <span><img src="/resource/DWC/DWC/PW.JPG" alt=" " height="25" width="50"/></span>
+                        </apex:outputpanel>  
+                        <apex:outputpanel rendered="{!IF(AND(!isFoundryView),false,true)}" >
+                            <span><img src="/GlobalfoundryView/resource/DWC/DWC/PW.JPG" alt=" " height="25" width="50"/></span>
+                        </apex:outputpanel>  
+                </td>
+                <td class="dataCell" colspan="1"><span><b>Waived for the specified use and/or Tapeout. No further action required by Customer.</b></span></td>
+                
+                </tr>
+               <apex:outputpanel layout="none" rendered="{!isTypeDFM}" >
+               <tr class="dataRow odd">
+                <td class="dataCell" colspan="1"><span><a href="#TableRedirect" onclick="changeFinalStatusJsMap('PA');"><b>PA : Pass</b></a></span></td>
+                   <td class="dataCell" colspan="1" align="center"><span><b>{!countMap['PA']}</b></span></td>                   
+                <td class="datacell">
+                        <apex:outputpanel rendered="{!IF(AND(!isFoundryView),true,false)}" >
+                            <span><img src="/resource/DWC/DWC/PA.jpg" alt=" " height="25" width="50"/></span>
+                        </apex:outputpanel>  
+                        <apex:outputpanel rendered="{!IF(AND(!isFoundryView),false,true)}" >
+                            <span><img src="/GlobalfoundryView/resource/DWC/DWC/PA.jpg" alt=" " height="25" width="50"/></span>
+                        </apex:outputpanel>  
+                </td>
+                <td class="dataCell" colspan="1"><span><b>No Violations present in report.No further action required by Customer.</b></span></td>
+                
+                </tr>
+                </apex:outputpanel>
+                <apex:outputpanel rendered="{!isTypeDRC}" >
+                 <tr class="dataRow odd">
+                <td class="dataCell" colspan="1" ><span><a href="#TableRedirect" onclick="changeFinalStatusJsMap('POF');"><b>POF : Pass, Out of Scope. Customer Agrees to Fix</b></a></span></td>
+                     <td class="dataCell" colspan="1" align="center"><span><b>{!countMap['POF']}</b></span></td>                    
+                <td class="datacell">
+                        <apex:outputpanel rendered="{!IF(AND(!isFoundryView),true,false)}" >
+                            <span><img src="/resource/DWC/DWC/POF.jpg" alt=" " height="25" width="50"/></span>
+                        </apex:outputpanel>  
+                        <apex:outputpanel rendered="{!IF(AND(!isFoundryView),false,true)}" >
+                            <span><img src="/GlobalfoundryView/resource/DWC/DWC/POF.jpg" alt=" " height="25" width="50"/></span>
+                        </apex:outputpanel>  
+                </td>
+                <td class="dataCell" colspan="1"><span><b>Cannot be waived by GLOBALFOUNDRIES but not in scope of current request. Already agreed by customer to be fixed in final TO.</b></span></td>
+                
+                </tr>
+                </apex:outputpanel>
+                <tr class="dataRow odd">
+                <td class="dataCell" colspan="1" ><span><a href="#TableRedirect" onclick="changeFinalStatusJsMap('FCD');"><b>FCD : Fail Design, Customer disagrees to fix or risk</b></a></span></td>
+                    <td class="dataCell" colspan="1" align="center"><span><b>{!countMap['FCD']}</b></span></td>                    
+                <td class="datacell">
+                        <apex:outputpanel rendered="{!IF(AND(!isFoundryView),true,false)}" >
+                            <span><img src="/resource/DWC/DWC/FCD.jpg" alt=" " height="25" width="50"/></span>
+                        </apex:outputpanel>  
+                        <apex:outputpanel rendered="{!IF(AND(!isFoundryView),false,true)}" >
+                            <span><img src="/GlobalfoundryView/resource/DWC/DWC/FCD.jpg" alt=" " height="25" width="50"/></span>
+                        </apex:outputpanel>  
+                </td>
+                <td class="dataCell" colspan="1"><span><b>Cannot be waived by GLOBALFOUNDRIES. Customer disagrees to fix or to waive the assumed risk liability. </b></span></td>
+                
+                </tr>
+                <tr class="dataRow odd">
+                <td class="dataCell" colspan="1"><span><a href="#TableRedirect" onclick="changeFinalStatusJsMap('WEA');"><b>WEA : Waive Exceptional Agreement</b></a></span></td>
+                      <td class="dataCell" colspan="1" align="center"><span><b>{!countMap['WEA']}</b></span></td>                    
+                <td class="datacell">
+                        <apex:outputpanel rendered="{!IF(AND(!isFoundryView),true,false)}" >
+                            <span><img src="/resource/DWC/DWC/WEA.JPG" alt=" " height="25" width="50"/></span>
+                        </apex:outputpanel>  
+                        <apex:outputpanel rendered="{!IF(AND(!isFoundryView),false,true)}" >
+                            <span><img src="/GlobalfoundryView/resource/DWC/DWC/WEA.JPG" alt=" " height="25" width="50"/></span>
+                        </apex:outputpanel>  
+                </td>
+                <td class="dataCell" colspan="1"><span><b>Waived with exceptional agreement by GLOBALFOUNDRIES. Please contact GLOBALFOUNDRIES Customer Representative</b></span></td>
+              
+                    
+                </tr>
+                <tr class="dataRow odd">
+                <td class="dataCell" colspan="1"><span><a href="#TableRedirect" onclick="changeFinalStatusJsMap('WCR');"><b>WCR : Waive, Customer Agrees to Take Risk</b></a></span></td>
+                    <td class="dataCell" colspan="1" align="center"><span><b>{!countMap['WCR']}</b></span></td>                    
+                <td class="datacell">
+                        <apex:outputpanel rendered="{!IF(AND(!isFoundryView),true,false)}" >
+                            <span><img src="/resource/DWC/DWC/WCR.JPG" alt=" " height="25" width="50"/></span>
+                        </apex:outputpanel>  
+                        <apex:outputpanel rendered="{!IF(AND(!isFoundryView),false,true)}" >
+                            <span><img src="/GlobalfoundryView/resource/DWC/DWC/WCR.JPG" alt=" " height="25" width="50"/></span>
+                        </apex:outputpanel>  
+                </td>
+                <td class="dataCell" colspan="1"><span><b>Customer agreed to waive, Customer is aware of related risk. Risk is assumed by Customer.</b></span></td>
+                
+                </tr>
+                <tr class="dataRow odd">
+                <td class="dataCell" colspan="1" ><span><a href="#TableRedirect" onclick="changeFinalStatusJsMap('FCF');"><b>FCF : Fail Design, Customer Agree to Fix</b></a></span></td>
+                    <td class="dataCell" colspan="1" align="center"><span><b>{!countMap['FCF']}</b></span></td>                    
+                <td class="datacell">
+                        <apex:outputpanel rendered="{!IF(AND(!isFoundryView),true,false)}" >
+                            <span><img src="/resource/DWC/DWC/FCF.JPG" alt=" " height="25" width="50"/></span>
+                        </apex:outputpanel>  
+                        <apex:outputpanel rendered="{!IF(AND(!isFoundryView),false,true)}" >
+                            <span><img src="/GlobalfoundryView/resource/DWC/DWC/FCF.JPG" alt=" " height="25" width="50"/></span>
+                        </apex:outputpanel>  
+                </td>
+                <td class="dataCell" colspan="1"><span><b>Customer Agreed to fix, updated design to be submitted for Tapeout.</b></span></td>
+                
+                </tr>
+                <tr class="dataRow odd">
+                <td class="dataCell" colspan="1"><span><a href="#TableRedirect" onclick="changeFinalStatusJsMap('FD');"><b>FD :Fail Design</b></a></span></td>
+                    <td class="dataCell" colspan="1" align="center"><span><b>{!countMap['FD']}</b></span></td>                    
+                <td class="datacell">
+                        <apex:outputpanel rendered="{!IF(AND(!isFoundryView),true,false)}" >
+                            <span><img src="/resource/DWC/DWC/FD.JPG" alt=" " height="25" width="50"/></span>
+                        </apex:outputpanel>  
+                        <apex:outputpanel rendered="{!IF(AND(!isFoundryView),false,true)}" >
+                            <span><img src="/GlobalfoundryView/resource/DWC/DWC/FD.JPG" alt=" " height="25" width="50"/></span>
+                        </apex:outputpanel>  
+                </td>
+                <td class="dataCell" colspan="1"><span><b>Cannot be waived by GLOBALFOUNDRIES, need to be fixed for final TO.</b></span></td>
+                
+                </tr>
+                 <tr class="dataRow odd">
+                <td class="dataCell" colspan="1"><span><a href="#TableRedirect" onclick="changeFinalStatusJsMap('Open');"><b>OPEN </b></a></span></td>
+                     <td class="dataCell" colspan="1" align="center"><span><b>{!countMap['OPEN']}</b></span></td>                    
+                <td class="datacell">
+                        <apex:outputpanel rendered="{!IF(AND(!isFoundryView),true,false)}" >
+                            <span><img src="/resource/DWC/DWC/OPEN.JPG" alt=" " height="25" width="50"/></span>
+                        </apex:outputpanel>  
+                        <apex:outputpanel rendered="{!IF(AND(!isFoundryView),false,true)}" >
+                            <span><img src="/GlobalfoundryView/resource/DWC/DWC/OPEN.JPG" alt=" " height="25" width="50"/></span>
+                        </apex:outputpanel>  
+                </td>
+                <td class="dataCell" colspan="1"><span><b>Waiver Collaborator status is open and action needs to be taken.</b></span></td>
+                
+                </tr>
+               </table>
+               <br/>    
+               <div><b> OPEN:</b> Referring to rule violations which are still pending for the customer option selection or pending for a collaboration closure with the customer This includes violations with status <b> Initial Failed Design (iFD)</b> and <b> Failed Design, Customer to check (FCC).</b></div> 
+              
+               <br/>   
+             <b>Disclaimers :</b>  
+                    <br/>
+               <div>1. Foundry waivers (if any) are granted as per the policy detailed in the Tapeout Requirement <a href="{!$Label.DWC_OPEN_TEXT_URL}" target="_blank">Document.</a> </div>
+                      
+                <apex:outputpanel rendered="{!isTypeDFM}" >
+               <div>2. If waiver(s) is not granted by the Foundry, the customer will have an option to fix or agree to let the Foundry perform DFM analysis. Customer acknowledges that this DFM analysis will add additional cycle time to fab out. If the violations cannot be waived, the customer will assume all liability. Otherwise the tape out may be rejected. The customer should work with their Foundry account team for these exceptional cases.</div>
+               <div>3. By selecting the option of Customer Agrees to Take Risk, it is meaning that Customer wants the device to proceed for manufacturing and accepts risk liability due to the unfixed violations.</div>
+               </apex:outputpanel>
+               <apex:outputpanel rendered="{!isTypeDRC}" >
+                    <div>2. If waiver(s) is not granted by the Foundry, the customer will either have an option to fix or the customer can assume all liability. Otherwise the tape out may be rejected. The customer should work with their Foundry account team for these exceptional cases.</div>
+              
+              <div>3. Rules with PI (Pass Ignore) are violated for DRC but have not been asked for review in this request. The Foundry expectation is that these violations are absent in the final tapeout design or requested for review in a separate waiver request.</div>
+              <div>4. By selecting the option of Customer Agrees to Take Risk, it is meaning that Customer wants the device to proceed for manufacturing and accepts risk liability due to the unfixed violations.</div>      
+                    </apex:outputpanel>
+               
+               
+       </apex:outputpanel> 
+      </apex:pageblocksection> 
+            
+       
+             <apex:pageblocksection title="Review Summary" columns="1" rendered="{!IF(AND(isPortalUser,waiverCollaborator.Is_Sync_with_AIA__c),true,false)}">
+              <apex:outputpanel >   
+             <b>Task Message :</b><br/>
+            
+                 <apex:outputText value="{!taskMessage}" escape="false" /> 
+                
+                <div></div> 
+                <div></div>
+                <br/>
+            <table class="list" border="1" height="20">
+                
+                <thead class="rich-table-thead">
+                    <tr class="headerRow">
+                        <th class="headerRow" scope="col" colspan="1" width="10%">
+                        <div>Final Status</div>
+                        </th> 
+                        <td class="headerRow" scope="col" colspan="1" width="10%" align="center">
+                        <div>No. of Rules</div>
+                        </td> 
+                        <th class="headerRow" scope="col" colspan="1" width="5%">
+                        <div>Short Description</div>
+                        </th>
+                        <th class="headerRow" scope="col" colspan="1" width="75%">
+                        <div>Required Action</div>
+                        </th>
+                        
+                    </tr> 
+                </thead>
+                
+                <apex:outputpanel layout="none" rendered="{!isTypeDRC}" >
+
+                
+                
+                
+                <tr class="dataRow odd">
+                     
+                <td class="dataCell" colspan="1"><span><a href="#TableRedirect" onclick="changeFinalStatusJsMap('PI');"><b>PI : Pass Ignore</b></a></span></td>
+                    <td class="dataCell" colspan="1" align="center"><span><b>{!countMap['PI']}</b></span></td>
+                <td class="dataCell" colspan="1"><span><img src="/GlobalfoundryView/resource/DWC/DWC/PI.JPG" alt=" " height="25" width="50" border="0"/></span></td>
+                <td class="dataCell" colspan="1"><span><b>No review requested by Customer,GLOBALFOUNDRIES expectation is that violation is absent in final TO or requested in additional waiver request.</b></span></td>
+                
+                </tr>
+                </apex:outputpanel>
+                <tr class="dataRow odd">
+                <td class="dataCell" colspan="1"><span><a href="#TableRedirect" onclick="changeFinalStatusJsMap('PW');"><b>PW : Pass Waive</b></a></span></td>
+                    <td class="dataCell" colspan="1" align="center"><span><b>{!countMap['PW']}</b></span></td>
+                <td class="dataCell" colspan="1"><span><img src="/GlobalfoundryView/resource/DWC/DWC/PW.JPG" alt=" " height="25" width="50" border="0"/></span></td>
+                <td class="dataCell" colspan="1"><span><b>Waived for the specified use and/or Tapeout. No further action required by Customer.</b></span></td>
+                
+                </tr>
+                 <apex:outputpanel layout="none" rendered="{!isTypeDFM}" >
+                <tr class="dataRow odd">
+                <td class="dataCell" colspan="1"><span><a href="#TableRedirect" onclick="changeFinalStatusJsMap('PA');"><b>PA : Pass</b></a></span></td>
+                    <td class="dataCell" colspan="1" align="center"><span><b>{!countMap['PA']}</b></span></td>
+                <td class="dataCell" colspan="1"><span><img src="/GlobalfoundryView/resource/DWC/DWC/PA.jpg" alt=" " height="25" width="50" border="0"/></span></td>
+                <td class="dataCell" colspan="1"><span><b>No Violations present in report.No further action required by Customer.</b></span></td>
+                
+                </tr>
+                </apex:outputpanel>
+                <apex:outputpanel rendered="{!isTypeDRC}" >
+                 <tr class="dataRow odd">
+                <td class="dataCell" colspan="1" ><span><a href="#TableRedirect" onclick="changeFinalStatusJsMap('POF');"><b>POF : Pass, Out of Scope. Customer Agrees to Fix</b></a></span></td>
+                      <td class="dataCell" colspan="1" align="center"><span><b>{!countMap['POF']}</b></span></td>
+                <td class="dataCell" colspan="1"><span><img src="/GlobalfoundryView/resource/DWC/DWC/POF.jpg" alt=" " height="25" width="50" border="0"/></span></td>
+                <td class="dataCell" colspan="1"><span><b>Cannot be waived by GLOBALFOUNDRIES but not in scope of current request. Already agreed by customer to be fixed in final TO.</b></span></td>
+               
+                </tr>
+                </apex:outputpanel>
+                <tr class="dataRow odd">
+                <td class="dataCell" colspan="1" ><span><a href="#TableRedirect" onclick="changeFinalStatusJsMap('FCD');"><b>FCD : Fail Design, Customer disagrees to fix or risk</b></a></span></td>
+                     <td class="dataCell" colspan="1" align="center"><span><b>{!countMap['FCD']}</b></span></td>
+                <td class="dataCell" colspan="1"><span><img src="/GlobalfoundryView/resource/DWC/DWC/FCD.jpg" alt=" " height="25" width="50" border="0"/></span></td>
+                <td class="dataCell" colspan="1"><span><b>Cannot be waived by GLOBALFOUNDRIES. Customer disagrees to fix or to waive the assumed risk liability. </b></span></td>
+               
+                </tr>
+                <tr class="dataRow odd">
+                <td class="dataCell" colspan="1"><span><a href="#TableRedirect" onclick="changeFinalStatusJsMap('WEA');"><b>WEA : Waive Exceptional Agreement</b></a></span></td>
+                     <td class="dataCell" colspan="1" align="center"><span><b>{!countMap['WEA']}</b></span></td>
+                <td class="dataCell" colspan="1"><span><img src="/GlobalfoundryView/resource/DWC/DWC/WEA.JPG" alt=" " height="25" width="50" border="0"/></span></td>
+                <td class="dataCell" colspan="1"><span><b>Waived with exceptional agreement by GLOBALFOUNDRIES. Please contact GLOBALFOUNDRIES Customer Representative</b></span></td>
+               
+                    
+                </tr>
+                <tr class="dataRow odd">
+                <td class="dataCell" colspan="1"><span><a href="#TableRedirect" onclick="changeFinalStatusJsMap('WCR');"><b>WCR : Waive, Customer Agrees to Take Risk</b></a></span></td>
+                     <td class="dataCell" colspan="1" align="center"><span><b>{!countMap['WCR']}</b></span></td>
+                <td class="dataCell" colspan="1"><span><img src="/GlobalfoundryView/resource/DWC/DWC/WCR.JPG" alt=" " height="25" width="50" border="0"/></span></td>
+                <td class="dataCell" colspan="1"><span><b>Customer agreed to waive, Customer is aware of related risk. Risk is assumed by Customer.</b></span></td>
+               
+                </tr>
+                <tr class="dataRow odd">
+                <td class="dataCell" colspan="1" ><span><a href="#TableRedirect" onclick="changeFinalStatusJsMap('FCF');"><b>FCF : Fail Design, Customer Agree to Fix</b></a></span></td>
+                     <td class="dataCell" colspan="1" align="center"><span><b>{!countMap['FCF']}</b></span></td>
+                <td class="dataCell" colspan="1"><span><img src="/GlobalfoundryView/resource/DWC/DWC/FCF.JPG" alt=" " height="25" width="50" border="0"/></span></td>
+                <td class="dataCell" colspan="1"><span><b>Customer Agreed to fix, updated design to be submitted for Tapeout.</b></span></td>
+               
+                </tr>
+                <tr class="dataRow odd">
+                <td class="dataCell" colspan="1"><span><a href="#TableRedirect" onclick="changeFinalStatusJsMap('FD');"><b>FD :Fail Design</b></a></span></td>
+                     <td class="dataCell" colspan="1" align="center"><span><b>{!countMap['FD']}</b></span></td>
+                <td class="dataCell" colspan="1"><span><img src="/GlobalfoundryView/resource/DWC/DWC/FD.JPG" alt=" " height="25" width="50" border="0"/></span></td>
+                <td class="dataCell" colspan="1"><span><b>Cannot be waived by GLOBALFOUNDRIES, need to be fixed for final TO.</b></span></td>
+               
+                </tr>
+                 <tr class="dataRow odd">
+                <td class="dataCell" colspan="1"><span><a href="#TableRedirect" onclick="changeFinalStatusJsMap('Open');"><b>OPEN </b></a></span></td>
+                     <td class="dataCell" colspan="1" align="center"><span><b>{!countMap['OPEN']}</b></span></td>
+                     <td class="dataCell" colspan="1"><span><img src="/GlobalfoundryView/resource/DWC/DWC/OPEN.JPG" alt=" " height="25" width="50" border="0"/></span></td>
+                <td class="dataCell" colspan="1"><span><b>Waiver Collaborator status is open and action needs to be taken.</b></span></td>
+                
+                </tr>
+               </table>
+                <br/> 
+               <div><b> OPEN:</b> Referring to rule violations which are still pending for the customer option selection or pending for a collaboration closure with the customer This includes violations with status <b> Initial Failed Design (iFD)</b> and <b> Failed Design, Customer to check (FCC).</b></div> 
+              
+               <br/>   
+             <b>Disclaimers :</b>  
+                    <br/>
+               <div>1. Foundry waivers (if any) are granted as per the policy detailed in the Tapeout Requirement <a href="{!$Label.DWC_OPEN_TEXT_URL}" target="_blank">Document.</a> </div>
+               <apex:outputpanel rendered="{!isTypeDFM}" >
+               <div>2. If waiver(s) is not granted by the Foundry, the customer will have an option to fix or agree to let the Foundry perform DFM analysis. Customer acknowledges that this DFM analysis will add additional cycle time to fab out. If the violations cannot be waived, the customer will assume all liability. Otherwise the tape out may be rejected. The customer should work with their Foundry account team for these exceptional cases.</div>
+               <div>3. By selecting the option of Customer Accepts Risk, it is meaning that Customer wants the device to proceed for manufacturing and accepts risk liability due to the unfixed violations.</div>
+               </apex:outputpanel>
+               
+               <apex:outputpanel rendered="{!isTypeDRC}" >
+               <div>2. If waiver(s) is not granted by the Foundry, the customer will either have an option to fix or the customer can assume all liability. Otherwise the tape out may be rejected. The customer should work with their Foundry account team for these exceptional cases.</div>
+              
+              <div>3. Rules with PI (Pass Ignore) are violated for DRC but have not been asked for review in this request. The Foundry expectation is that these violations are absent in the final tapeout design or requested for review in a separate waiver request.</div>
+              <div>4. By selecting the option of Customer Accepts Risk, it is meaning that Customer wants the device to proceed for manufacturing and accepts risk liability due to the unfixed violations.</div>      
+              </apex:outputpanel>
+               
+               
+                 </apex:outputpanel>       
+       </apex:pageblocksection>
+        </apex:pageBlock>
+       
+        <apex:pageBlock id="pbid" rendered="{!IF(waiverCollaborator.Is_Sync_with_AIA__c,true,false)}">  
+        
+        <apex:pageBlockSection id="pbsec2" title="Mass Update" columns="2">
+                 <apex:pageBlockSection id="pbsec3" columns="3">
+                
+                <apex:pageblocksectionitem id="pbseci2"  labelStyle="width:30%">
+                    <apex:outputlabel for="selectedRdMassUpSec" style="width:150px;height:30px;white-space:nowrap;" >
+                        	<apex:outputpanel rendered="{! isPortalUser}" >Customer Option :</apex:outputpanel>
+                        	<apex:outputpanel rendered="{! Not(isPortalUser)}" >FAE Option :</apex:outputpanel>
+                    </apex:outputlabel>
+                    <apex:selectRadio id="selectedRdMassUpSec" layout="pageDirection" value="{!massRadioOption}" style="width:300px"> 
+                                                <apex:selectOptions id="selRdOptn" value="{!Options}"/>
+                                            </apex:selectRadio>
+                </apex:pageblocksectionitem>
+                <apex:pageblocksectionitem labelStyle="width:30%;">
+                        <apex:outputlabel for="massCommentId" style="width:150px;height:30px;white-space:nowrap;" >
+                        	<apex:outputpanel rendered="{! isPortalUser}" >Customer Closing Explanation :</apex:outputpanel>
+                        	<apex:outputpanel rendered="{! Not(isPortalUser)}" >FAE Closing Explanation :</apex:outputpanel>
+                        </apex:outputlabel>
+                    <textarea name="textarea" 
+                                                     cols="25" 
+                                                     rows="7"
+                                                     style="width:150px;height:30px;white-space:nowrap;" 
+                                                     id="massCommentId">
+                                           </textarea>
+                 </apex:pageblocksectionitem> 
+                <apex:outputpanel >
+                <input type ="button" 
+                           value ="Apply"
+                           class="myButton" 
+                           style="margin-left:3px;vertical-align:top;"
+                          onclick="applyMassCommentJs();"/>
+                          </apex:outputpanel>
+                </apex:pageBlockSection>  
+           </apex:pageBlockSection> 
+           <a name="TableRedirect"/>
+            <apex:pageBlockSection title="Waiver Rule List" id="ruleListId" columns="1">
+            <apex:outputPanel id="table2">  
+             
+            <apex:pageBlockSectionItem id="ruleListId1">            
+                
+                    <div id="divId" class="myBorder" style="margin-top:5px">
+                       <table> 
+                           <tr>
+                               <td>
+                                   <div style="padding-left: 48px;">
+                                       <b>Search:</b> 
+                                       <input type="text" 
+                                               id="searchId" 
+                                               placeholder="Search" 
+                                               style="width:150px;height:15px;"/>                               
+                                        <input type ="button" 
+                                               value ="Search"
+                                               class="myButton" 
+                                               style="margin-left:5px"
+                                               onclick="searchRuleData();"/>
+                                    </div>
+                               </td>
+                               <td>
+                                    <div style="margin-left:100px">
+                                        <b>Final Status:</b>
+                                        <select id="finalStatusId" onchange='changeFinalStatusJs();' > 
+                                            <option value="All">All</option>                                                                    
+                                            <option value="PI">PI</option>
+                                            <option value="PW">PW</option>
+                                            <option value="PA">PA</option>
+                                            <option value="POF">POF</option>
+                                            <option value="FCD">FCD</option>
+                                            <option value="WEA">WEA</option>
+                                            <option value="WCR">WCR</option>
+                                            <option value="FCF">FCF</option>
+                                            <option value="FD">FD</option>
+                                            <option value="Open">Open</option>
+                                            <option value="Closed">Closed</option>
+                                        </select> 
+                                        <!-- <input type ="button" 
+                                               value ="Go"
+                                               class="myButton"
+                                               style="margin-left:5px"
+                                               onclick='changeFinalStatusJs();'/> -->
+                                    </div>
+                               </td> 
+                               <!-- <td>
+                                        <a href="{!$label.DRC_Legend_Link}" target="_blank">
+                                        <span class="helpLink" style="font-size: 11px;margin-left:180px">Legend Link</span></a>
+                               </td>  -->                            
+                           </tr> 
+                           <tr>
+                               <td>
+                                   
+                               </td>
+                               <td>
+                                    <div style="margin-left:200px;margin-top:5px">
+                                        <input type="button" 
+                                                value="|<<" 
+                                                class="myButton"
+                                                title="First" 
+                                                id="fstId" 
+                                                onclick="pagination('first');"/>                               
+                                        <input type="button" 
+                                                value="<" 
+                                                class="myButton" 
+                                                id="previousId"
+                                                title="Previous" 
+                                                onclick="pagination('previous');"/>                              
+                                        <input type="button" 
+                                                value=">" 
+                                                class="myButton" 
+                                                id="nextId"
+                                                title="Next" 
+                                                onclick="pagination('next');"/>                             
+                                        <input type="button" 
+                                                value=">>|" 
+                                                class="myButton" 
+                                                id="lstId"
+                                                title="Last" 
+                                                onclick="pagination('last');"/>                                      
+                                    </div>
+                               </td>
+                               <td>  
+                                    <div style="color:#ff8930;font-style:italic;font-weight:normal;padding-right:3px;font-size:100%;padding-top:5px;margin-left:130px;">
+                                        Showing {!IF(currentPageNo == 0, 0, (currentPageNo * recordsPerPage)+1-recordsPerPage)}-
+                                                {!IF((currentPageNo * recordsPerPage)>totalNoOfRecords, totalNoOfRecords, (currentPageNo * recordsPerPage))} of {!totalRecords}                                         
+                                    </div>  
+                               </td>
+                               <td>
+                                    <div style="color:#ff8930;font-style:italic;font-weight:normal;padding-right:3px;font-size:100%;">
+                                        <input type="text" 
+                                                value="{!currentPageNo}" 
+                                                id="pageNumberId"
+                                                style="width:20px;height:15px;"/>
+                                        Page of {!totalNoOfPages}
+                                        <input type ="button" 
+                                               value ="Go"
+                                               class="myButton" 
+                                               style="margin-left:5px"
+                                               onclick="changePageNumber();"/> 
+                                    </div>
+                               </td>
+                           </tr>
+                           <tr>
+                               <td>
+                                   <div style="color:#ff8930;font-style:Regular;font-weight:normal;padding-right:3px;font-size:100%;width:300px;">
+                                       Search includes Rule Name, Description, GF Review Result, GF Review Comments, Closing Comments
+                                     </div>
+                               </td>
+                               <td>
+                                   
+                               </td> 
+                               <td>
+                                        
+                               </td>                              
+                           </tr>
+                       </table>       
+                    </div>
+                </apex:pageBlockSectionItem>
+                </apex:outputPanel>
+                <apex:pageBlockSectionItem >
+                    <div style="margin-left:800px">
+                                        <b>Select Records: </b>
+                                        <select id="Count" onchange='changeRowCountJs();' >                                                  
+                                            <option value="10">10</option>
+                                            <option value="15">15</option>
+                                            <option value="20">20</option>
+                                            <option value="25">25</option>
+                                            <option value="30">30</option>
+                                            <option value="35">35</option>
+                                            <option value="40">40</option>
+                                            <option value="50">50</option>
+                                            <option value="100">100</option>
+                                            <option value="150">150</option>
+                                            <option value="200">200</option>
+                                            <option value="300">300</option>
+                                            <option value="400">400</option>
+                                            <option value="500">500</option>
+                                           
+                                        </select> 
+                                      
+                    </div> 
+                   
+                </apex:pageBlockSectionItem>
+                
+                
+                <apex:outputPanel style="margin-left:500px" >
+                <input type ="button" id="saveBtnId1" value ="Save" class="myButton" onClick="saveButton();"/>
+                <input type ="button" id="saveandsubmitBtnId1" value ="Save & submit" class="myButton" onClick="saveAndSubmitButton();"/>
+                <input type ="button" value ="Discard" class="myButton" onclick="discardJS();"/>                                   
+                <input type ="button" id="backBtnId1" value ="Back" class="myButton" onclick="backButton();"/>                
+                <input type ="button" id="revertBtnId1" value ="Revert" title="This will Freeze the collaborator status and customer modifications. Click Ok button to start Revert procedure: superuser select rules to revert then click on Save button to submit the revert." class="myButton" onClick="revertStage();"/>
+                <input type ="button" id="submitRevertBtnId1"   value ="Submit Reverted Rules to Mantis"  class="myButton" onClick="submitRevertStagePop();"/>  
+                </apex:outputPanel> 
+                
+                <apex:outputPanel layout="block" style="overflow:auto; height:auto" id="table1" > 
+                    <html>
+                        <table border="1" class="list" cellspacing="0" cellpadding="0" style="width:auto;">
+                            <tr class="headerrows" align="center">
+                                <td><input type="checkbox" onclick="selectAllCheckboxes(this);" name="selectAll"/></td>
+                                <td><font color="#fff">Rule Name</font></td>
+                                <td><font color="#fff">Rule Description</font></td>
+                                <td><font color="#fff">Hierarchial Error Count</font></td>
+                                <td><font color="#fff">Operation Type</font></td>
+                                <td><font color="#fff">Snapshot</font></td>
+                                <td><font color="#fff">GF Review Results</font></td>
+                                <td><font color="#fff">GF Review Comments</font></td>
+                                <td><font color="#fff"><apex:outputpanel rendered="{! isPortalUser}">Customer Options</apex:outputpanel>
+                                <apex:outputpanel rendered="{! !isPortalUser}" >Customer/FAE Options</apex:outputpanel></font></td>
+                                <apex:variable var="v" value="" rendered="{! !isPortalUser}">
+                                    <td><font color="#fff">GF Internal Closing Comment</font></td>
+                                </apex:variable>
+                                <td><font color="#fff">Customer Closing Explanation</font></td>
+                                <td><font color="#fff">Final Status</font></td>
+                            </tr>
+                            <apex:variable var="idGen" value="{!0}"/>
+                            <apex:repeat value="{!WaiverRuleRecords}" var="wr" id="waiverRuleTable">
+                                <tr class="datarow" id="tableRowId"> 
+                                    <td class="datacell">
+                                        <apex:inputCheckbox value="{!wr.selectBox}" id="inputCheckId" onclick="selectedCheck(this.checked, {!idGen});" />
+                                    </td>                                   
+                                    <td class="datacell"> 
+                                        <apex:outputLink value="/apex/WaiverRuleListPage?id={!wr.ruleRecords.id}" target="_blank">{!wr.ruleRecords.Design_Rule_Name__c}</apex:outputLink>
+                                    </td>
+                                    <td class="datacell">
+                                        <div id="ruleDesc">                                                         
+                                            <apex:outputField value="{!wr.ruleRecords.Rule_Description__c}" title="{!wr.ruleRecords.Rule_Description__c}"/>                                         
+                                        </div>
+                                    </td>
+                                    <td class="datacell">
+                                        <apex:outputField value="{!wr.ruleRecords.Hierarchial_Error_Count__c}"/>
+                                    </td>
+                                    <td class="datacell">
+                                        <apex:outputField value="{!wr.ruleRecords.Operation_Type__c}"/>
+                                    </td>
+                                    <td class="datacell">
+                                        <apex:outputText value="{!wr.isAttach}"/>
+                                    </td>
+                                    <td class="datacell">
+                                        <apex:outputpanel rendered="{!IF(AND(!isFoundryView),true,false)}" >
+                                            <img src="{!wr.ruleRecords.GF_Review_Results__c}" alt=" " height="25" width="50" border="0" title="{!wr.tooltipStage}"/>
+                                        </apex:outputpanel>  
+                                        <apex:outputpanel rendered="{!IF(AND(!isFoundryView),false,true)}" >
+                                            <img src="/GlobalfoundryView{!wr.ruleRecords.GF_Review_Results__c}" alt=" " height="25" width="50" border="0" title="{!wr.tooltipStage}"/>
+                                        </apex:outputpanel>  
+                                    </td>                                    
+                                    <td class="datacell">
+                                        <apex:outputField value="{!wr.ruleRecords.GF_Review_Comment__c}"/>
+                                    </td>
+                                    <td class="datacell">
+                                        <apex:selectRadio id="selectedRd" layout="pageDirection" value="{!wr.selectedRadio}" style="width:200px" onClick="setOptions(this, '{!wr.ruleRecords.id}', {!idGen});"> 
+                                            <apex:selectOptions id="selRdOptn" value="{!Options}"/>
+                                        </apex:selectRadio>
+                                    </td>
+                                    <apex:variable var="v" value="" rendered="{! !isPortalUser}" id="gfClosingVar">
+                                        <td class="datacell"><apex:outputpanel rendered="{!Not(wr.ruleRecords.isIntermediateSave__c)}" >
+                                            <apex:outputField value="{!wr.ruleRecords.GF_Internal_Closing_Comment__c}" 
+                                            rendered="{!IF(OR(wr.ruleRecords.Stage__c == 'PI', wr.ruleRecords.Stage__c == 'PW',
+                                                                 waiverCollaborator.Is_releasedToCustomer__c != true, waiverCollaborator.Revert_Collaborator__c != true, 
+                                                                  wr.ruleRecords.IsCustomerAcceptsRisk__c == true,
+                                                                   wr.ruleRecords.IsCustomerAgreeToFix__c == true,
+                                                                    wr.ruleRecords.IsGfAcceptsRisk__c == true,
+                                                                    wr.ruleRecords.AcceptRisk__c== true), true, false)}"/>
+                                                                    </apex:outputpanel>
+                                            <apex:inputField id="gfClosing" style="width:93px;height:130px;" onchange="updatecommentMap(this,'{!wr.ruleRecords.id}');" value="{!wr.ruleRecords.GF_Internal_Closing_Comment__c}" rendered="{!IF(OR(wr.ruleRecords.isIntermediateSave__c,AND(wr.ruleRecords.Stage__c != 'PI', wr.ruleRecords.Stage__c != 'PW', wr.ruleRecords.Stage__c != 'PWA', wr.ruleRecords.Stage__c != 'POF', wr.ruleRecords.Stage__c != 'PA',   wr.ruleRecords.Stage__c != 'WEA', wr.ruleRecords.Stage__c != 'WCR', wr.ruleRecords.Stage__c != 'FCF', waiverCollaborator.Is_releasedToCustomer__c == true ,wr.ruleRecords.IsCustomerAcceptsRisk__c != true, wr.ruleRecords.IsCustomerAgreeToFix__c != true,wr.ruleRecords.AcceptRisk__c!= true, wr.ruleRecords.IsGfAcceptsRisk__c != true, !isDRB, !isGroup)), true, false)}"/>
+                                        </td>
+                                    </apex:variable>
+                                    <td class="datacell">
+                                    <apex:outputpanel >
+                                        <apex:outputField value="{!wr.ruleRecords.Customer_Closing_Comment__c}" rendered="{!IF(OR(wr.ruleRecords.Stage__c == 'PI', wr.ruleRecords.Stage__c == 'PW',  wr.ruleRecords.Stage__c == 'PWA',  wr.ruleRecords.Stage__c == 'POF', wr.ruleRecords.Stage__c == 'PA',isFAE,isDRBUser, wr.ruleRecords.IsCustomerAcceptsRisk__c == true, wr.ruleRecords.IsCustomerAgreeToFix__c == true,wr.ruleRecords.Disagree__c == true), true, false)}"/>
+                                        </apex:outputpanel>
+                                        <apex:inputField id="custClosing"  style="width:93px;height:130px;" value="{!wr.ruleRecords.Customer_Closing_Comment__c}" rendered="{!IF(OR(and(wr.ruleRecords.isIntermediateSave__c,isPortalUser),AND(wr.ruleRecords.Stage__c != 'PI', wr.ruleRecords.Stage__c != 'PW', wr.ruleRecords.Stage__c != 'PWA', wr.ruleRecords.Stage__c != 'POF', wr.ruleRecords.Stage__c != 'PA',  wr.ruleRecords.Stage__c != 'WEA', wr.ruleRecords.Stage__c != 'WCR', wr.ruleRecords.Stage__c != 'FCF',isPortalUser, wr.ruleRecords.IsCustomerAcceptsRisk__c != true, wr.ruleRecords.IsCustomerAgreeToFix__c != true)), true, false)}"/>
+                                    </td>
+                                    <td class="datacell">
+                                        <apex:outputpanel rendered="{!IF(AND(!isFoundryView),true,false)}" >
+                                            <img src="{!wr.ruleRecords.Final_Status__c}" alt=" " height="25" width="50" border="0" title="{!wr.tooltipFinal}"/>
+                                        </apex:outputpanel>  
+                                        <apex:outputpanel rendered="{!IF(AND(!isFoundryView),false,true)}" >
+                                            <img src="/GlobalfoundryView{!wr.ruleRecords.Final_Status__c}" alt=" " height="25" width="50" border="0" title="{!wr.tooltipFinal}"/>
+                                        </apex:outputpanel>  
+                                    </td>
+                                </tr>
+                                <apex:variable var="idGen" value="{! idGen + 1}"/>
+                            </apex:repeat>                                                                          
+                        </table>                       
+                    </html>                  
+                </apex:outputPanel>                                                                      
+            </apex:pageBlockSection> 
+            <br/>
+            <apex:outputText value="No Rules are Available" rendered="{!IF(ruleListWrapper.size == 0, true, false)}" />
+            <br/> 
+            <apex:outputPanel style="margin-left:500px" >
+                <input type ="button" id="saveBtnId" value ="Save" class="myButton" onClick="saveButton();"/>
+                <input type ="button" id="saveandsubmitBtnId" value ="Save & submit" class="myButton" onClick="saveAndSubmitButton();"/>
+                <input type ="button" value ="Discard" class="myButton" onclick="discardJS();"/>
+                <input type ="button" id="backBtnId" value ="Back" class="myButton" onclick="backButton();"/>  
+                <input type ="button" id="revertBtnId" value ="Revert"  class="myButton" onClick="revertStage();"/>
+                <input type ="button" id="submitRevertBtnId"   value ="Submit Reverted Rules to Mantis"  class="myButton" onClick="submitRevertStagePop();"/> 
+            </apex:outputPanel> 
+            
+            <apex:pageBlockSection title="Snapshot Indicator">
+                <apex:outputPanel layout="block" style="overflow:auto;width:1030px;"> 
+                    <html>
+                        <table border="1" class="list" cellspacing="0" cellpadding="0" style="width:auto;">
+                            <tr class="headerrows" align="center">
+                                <td style="width:60px"><font color="#fff">Rule Name</font></td>
+                                <td style="width:20px"><font color="#fff">Attachment 1</font></td>
+                                <td style="width:20px"><font color="#fff">Attachment 2</font></td>
+                                <td style="width:20px"><font color="#fff">Attachment 3</font></td>
+                                <td style="width:20px"><font color="#fff">Attachment 4</font></td>
+                                <td style="width:20px"><font color="#fff">Attachment 5</font></td>
+                                <td style="width:20px"><font color="#fff">Attachment 6</font></td>
+                                <td style="width:20px"><font color="#fff">Attachment 7</font></td>
+                                <td style="width:20px"><font color="#fff">Attachment 8</font></td>
+                                <td style="width:20px"><font color="#fff">Attachment 9</font></td>
+                                <td style="width:20px"><font color="#fff">Attachment 10</font></td>
+                            </tr>
+                            <apex:repeat value="{!waiverRuleAttachmentTable}" var="wra" id="waiverRuleAttachmentTable">                             
+                                <tr class="datarow"> 
+                                    <td class="datacell">
+                                        <apex:outputText value="{!wra}"/>
+                                    </td>                               
+                                    <apex:repeat value="{!waiverRuleAttachmentTable[wra]}" var="keyvalue" >
+                                        <td class="datacell">
+                                            <input type ="button" value="{!keyvalue.name}" class="myButtonLink" onclick="viewAttach('{!keyvalue}', '{!keyvalue.name}');"/>
+                                        </td>                                       
+                                    </apex:repeat>
+                                </tr>                              
+                            </apex:repeat>
+                        </table>
+                    </html>
+                </apex:outputPanel>        
+            </apex:pageBlockSection>                      
+        </apex:pageBlock>  
+        
+        <!-- Below section is added in order to merge DFM and DRC module  -->
+        
+         <!-- Related list provides Chip related details of waiver collaborator -->
+        <apex:pageBlock rendered="{!isTypeDFM}">
+            <apex:pageBlockTable value="{!lst_Chips}" var="chip">
+                <!-- 
+                 <apex:column headerValue="Title">
+                    <apex:outputLink value="/{!chip.id}" target="_blank">{!chip.Name}</apex:outputLink>
+                 </apex:column>
+                -->  
+                 <apex:column headerValue="Chip Name">
+                    <apex:outputText value="{!chip.Chip_Name__c}"/>
+                 </apex:column>
+                 
+                 <apex:column headerValue="Chip Size X">
+                    <apex:outputText value="{!chip.Chip_Size_X__c}"/>
+                 </apex:column>
+                 
+                 <apex:column headerValue="Chip Size Y">
+                    <apex:outputText value="{!chip.Chip_Size_Y__c}"/>
+                 </apex:column>
+                 
+                 <apex:column headerValue="Database Name">
+                    <apex:outputText value="{!chip.Database_Name__c}"/>
+                 </apex:column>
+                 
+                 <apex:column headerValue="Database Size">
+                    <apex:outputText value="{!chip.Database_Size__c}"/>
+                 </apex:column>
+                 
+                 <apex:column headerValue="Md5Sum">
+                    <apex:outputText value="{!chip.Md5Sum__c}"/>
+                 </apex:column>
+                 
+                 <apex:column headerValue="Source PTSR Number">
+                    <apex:outputText value="{!chip.Source_PTSR_Number__c}"/>
+                 </apex:column>
+                 
+                 <apex:column headerValue="Top Cell Name">
+                    <apex:outputText value="{!chip.Top_Cell_Name__c}"/>
+                 </apex:column>
+                 
+            </apex:pageBlockTable>
+        </apex:pageBlock> 
+        
+         <div id="cancellation_Div" style="display: none;">
+               
+            <apex:pageBlock id="cPblockId">
+                <apex:pageBlockSection title="Waiver collaborator cancellation reason" collapsible="false" columns="1" id="cSectionId">
+                    <apex:inputTextArea value="{!wfCancelationReason}"  id="wfCId" style="height: 299px; width: 900px;" richText="false" rows="10"  disabled="false"/> 
+                </apex:pageBlockSection>
+            </apex:pageBlock> 
+               
+        </div>
+        
+        
+        <div id="popup_revertOption" style="display: none;">
+            <apex:pageBlock title="Select Revert Stage" id="rvrtblockId">
+            <apex:outputText value="This will Freeze the collaborator status and customer modifications. Superuser will select rules to revert then click on 'Save' button to revert."></apex:outputText>
+            <apex:outputText value=" Please select the Revert Option below, enter Revert comments and click 'Submit' button to start Revert procedure"></apex:outputText>    
+            <apex:selectRadio id="selectedRvrt" layout="pageDirection" value="{!revertOption}" style="width:200px" onchange="revertbtn(this)" > 
+                 <apex:selectOptions id="selRdOptnRevert" value="{!RevertOptions}"/>
+            </apex:selectRadio>
+             
+            <apex:pageBlockSection title="Waiver collaborator Revert reason" collapsible="false" columns="1" id="rvrtSectionId">
+                    <apex:inputTextArea value="{!wfRevertReason}"  id="revertId" style="height: 100px; width: 700px;" richText="false" rows="10"  disabled="false"/> 
+                </apex:pageBlockSection>
+            </apex:pageBlock> 
+        </div>
+        
+        <!-- END DFM and DRC Merging section  -->
+        
+        <apex:inputhidden value="{!jsonruleList}" id="hdnJsonList"/>   
+        <apex:inputhidden value="{!totalNoOfPages}" id="hdnPageNum"/>
+        <apex:inputhidden value="{!totalNoOfRecords}" id="hdnCurrPageNum"/>
+        <apex:inputhidden value="{!finalStatusValue}" id="hdnFinalStatus"/>  
+        <apex:inputhidden value="{!searchValue}" id="hdnSearchValue"/>
+    </apex:form>
+    
+    <!-- DFM Merging section to show attachment and approval process section -->
+    <apex:relatedList subject="{!Wavier_Collaborator__c}" list="CombinedAttachments" rendered="{!IF(OR(isStandardUser,AND(isTypeDFM,waiverCollaborator.Workflow_Status__c == 'Closed')), true, false)}" id="attachmentId"/>
+    <apex:relatedList list="ProcessSteps" id="processId" rendered="{!AND(isStandardUser,isTypeDFM)}"/>
+    
+  <!-- <apex:relatedList subject="{!Wavier_Collaborator__c}" list="ActivityHistories" rendered="{!IF(AND(!isPortalUser),true,false)}" /> -->
+    <apex:outputPanel rendered="{!IF(AND(!isPortalUser),true,false)}">
+         <c:GenericHistoryComponent Object="{!Wavier_Collaborator__c}" Limit="20" />
+    </apex:outputPanel>
+            
+    <!-- End of DFM/DRC merging section -->
+    
+    <style>
+        .headerrows {
+            background: #8bbec1;
+            border-width: 0 0 1px 1px;
+            border-color: #8bbec1;
+            color: #000;
+            font-size: .9em;
+            font-weight: bold;
+            padding: 5px 2px 4px 5px;
+        }        
+        .apexp .bPageBlock .detailList .list table td, .apexp .bPageBlock .detailList .list table th {
+            border-bottom: 1px solid #fff;
+            border-top: 1px solid #fff;
+            border-left: 1px solid #fff;
+            border-right: 1px solid #fff;
+        } 
+        textarea {
+            width: 50px;
+        }      
+        .myButton {
+            background-color:#ff8930;
+            -moz-border-radius:7px;
+            -webkit-border-radius:7px;
+            border-radius:7px;
+            border:1px solid #c97e1c;
+            display:inline-block;
+            color:#ffffff;
+            font-family:Trebuchet MS;
+            font-size:13px;
+            font-weight:bold;
+            cursor: pointer;
+        }           
+        span {
+            vertical-align: top;
+        }                      
+        .myButtonLink{
+             background:none!important;
+             border:none; 
+             padding:0!important;
+             font: inherit;
+             border-bottom:1px solid #444; 
+             cursor: pointer;
+        }       
+        .myLinkButton {
+            padding: 10px 5px;
+            background: #85898E;
+            display: inline-block;
+            font-weight: bold;
+            text-decoration: none;
+            -webkit-border-radius: 4px;
+            float: right;
+        }
+        #ruleDesc {
+           width: 200px;
+           word-break: break-word;
+           padding: 4px;
+        }               
+    </style>
+    <apex:outputpanel id="resetJSON">
+    <script>
+    ruleListJSon = '{!jsonruleList}';
+    ruleListJSon=JSON.parse(ruleListJSon);
+    </script> 
+    </apex:outputpanel>
+    
+    <script type="text/javascript">
+    
+        var users='';
+        var usersMap = {};
+        var ruleRecs='';
+        var valSearch='';
+        var singleCheck='';
+        var singleRecId='';
+        var singleSelectRecId='';
+        var isFAE='';
+        var isDRBUser='';
+        var isPortal='';
+        var rowToRecordMap = {};
+        var pagetoRowMap = {};
+        var optionMap = {};
+        var commentMap = {};
+        var isDFMUserVar='';
+        var isLongFlow='';
+        var ruleListJSon=null;
+        var jsonruleListALL=[];
+        var isSuperUser='';
+        var isRevertedRulesExist='';
+        var allRulemap = new Object();
+        var allRuleStagemap = new Object();
+        var allRuleCommentmap = new Object();
+        var allRuleintStagemap = new Object();
+        var revertStageSelection='';
+        var isCollaboratorSubmitted='';
+        var customerSubmittedCollaborator='';
+        $j = jQuery.noConflict();
+        
+        $j( document ).ready(function() {    
+
+            $j("#fstId").hide();
+            $j("#previousId").hide();       
+            ruleListJSon = '{!jsonruleList}';
+             ruleListJSon=JSON.parse(ruleListJSon);
+             jsonruleListALL=JSON.parse('{!jsonruleListALL}');
+             
+             for(var i=0;i<jsonruleListALL.length;i++){
+                allRulemap[jsonruleListALL[i].ruleRecords.Id] = jsonruleListALL[i].ruleRecords.Final_Stage__c;
+                allRuleintStagemap[jsonruleListALL[i].ruleRecords.Id] = jsonruleListALL[i].ruleRecords.Stage__c;
+                allRuleStagemap[jsonruleListALL[i].ruleRecords.Id] = jsonruleListALL[i].selectedRadio;
+                allRuleCommentmap[jsonruleListALL[i].ruleRecords.Id] = jsonruleListALL[i].hasComment;
+             }
+             
+            //alert('ruleListJSon '+ruleListJSon);
+            var finalStatusCondition ="{!waiverCollaborator.Waiver_Status__c}";
+            if(finalStatusCondition=='Open'){
+                $j("#finalStatusId").val("Open");
+            }
+            if (ruleListJSon !=null && ruleListJSon != undefined && ruleListJSon.length>0){
+             if('{!waiverCollaborator.isSubmitted__c}'!=='true'){
+                 disableCustomerOptions(ruleListJSon);
+              }else if('{!waiverCollaborator.Revert_Collaborator__c}'=='true'){
+              	 disableCustomerOptions(ruleListJSon);              
+              }
+                
+            }          
+            changeFinalStatusJs();  
+        });
+        
+        function discardJS(){
+            var popup = new SimpleDialog("PopUp"+Dialogs.getNextId(), false);    
+            popup.setTitle("Warning");   
+            popup.createDialog();   
+            window.parent.popup = popup;   
+            popup.setContentInnerHTML("<p align='center'>This collaborator has unsaved changes. Do you want to discard the unsaved changes? Discarded changes cannot be reversible.</p><p align='center'><br /><button class='btn' onclick='location.href=location.href;'>Yes</button><button class='btn' onclick='window.parent.popup.hide(); return false;'>No</button></p>");    
+            popup.show(); 
+        }
+        
+        
+        function disableCustomerOptions(ruleListJSon){ 
+            console.log('disableCustomerOptions');    
+            isFAE = "{!isFAE}";
+            isDRBUser="{!isDRBUser}"
+            isPortal = "{!isPortalUser}";
+            var isDRB = "{!isDRB}";
+            var isGroup = "{!isGroup}";
+            var isDFM ="{!isTypeDFM}";
+            isDFMUserVar = "{!isDFMUser}";
+             isLongFlow = "{!isLongFlow}";
+            isSuperUser="{!isSuperUser}";
+            isRevertedRulesExist="{!isRevertedRules}";
+            isCollaboratorSubmitted = "{!waiverCollaborator.isSubmitted__c}";
+            customerSubmittedCollaborator = "{!waiverCollaborator.isCustomerSelectionSubmitted__c}";
+            pagetoRowMap = {};
+                  
+            var isReleasedTocustomer = "{!waiverCollaborator.Is_releasedToCustomer__c}";
+            var waiverStatus ="{!waiverCollaborator.Waiver_Status__c}";
+            var workFlowStatus ="{!waiverCollaborator.Workflow_Status__c}";
+            var revertCollaborator ="{!waiverCollaborator.Revert_Collaborator__c}";
+            var progBarStatus ="{!waiverCollaborator.Progressbar_staus__c}";
+            if(document.getElementById('pageNumberId')!=null && document.getElementById('pageNumberId') != undefined){
+            var pageNoValue = document.getElementById('pageNumberId').value;
+            }
+            
+             console.log('removeTextAreaWhiteSpace'); 
+            removeTextAreaWhiteSpace();
+             console.log('//removeTextAreaWhiteSpace');
+            var chkLength = (ruleListJSon == null ? true : false);
+            if(chkLength && valSearch == 'Search') {
+                $("#saveBtnId").hide(); 
+                $("#saveBtnId1").hide();
+                $("#saveandsubmitBtnId").hide(); 
+                $("#saveandsubmitBtnId1").hide(); 
+                if(document.getElementById('massCommentId')!=null && document.getElementById('massCommentId') != undefined){ 
+                    document.getElementById("massCommentId").disabled=true;
+                }
+                if(document.getElementById('selectedRdMassUpSec')!=null && document.getElementById('selectedRdMassUpSec') != undefined){ 
+                    document.getElementById("selectedRdMassUpSec").disabled=true;
+                }
+                $("#fstId").hide(); $("#previousId").hide();
+                $("#nextId").hide(); $("#lstId").hide();
+                valSearch = ''; 
+                
+                var popup = new SimpleDialog("PopUp"+Dialogs.getNextId(), false);    
+                popup.setTitle("Warning");   
+                popup.createDialog();   
+                window.parent.popup = popup;   
+                popup.setContentInnerHTML("<p align='center'><img src='/img/msg_icons/warning32.png' style='margin:0 5px;'/></p><p align='center'>No records are matching your search.</p><p align='center'><br /><button class='btn' onclick='window.parent.popup.hide(); return false;'>Close</button></p>");    
+                popup.show();                      
+            }
+            
+         if(isLongFlow == 'false' && '{!isTypeDRC}'=='false'){         
+              $j("#processCustBtnId").hide();
+              
+             }else{
+                  $j("#theButton").hide();
+              }
+            
+            
+           
+              
+            if (ruleListJSon != null && ruleListJSon.length != 0){  
+   
+                
+                if(isDRB == 'true' || isGroup == 'true') {
+                    $j("#processCustBtnId").hide(); 
+                    $j("#saveBtnId").hide();
+                    $j("#saveBtnId1").hide();
+                    $("#saveandsubmitBtnId").hide(); 
+                    $("#saveandsubmitBtnId1").hide();
+                    if(document.getElementById('massCommentId')!=null && document.getElementById('massCommentId') != undefined){ 
+                    document.getElementById("massCommentId").disabled=true; 
+                        }
+                }
+                
+                if(isFAE == 'true' ||isDRBUser== 'true') {
+                    if(isReleasedTocustomer == 'false') {
+                        $j("#processCustBtnId").show();
+                        $j("#saveBtnId").hide();
+                        $j("#saveBtnId1").hide();
+                        $("#saveandsubmitBtnId").hide(); 
+                        $("#saveandsubmitBtnId1").hide();
+                        if(document.getElementById('massCommentId')!=null && document.getElementById('massCommentId') != undefined){ 
+                            document.getElementById("massCommentId").disabled=true; 
+                        }
+                    } else {
+                        $j("#processCustBtnId").hide();
+                        $j("#saveBtnId").show();
+                        $j("#saveBtnId1").show();
+                        $("#saveandsubmitBtnId").show(); 
+                        $("#saveandsubmitBtnId1").show();   
+                        if(document.getElementById('massCommentId')!=null && document.getElementById('massCommentId') != undefined){ 
+                            document.getElementById("massCommentId").disabled=false;
+                        }
+                    }
+                }    
+                                
+                if(isPortal == 'true') {
+                    $j("#processCustBtnId").hide(); 
+                     $j("#theButton").hide();
+                    $("#saveBtnId").show();
+                    $("#saveBtnId1").show();
+                    $("#saveandsubmitBtnId").show(); 
+                    $("#saveandsubmitBtnId1").show();   
+                    if(document.getElementById('massCommentId')!=null && document.getElementById('massCommentId') != undefined){ 
+                    document.getElementById("massCommentId").disabled=false;
+                        }
+                }
+                 
+                if(isSuperUser=='false'){
+                    $j("#revertBtnId1").hide();
+                    $j("#revertBtnId").hide();
+                    $j("#submitRevertBtnId1").hide();
+                    $j("#submitRevertBtnId").hide();
+                }
+            
+            if( workFlowStatus == 'Closed' || workFlowStatus == 'Cancel') {
+                $j("#processCustBtnId").hide(); 
+                $j("#theButton").hide();
+                $j("#saveBtnId").hide();
+                $j("#saveBtnId1").hide();
+                $("#saveandsubmitBtnId").hide(); 
+                $("#saveandsubmitBtnId1").hide();
+                $j("#revertBtnId1").hide();
+                $j("#revertBtnId").hide();
+                $j("#submitRevertBtnId1").hide();
+                $j("#submitRevertBtnId").hide();
+                if(document.getElementById('massCommentId')!=null && document.getElementById('massCommentId') != undefined){ 
+                    document.getElementById("massCommentId").disabled=true; 
+                }
+            } 
+            
+            if(revertCollaborator=='true'){
+                $j("#processCustBtnId").hide(); 
+                $j("#theButton").hide();
+                $("#saveandsubmitBtnId").hide(); 
+                $("#saveandsubmitBtnId1").hide();
+                $j("#revertBtnId1").hide();
+                $j("#revertBtnId").hide();
+                if(document.getElementById('massCommentId')!=null && document.getElementById('massCommentId') != undefined){ 
+                    document.getElementById("massCommentId").disabled=true; 
+                }
+                 if(isSuperUser=='false'){
+                     $j("#saveBtnId").hide();
+                     $j("#saveBtnId1").hide();
+                 }else{
+                     $j("#saveBtnId").show();
+                     $j("#saveBtnId1").show();
+                 }
+            }
+                
+            if(isRevertedRulesExist=='true' && revertCollaborator=='true'){
+                $j("#submitRevertBtnId1").show();
+                $j("#submitRevertBtnId").show();
+            }else{
+            	 $j("#submitRevertBtnId1").hide();
+            	 $j("#submitRevertBtnId").hide();
+            }
+            
+            
+			if(isCollaboratorSubmitted=='true'){
+                if(revertCollaborator!='true'){
+            	$j("#saveBtnId").hide();
+                $j("#saveBtnId1").hide();
+                }
+                $("#saveandsubmitBtnId").hide(); 
+                $("#saveandsubmitBtnId1").hide();
+                
+            }  
+            
+            if(customerSubmittedCollaborator!='true' && isFAE == 'true' && (revertCollaborator!='true' && isSuperUser=='false') ){
+                console.log('Disabling the Save and Submit till Customer releases the report after submission');
+                $j("#saveBtnId").hide();
+                $j("#saveBtnId1").hide();
+                
+                $("#saveandsubmitBtnId").hide(); 
+                $("#saveandsubmitBtnId1").hide();
+                
+            } else if(customerSubmittedCollaborator=='true' && isFAE == 'true'){
+                
+                $j("#saveBtnId").show();
+                $j("#saveBtnId1").show();
+                
+                $("#saveandsubmitBtnId").show(); 
+                $("#saveandsubmitBtnId1").show();
+            }   
+                      
+                  console.log('//looping rule list'+ruleListJSon.length);
+                for(var i=0; i < ruleListJSon.length; i++){ 
+                     console.log('//looping rule list start'+i);
+                     console.log('isFAE'+isFAE);
+                    if(isFAE == 'true'|| isDRBUser== 'true') {
+                    
+                        if(isReleasedTocustomer == 'false') { 
+                            if(isSuperUser=='false') {
+                            if(document.getElementById("DRCPage:formDRC:pbid:ruleListId:waiverRuleTable:"+i+":inputCheckId")!=null){
+                            console.log('line 1051'); 
+                            document.getElementById("DRCPage:formDRC:pbid:ruleListId:waiverRuleTable:"+i+":inputCheckId").disabled=true;
+                            }
+                            }
+                           } else {
+                                //DFM enhancements
+                                 console.log('line924'+i);
+                                console.log(ruleListJSon[i].ruleRecords);
+                                if(ruleListJSon[i].ruleRecords != null && ruleListJSon[i].ruleRecords != undefined ){   
+                                    if(ruleListJSon[i].ruleRecords.Stage__c == 'PI' || 
+                                    ruleListJSon[i].ruleRecords.Stage__c == 'PW' || 
+                                    ruleListJSon[i].ruleRecords.Stage__c == 'PA' || 
+                                    ruleListJSon[i].ruleRecords.Stage__c == 'eFD' ||
+                                    ruleListJSon[i].ruleRecords.Stage__c == 'WCR' ||
+                                    ruleListJSon[i].ruleRecords.Stage__c == 'WEA' ||
+                                    ruleListJSon[i].ruleRecords.Stage__c == 'FCF' || 
+                                    ruleListJSon[i].ruleRecords.Stage__c == 'PWA'|| 
+                                    ruleListJSon[i].ruleRecords.Stage__c == 'POF'){
+                                        if(document.getElementById("DRCPage:formDRC:pbid:ruleListId:waiverRuleTable:"+i+":inputCheckId")!=null){
+                                        console.log('line 1069');
+                                            document.getElementById("DRCPage:formDRC:pbid:ruleListId:waiverRuleTable:"+i+":inputCheckId").disabled=true;
+                                        }
+                                         if(document.getElementById("DRCPage:formDRC:pbid:ruleListId:waiverRuleTable:"+i+":selectedRd:3")!=null){ 
+                                            document.getElementById("DRCPage:formDRC:pbid:ruleListId:waiverRuleTable:"+i+":selectedRd:3").disabled=true; 
+                                        }
+                                         if(document.getElementById("DRCPage:formDRC:pbid:ruleListId:waiverRuleTable:"+i+":selectedRd:4")!=null){ 
+                                            document.getElementById("DRCPage:formDRC:pbid:ruleListId:waiverRuleTable:"+i+":selectedRd:4").disabled=true; 
+                                        }
+                                    } else {
+                                    
+                                        if(document.getElementById("DRCPage:formDRC:pbid:ruleListId:waiverRuleTable:"+i+":inputCheckId")!=null
+                                            && document.getElementById("DRCPage:formDRC:pbid:ruleListId:waiverRuleTable:"+i+":inputCheckId").checked
+                                            && ruleListJSon[i].ruleRecords.isIntermediateSave__c!=true){
+                                            //console.log('line 1081'); 
+                                            document.getElementById("DRCPage:formDRC:pbid:ruleListId:waiverRuleTable:"+i+":inputCheckId").disabled=true;
+                                        }
+                                        if(document.getElementById("DRCPage:formDRC:pbid:ruleListId:waiverRuleTable:"+i+":selectedRd:3")!=null){                                     
+                                            document.getElementById("DRCPage:formDRC:pbid:ruleListId:waiverRuleTable:"+i+":selectedRd:3").disabled=false;  
+                                            
+                                        }
+                                        if(document.getElementById("DRCPage:formDRC:pbid:ruleListId:waiverRuleTable:"+i+":selectedRd:4")!=null){ 
+                                            document.getElementById("DRCPage:formDRC:pbid:ruleListId:waiverRuleTable:"+i+":selectedRd:4").disabled=false;
+                                        }
+                                        
+                                        
+                                        
+                                    }   
+                                }
+                         
+                            }
+                        
+                        
+                       
+                    } ///FAE end
+                    
+                    if(isDRB == 'true' || isGroup == 'true') {
+                        console.log('isDRB/GRP');
+                         if(document.getElementById("DRCPage:formDRC:pbid:ruleListId:waiverRuleTable:"+i+":inputCheckId")!=null){
+                         console.log('line 1105');
+                            document.getElementById("DRCPage:formDRC:pbid:ruleListId:waiverRuleTable:"+i+":inputCheckId").disabled=true;
+                        }
+                         
+                     }///DRB end
+                        
+                    
+                    if(isPortal == 'true') {                       
+                        //DFM enhancements
+                        if(ruleListJSon[i].ruleRecords != null && ruleListJSon[i].ruleRecords != undefined){  
+                           console.log('line 1118');
+                            
+                            if(ruleListJSon[i].ruleRecords.Stage__c == 'PI' ||
+                                ruleListJSon[i].ruleRecords.Stage__c == 'PW' ||
+                                ruleListJSon[i].ruleRecords.Stage__c == 'PA' ||
+                                ruleListJSon[i].ruleRecords.Stage__c == 'PWA' ||
+                                ruleListJSon[i].ruleRecords.Stage__c == 'eFD'||
+                                ruleListJSon[i].ruleRecords.Stage__c == 'POF'||
+                                ruleListJSon[i].ruleRecords.Stage__c == 'WCR' ||
+                                ruleListJSon[i].ruleRecords.Stage__c == 'WEA' ||
+                                ruleListJSon[i].ruleRecords.Stage__c == 'FCF'){                         
+                                if(document.getElementById("DRCPage:formDRC:pbid:ruleListId:waiverRuleTable:"+i+":inputCheckId")!=null){
+                                console.log('line 1126'); 
+                                    document.getElementById("DRCPage:formDRC:pbid:ruleListId:waiverRuleTable:"+i+":inputCheckId").disabled=true;
+                                }
+                                if(document.getElementById("DRCPage:formDRC:pbid:ruleListId:waiverRuleTable:"+i+":selectedRd:0")!=null){ 
+                                    document.getElementById("DRCPage:formDRC:pbid:ruleListId:waiverRuleTable:"+i+":selectedRd:0").disabled=true;
+                                }
+                                if(document.getElementById("DRCPage:formDRC:pbid:ruleListId:waiverRuleTable:"+i+":selectedRd:1")!=null){ 
+                                    document.getElementById("DRCPage:formDRC:pbid:ruleListId:waiverRuleTable:"+i+":selectedRd:1").disabled=true;
+                                } 
+                                if(document.getElementById("DRCPage:formDRC:pbid:ruleListId:waiverRuleTable:"+i+":selectedRd:2")!=null){ 
+                                    document.getElementById("DRCPage:formDRC:pbid:ruleListId:waiverRuleTable:"+i+":selectedRd:2").disabled=true;
+                                } 
+                            } else {
+                                
+                                    if(document.getElementById("DRCPage:formDRC:pbid:ruleListId:waiverRuleTable:"+i+":inputCheckId")!=null
+                                            && document.getElementById("DRCPage:formDRC:pbid:ruleListId:waiverRuleTable:"+i+":inputCheckId").checked &&
+                                            ruleListJSon[i].ruleRecords.isIntermediateSave__c!=true ){ 
+                                            console.log('line 1147');
+                                            document.getElementById("DRCPage:formDRC:pbid:ruleListId:waiverRuleTable:"+i+":inputCheckId").disabled=true;
+                                        }
+                                    
+                                    if(ruleListJSon[i].ruleRecords.Stage__c == 'FD' ||
+                                     ruleListJSon[i].ruleRecords.Stage__c == 'IFD'  ||
+                                      ruleListJSon[i].ruleRecords.Stage__c == 'iFD'){
+                                        if(document.getElementById("DRCPage:formDRC:pbid:ruleListId:waiverRuleTable:"+i+":selectedRd:1")!=null){ 
+                                            document.getElementById("DRCPage:formDRC:pbid:ruleListId:waiverRuleTable:"+i+":selectedRd:1").disabled=true;
+                                        } 
+                                    }
+                                    
+                            }
+                        }
+                        
+                    }//portal end      
+                    
+                    if(ruleListJSon[i].ruleRecords != null && ruleListJSon[i].ruleRecords != undefined){
+                    
+                    console.log('line1082'+ruleListJSon[i].ruleRecords.Disagree__c);
+                        //=====================================FAEstart
+                        if(isFAE == 'true'  || isSuperUser=='true'){
+                            if(ruleListJSon[i].ruleRecords.Disagree__c ){ 
+                    
+                                if(document.getElementById("DRCPage:formDRC:pbid:ruleListId:waiverRuleTable:"+i+":inputCheckId")!=null){ 
+                                    document.getElementById("DRCPage:formDRC:pbid:ruleListId:waiverRuleTable:"+i+":inputCheckId").disabled=false;
+                                    document.getElementById("DRCPage:formDRC:pbid:ruleListId:waiverRuleTable:"+i+":inputCheckId").checked=false;
+                                }
+                    
+                                if(document.getElementById("DRCPage:formDRC:pbid:ruleListId:waiverRuleTable:"+i+":selectedRd:3")!=null){ 
+                                    document.getElementById("DRCPage:formDRC:pbid:ruleListId:waiverRuleTable:"+i+":selectedRd:3").disabled=false;
+                                }
+                                if(document.getElementById("DRCPage:formDRC:pbid:ruleListId:waiverRuleTable:"+i+":selectedRd:4")!=null){ 
+                                    document.getElementById("DRCPage:formDRC:pbid:ruleListId:waiverRuleTable:"+i+":selectedRd:4").disabled=false; 
+                                }
+                    
+                            }else if((ruleListJSon[i].ruleRecords.IsGfAcceptsRisk__c || ruleListJSon[i].ruleRecords.AcceptRisk__c) &&
+                            ruleListJSon[i].ruleRecords.isIntermediateSave__c!=true){  
+                                if(document.getElementById("DRCPage:formDRC:pbid:ruleListId:waiverRuleTable:"+i+":inputCheckId")!=null){
+                                console.log('line 1181'); 
+                                    document.getElementById("DRCPage:formDRC:pbid:ruleListId:waiverRuleTable:"+i+":inputCheckId").disabled=true;
+                                    document.getElementById("DRCPage:formDRC:pbid:ruleListId:waiverRuleTable:"+i+":inputCheckId").checked=true;
+                                }
+                                if(document.getElementById("DRCPage:formDRC:pbid:ruleListId:waiverRuleTable:"+i+":selectedRd:3")!=null){ 
+                                    document.getElementById("DRCPage:formDRC:pbid:ruleListId:waiverRuleTable:"+i+":selectedRd:3").disabled=true;
+                                }
+                                if(document.getElementById("DRCPage:formDRC:pbid:ruleListId:waiverRuleTable:"+i+":selectedRd:4")!=null){ 
+                                    document.getElementById("DRCPage:formDRC:pbid:ruleListId:waiverRuleTable:"+i+":selectedRd:4").disabled=true;
+                                }
+                    
+                            }
+                            else if((ruleListJSon[i].ruleRecords.IsCustomerAgreeToFix__c || ruleListJSon[i].ruleRecords.IsCustomerAcceptsRisk__c )){
+                                    if(document.getElementById("DRCPage:formDRC:pbid:ruleListId:waiverRuleTable:"+i+":inputCheckId")!=null){
+                                    console.log('line 1195'); 
+                                        document.getElementById("DRCPage:formDRC:pbid:ruleListId:waiverRuleTable:"+i+":inputCheckId").disabled=true;
+                                        document.getElementById("DRCPage:formDRC:pbid:ruleListId:waiverRuleTable:"+i+":inputCheckId").checked=true;
+                                    }
+                                    disableRadio01234(i);
+                                } 
+                        }
+                        //=====================================FAEEND
+                        //=========================================Customer START
+                        
+                        if(isPortal == 'true'){
+                            console.log('isPortalwhat s>>'+isPortal);
+                              if(ruleListJSon[i].ruleRecords.Stage__c == 'PI' ||
+                                ruleListJSon[i].ruleRecords.Stage__c == 'PW' ||
+                                ruleListJSon[i].ruleRecords.Stage__c == 'PA' ||
+                                ruleListJSon[i].ruleRecords.Stage__c == 'PWA' ||
+                                ruleListJSon[i].ruleRecords.Stage__c == 'eFD'||
+                                ruleListJSon[i].ruleRecords.Stage__c == 'POF'||
+                                ruleListJSon[i].ruleRecords.Stage__c == 'WCR' ||
+                                ruleListJSon[i].ruleRecords.Stage__c == 'WEA' ||
+                                ruleListJSon[i].ruleRecords.Stage__c == 'FCF'){
+                                  
+                                if(document.getElementById("DRCPage:formDRC:pbid:ruleListId:waiverRuleTable:"+i+":inputCheckId")!=null){ 
+                                document.getElementById("DRCPage:formDRC:pbid:ruleListId:waiverRuleTable:"+i+":inputCheckId").disabled=true;
+                                document.getElementById("DRCPage:formDRC:pbid:ruleListId:waiverRuleTable:"+i+":inputCheckId").checked=false;
+                                }
+                                  
+                              }
+                               else if(document.getElementById("DRCPage:formDRC:pbid:ruleListId:waiverRuleTable:"+i+":inputCheckId")!=null){ 
+                                document.getElementById("DRCPage:formDRC:pbid:ruleListId:waiverRuleTable:"+i+":inputCheckId").disabled=false;
+                                document.getElementById("DRCPage:formDRC:pbid:ruleListId:waiverRuleTable:"+i+":inputCheckId").checked=false;
+                               }
+                            	
+                            if(ruleListJSon[i].ruleRecords.Disagree__c || ruleListJSon[i].ruleRecords.IsGfAcceptsRisk__c || ruleListJSon[i].ruleRecords.AcceptRisk__c){
+                    
+                                
+                                if(ruleListJSon[i].ruleRecords.Stage__c == 'FD' ||
+                                ruleListJSon[i].ruleRecords.Stage__c == 'IFD' ||
+                                ruleListJSon[i].ruleRecords.Stage__c == 'iFD'){
+                                    if(document.getElementById("DRCPage:formDRC:pbid:ruleListId:waiverRuleTable:"+i+":selectedRd:1")!=null){ 
+                                        document.getElementById("DRCPage:formDRC:pbid:ruleListId:waiverRuleTable:"+i+":selectedRd:1").disabled=true;
+                                    } 
+                                } 
+                    
+                            }
+                        
+                            
+                            if(progBarStatus=='Pending for FAE'){
+                                
+                                if(document.getElementById("DRCPage:formDRC:pbid:ruleListId:waiverRuleTable:"+i+":inputCheckId")!=null){ 
+                                    document.getElementById("DRCPage:formDRC:pbid:ruleListId:waiverRuleTable:"+i+":inputCheckId").disabled=true;
+                                    document.getElementById("DRCPage:formDRC:pbid:ruleListId:waiverRuleTable:"+i+":inputCheckId").checked=false;
+                                }
+                                
+                                if(document.getElementById("DRCPage:formDRC:pbid:ruleListId:waiverRuleTable:"+i+":selectedRd:0")!=null){ 
+                                    document.getElementById("DRCPage:formDRC:pbid:ruleListId:waiverRuleTable:"+i+":selectedRd:0").disabled=true;
+                                }
+                                if(document.getElementById("DRCPage:formDRC:pbid:ruleListId:waiverRuleTable:"+i+":selectedRd:1")!=null){ 
+                                    document.getElementById("DRCPage:formDRC:pbid:ruleListId:waiverRuleTable:"+i+":selectedRd:1").disabled=true;
+                                } 
+                                if(document.getElementById("DRCPage:formDRC:pbid:ruleListId:waiverRuleTable:"+i+":selectedRd:2")!=null){ 
+                                    document.getElementById("DRCPage:formDRC:pbid:ruleListId:waiverRuleTable:"+i+":selectedRd:2").disabled=true;
+                                } 
+                                
+                                
+                            }
+                            
+                        }
+                        
+                        //=========================================Customer END
+                        
+                    
+                        //===================common rules
+                        if('{!waiverCollaborator.isSubmitted__c}'=='true'){
+                        	
+                            if(document.getElementById("DRCPage:formDRC:pbid:ruleListId:waiverRuleTable:"+i+":inputCheckId")!=null){
+                            console.log('line 1232'); 
+                                document.getElementById("DRCPage:formDRC:pbid:ruleListId:waiverRuleTable:"+i+":inputCheckId").disabled=true;
+                            }
+                            disableRadio01234(i);
+							                        
+                        }
+                        if(workFlowStatus == 'Cancel' || workFlowStatus == 'Closed' || revertCollaborator=='true') {
+                            if(document.getElementById("DRCPage:formDRC:pbid:ruleListId:waiverRuleTable:"+i+":inputCheckId")!=null){
+                            console.log('line 1232'); 
+                                document.getElementById("DRCPage:formDRC:pbid:ruleListId:waiverRuleTable:"+i+":inputCheckId").disabled=true;
+                            }
+                            disableRadio01234(i);
+                        }
+                        
+                        if( revertCollaborator=='true' &&  isSuperUser=='true') {
+                            
+                            if(document.getElementById("DRCPage:formDRC:pbid:ruleListId:waiverRuleTable:"+i+":inputCheckId")!=null){ 
+                                document.getElementById("DRCPage:formDRC:pbid:ruleListId:waiverRuleTable:"+i+":inputCheckId").disabled=false;
+                                document.getElementById("DRCPage:formDRC:pbid:ruleListId:waiverRuleTable:"+i+":inputCheckId").checked=false;
+                            }
+                            disableRadio01234(i);
+                          
+                        } 
+                        
+                        
+                    }
+
+                    
+                    
+                    if(ruleListJSon[i].ruleRecords != null && ruleListJSon[i].ruleRecords != undefined ){ 
+                            rowToRecordMap[i] = ruleListJSon[i].ruleRecords.Id;  
+                        }
+                }
+                pagetoRowMap[pageNoValue] = rowToRecordMap;
+                //DFM enhancements
+                if(waiverStatus == 'WEA' || waiverStatus == 'WCR' || waiverStatus == 'FCF' || waiverStatus == 'FD') {
+                    $j("#processCustBtnId").hide(); 
+                    $j("#saveBtnId").hide();
+                    $j("#saveBtnId1").hide();
+                    if(document.getElementById('massCommentId')!=null && document.getElementById('massCommentId') != undefined){ 
+                        document.getElementById("massCommentId").disabled=true;
+                    }
+                }
+                if((waiverStatus == 'PI' || waiverStatus == 'PW' || waiverStatus == 'PA' || waiverStatus == 'POF') && workFlowStatus == 'Closed') {
+                    $j("#processCustBtnId").hide(); 
+                    $j("#saveBtnId").hide();
+                    $j("#saveBtnId1").hide();
+                   if(document.getElementById('massCommentId')!=null && document.getElementById('massCommentId') != undefined){ 
+                        document.getElementById("massCommentId").disabled=true;
+                    }
+                }
+                
+                if( isReleasedTocustomer == 'false' && (waiverStatus == 'WEA' ||waiverStatus == 'FCF' ||waiverStatus == 'WCR' )){
+                 $j("#processCustBtnId").show(); 
+                }
+                
+            }
+        }
+        
+        //util for disable customer options
+        function disableRadio01234(i){
+            for(var k=0;k<5;k++){
+                if(document.getElementById("DRCPage:formDRC:pbid:ruleListId:waiverRuleTable:"+i+":selectedRd:"+k)!=null){ 
+                    document.getElementById("DRCPage:formDRC:pbid:ruleListId:waiverRuleTable:"+i+":selectedRd:"+k).disabled=true;
+                }
+            }
+        }
+        //=============================util end
+        
+        function removeTextAreaWhiteSpace() {
+        
+            var myTxtArea;
+            if(document.getElementById('massCommentId')!=null && document.getElementById('massCommentId') != undefined){ 
+            myTxtArea = document.getElementById('massCommentId');
+            }
+            myTxtArea.value = myTxtArea.value.replace(/^\s*|\s*$/g,'');
+        }
+        
+        function proceedToCustomer(){
+            
+            $("#popup_div1").dialog({
+                        modal: true, 
+                        title: 'Select Customers to release waiver collaborator Report.', 
+                        zIndex: 10000, 
+                        autoOpen: true,
+                        width: 1000,
+                        height: 500, 
+                        resizable: true,
+                        buttons: {
+                                 Yes: function () {
+                                    var listUser ='';
+                                    for(key in usersMap){
+                                        if(usersMap[key] == true){
+                                            listUser = listUser + key +';';
+                                        }
+                                    }
+                                    //alert('Development is in progress!!!'+ listUser);
+                                    if(listUser.length > 0){
+                                        releaseToCustomerFunc(listUser);
+                                    }
+                                    
+                                    $(this).dialog("close");
+                                 },
+                                 No: function () {
+                                    $(this).dialog("close");
+                                 }                                 
+                        }   
+            });
+        } 
+        
+        function CancelWF(){
+        
+               $("#cancellation_Div").dialog({
+                        modal: true, 
+                        title: '', 
+                        zIndex: 10000, 
+                        autoOpen: true,
+                        width: 1000,
+                        height: 500,
+                        position:'top', 
+                        resizable: true,
+                        buttons: [{
+                                    text: "Submit",
+                                    click : function () {
+
+                                          var desc = document.getElementById("DRCPage:formDRC:cPblockId:cSectionId:wfCId").value; 
+                                          
+                                          if (isEmpty(desc)){
+                                            alert('Please enter cancellation reason.');
+                                          } else {
+                                            cancel(desc);
+                                            $(this).dialog("close");
+                                          }
+                                                   
+                                    }
+                        },
+                                  {
+                                      text: "Cancel",
+                                      click : function () {
+                                          $(this).dialog("close");
+                                      }    
+                        }]
+               });
+        }
+        
+        function isEmpty(val){
+            return (val === undefined || val == null || val.length <= 0) ? true : false;
+        }
+        
+        
+        function applyMassCommentJs() {
+            var massComVal = document.getElementById("massCommentId").value;
+            var valueAfterSpace = massComVal.replace(/^\s+|\s+$/g,'');
+            var selectedVal=$("input[name$=selectedRdMassUpSec]:checked").val();
+            var radioCount=-1;
+            if(selectedVal=='CustomerAgreeToFix')radioCount=0;
+            if(selectedVal=='CustomerAcceptsRisk')radioCount=1;
+            if(selectedVal=='Disagree')radioCount=2;
+            if(selectedVal=='GfAcceptsRisk')radioCount=3;
+             if(selectedVal=='AcceptRejection')radioCount=4;
+             if(selectedVal=='Revert')radioCount=5; 
+            if(valueAfterSpace === '' && radioCount==-1) {
+                var popup = new SimpleDialog("PopUp"+Dialogs.getNextId(), false);    
+                popup.setTitle("Warning");   
+                popup.createDialog();   
+                window.parent.popup = popup;   
+                popup.setContentInnerHTML("<p align='center'><img src='/img/msg_icons/warning32.png' style='margin:0 5px;'/></p><p align='center'>Please select Customer Option or provide comments to apply.</p><p align='center'><br /><button class='btn' onclick='window.parent.popup.hide(); return false;'>Close</button></p>");    
+                popup.show();
+            } else {
+                if(singleCheck == '') {
+                    var popup = new SimpleDialog("PopUp"+Dialogs.getNextId(), false);    
+                    popup.setTitle("Warning");   
+                    popup.createDialog();   
+                    window.parent.popup = popup;   
+                    popup.setContentInnerHTML("<p align='center'><img src='/img/msg_icons/warning32.png' style='margin:0 5px;'/></p><p align='center'>Please check selectbox to apply mass comment.</p><p align='center'><br /><button class='btn' onclick='window.parent.popup.hide(); return false;'>Close</button></p>");    
+                    popup.show();
+                    document.getElementById("massCommentId").value = '';
+                } else  {  
+                    var iFDRuleExists='';
+                    var arrValues = singleCheck.split(';');
+                    var arrRecValues = singleRecId.split(';');
+                     for(var t=0; t<arrRecValues.length; t++){
+                     var id=arrRecValues[t];
+                              if(allRuleintStagemap[id] == 'IFD'||allRuleintStagemap[id] == 'iFD'){
+                              iFDRuleExists='true';
+                              break;
+                          }
+                          console.log('iFDRuleExists'+iFDRuleExists);
+                     }                    
+                    var popup = new SimpleDialog("PopUp"+Dialogs.getNextId(), false); 
+                    if(radioCount==1 && iFDRuleExists=='true'){                        
+	                    popup.setTitle("Warning");   
+	                    popup.createDialog();   
+	                    window.parent.popup = popup;  
+	                    popup.setContentInnerHTML("<p align='center'><img src='/img/msg_icons/warning32.png' style='margin:0 5px;'/></p><p align='center'>Agree to Take Risk option is not valid for iFD rules. Please select valid customer option only for iFD rules.</p><p align='center'><br /><button class='btn' onclick='window.parent.popup.hide(); return false;'>Close</button></p>");    
+	                    popup.show();
+	                 }
+                    
+                    for(var i=0; i<arrValues.length; i++) {
+                        if(isFAE == 'true' ||isDRBUser== 'true') {
+                            if(document.getElementById("DRCPage:formDRC:pbid:ruleListId:waiverRuleTable:"+arrValues[i]+":gfClosingVar:gfClosing")!=null){
+                            document.getElementById("DRCPage:formDRC:pbid:ruleListId:waiverRuleTable:"+arrValues[i]+":gfClosingVar:gfClosing").value = massComVal;
+                            }
+                            if(document.getElementById("DRCPage:formDRC:pbid:ruleListId:waiverRuleTable:"+arrValues[i]+":selectedRd:"+radioCount)!=null
+                                && document.getElementById("DRCPage:formDRC:pbid:ruleListId:waiverRuleTable:"+arrValues[i]+":selectedRd:"+radioCount).disabled != true){
+                                document.getElementById("DRCPage:formDRC:pbid:ruleListId:waiverRuleTable:"+arrValues[i]+":selectedRd:"+radioCount).checked = 'checked';
+                            }
+                        }
+                        if(isPortal == 'true') {
+                            if(JSON.stringify(allRulemap).indexOf('Open')>0)popup.show();
+                            if(document.getElementById("DRCPage:formDRC:pbid:ruleListId:waiverRuleTable:"+arrValues[i]+":custClosing")!=null){
+                            document.getElementById("DRCPage:formDRC:pbid:ruleListId:waiverRuleTable:"+arrValues[i]+":custClosing").value = massComVal;
+                            }
+                            
+                            if(document.getElementById("DRCPage:formDRC:pbid:ruleListId:waiverRuleTable:"+arrValues[i]+":selectedRd:"+radioCount)!=null
+                                && document.getElementById("DRCPage:formDRC:pbid:ruleListId:waiverRuleTable:"+arrValues[i]+":selectedRd:"+radioCount).disabled != true){
+                                document.getElementById("DRCPage:formDRC:pbid:ruleListId:waiverRuleTable:"+arrValues[i]+":selectedRd:"+radioCount).checked = 'checked';
+                            }
+                        }
+                        var pageNoValue = document.getElementById('pageNumberId').value;
+                        var rowRecordMap = pagetoRowMap[pageNoValue];
+                        if( document.getElementById("DRCPage:formDRC:pbid:ruleListId:waiverRuleTable:"+arrValues[i]+":selectedRd:"+radioCount) != null &&
+                            document.getElementById("DRCPage:formDRC:pbid:ruleListId:waiverRuleTable:"+arrValues[i]+":selectedRd:"+radioCount).disabled != true){
+                         singleSelectRecId = rowRecordMap[i];
+                         var ruleIdCom=singleSelectRecId+','+selectedVal;
+                            if(ruleRecs==''){
+                                ruleRecs=ruleRecs+ruleIdCom;
+                            } else {
+                                ruleRecs=ruleRecs+';'+ruleIdCom;
+                            }
+                            allRulemap[singleSelectRecId]=stageMap[selectedVal];
+                            allRuleStagemap[singleSelectRecId]=selectedVal;
+                        }
+                    }
+                }
+            }
+        }
+         function changeRowCountJs()
+        {     
+             changeCountFunc(document.getElementById('Count').value);
+        }
+        function changeFinalStatusJs() {
+            valSearch = 'Search';
+            if(document.getElementById('finalStatusId') != null && document.getElementById('finalStatusId') != undefined){
+            changeFinalStatFunc(document.getElementById('finalStatusId').value);
+            }
+        }
+         function changeFinalStatusJsMap(mapval) {
+             if(document.getElementById('finalStatusId') != null && document.getElementById('finalStatusId') != undefined){
+            srchVal = document.getElementById('finalStatusId').value=mapval;
+            }
+            changeFinalStatFunc(srchVal );
+        
+    }
+        function searchRuleData() {
+            valSearch = 'Search';
+            var srchVal;
+            if(document.getElementById('searchId') != null && document.getElementById('searchId') != undefined){
+            srchVal = document.getElementById('searchId').value;
+            }
+            srchRuleDataFunc(srchVal);
+        }
+        
+        function pagination(Msg) {
+            document.getElementById("massCommentId").value='';
+            $("input[name$=selectedRdMassUpSec]:checked").prop('checked',false);
+            switch (Msg) {
+                case 'first' : firstPage(); checkValues(); break;
+                case 'previous' : previousPage(); checkValues(); break;
+                case 'next' : nextPage(); checkValues(); break;
+                case 'last' : lastPage(); checkValues(); break;
+            }               
+        }
+        
+        function changePageNumber() {
+            var pageNo = document.getElementById('pageNumberId').value;
+            var totalPages = "{!totalNoOfPages}";
+            if(isNaN(pageNo) || Number(pageNo) == 0 || Number(pageNo) > Number(totalPages)) {
+                var popup = new SimpleDialog("PopUp"+Dialogs.getNextId(), false);    
+                popup.setTitle("Warning");   
+                popup.createDialog();   
+                window.parent.popup = popup;   
+                popup.setContentInnerHTML("<p align='center'><img src='/img/msg_icons/warning32.png' style='margin:0 5px;'/></p><p align='center'>Page Number is not correct.</p><p align='center'><br /><button class='btn' onclick='window.parent.popup.hide(); return false;'>Close</button></p>");    
+                popup.show();
+            } else {
+                changePageNoFunc(pageNo);
+            }
+        }  
+        
+        function selectAllCheckboxes(obj){
+            var fromPage;
+            var toPage;
+             var recordPerPage;
+            var pageNoValue;
+            var totalNoOfRecords = $j('[id$="hdnCurrPageNum"]').val();
+            if(document.getElementById('Count') != null){
+             recordPerPage = document.getElementById('Count').value;
+             }
+            // var recordPerPage = {!recordsPerPage}; 
+            if(document.getElementById('pageNumberId') != null){
+             pageNoValue = document.getElementById('pageNumberId').value;
+             }
+            singleCheck='';
+            console.log(pageNoValue);
+            console.log(totalNoOfRecords);
+            if(Number(pageNoValue) == 0){
+                fromPage = 0;
+            } else {
+                fromPage = (Number(pageNoValue) * Number(recordPerPage)) +1 - Number(recordPerPage);
+            }
+            console.log('fromPage' + fromPage);
+            if((Number(pageNoValue) * Number(recordPerPage)) > Number(totalNoOfRecords)) {
+                toPage = totalNoOfRecords;
+            } else {
+                toPage = Number(pageNoValue) * Number(recordPerPage);
+            }
+            console.log('ToPage' + toPage);
+            noOfRecordsOnPage = (toPage - fromPage) + 1;           
+            console.log('ToPage' + noOfRecordsOnPage);
+            for(var i=0; i<noOfRecordsOnPage; i++){ 
+                if(document.getElementById("DRCPage:formDRC:pbid:ruleListId:waiverRuleTable:"+i+":inputCheckId") != null){
+                if(!document.getElementById("DRCPage:formDRC:pbid:ruleListId:waiverRuleTable:"+i+":inputCheckId").disabled){
+                    document.getElementById("DRCPage:formDRC:pbid:ruleListId:waiverRuleTable:"+i+":inputCheckId").checked = obj.checked;
+                    selectedCheck(document.getElementById("DRCPage:formDRC:pbid:ruleListId:waiverRuleTable:"+i+":inputCheckId").checked, i);
+                    }
+                }
+            }
+        }
+        
+        function selectedCheck(Type, rowId){ 
+             var pageNoValue;
+            if(document.getElementById('pageNumberId') != null){
+             pageNoValue = document.getElementById('pageNumberId').value;
+             }
+             var rowRecordMap = pagetoRowMap[pageNoValue];
+             singleSelectRecId = rowRecordMap[rowId];
+                              
+             if (Type){                
+                if (singleCheck==''){
+                    singleCheck = singleCheck+rowId;                    
+                } else {
+                    singleCheck = singleCheck+';'+rowId;                    
+                }
+                if(singleRecId==''){
+                    singleRecId = singleRecId+singleSelectRecId;
+                } else {
+                    singleRecId = singleRecId+';'+singleSelectRecId;
+                }   
+            } else {
+                singleCheck = removeValue(singleCheck,rowId,';');
+                singleRecId = removeValue(singleRecId,singleSelectRecId,';');               
+                uncheckValues(rowId);
+            }
+        }
+        
+        function uncheckValues(rowId) {
+            if(document.getElementById("DRCPage:formDRC:pbid:ruleListId:waiverRuleTable:"+rowId+":selectedRd:0") != null){
+            document.getElementById("DRCPage:formDRC:pbid:ruleListId:waiverRuleTable:"+rowId+":selectedRd:0").checked=false;
+                }
+            if(document.getElementById("DRCPage:formDRC:pbid:ruleListId:waiverRuleTable:"+rowId+":selectedRd:1") != null){
+            document.getElementById("DRCPage:formDRC:pbid:ruleListId:waiverRuleTable:"+rowId+":selectedRd:1").checked=false;
+                }
+            if(document.getElementById("DRCPage:formDRC:pbid:ruleListId:waiverRuleTable:"+rowId+":selectedRd:2") !=null) {
+                document.getElementById("DRCPage:formDRC:pbid:ruleListId:waiverRuleTable:"+rowId+":selectedRd:2").checked=false;
+            }
+            if(isFAE == 'true' ||isDRBUser== 'true'){
+            if(document.getElementById("DRCPage:formDRC:pbid:ruleListId:waiverRuleTable:"+rowId+":selectedRd:3") !=null) {
+                document.getElementById("DRCPage:formDRC:pbid:ruleListId:waiverRuleTable:"+rowId+":selectedRd:3").checked=false;
+            }
+             if(document.getElementById("DRCPage:formDRC:pbid:ruleListId:waiverRuleTable:"+rowId+":selectedRd:4") !=null) {
+                document.getElementById("DRCPage:formDRC:pbid:ruleListId:waiverRuleTable:"+rowId+":selectedRd:4").checked=false;
+            }
+             if(document.getElementById("DRCPage:formDRC:pbid:ruleListId:waiverRuleTable:"+rowId+":selectedRd:5") !=null) {
+                document.getElementById("DRCPage:formDRC:pbid:ruleListId:waiverRuleTable:"+rowId+":selectedRd:5").checked=false;
+            }
+            if(document.getElementById("DRCPage:formDRC:pbid:ruleListId:waiverRuleTable:"+rowId+":gfClosingVar:gfClosing") !=null) {
+                document.getElementById("DRCPage:formDRC:pbid:ruleListId:waiverRuleTable:"+rowId+":gfClosingVar:gfClosing").value = '';
+            }
+            }
+            if(isPortal == 'true' && document.getElementById("DRCPage:formDRC:pbid:ruleListId:waiverRuleTable:"+rowId+":custClosing") != null) {
+                document.getElementById("DRCPage:formDRC:pbid:ruleListId:waiverRuleTable:"+rowId+":custClosing").value = '';
+            }
+        }
+        
+        var stageMap=new Object();
+        stageMap['CustomerAgreeToFix'] = 'FCF';
+        stageMap['CustomerAcceptsRisk'] = 'WCR';
+        stageMap['GfAcceptsRisk'] = 'Open';
+        stageMap['Disagree'] = 'FCD';
+        stageMap['AcceptRejection'] = 'FD';
+        stageMap['Revert'] = 'Revert';
+        var stageMapInv=new Object();
+        stageMapInv['FCF'] = 'CustomerAgreeToFix';
+        stageMapInv['WCR'] = 'CustomerAcceptsRisk';
+        stageMapInv['Open'] = 'GfAcceptsRisk';
+        stageMapInv['FCD'] = 'Disagree';
+        stageMapInv['FD'] = 'AcceptRejection';
+        stageMapInv['Revert'] = 'Revert';
+        
+        function updatecommentMap(ele,id){
+            //alert("check here>> "+ele.value);
+            if(ele.value!=''){
+            	allRuleCommentmap[id]=true;
+            }else{
+            	allRuleCommentmap[id]=false;
+            }
+        }
+        
+        function setOptions(Type, waiverRecIds, rowId) {
+        
+            if(document.getElementById("DRCPage:formDRC:pbid:ruleListId:waiverRuleTable:"+rowId+":inputCheckId")!=null){ 
+                document.getElementById("DRCPage:formDRC:pbid:ruleListId:waiverRuleTable:"+rowId+":inputCheckId").checked=true;
+                selectedCheck(document.getElementById("DRCPage:formDRC:pbid:ruleListId:waiverRuleTable:"+rowId+":inputCheckId").checked,rowId);
+            }
+            
+            
+            if(document.getElementById("DRCPage:formDRC:pbid:ruleListId:waiverRuleTable:"+rowId+":inputCheckId") != null && document.getElementById("DRCPage:formDRC:pbid:ruleListId:waiverRuleTable:"+rowId+":inputCheckId").checked) {
+                var ruleIdCom=waiverRecIds+','+Type.value;
+                if (Type.checked){
+                    if(ruleRecs==''){
+                        ruleRecs=ruleRecs+ruleIdCom;
+                    } else {
+                        ruleRecs=ruleRecs+';'+ruleIdCom;
+                    }
+                    allRulemap[waiverRecIds]=stageMap[Type.value];
+                    allRuleStagemap[waiverRecIds]=Type.value;
+                }            
+            } else {
+                var popup = new SimpleDialog("PopUp"+Dialogs.getNextId(), false);    
+                popup.setTitle("Warning");   
+                popup.createDialog();   
+                window.parent.popup = popup;   
+                popup.setContentInnerHTML("<p align='center'><img src='/img/msg_icons/warning32.png' style='margin:0 5px;'/></p><p align='center'>Please check selectbox before selecting the customer options.</p><p align='center'><br /><button class='btn' onclick='window.parent.popup.hide(); return false;'>Close</button></p>");    
+                popup.show();
+                
+                if(document.getElementById("DRCPage:formDRC:pbid:ruleListId:waiverRuleTable:"+rowId+":selectedRd:0") != null){
+                document.getElementById("DRCPage:formDRC:pbid:ruleListId:waiverRuleTable:"+rowId+":selectedRd:0").checked=false;
+                    }
+                if(document.getElementById("DRCPage:formDRC:pbid:ruleListId:waiverRuleTable:"+rowId+":selectedRd:1") != null){
+                document.getElementById("DRCPage:formDRC:pbid:ruleListId:waiverRuleTable:"+rowId+":selectedRd:1").checked=false;
+                    }
+                if(document.getElementById("DRCPage:formDRC:pbid:ruleListId:waiverRuleTable:"+rowId+":selectedRd:2") != null) {
+                    document.getElementById("DRCPage:formDRC:pbid:ruleListId:waiverRuleTable:"+rowId+":selectedRd:2").checked=false;
+                }
+                 if(isFAE == 'true' ||isDRBUser== 'true'){
+                if(document.getElementById("DRCPage:formDRC:pbid:ruleListId:waiverRuleTable:"+rowId+":selectedRd:3") != null) {
+                    document.getElementById("DRCPage:formDRC:pbid:ruleListId:waiverRuleTable:"+rowId+":selectedRd:3").checked=false;
+                }
+                if(document.getElementById("DRCPage:formDRC:pbid:ruleListId:waiverRuleTable:"+rowId+":selectedRd:4") != null) {
+                    document.getElementById("DRCPage:formDRC:pbid:ruleListId:waiverRuleTable:"+rowId+":selectedRd:4").checked=false;
+                }
+                }
+                
+            }       
+        }
+        
+        
+        function checkValues() {
+            var isComments ;
+            var isOptions ;
+            var fromPage;
+            var toPage;
+            var totalNoOfRecords = $j('[id$="hdnCurrPageNum"]').val();
+            var recordPerPage;
+            var pageNoValue;
+            if(document.getElementById('count') != null){
+            recordPerPage = document.getElementById('count').value;
+                }
+            if(document.getElementById('pageNumberId') != null){
+            pageNoValue = document.getElementById('pageNumberId').value;
+                }
+            if(Number(pageNoValue) == 0){
+                fromPage = 0;
+            } else {
+                fromPage = (Number(pageNoValue) * Number(recordPerPage)) +1 - Number(recordPerPage);
+            }
+            if((Number(pageNoValue) * Number(recordPerPage)) > Number(totalNoOfRecords)) {
+                toPage = totalNoOfRecords;
+            } else {
+                toPage = Number(pageNoValue) * Number(recordPerPage);
+            }
+            noOfRecordsOnPage = (toPage - fromPage) + 1;           
+            console.log('optionMap:'+optionMap[pageNoValue]);
+
+            if(!(pageNoValue in optionMap)) {
+            console.log('singleCheck'+singleCheck);
+                if(singleCheck != '') {
+                    var arrValues = singleCheck.split(';');
+                    console.log('else block:arrValues');
+                    for(var i=0; i<arrValues.length; i++) {
+                        console.log('else block:arrValues'+i);
+                        if(document.getElementById("DRCPage:formDRC:pbid:ruleListId:waiverRuleTable:"+arrValues[i]+":inputCheckId") != null && 
+                           !document.getElementById("DRCPage:formDRC:pbid:ruleListId:waiverRuleTable:"+arrValues[i]+":inputCheckId").disabled){
+                             if(isSuperUser== 'true') {
+                                if((document.getElementById("DRCPage:formDRC:pbid:ruleListId:waiverRuleTable:"+arrValues[i]+":selectedRd:5") != null &&
+                                    !document.getElementById("DRCPage:formDRC:pbid:ruleListId:waiverRuleTable:"+arrValues[i]+":selectedRd:5").checked) ) {
+                                    console.log('else block:arrValues isFAE inside if');
+                                    isOptions = true;
+                                    isComments = false;
+                                    break;
+                                } 
+                            }  
+                            
+                            if(isFAE == 'true' ||isDRBUser== 'true') {
+                                console.log('else block:arrValues isFAE'+document.getElementById("DRCPage:formDRC:pbid:ruleListId:waiverRuleTable:"+arrValues[i]+":selectedRd:3").checked);
+                                console.log('else block:arrValues isFAE'+document.getElementById("DRCPage:formDRC:pbid:ruleListId:waiverRuleTable:"+arrValues[i]+":selectedRd:4").checked);
+                                if((document.getElementById("DRCPage:formDRC:pbid:ruleListId:waiverRuleTable:"+arrValues[i]+":selectedRd:3") != null &&
+                                    !document.getElementById("DRCPage:formDRC:pbid:ruleListId:waiverRuleTable:"+arrValues[i]+":selectedRd:3").checked) &&
+                                   (document.getElementById("DRCPage:formDRC:pbid:ruleListId:waiverRuleTable:"+arrValues[i]+":selectedRd:4") != null &&
+                                    !document.getElementById("DRCPage:formDRC:pbid:ruleListId:waiverRuleTable:"+arrValues[i]+":selectedRd:4").checked) ) {
+                                    console.log('else block:arrValues isFAE inside if');
+                                    isOptions = true;
+                                    isComments = false;
+                                    break;
+                                } else {
+                                    isOptions = false;
+                                    if(document.getElementById("DRCPage:formDRC:pbid:ruleListId:waiverRuleTable:"+arrValues[i]+":gfClosingVar:gfClosing") != null &&
+                                       document.getElementById("DRCPage:formDRC:pbid:ruleListId:waiverRuleTable:"+arrValues[i]+":gfClosingVar:gfClosing").value != '') {
+                                        isComments = false;
+                                    } else {
+                                        isComments = true;
+                                        break;
+                                    }
+                                }
+                            }                           
+                            if(isPortal == 'true') {
+                                console.log('i='+i);
+                                if(document.getElementById("DRCPage:formDRC:pbid:ruleListId:waiverRuleTable:"+arrValues[i]+":selectedRd:0") != null && 
+                                   document.getElementById("DRCPage:formDRC:pbid:ruleListId:waiverRuleTable:"+arrValues[i]+":selectedRd:1") != null &&
+                                   document.getElementById("DRCPage:formDRC:pbid:ruleListId:waiverRuleTable:"+arrValues[i]+":selectedRd:2") != null &&
+                                   !document.getElementById("DRCPage:formDRC:pbid:ruleListId:waiverRuleTable:"+arrValues[i]+":selectedRd:0").checked &&
+                                   !document.getElementById("DRCPage:formDRC:pbid:ruleListId:waiverRuleTable:"+arrValues[i]+":selectedRd:1").checked &&
+                                   !document.getElementById("DRCPage:formDRC:pbid:ruleListId:waiverRuleTable:"+arrValues[i]+":selectedRd:2").checked) {
+                                    isOptions = true;
+                                    isComments = false;
+                                    break;
+                                } else {
+                                    isOptions = false;
+                                    if(document.getElementById("DRCPage:formDRC:pbid:ruleListId:waiverRuleTable:"+arrValues[i]+":custClosing") != null &&
+                                       document.getElementById("DRCPage:formDRC:pbid:ruleListId:waiverRuleTable:"+arrValues[i]+":custClosing").value != '') {
+                                        isComments = false;
+                                        console.log('isOptions:'+isOptions);
+                                    } else {
+                                        isComments = true;
+                                        console.log('isComments:'+isComments);
+                                        break;  
+                                    }
+                                }
+                            }                             
+                        }
+                    }
+                } else {
+                    isOptions = false;                  
+                }
+                optionMap[pageNoValue] = isOptions;
+                 console.log('optionMap[pageNoValue]:'+optionMap[pageNoValue]);
+                commentMap[pageNoValue] = isComments;
+            } else {
+                 console.log('else block:');
+                for(var i=0; i<noOfRecordsOnPage; i++){ 
+                    console.log('else block:for loop');
+                    if(document.getElementById("DRCPage:formDRC:pbid:ruleListId:waiverRuleTable:"+i+":inputCheckId") != null && 
+                       !document.getElementById("DRCPage:formDRC:pbid:ruleListId:waiverRuleTable:"+i+":inputCheckId").disabled && 
+                        document.getElementById("DRCPage:formDRC:pbid:ruleListId:waiverRuleTable:"+i+":inputCheckId").checked){
+                        console.log('else block:inside if block');
+                        if(isFAE == 'true' ||isDRBUser== 'true') {
+                            if((document.getElementById("DRCPage:formDRC:pbid:ruleListId:waiverRuleTable:"+arrValues[i]+":selectedRd:3") != null &&
+                                !document.getElementById("DRCPage:formDRC:pbid:ruleListId:waiverRuleTable:"+arrValues[i]+":selectedRd:3").checked) &&
+                               (document.getElementById("DRCPage:formDRC:pbid:ruleListId:waiverRuleTable:"+arrValues[i]+":selectedRd:4") != null &&
+                                !document.getElementById("DRCPage:formDRC:pbid:ruleListId:waiverRuleTable:"+arrValues[i]+":selectedRd:4").checked) ) {
+                                optionMap[pageNoValue] = true;
+                                commentMap[pageNoValue] = false;
+                                break;
+                            } else {
+                                optionMap[pageNoValue] = false;
+                                if(document.getElementById("DRCPage:formDRC:pbid:ruleListId:waiverRuleTable:"+i+":gfClosingVar:gfClosing") != null &&
+                                   document.getElementById("DRCPage:formDRC:pbid:ruleListId:waiverRuleTable:"+i+":gfClosingVar:gfClosing").value != '') {
+                                    commentMap[pageNoValue] = false;
+                                } else {
+                                    commentMap[pageNoValue] = true;
+                                    break;
+                                }
+                            }
+                        }
+                        if(isPortal == 'true') {
+                            if(document.getElementById("DRCPage:formDRC:pbid:ruleListId:waiverRuleTable:"+i+":selectedRd:0") != null &&
+                               document.getElementById("DRCPage:formDRC:pbid:ruleListId:waiverRuleTable:"+i+":selectedRd:1")!= null &&
+                               document.getElementById("DRCPage:formDRC:pbid:ruleListId:waiverRuleTable:"+i+":selectedRd:2")!= null &&
+                               !document.getElementById("DRCPage:formDRC:pbid:ruleListId:waiverRuleTable:"+i+":selectedRd:0").checked &&
+                               !document.getElementById("DRCPage:formDRC:pbid:ruleListId:waiverRuleTable:"+i+":selectedRd:1").checked &&
+                               !document.getElementById("DRCPage:formDRC:pbid:ruleListId:waiverRuleTable:"+i+":selectedRd:2").checked ) {
+                                optionMap[pageNoValue] = true;
+                                commentMap[pageNoValue] = false;
+                                break;
+                            } else {
+                                optionMap[pageNoValue] = false;
+                                if(document.getElementById("DRCPage:formDRC:pbid:ruleListId:waiverRuleTable:"+i+":custClosing") != null &&
+                                   document.getElementById("DRCPage:formDRC:pbid:ruleListId:waiverRuleTable:"+i+":custClosing").value != '') {
+                                    commentMap[pageNoValue] = false;
+                                } else {
+                                    commentMap[pageNoValue] = true;
+                                    break;  
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            singleCheck = '';                      
+        }
+        
+        function saveButton() {
+            var fromPage;
+            var toPage;
+            var totalNoOfRecords = $j('[id$="hdnCurrPageNum"]').val();
+            var recordPerPage = {!recordsPerPage}; 
+            var pageNoValue;
+            if(document.getElementById('pageNumberId') != null){
+            pageNoValue = document.getElementById('pageNumberId').value;
+                }
+            if(Number(pageNoValue) == 0){
+                fromPage = 0;
+            } else {
+                fromPage = (Number(pageNoValue) * Number(recordPerPage)) +1 - Number(recordPerPage);
+            }
+            if((Number(pageNoValue) * Number(recordPerPage)) > Number(totalNoOfRecords)) {
+                toPage = totalNoOfRecords;
+            } else {
+                toPage = Number(pageNoValue) * Number(recordPerPage);
+            }
+            noOfRecordsOnPage = (toPage - fromPage) + 1;           
+            if(singleCheck=='') {
+                for(var i=0; i<noOfRecordsOnPage; i++){ 
+                    if(document.getElementById("DRCPage:formDRC:pbid:ruleListId:waiverRuleTable:"+i+":inputCheckId") != null && 
+                       document.getElementById("DRCPage:formDRC:pbid:ruleListId:waiverRuleTable:"+i+":inputCheckId") != undefined){
+                    if(!document.getElementById("DRCPage:formDRC:pbid:ruleListId:waiverRuleTable:"+i+":inputCheckId").disabled && 
+                        document.getElementById("DRCPage:formDRC:pbid:ruleListId:waiverRuleTable:"+i+":inputCheckId").checked) {
+                        if (singleCheck==''){
+                            singleCheck = singleCheck+i;                    
+                        } else {
+                            singleCheck = singleCheck+';'+i;                    
+                        }
+                    }
+                   }
+                    console.log(singleCheck);
+                 }
+            }           
+            
+            /*if(ruleRecs.includes("GfAcceptsRisk")) {        
+                $("#popup_div2").dialog({
+                        modal: true, 
+                        title: 'Select account manager for exceptional arrangement approval.', 
+                        zIndex: 10000, 
+                        autoOpen: true,
+                        width: 1000,
+                        height: 500, 
+                        resizable: true,
+                        buttons: {
+                                 Yes: function () {
+                                    //alert('Development is in progress!!!'+users);
+                                    saveBtnFunc(ruleRecs,users, singleRecId);
+                                    
+                                    $(this).dialog("close");
+                                 },
+                                 No: function () {
+                                    $(this).dialog("close");
+                                 }
+                                    
+                        }   
+                });
+            } else {*/
+                 saveBtnFunc(ruleRecs,users, singleRecId);
+            //}
+            
+        }
+        
+        var initialStageSet = new Set();
+        initialStageSet.add('open');
+        
+        function saveAndSubmitButton() {
+            var fromPage;
+            var toPage;
+            var totalNoOfRecords = $j('[id$="hdnCurrPageNum"]').val();
+            var recordPerPage = {!recordsPerPage}; 
+            var pageNoValue;
+            if(document.getElementById('pageNumberId') != null){
+            pageNoValue = document.getElementById('pageNumberId').value;
+                }
+            if(Number(pageNoValue) == 0){
+                fromPage = 0;
+            } else {
+                fromPage = (Number(pageNoValue) * Number(recordPerPage)) +1 - Number(recordPerPage);
+            }
+            if((Number(pageNoValue) * Number(recordPerPage)) > Number(totalNoOfRecords)) {
+                toPage = totalNoOfRecords;
+            } else {
+                toPage = Number(pageNoValue) * Number(recordPerPage);
+            }
+            noOfRecordsOnPage = (toPage - fromPage) + 1;           
+            if(singleCheck=='') {
+                for(var i=0; i<noOfRecordsOnPage; i++){
+                    if(document.getElementById("DRCPage:formDRC:pbid:ruleListId:waiverRuleTable:"+i+":inputCheckId") != null){ 
+                        if(!document.getElementById("DRCPage:formDRC:pbid:ruleListId:waiverRuleTable:"+i+":inputCheckId").disabled && 
+                            document.getElementById("DRCPage:formDRC:pbid:ruleListId:waiverRuleTable:"+i+":inputCheckId").checked) {
+                            if (singleCheck==''){
+                                singleCheck = singleCheck+i;                    
+                            } else {
+                                singleCheck = singleCheck+';'+i;                    
+                            }
+                        }
+                    }
+                    console.log(singleCheck);
+                 }
+            }           
+            checkValues();
+            var isOptionCheck = false;
+            var isCommentNull = false;
+            
+            for (var key in allRulemap) {
+                var stage=allRulemap[key].toLowerCase();
+                if(initialStageSet.has(stage)){
+                    if(!(allRuleStagemap[key]!=null && allRuleStagemap[key]!='')){
+                        isOptionCheck=true;
+                        break;
+                    }
+                    if(!(allRuleCommentmap[key]!=null && allRuleCommentmap[key]!='')){
+                        isCommentNull=true;
+                        break;
+                    }
+                }
+            }
+            
+            if(isOptionCheck == true) {
+                var popup = new SimpleDialog("PopUp"+Dialogs.getNextId(), false);    
+                popup.setTitle("Warning");   
+                popup.createDialog();   
+                window.parent.popup = popup;   
+                popup.setContentInnerHTML("<p align='center'><img src='/img/msg_icons/warning32.png' style='margin:0 5px;'/></p><p align='center'>Submit is not possible due to missing selection of options for open rules.</p><p align='center'><br /><button class='btn' onclick='window.parent.popup.hide();saveButton();return false;'>Close</button></p>");    
+                popup.show();
+            } else if(isCommentNull == true){
+                var popup = new SimpleDialog("PopUp"+Dialogs.getNextId(), false);    
+                popup.setTitle("Warning");   
+                popup.createDialog();   
+                window.parent.popup = popup;   
+                popup.setContentInnerHTML("<p align='center'><img src='/img/msg_icons/warning32.png' style='margin:0 5px;'/></p><p align='center'>Comment is mandatory for closing rules.</p><p align='center'><br /><button class='btn' onclick='window.parent.popup.hide();saveButton();return false;'>Close</button></p>");    
+                popup.show(); 
+            } else {
+                
+                if(JSON.stringify(allRulemap).indexOf('FCD')>0){
+                    if(isPortal == 'true'){
+                        var popup = new SimpleDialog("PopUp"+Dialogs.getNextId(), false);    
+                        popup.setTitle("Warning");   
+                        popup.createDialog();   
+                        window.parent.popup = popup;   
+                        popup.setContentInnerHTML("<p align='center'><img src='/img/msg_icons/warning32.png' style='margin:0 5px;'/></p><p align='center'>Rules will be submitted for FAE review.</p><p align='center'><button class='btn' onclick='window.parent.popup.hide();saveButton();sendNotificationToFAE();'>Ok</button><button class='btn' onclick='window.parent.popup.hide();refreshPageBtn();return false;'>Cancel</button></p>");    
+                        popup.show();
+                    }else{
+                        var popup = new SimpleDialog("PopUp"+Dialogs.getNextId(), false);    
+                        popup.setTitle("Warning");   
+                        popup.createDialog();   
+                        window.parent.popup = popup;   
+                        popup.setContentInnerHTML("<p align='center'><img src='/img/msg_icons/warning32.png' style='margin:0 5px;'/></p><p align='center'>FCD rules exist. Please communicate with customer and finalize the selections before submission.</p><p align='center'><button class='btn' onclick='window.parent.popup.hide();saveButton();'>Ok</button><button class='btn' onclick='window.parent.popup.hide();refreshPageBtn();return false;'>Cancel</button></p>");    
+                        popup.show();
+                    }
+                }else{
+                    var popup = new SimpleDialog("PopUp"+Dialogs.getNextId(), false);    
+                    popup.setTitle("Summary");   
+                    popup.createDialog();   
+                    window.parent.popup = popup;   
+                    popup.setContentInnerHTML("<p align='center'>"+createSummaryTable()+"</p><p align='center'><button class='btn' onclick='window.parent.popup.hide();finalsubmit();'>Ok</button></p>");    
+                    popup.show(); 
+                }
+            }
+        }
+        
+        
+        function finalsubmit(){
+            if(ruleRecs.includes("GfAcceptsRisk")) {        
+                            $("#popup_div2").dialog({
+                                    modal: true, 
+                                    title: 'Select account manager for exceptional arrangement approval.', 
+                                    zIndex: 10000, 
+                                    autoOpen: true,
+                                    width: 1000,
+                                    height: 500, 
+                                    resizable: true,
+                                    buttons: {
+                                             Yes: function () {
+                                                //alert('Development is in progress!!!'+users);
+                                                submitBtnFunc(ruleRecs,users, singleRecId);
+                                                $(this).dialog("close");
+                                             },
+                                             No: function () {
+                                                $(this).dialog("close");
+                                             }
+                                                
+                                    }   
+                            });
+                            } else {
+                                submitBtnFunc(ruleRecs,users, singleRecId);
+                            }
+        
+        }
+        
+        function createSummaryTable(){
+            ruleRecs='';
+            singleRecId='';
+            var tMap=new Map();
+            for (var key in allRulemap) {
+              if (allRulemap.hasOwnProperty(key)) {
+                if(tMap.get(allRulemap[key])!=undefined){
+                    tMap.put(allRulemap[key], tMap.get(allRulemap[key])+1);
+                }
+                else{
+                    tMap.put(allRulemap[key], 1);
+                }
+              }
+            }
+            console.log(tMap);
+            if(tMap.containsKey('PWA')){
+                var i = tMap.get('PWA');
+                if(tMap.containsKey('PW')){
+                    var j = tMap.get('PW');    
+                    tMap.put('PW',i+j);
+                }else{
+                    tMap.put('PW',i);
+                }
+                tMap.remove('PWA');
+            }
+            
+            if(tMap.containsKey('PWO')||tMap.containsKey('POC')||tMap.containsKey('PCF')){
+                var i1 = tMap.get('PWO')!=undefined?tMap.get('PWO'):0;
+                var i2 = tMap.get('POC')!=undefined?tMap.get('POC'):0;
+                var i3 = tMap.get('PCF')!=undefined?tMap.get('PCF'):0;
+                if(tMap.containsKey('PI')){
+                    var j = tMap.get('PI');    
+                    tMap.put('PI',i1+i2+i3+j);
+                }else{
+                    tMap.put('PI',i1+i2+i3);
+                }
+                tMap.remove('PWO');tMap.remove('POC');tMap.remove('PCF');
+            }
+            
+            for (var key in allRuleStagemap) {
+                if(allRuleStagemap[key]!=''){
+                     ruleRecs+=key+','+allRuleStagemap[key]+';';
+                     singleRecId+=key+';';
+                 }
+            }
+            ruleRecs=ruleRecs.replace(/.$/,"");
+            singleRecId = singleRecId.replace(/.$/,"");
+            console.log(ruleRecs);
+            console.log(singleRecId);
+            var str='<table border="0"><tr><th colspan="2">Rule summary</th></tr><tr><th colspan="2">(Lists only the results available in the collaborator)</th></tr>';
+            var stages=tMap.keys();
+            var stg='';
+            while(stg!=undefined) {
+                stg=stages.next().value;
+                if(stg!=undefined)str+='<tr><td>'+stg+'</td><td>'+tMap.get(stg)+'</td></tr>';
+            }
+            str+='</table>';
+            return str;
+        }
+        
+        function setAMUser(usrRecord, status){
+            if (status.checked){
+                users = usrRecord;
+            }
+        }
+        
+        function backButton() {
+            backbtnFunc();
+        }   
+    
+    
+        function revertButton(){
+            var popup = new SimpleDialog("PopUp"+Dialogs.getNextId(), false);    
+            popup.setTitle("Warning");   
+            popup.createDialog();   
+            window.parent.popup = popup;              
+            popup.setContentInnerHTML("<p align='center'><img src='/img/msg_icons/warning32.png' style='margin:0 5px;'/></p><p align='center'> This will Freeze the collaborator status and customer modifications.Click Ok button to start Revert procedure: superuser select rules to revert then click on Save button to submit the revert.</p><p align='center'><br /><button class='btn' onclick='window.parent.popup.hide();revertButtonFunction();return false;'>Ok</button><button class='btn' onclick='window.parent.popup.hide();refreshPageBtn();return false;'>Cancel</button></p>");    
+            popup.show();
+            }
+        
+        function submitRevertStagePop(){
+             var popup = new SimpleDialog("PopUp"+Dialogs.getNextId(), false);    
+            popup.setTitle("Warning");   
+            popup.createDialog();   
+            window.parent.popup = popup;              
+            popup.setContentInnerHTML("<p align='center'><img src='/img/msg_icons/warning32.png' style='margin:0 5px;'/></p><p align='center'> Selected rules Customer / FAE option & comments will be cleared  and  it will be reverted back to Mantis system. Click Ok button to Revert rules.</p><p align='center'><br /><button class='btn' onclick='window.parent.popup.hide();submitRevertStage();return false;'>Ok</button><button class='btn' onclick='window.parent.popup.hide();refreshPageBtn();return false;'>Cancel</button></p>");    
+            popup.show();
+            
+            
+            }
+        function refreshPageBtn() {
+           
+            backToPageList();
+        } 
+        
+    
+        function pdfDownloadButton() {
+           
+            pdfDownloadButtonFunc();
+        } 
+        
+        function viewAttach(value, filename){
+            var pdfValue = filename.includes('.pdf');
+             isPortal = "{!isPortalUser}";
+            $("#popup_div3").dialog({
+                        modal: true, 
+                        title: 'Snapshot Indicator', 
+                        zIndex: 100, 
+                        autoOpen: true,
+                        width: 800,
+                        height: 600, 
+                        resizable: false,
+                        draggable:false,
+                        open: function( event, ui ) {
+                            if(pdfValue) {
+                                if(isPortal == 'true') {
+                                    $('[id$="pdfId"]').attr('src','/GlobalfoundryView/servlet/servlet.FileDownload?file='+value);
+                                }else{
+                                     $('[id$="pdfId"]').attr('src','/servlet/servlet.FileDownload?file='+value);
+                                }
+                                document.getElementById("imageDivId").style.display  = "none";
+                                document.getElementById("pdfDivId").style.display = "block";
+                                $('#pdfId').css('overflow', 'hidden');
+                                if(isPortal == 'true') {
+                                    $('#dnldattachPdf').attr('href', '/GlobalfoundryView/servlet/servlet.FileDownload?file='+value);
+                                }else{
+                                $('#dnldattachPdf').attr('href', '/servlet/servlet.FileDownload?file='+value);
+                                }
+                                $('#dnldattachPdf').attr('download',filename);
+                            } else {
+                                 if(isPortal == 'true') {
+                                    $('[id$="imageId"]').attr('src','/GlobalfoundryView/servlet/servlet.FileDownload?file='+value);
+                                }else{
+                                $('[id$="imageId"]').attr('src','/servlet/servlet.FileDownload?file='+value);
+                                }
+                                document.getElementById("pdfDivId").style.display = "none";
+                                document.getElementById("imageDivId").style.display = "block";
+                                if(isPortal == 'true') {
+                                   $('#dnldattachImg').attr('href','/GlobalfoundryView/servlet/servlet.FileDownload?file='+value);
+                                }else{
+                                $('#dnldattachImg').attr('href','/servlet/servlet.FileDownload?file='+value);
+                                 }
+                                $('#dnldattachImg').attr('download',filename);  
+                            }                           
+                        }
+            });
+        } 
+        
+        // function help to remove unChecked user from string 
+        var removeValue = function(list, value, separator) {
+            var values = list.split(separator);
+            for(var i = 0 ; i < values.length ; i++) {
+                if(values[i] == value) {
+                    values.splice(i, 1);
+                    return values.join(separator);
+                }
+            }
+            return list;
+        }             
+         
+        function refreshScreen() {
+            var totalNumberOfPages = $j('[id$="hdnPageNum"]').val();
+            var jsonString = $j('[id$="hdnJsonList"]').val();
+            var finalStat = $j('[id$="hdnFinalStatus"]').val();
+            var searchValue = $j('[id$="hdnSearchValue"]').val();
+            var pageNoValue;
+            
+            if(document.getElementById('pageNumberId') != null){
+            pageNoValue = document.getElementById('pageNumberId').value;        
+            }
+            var jsonData = JSON.parse(jsonString);
+
+            if(Number(pageNoValue) == 1 && Number(totalNumberOfPages) == 1) {
+                $("#fstId").hide(); $("#previousId").hide();
+                $("#nextId").hide(); $("#lstId").hide();
+            } else if(Number(pageNoValue) == 1 && Number(totalNumberOfPages) > 1) {
+                $("#fstId").hide(); $("#previousId").hide();
+                $("#nextId").show(); $("#lstId").show();
+            } else if(Number(pageNoValue) == Number(totalNumberOfPages)) {
+                $("#fstId").show(); $("#previousId").show();                            
+                $("#nextId").hide(); $("#lstId").hide();
+            } else if(Number(pageNoValue) < Number(totalNumberOfPages) && Number(pageNoValue) > 1) {
+                $("#fstId").show(); $("#previousId").show();                            
+                $("#nextId").show(); $("#lstId").show();
+            }
+            
+            if(document.getElementById("finalStatusId") != null){
+            document.getElementById("finalStatusId").value = finalStat;
+                }
+            if(document.getElementById('searchId') != null){
+            document.getElementById('searchId').value = searchValue;
+                 }
+            disableCustomerOptions(jsonData);   
+        }     
+        function selectAllCheckboxes1(){
+            var inputCheckBox;
+            var parentCheckBox;
+            if(document.getElementsByClassName("theCheckBox") != null){
+            inputCheckBox = document.getElementsByClassName("theCheckBox");
+                }
+            if(document.getElementsByClassName('theCheckParent') != null){
+            parentCheckBox = document.getElementsByClassName('theCheckParent'); 
+                }
+            for(var i=0; i<inputCheckBox.length; i++){          
+                if(parentCheckBox[0].checked){
+                    inputCheckBox[i].checked = true;
+                    usersMap[inputCheckBox[i].classList[0]] = true;
+                }else{
+                    inputCheckBox[i].checked = false;
+                    usersMap[inputCheckBox[i].classList[0]] = false;
+                }                               
+            }
+              
+        }
+        function setCustomerUserIds(usrRecord,status){
+            var parentCheckBox = document.getElementsByClassName('theCheckParent');
+            var inputCheckBox = document.getElementsByClassName("theCheckBox");
+            //Using Map concept to build the data
+            
+            if (status.checked){
+                usersMap[usrRecord] = true;
+                var flag =  true;
+                for(var i=0; i<inputCheckBox.length; i++){          
+                    if(!inputCheckBox[i].checked){
+                        flag = false;
+                    }                               
+                }    
+                if(flag){
+                    parentCheckBox[0].checked = true;
+                }else{
+                    parentCheckBox[0].checked = false;
+                }
+            }else{
+                if(parentCheckBox[0].checked){
+                    parentCheckBox[0].checked = false;
+                }
+                usersMap[usrRecord] = false;
+            }
+             
+       
+        }    
+       
+       function revertbtn(revertbtnValue){
+           revertStageSelection=revertbtnValue.value;
+           
+       }
+    
+       function revertStage(){
+            
+            $("#popup_revertOption").dialog({
+                        modal: true, 
+                        title: 'Select Stage to which Collaborator needs to be Reverted', 
+                        zIndex: 10000, 
+                        autoOpen: true,
+                        width: 1000,
+                        height: 500, 
+                        resizable: true,
+                        buttons: [{
+                                    text: "Submit",
+                                    click : function () {
+
+                                          var desc = document.getElementById("DRCPage:formDRC:rvrtblockId:rvrtSectionId:revertId").value; 
+                                        //var desc1 = document.getElementById("DRCPage:formDRC:rvrtblockId:selectedRvrt").value;  
+										//  alert('Please enter cancellation reason.'+desc+'>>>> '+revertStageSelection);                                        
+                                          if (isEmpty(desc) || isEmpty(revertStageSelection)){
+                                            alert('Please Select Revert Stage and Enter Cancellation Reason.');
+                                          } else {
+                                            revertActionFunc(desc,revertStageSelection);
+                                            $(this).dialog("close");
+                                          }
+                                                   
+                                    }
+                        },
+                                  {
+                                      text: "Cancel",
+                                      click : function () {
+                                          $(this).dialog("close");
+                                      }    
+                        }]
+                           
+            });
+           
+        } 
+    </script>
+</apex:page>

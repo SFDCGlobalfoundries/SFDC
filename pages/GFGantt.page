@@ -1,0 +1,626 @@
+<apex:page controller="GFGanttController" tabStyle="SFDC_Project__c" showChat="false" >
+  <apex:stylesheet value="{!URLFOR($Resource.gantt, 'css/bootstrap.css')}"/>
+  <apex:stylesheet value="{!URLFOR($Resource.gantt, 'css/prettify.css')}"/>
+  <apex:includeScript value="{!URLFOR($Resource.jquery, 'js/jquery-1.8.3.min.js')}"/>
+  <apex:includeScript value="{!URLFOR($Resource.gantt, 'js/gantt.js')}"/>
+  <apex:includeScript value="{!URLFOR($Resource.gantt, 'js/bootstrap-tooltip.js')}"/>
+  <apex:includeScript value="{!URLFOR($Resource.gantt, 'js/bootstrap-popover.js')}"/>
+  <apex:includeScript value="{!URLFOR($Resource.gantt, 'js/prettify.js')}"/>
+  
+        
+        
+<style type="text/css">
+
+            
+.gantt, .gantt2 {
+    width: 100%;
+    margin: 20px auto;
+    border: 14px solid #ddd;
+        -webkit-border-radius: 6px;
+        -moz-border-radius: 6px;
+        border-radius: 6px;
+            -webkit-box-sizing: border-box;
+            -moz-box-sizing: border-box;
+            box-sizing: border-box;
+}
+
+.gantt:after {
+    content: ".";
+    visibility: hidden;
+    display: block;
+    height: 0;
+    clear: both;
+}
+
+.fn-gantt {
+    width: 100%;
+}
+
+.fn-gantt .fn-content {
+    overflow: hidden;
+    position: relative;
+    width: 100%;
+}
+
+
+
+
+/* === LEFT PANEL === */
+
+.fn-gantt .leftPanel {
+    float: left;
+    width: 265px;
+    overflow: hidden;
+    border-right: 1px solid #DDD;
+    position: relative;
+    z-index: 20;
+}
+
+.fn-gantt .row {
+    float: left;
+    height: 24px;
+    line-height: 24px;
+    margin-left: -24px;
+}
+
+.fn-gantt .leftPanel .fn-label {
+    display: inline-block;
+    margin: 0 0 0 5px;
+    color: #484A4D;
+    width: 150px;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    overflow: hidden;
+}
+
+.fn-gantt .leftPanel .row0 {
+    border-top: 1px solid #DDD;
+}
+.fn-gantt .leftPanel .name, .fn-gantt .leftPanel .desc {
+    float: left;
+    height: 23px;
+    margin: 0;
+    border-bottom: 1px solid #DDD;
+    background-color: #f6f6f6;
+}
+
+.fn-gantt .leftPanel .name {
+    width: 145px;
+    font-weight: bold;
+    
+}
+
+.fn-gantt .leftPanel .desc {
+    width: 115px;
+}
+
+.fn-gantt .leftPanel .fn-wide, .fn-gantt .leftPanel .fn-wide .fn-label {
+    width: 265px;
+    
+}
+
+.fn-gantt .spacer {
+    margin: -2px 0 1px 0;
+    border-bottom: none;
+    background-color: #f6f6f6;
+}
+
+
+
+
+/* === RIGHT PANEL === */
+
+.fn-gantt .rightPanel {
+    overflow: hidden;
+}
+
+.fn-gantt .dataPanel {
+    margin-left: 0px;
+    border-right: 1px solid #DDD;
+    background-image: url({!URLFOR($Resource.gantt, 'img/grid.png')});
+    background-repeat: repeat;
+    background-position: 24px 24px;
+}
+.fn-gantt .day, .fn-gantt .date {
+    overflow: visible;
+    width: 24px;
+    line-height: 24px;
+    text-align: center;
+    border-left: 1px solid #DDD;
+    border-bottom: 1px solid #DDD;
+    margin: -1px 0 0 -1px;
+    font-size: 11px;
+    color: #484a4d;
+    text-shadow: 0 1px 0 rgba(255,255,255,0.75);
+    text-align: center;
+}
+
+.fn-gantt .holiday {
+    background-color: #ffd263;
+    height: 23px;
+    margin: 0 0 -1px -1px;
+}
+
+.fn-gantt .today {
+    background-color: #fff8da;
+    height: 23px;
+    margin: 0 0 -1px -1px;
+    font-weight: bold;
+    text-align: center;
+}
+
+.fn-gantt .sa, .fn-gantt .sn, .fn-gantt .wd {
+    height: 23px;
+    margin: 0 0 0 -1px;
+    text-align: center;
+}
+
+.fn-gantt .sa, .fn-gantt .sn {
+    color: #939496;
+    background-color: #f5f5f5;
+    text-align: center;
+}
+
+.fn-gantt .wd {
+    background-color: #f6f6f6;
+    text-align: center;
+}
+
+.fn-gantt .rightPanel .month, .fn-gantt .rightPanel .year {
+    float: left;
+    overflow: hidden;
+    border-left: 1px solid #DDD;
+    border-bottom: 1px solid #DDD;
+    height: 23px;
+    margin: 0 0 0 -1px;
+    background-color: #f6f6f6;
+    font-weight: bold;
+    font-size: 11px;
+    color: #484a4d;
+    text-shadow: 0 1px 0 rgba(255,255,255,0.75);
+    text-align: center;
+}
+
+.fn-gantt-hint {
+    border: 5px solid #edc332;
+    background-color: #fff5d4;
+    padding: 10px;
+    position: absolute;
+    display: none;
+    z-index: 11;
+        -webkit-border-radius: 4px;
+        -moz-border-radius: 4px;
+        border-radius: 4px;
+}
+
+.fn-gantt .bar {
+    background-color: #D0E4FD;
+    height: 18px;
+    margin: 4px 3px 3px 3px;
+    position: absolute;
+    z-index: 10;
+    text-align: center;
+        -webkit-box-shadow: 0 0 1px rgba(0,0,0,0.25) inset;
+        -moz-box-shadow: 0 0 1px rgba(0,0,0,0.25) inset;
+        box-shadow: 0 0 1px rgba(0,0,0,0.25) inset;
+            -webkit-border-radius: 3px;
+            -moz-border-radius: 3px;
+            border-radius: 3px;
+}
+
+.fn-gantt .bar .fn-label {
+    line-height: 18px;
+    font-weight: bold;
+    white-space: nowrap;
+    width: 100%;
+    text-overflow: ellipsis;
+    overflow: hidden;
+    text-shadow: 0 1px 0 rgba(255,255,255,0.4);
+    color: #414B57 !important;
+    text-align: center;
+    font-size: 11px;
+}
+
+.fn-gantt .ganttRed {
+    background-color: #F9C4E1;
+}
+.fn-gantt .ganttRed .fn-label {
+    color: #78436D !important;
+}
+
+.fn-gantt .ganttGreen {
+    background-color: #D8EDA3;
+}
+.fn-gantt .ganttGreen .fn-label {
+    color: #778461 !important;
+}
+
+.fn-gantt .ganttOrange {
+    background-color: #FCD29A;
+}
+.fn-gantt .ganttOrange .fn-label {
+    color: #714715 !important;
+}
+
+
+/* === BOTTOM NAVIGATION === */
+
+.fn-gantt .bottom {
+    clear: both;
+    background-color: #f6f6f6;
+    width: 100%;
+}
+.fn-gantt .navigate {
+    border-top: 1px solid #DDD;
+    padding: 10px 0 10px 225px;
+}
+
+.fn-gantt .navigate .nav-slider {
+    height: 20px;
+    display: inline-block;
+}
+
+.fn-gantt .navigate .nav-slider-left, .fn-gantt .navigate .nav-slider-right {
+    text-align: center;
+    height: 20px;
+    display: inline-block;
+}
+
+.fn-gantt .navigate .nav-slider-left {
+    float: left;
+}
+
+.fn-gantt .navigate .nav-slider-right {
+    float: right;
+}
+
+.fn-gantt .navigate .nav-slider-content {
+    text-align: left;
+    width: 160px;
+    height: 20px;
+    display: inline-block;
+    margin: 0 10px;
+}
+
+.fn-gantt .navigate .nav-slider-bar, .fn-gantt .navigate .nav-slider-button {
+    position: absolute;
+    display: block;
+}
+
+.fn-gantt .navigate .nav-slider-bar {
+    width: 155px;
+    height: 6px;
+    background-color: #838688;
+    margin: 8px 0 0 0;
+        -webkit-box-shadow: 0 1px 3px rgba(0,0,0,0.6) inset;
+        -moz-box-shadow: 0 1px 3px rgba(0,0,0,0.6) inset;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.6) inset;
+            -webkit-border-radius: 3px;
+            -moz-border-radius: 3px;
+            border-radius: 3px;
+}
+
+.fn-gantt .navigate .nav-slider-button {
+    width: 17px;
+    height: 60px;
+    background: url({!URLFOR($Resource.gantt, 'img/slider_handle.png')}) center center no-repeat;
+    left: 0px;
+    top: 0px;
+    margin: -26px 0 0 0;
+    cursor: pointer;
+}
+
+.fn-gantt .navigate .page-number {
+    display: inline-block;
+    font-size: 10px;
+    height: 20px;
+}
+
+.fn-gantt .navigate .page-number span {
+    color: #666666;
+    margin: 0 6px;
+    height: 20px;
+    line-height: 20px;
+    display: inline-block;
+}
+
+.fn-gantt .navigate a:link, .fn-gantt .navigate a:visited, .fn-gantt .navigate a:active {
+    text-decoration: none;
+}
+
+.fn-gantt .nav-link {
+    margin: 0 3px 0 0;
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    font-size: 0px;
+    background: #595959 url({!URLFOR($Resource.gantt, 'img/icon_sprite.png')}) !important;
+    border: 1px solid #454546;
+    cursor: pointer;
+    vertical-align: top;
+        -webkit-border-radius: 2px;
+        -moz-border-radius: 2px;
+        border-radius: 2px;
+            -webkit-box-shadow: 0 1px 0 rgba(255,255,255,0.1) inset, 0 1px 1px rgba(0,0,0,0.2);
+            -moz-box-shadow: 0 1px 0 rgba(255,255,255,0.1) inset, 0 1px 1px rgba(0,0,0,0.2);
+            box-shadow: 0 1px 0 rgba(255,255,255,0.1) inset, 0 1px 1px rgba(0,0,0,0.2);
+                -webkit-box-sizing: border-box;
+                -moz-box-sizing: border-box;
+                box-sizing: border-box;
+}
+.fn-gantt .nav-link:active {
+    -webkit-box-shadow: 0 1px 1px rgba(0,0,0,0.25) inset, 0 1px 0 #FFF;
+    -moz-box-shadow: 0 1px 1px rgba(0,0,0,0.25) inset, 0 1px 0 #FFF;
+    box-shadow: 0 1px 1px rgba(0,0,0,0.25) inset, 0 1px 0 #FFF;
+}
+
+.fn-gantt .navigate .nav-page-back {
+    background-position: 1px 0 !important;
+    margin: 0;
+}
+
+.fn-gantt .navigate .nav-page-next {
+    background-position: 1px -16px !important;
+    margin-right: 15px;
+}
+
+.fn-gantt .navigate .nav-slider .nav-page-next {
+    margin-right: 5px;
+}
+
+.fn-gantt .navigate .nav-begin {
+    background-position: 1px -112px !important;
+}
+
+.fn-gantt .navigate .nav-prev-week {
+    background-position: 1px -128px !important;
+}
+
+.fn-gantt .navigate .nav-prev-day {
+    background-position: 1px -48px !important;
+}
+
+.fn-gantt .navigate .nav-next-day {
+    background-position: 1px -64px !important;
+}
+
+.fn-gantt .navigate .nav-next-week {
+    background-position: 1px -160px !important;
+}
+
+.fn-gantt .navigate .nav-end {
+    background-position: 1px -144px !important;
+}
+
+.fn-gantt .navigate .nav-zoomOut {
+    background-position: 1px -96px !important;
+}
+
+.fn-gantt .navigate .nav-zoomIn {
+    background-position: 1px -80px !important;
+    margin-left: 15px;
+}
+
+.fn-gantt .navigate .nav-now {
+    background-position: 1px -32px !important;
+}
+
+.fn-gantt .navigate .nav-slider .nav-now {
+    margin-right: 5px;
+}
+
+.fn-gantt-loader {
+    background-image: url({!URLFOR($Resource.gantt, 'img/loader_bg.png')});
+    z-index: 30;
+}
+
+.fn-gantt-loader-spinner {
+    width: 100px;
+    height: 20px;
+    position: absolute;
+    margin-left: 50%;
+    margin-top: 50%;
+    text-align: center;
+}
+.fn-gantt-loader-spinner span {
+    color: #fff;
+    font-size: 12px;
+    font-weight: bold;
+}
+
+.row:after {
+    clear: both;
+}
+
+
+</style>
+
+<div class="contain">
+  <div id="ganttChart" class="gantt"></div>  
+</div>
+<script type="text/javascript">
+  var j$ = jQuery.noConflict();
+
+var projects = new Array();
+var entries = new Array();
+
+function GanttProject(id,name,desc)
+{
+   this.id = id;
+   this.name = name;
+   this.desc = desc;
+   this.activities = new Array();
+}
+
+GanttProject.prototype.addActivity = function(activity)
+{
+    this.activities[this.activities.length] = activity;
+};
+
+function GanttActivity(id,name,startDate,endDate)
+{
+   this.id = id;
+   this.name = name;
+   this.startDate = startDate;
+   this.endDate = endDate;
+   this.tasks = new Array();
+}
+
+GanttActivity.prototype.addTask = function(task)
+{
+    this.tasks[this.tasks.length] = task;
+};
+
+function GanttTask(id,name,startDate,endDate,cssClass)
+{
+   this.id = id;
+   this.name = name;
+   this.startDate = startDate;
+   this.endDate = endDate;
+   this.cssClass = cssClass;
+}
+
+function Entry(name,desc)
+{
+  this.name = name;
+  this.desc = desc;
+  this.values = new Array();
+}
+
+Entry.prototype.addValue = function(val)
+{
+    this.values[this.values.length] = val;
+};
+
+function EntryValue(from,to,label,customClass)
+{
+   this.from = from;
+   this.to = to;
+   this.label = label;
+   this.customClass = customClass;
+}
+  
+ j$(function() {
+
+            "use strict";
+            var gproj = null;
+            var gact = null;
+            var gtask = null;
+            var startDateStr = null;
+            var startDate = null;
+            var endDateStr = null;
+            var endDate = null;
+                 
+            <apex:repeat value="{!ganttProjects}" var="proj" id="projRepeat">
+                gproj = new GanttProject('{!proj.Id}','{!proj.Name}','{!proj.Description}'); 
+                projects[projects.length] = gproj;               
+                <apex:repeat value="{!proj.activities}" var="act" id="actRepeat">
+                startDateStr = '<apex:outputText value="{0,date,MM'/'dd'/'yyyy}"><apex:param value="{!act.StartDate}" /></apex:outputText>';
+                
+                startDate = new Date(startDateStr);
+                
+                endDateStr = '<apex:outputText value="{0,date,MM'/'dd'/'yyyy}"><apex:param value="{!act.EndDate}" /></apex:outputText>';
+                endDate = new Date(endDateStr);
+                  gact = new GanttActivity('{!act.Id}','{!act.Name}',startDate,endDate);
+                  gproj.addActivity(gact);
+                  <apex:repeat value="{!act.tasks}" var="task" id="taskRepeat">
+                        startDateStr = '<apex:outputText value="{0,date,MM'/'dd'/'yyyy}"><apex:param value="{!task.StartDate}" /></apex:outputText>';
+                        endDateStr = '<apex:outputText value="{0,date,MM'/'dd'/'yyyy}"><apex:param value="{!task.EndDate}" /></apex:outputText>';
+                        if((startDateStr != '')&&(endDateStr != ''))
+                        {
+                            startDate = new Date(startDateStr);
+                            endDate = new Date(endDateStr);
+                            gtask = new GanttTask('{!task.Id}','{!task.Name}',startDate,endDate,'{!task.CSSClass}');
+                            gact.addTask(gtask);
+                        }
+                  </apex:repeat>
+                </apex:repeat>
+            </apex:repeat>      
+           
+           var gentry = null;
+           var gvalue = null;
+                  
+           for(var i = 0; i < projects.length; ++i)
+           {
+              gproj = projects[i];
+              for(var j = 0; j < gproj.activities.length; ++j)
+              {
+                 gact = gproj.activities[j];
+                 if(j == 0)
+                 {
+                     gentry = new Entry(gproj.name,gact.name);
+                 }else
+                 {
+                     gentry = new Entry(" ",gact.name);
+                 }
+                 
+                 
+                 for(var k = 0; k < gact.tasks.length; ++k)
+                 {
+                     gtask = gact.tasks[k];
+                    // alert(gtask.startDate);
+                     startDateStr = "/Date(" + gtask.startDate.getTime() + ")/";
+                    // alert(startDateStr);
+                     endDateStr = "/Date(" + gtask.endDate.getTime() + ")/";
+                     gvalue = new EntryValue(startDateStr,endDateStr,gtask.name,gtask.cssClass);
+                     gentry.addValue(gvalue);
+                 }
+                 
+                 //MAKE SURE AT LEAST ONE VALUE WAS ADDED
+                 if(gentry.values.length > 0)   
+                 {
+                     entries[entries.length] = gentry;
+                 }
+              }
+           }
+           
+                
+           
+            j$(".gantt").gantt({
+                source: entries,
+                navigate: "scroll",
+                scale: "weeks",
+                maxScale: "months",
+                minScale: "days",
+                itemsPerPage: 10,
+                onItemClick: function(data) {
+                   // alert("Item clicked - show some details");
+                },
+                onAddClick: function(dt, rowId) {
+                   // alert("Empty space clicked - add an item!");
+                },
+                onRender: function() {
+                    if (window.console && typeof console.log === "function") {
+                        console.log("chart rendered");
+                        //j$( ".leftPanel:first-child" ).css({'border': 'solid 2px red'});
+                       j$( ".leftPanel" ).children().each(function(index){ 
+                          if(index == 0)
+                          {
+                           j$(this).append("<div style='height:40px;padding-top:25px;font-weight:bold;text-decoration:underline;'><table width='100%'><tr><td align='center'>{!ProjectLabel}</td><td align='center'>{!ActivityLabel}</td></tr></table></div>");
+                          }
+                       });
+                    }
+                }
+            });
+
+            j$(".gantt").popover({
+                selector: ".bar",
+                title: "I'm a popover",
+                content: "And I'm the content of said popover."
+            });
+            
+            
+
+           prettyPrint();
+           
+          
+          
+
+        });
+ 
+
+ 
+</script>
+
+
+</apex:page>

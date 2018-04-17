@@ -1,0 +1,65 @@
+<apex:page standardController="Case"  sidebar="false" showChat="false" showHeader="false"  Cache="false">
+
+<apex:remoteObjects >
+         <apex:remoteObjectModel name="Environment_Variable__c" jsShorthand="csSetting" fields="Name,Id" >  
+         <apex:remoteObjectField name="Value__c" jsShorthand="count"/>
+    </apex:remoteObjectModel>
+</apex:remoteObjects> 
+
+<apex:form >
+
+  
+    
+</apex:form>
+   <script type="text/javascript" src="/soap/ajax/29.0/connection.js"></script>
+   <script type="text/javascript" language="javascript">       
+       window.onload = function() 
+        {
+                    sforce.connection.sessionId = "{!$Api.Session_ID}";
+                    var myquery = "SELECT id,accountid FROM case WHERE Id = '{!case.Id}' limit 1";
+                    var result = sforce.connection.query(myquery);
+                    var records = result.getArray("records");
+                    var caseObj = records[0];
+                    var globalAccountId = "{!$Label.Case_GlobalFoundriesAccount}";
+                    var caseAccount = "{!Case.AccountId}";                                         
+                    if(globalAccountId == caseAccount.substring(0,15)){                    
+                             checkCCToCase();
+                    }
+                    
+        }
+        function checkCCToCase(){         
+        var info = "{!$Setup.CCToCaseAccountCheck__c.Value__c}";                   
+        var myquery = "SELECT Id,Member_Role_Name__c, Name, Case__c, Contact__c,Contact__r.AccountId,Contact__r.Id, Email__c,user__c, Is_Subscribed__c from Case_Collaboration__c WHERE Case__c = '{!Case.Id}' ";
+        var result = sforce.connection.query(myquery);
+        var records = result.getArray("records");        
+        var flag = false;      
+        var acct = '';          
+        var globalAccountId = "{!$Label.Case_GlobalFoundriesAccount}";
+        for (var i=0; i < records.length; i++){               
+            var con = records[i].Contact__r; 
+                             
+            if(con){
+                           
+                acct = records[i].Contact__r.AccountId;
+            }  
+                            
+            if(acct != ''){                 
+                    if(globalAccountId != acct.substring(0,15)){
+                        flag = true;
+                        break;
+                    }
+                    acct = '' ;
+            }               
+        }
+       
+             if(flag){
+                    var r = confirm(info);
+             }
+        }
+            
+            
+        
+   
+   </script>
+   
+</apex:page>

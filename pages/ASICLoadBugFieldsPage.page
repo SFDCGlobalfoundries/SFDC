@@ -1,0 +1,233 @@
+<!-- 
+    Type Name:  ASICLoadBugFieldsPage.page
+    Author: UCM Team
+    Created Date: 10/20/2016
+    Reason: 
+    Change History:
+    Author: 
+    Modified Date: 
+    Reason: -->
+<apex:page standardController="Bug__c" extensions="ASICLoadBugFieldsClass"   standardStylesheets="true"  ShowChat="false" Cache="false">
+    
+
+    <apex:form >
+        <apex:outputPanel rendered="{!IF((displayrecord),false,true)}" >
+            Insufficient Privileges
+            You do not have the level of access necessary to perform the operation you requested. Please contact the owner of the record or your administrator if access is necessary. 
+        </apex:outputPanel>
+        
+        <apex:outputpanel >
+            <apex:actionstatus id="status">
+                <apex:facet name="start">
+                    <div class="waitingSearchDiv" id="el_loading" style="background-color: #fbfbfb;
+                           height: 100%;opacity:0.65;width:100%;"> 
+                        <div class="waitingHolder" style="top: 74.2px; width: 91px;">
+                            <img class="waitingImage" src="/img/loading.gif" title="Please Wait..." />
+                            <span class="waitingDescription">Please Wait...</span>
+                        </div>
+                    </div>
+                </apex:facet>
+            </apex:actionstatus>
+        </apex:outputpanel>
+        
+        <apex:outputPanel rendered="{!displayrecord}">
+            <style>
+                .locationError { color: blue; font-weight: strong;}
+                .employeeError { color: green; font-weight: strong;}
+            </style>
+            <apex:sectionHeader subtitle="{!bugtitle}" title="Bug Edit"/>
+            <apex:pageMessages id="msg1"   escape="false" ></apex:pageMessages>
+            <apex:pageblock title="Bug Edit" >
+                <apex:pageblockbuttons >
+                    <apex:actionStatus id="prstatus">
+                        <apex:facet name="stop">
+                            <apex:outputpanel >
+                                <apex:commandButton value="Save"  action="{!savebug}"   rerender="msg1, status" status="status"/>
+                                <apex:commandButton value="Cancel"  action="{!Cancelbug}" immediate="true"/>
+                            </apex:outputpanel>
+                        </apex:facet>
+                        <apex:facet name="start">
+                            <apex:outputpanel >
+                                <apex:commandButton value="Save"  disabled="true"/>
+                                <apex:commandButton value="Cancel" disabled="true" />
+                            </apex:outputpanel>
+                        </apex:facet>
+                    </apex:actionStatus>
+                </apex:pageblockbuttons>
+                <apex:pageblocksection columns="1" showHeader="true" title="Information" collapsible="false" rendered="{!newFlag == false}">
+                    <apex:outputtext label="{!$ObjectType.Bug__c.fields.Bug_Title__c.Label}">
+                        <apex:outputPanel layout="block" styleClass="requiredInput" >
+                            <div class="requiredBlock"></div>
+                                <apex:inputText value="{!bugVar.Bug_Title__c}" size="100"/>                        
+                            </apex:outputPanel>
+                    </apex:outputtext>
+                </apex:pageblocksection>
+                <apex:pageblocksection id="bugdetail" columns="2" >
+                    
+                    <apex:pageBlockSectionItem helpText="{!$ObjectType.Bug__c.fields.Priority__c.InlineHelpText}">
+                        <apex:outputLabel value="{!$ObjectType.Bug__c.fields.Priority__c.Label}" />
+                        <apex:outputPanel styleClass="requiredInput" layout="block" >
+                            <apex:outputPanel styleClass="requiredBlock" layout="block"/>
+                            <apex:inputField value="{!bugVar.Priority__c}"/>
+                        </apex:outputPanel>
+                    </apex:pageBlockSectionItem>
+                    
+                    <apex:outputfield value="{!bugVar.Status__c}" id="ststatus1" rendered="{!IF((bugVar.id != null),false,true)}"/> 
+                    
+                    <apex:pageBlockSectionItem helpText="{!$ObjectType.Bug__c.fields.Severity__c.InlineHelpText}">
+                        <apex:outputLabel value="{!$ObjectType.Bug__c.fields.Severity__c.Label}" />
+                        <apex:outputPanel styleClass="requiredInput" layout="block" >
+                            <apex:outputPanel styleClass="requiredBlock" layout="block"/>
+                            <apex:inputField value="{!bugVar.Severity__c}"/>
+                        </apex:outputPanel>
+                    </apex:pageBlockSectionItem>
+                    
+                    <apex:outputtext label="{!$ObjectType.Bug__c.fields.Need_By_Date__c.Label}">
+                        <apex:outputPanel layout="block" styleClass="requiredInput" >
+                            <div class="requiredBlock"></div>
+                                <apex:inputfield value="{!bugVar.Need_By_Date__c}" />                        
+                            </apex:outputPanel>
+                    </apex:outputtext>
+                    <apex:outputtext label="{!$ObjectType.Bug__c.fields.Technology__c.Label}">
+                        <apex:outputPanel layout="block" styleClass="requiredInput" >
+                            <div class="requiredBlock"></div>
+                                <apex:inputfield value="{!bugVar.Technology__c}" />                        
+                            </apex:outputPanel>
+                    </apex:outputtext>
+                    <apex:outputtext label="{!$ObjectType.Bug__c.fields.Library_Release__c.Label}">
+                        <apex:outputPanel layout="block" styleClass="requiredInput" >
+                            <div class="requiredBlock"></div>
+                                <apex:inputfield value="{!bugVar.Library_Release__c}" />                        
+                            </apex:outputPanel>
+                    </apex:outputtext>                    
+                </apex:pageblocksection> 
+                <apex:pageblocksection id="problemSection" columns="1" showHeader="true" title="Problem Identification" collapsible="false">
+                    <apex:outputtext label="{!$ObjectType.Bug__c.fields.Problem_Class__c.Label}">
+                        <apex:outputPanel layout="block" styleClass="requiredInput" >
+                            <div class="requiredBlock"></div>
+                            <apex:inputfield value="{!bugVar.Problem_Class__c}" />                        
+                        </apex:outputPanel>
+                    </apex:outputtext>
+                    <!--
+                    <apex:outputtext label="{!$ObjectType.Bug__c.fields.Problem_Type__c.Label}">
+                        <apex:outputPanel layout="block" styleClass="requiredInput" >
+                            <div class="requiredBlock"></div>
+                                <apex:inputfield value="{!bugVar.Problem_Type__c}" />                        
+                            </apex:outputPanel>
+                    </apex:outputtext>
+                    -->
+                    <apex:pageBlockSectionItem id="problemType">
+                        <apex:outputLabel value="{!$ObjectType.Bug__c.fields.Problem_Type__c.Label}" />
+                        <apex:outputPanel styleClass="requiredInput" layout="block" >
+                            <apex:outputPanel styleClass="requiredBlock" layout="block"/>
+                            <apex:selectList id="problemType" value="{!problemType}" size="1" required="true" >
+                                <apex:actionSupport status="status" event="onchange" action="{!retrieveProblemType}" rerender="subTypeA,bugdetail, problemSection, pageMessages,pageBlockId"/>
+                                <apex:selectOptions value="{!listProblemTypeOptions}"/>
+                            </apex:selectList>
+                        </apex:outputPanel>
+                    </apex:pageBlockSectionItem>
+                    
+                    <!--
+                    <apex:outputtext label="{!$ObjectType.Bug__c.fields.Sub_Type_A__c.Label}">
+                        <apex:outputPanel layout="block" styleClass="requiredInput" >
+                            <div class="requiredBlock"></div>
+                                <apex:inputfield value="{!bugVar.Sub_Type_A__c}" />                        
+                            </apex:outputPanel>
+                    </apex:outputtext> -->
+                    
+                    <apex:pageBlockSectionItem id="subTypeA" rendered="{!isShowSubTypeA}">
+                        <apex:outputLabel value="{!$ObjectType.Bug__c.fields.Sub_Type_A__c.Label}" />
+                        <apex:outputPanel styleClass="requiredInput" layout="block" >
+                            <apex:outputPanel styleClass="requiredBlock" layout="block"/>
+                            <apex:selectList id="subTypeAVal" value="{!subTypeA}" size="1" >
+                                <apex:actionSupport status="status" event="onchange" action="{!retrieveSubTypeA}" rerender="subTypeB,bugdetail, problemSection,pageMessages,pageBlockId"/>
+                                <apex:selectOptions value="{!listSubTYpeAOptions}"/>
+                            </apex:selectList>
+                        </apex:outputPanel>
+                    </apex:pageBlockSectionItem> 
+                    
+                    <apex:pageBlockSectionItem id="subTypeB" rendered="{!isShowSubTypeB}">
+                        <apex:outputLabel value="{!$ObjectType.Bug__c.fields.Sub_Type_B__c.Label}" />
+                        <apex:selectList id="subTypeBVal" value="{!subTypeB}" size="1" >
+                            <apex:actionSupport status="status" event="onchange" action="{!retrieveSubTypeB}" rerender="subTypeC,bugdetail, problemSection,,pageMessages,pageBlockId"/>
+                            <apex:selectOptions value="{!listSubTYpeBOptions}"/>
+                        </apex:selectList>
+                    </apex:pageBlockSectionItem>
+                    
+                    
+                    <apex:pageBlockSectionItem id="subTypeC" rendered="{!isShowSubTypeC}">
+                        <apex:outputLabel value="{!$ObjectType.Bug__c.fields.Sub_Type_C__c.Label}" />
+                        <apex:selectList id="subTypeCVal" value="{!subTypeC}" size="1" >
+                            <apex:actionSupport status="status" event="onchange" action="{!retrieveSubTypeC}" rerender="subTypD,bugdetail, problemSection,pageMessages,pageBlockId"/>
+                            <apex:selectOptions value="{!listSubTYpeCOptions}"/>
+                        </apex:selectList>
+                    </apex:pageBlockSectionItem>
+                    
+                    <apex:pageBlockSectionItem id="subTypeD" rendered="{!isShowSubTypeD}">
+                        <apex:outputLabel value="{!$ObjectType.Bug__c.fields.Sub_Type_D__c.Label}" />
+                        <apex:selectList id="subTypeDVal" value="{!subTypeD}" size="1" >
+                            <apex:selectOptions value="{!listSubTYpeDOptions}"/>
+                        </apex:selectList>
+                    </apex:pageBlockSectionItem>
+                </apex:pageblocksection>
+                                
+                <apex:outputPanel rendered="{!IF(Bug__c.Id ==null,true,false)}">
+                    <apex:pageblocksection columns="1" showHeader="true" title="Description" collapsible="false">
+                            <apex:pageBlockSectionItem helpText="{!$ObjectType.Bug__c.fields.Bug_Description__c.InlineHelpText}">
+                                <apex:outputLabel Value="{!$ObjectType.Bug__c.fields.Bug_Description__c.Label}"/>
+                                <apex:outputPanel layout="block" styleClass="requiredInput">
+                                    <div class="requiredBlock"></div>
+                                        <apex:inputField value="{!bugVar.Bug_Description__c}"/>                        
+                                </apex:outputPanel>
+                            </apex:pageBlockSectionItem>
+                    </apex:pageblocksection>
+                </apex:outputPanel>  
+                
+                <apex:outputPanel rendered="{!IF(Bug__c.Id !=null,true,false)}">
+                    <apex:pageblocksection columns="1" showHeader="true" title="Description" collapsible="false" >
+                        <apex:outputField value="{!bugVar.Bug_Description__c}" rendered="{!($User.Id != Bug__c.createdbyid)}"/> 
+                        <apex:pageBlockSectionItem helpText="{!$ObjectType.Bug__c.fields.Bug_Description__c.InlineHelpText}" rendered="{!($User.Id == Bug__c.createdbyid)}">
+                             <apex:outputLabel Value="{!$ObjectType.Bug__c.fields.Bug_Description__c.Label}"/>
+                             <apex:outputPanel layout="block" styleClass="requiredInput">
+                                    <div class="requiredBlock"></div>
+                                    <apex:inputField value="{!bugVar.Bug_Description__c}"/>                                                       
+                             </apex:outputPanel>
+                        </apex:pageBlockSectionItem>                
+                    </apex:pageblocksection>
+                </apex:outputPanel>
+                
+                <apex:pageblocksection columns="2" showHeader="true" title="Details of Affected Item" collapsible="false" > 
+                    <apex:pageBlockSectionItem helpText="{!$ObjectType.Bug__c.fields.Account_Affected__c.InlineHelpText}">
+                        <apex:outputLabel value="{!$ObjectType.Bug__c.fields.Account_Affected__c.Label}" />
+                        <apex:outputPanel styleClass="requiredInput" layout="block" >
+                            <apex:outputPanel styleClass="requiredBlock" layout="block"/>
+                            <apex:inputfield value="{!bugVar.Account_Affected__c}" />            
+                        </apex:outputPanel>
+                    </apex:pageBlockSectionItem>
+                    
+                </apex:pageblocksection>
+                <apex:pageblocksection columns="2"  collapsible="false" title="Originating Case information" rendered="{!IF((caseObj.id != null),true,false)}">
+                    <apex:pageBlockSectionItem dataStyle="width:30%">
+                        <apex:outputLabel >{!$ObjectType.Case.fields.Problem_Type__c.label}</apex:outputLabel>
+                        <apex:outputText value="{!caseObj.Problem_Type__c}"/>
+                    </apex:pageBlockSectionItem>
+                    <apex:pageBlockSectionItem dataStyle="width:20%">
+                        <apex:outputLabel >{!$ObjectType.Case.fields.Priority.label}</apex:outputLabel>
+                        <apex:outputText value="{!caseObj.Priority}"/>
+                    </apex:pageBlockSectionItem>
+                    <apex:pageBlockSectionItem dataStyle="width:30%">
+                        <apex:outputLabel >{!$ObjectType.Case.fields.Sub_Type_A__c.label}</apex:outputLabel>
+                        <apex:outputText value="{!caseObj.Sub_Type_A__c}"/>
+                    </apex:pageBlockSectionItem>
+                    <apex:pageBlockSectionItem dataStyle="width:30%">
+                        <apex:outputLabel >{!$ObjectType.Case.fields.Sub_Type_B__c.label}</apex:outputLabel>
+                        <apex:outputText value="{!caseObj.Sub_Type_B__c}"/>
+                    </apex:pageBlockSectionItem>
+                </apex:pageblocksection>
+                <apex:pageblocksection columns="2"  collapsible="false" title="System Information">
+                    <apex:outputfield value="{!bugVar.recordtypeid}"/>
+                </apex:pageblocksection>
+            </apex:pageblock>
+        </apex:outputPanel>
+    </apex:form>
+</apex:page>

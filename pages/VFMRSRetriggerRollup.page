@@ -1,0 +1,30 @@
+<apex:page standardController="Mask_Set_Title__c" extensions="MRSRetriggerRollup" action="{!calculateMRSLayerStatus}" >
+	<apex:form id="polling">
+		<apex:pageBlock title="MRS Layer Chip">
+		<apex:pageMessages ></apex:pageMessages>
+		<br /><br />
+		<apex:outputPanel rendered="{!  !isCompleted && !isFailed }">
+			<img src="/img/loading32.gif"/><br /><br />
+	  	</apex:outputPanel>
+	  	<apex:outputPanel rendered="{! isCompleted && !isFailed }">
+	  		<img src="/img/msg_icons/confirm32.png"/><br /><br />
+	  	</apex:outputPanel>
+	  	<apex:outputPanel rendered="{! !isCompleted && isFailed }">
+	  		<img src="/img/msg_icons/error32.png"/><br /><br />
+	  	</apex:outputPanel>
+	  	<apex:repeat var="item" value="{!submitjob}">
+			Status: {!item.Status} <br />______________________<br />
+			Job ID: {!item.Id} <br />
+			Total items: {!item.TotalJobItems} <br />
+			Item processed: {!item.JobItemsProcessed} <br />
+			Failures: {!item.NumberOfErrors}
+		</apex:repeat>
+	  	<br /><br />
+		<apex:actionPoller action="{!pollingStatus}" reRender="polling" interval="5" rendered="{! !isCompleted && !isFailed }"/>
+		</apex:pageBlock>
+		<apex:pageBlock id="frame" title="MRS Layer">
+			<apex:iframe height="220px" src="/apex/VFMRSRetriggerRollupLayer?id={!mstRecord.Id}" scrolling="true" id="theIframe" rendered="{!  isCompleted && !isFailed }"/>
+		</apex:pageBlock>
+		<apex:commandButton value="Close And Return To MST"  title="Close And Return To MST" action="{!returnToMST}" rendered="{!  isCompleted && !isFailed }"/>
+	</apex:form>
+</apex:page>

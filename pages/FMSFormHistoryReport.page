@@ -1,0 +1,120 @@
+<!-- 
+    Author: Inshu Misra
+    Company: JKT
+    Project: FMS 2.0
+    Description: Page to download the history report as csv
+	Date: 7-Jul-2017
+    Change History: 
+   
+-->
+<apex:page standardController="Form_Management_System__c" extensions="FMSFormHistoryReportController" showHeader="true" sidebar="true">
+    <apex:includeScript value="{!URLFOR($Resource.jquery, 'js/jquery-1.8.3.min.js')}"/>
+    <apex:includeScript value="{!URLFOR($Resource.jquery, 'js/jquery-ui-1.9.2.custom.js')}"/>
+    <apex:includeScript value="{!URLFOR($Resource.jqPlugin, '/jquery.blockUI.js')}"/>
+    <apex:stylesheet value="{!URLFOR($Resource.jquery, 'css/ui-lightness/jquery-ui-1.9.2.custom.css')}"/>
+    <style type="text/css">
+        body div{
+        font-family: Arial !important;
+        }
+    </style>
+    <style>  
+        .bPageBlock .requiredInput .requiredBlock{background-color: #F6FBF6;}  
+        .requiredInput .requiredBlock::before { display: block; content: "*"; font-size: 1.5em; font-weight: bold; color: #c00; margin-left: -12px; margin-top: -3px; }  
+        p{
+        color:brown;
+        }
+        a{
+            text-decoration: none;
+        }
+        .message1 {
+            display:none;
+        }
+        .error1 {
+            display:none;
+        }
+    </style>
+    <script>
+        $j = jQuery.noConflict(); 
+        //function to block the whole page
+        function blockPage(){ 
+            $j.blockUI({ message: '<img src="/img/loading32.gif" /><h1> Refreshing...</h1>', 
+                css: { 
+                 border: 'none', 
+                 padding: '15px',  
+                 '-webkit-border-radius': '10px', 
+                 '-moz-border-radius': '10px', 
+                 opacity: .9
+                } 
+            }); 
+            return false;
+        }
+        //function to unblock the page
+        function unblockPage(){
+            $j.unblockUI();
+        }
+    </script>
+    <apex:form >
+        <c:FMSNameDesc ></c:FMSNameDesc>
+        <apex:pageBlock title="Form History Report">
+        <apex:pageBlockSection id="searchResult" columns="1">
+            <apex:commandButton value="Download as CSV" action="{!exportCsvFile}" style="margin-left: 44%;font-size:1em" />
+            <apex:outputPanel layout="block" >
+                <apex:pageBlockTable value="{!formHistoryList}" var="a" columnsWidth="20%,20%,20%,20%,20%," align="center">
+                    <apex:column >
+                        <apex:facet name="header">
+                            <apex:commandLink action="{!SortToggle}" rerender="searchResult" status="TableUpdateStatus">
+                                <apex:param name="SortField" value="Field_Name__c" assignTo="{!SortField}" />
+                                <apex:outputText value="Field Name {!IF(SortField=='Field_Name__c',IF(SortDirection='asc','▲','▼'),'▲▼')}" />
+                            </apex:commandLink>
+                        </apex:facet>
+                        <apex:outputText value="{!a.Field_Name__c}" />
+                    </apex:column>
+                    <apex:column >
+                        <apex:facet name="header">
+                            <apex:outputText value="Old Value"/>
+                        </apex:facet>
+                        <apex:outputText value="{!a.Old_Value__c}"/>
+                    </apex:column>
+                    <apex:column >
+                        <apex:facet name="header">
+                            <apex:outputText value="New Value"/>
+                        </apex:facet>
+                        <apex:outputText value="{!a.New_Value__c}"/>
+                    </apex:column>
+                    <apex:column >
+                        <apex:facet name="header">
+                            <apex:outputText value="Form System History: Created By"/>
+                        </apex:facet>
+                        <apex:outputText value="{!a.createdby.Name}"/>
+                    </apex:column>
+                    <apex:column >
+                        <apex:facet name="header">
+                            <apex:commandLink action="{!SortToggle}" rerender="searchResult" status="TableUpdateStatus">
+                                <apex:param name="SortField" value="CreatedDate" assignTo="{!SortField}" />
+                                <apex:outputText value="Form System History: Created Date {!IF(SortField=='CreatedDate',IF(SortDirection='asc','▲','▼'),'▲▼')}" />
+                            </apex:commandLink>
+                        </apex:facet>
+                        <apex:outputText value="{!a.CreatedDate}" style="font-weight:bold" />
+                    </apex:column>
+                    <apex:column >
+                        <apex:facet name="header">
+                            <apex:outputText value="Processed?"/>
+                        </apex:facet>
+                        <apex:outputField value="{!a.isProcessed__c}"/>
+                    </apex:column>
+                </apex:pageBlockTable>
+            </apex:outputPanel>
+            <br/>
+            <apex:panelGrid columns="5">
+                <apex:outputText >
+                    <div style="padding-top: 10%;">{!(pageNumber * size)+(IF(noOfRecords>0,1,0))-size}-{!IF((pageNumber * size)>noOfRecords, noOfRecords,(pageNumber * size))} of {!noOfRecords}</div>
+                </apex:outputText>
+                <apex:commandButton status="fetchStatus" reRender="searchResult" value="|<" action="{!first}" disabled="{!!hasPrevious}" title="First Page"/>
+                <apex:commandButton status="fetchStatus" reRender="searchResult" value="<" action="{!previous}" disabled="{!!hasPrevious}" title="Previous Page"/>
+                <apex:commandButton status="fetchStatus" reRender="searchResult" value=">" action="{!next}" disabled="{!!hasNext}" title="Next Page"/>
+                <apex:commandButton status="fetchStatus" reRender="searchResult" value=">|" action="{!last}" disabled="{!!hasNext}" title="Last Page"/>
+            </apex:panelGrid>
+        </apex:pageBlockSection>
+    </apex:pageBlock>
+        </apex:form>
+</apex:page>

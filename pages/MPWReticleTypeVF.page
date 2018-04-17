@@ -1,0 +1,115 @@
+<!--
+    Author: 
+    Description: This serves as the List View page for Internal Guideline Factor. 
+    History: 
+        07022015    - page creation.
+-->
+<apex:page id="MPWReticleTypeVF" showHeader="true" sidebar="true" controller="MPWReticleTypeController" cache="false">
+
+    <apex:stylesheet value="{!URLFOR($Resource.MPWRelatedCSS, '/MPWRelatedCSS/MPWInternalGuidelineFactorVF.css')}" />
+
+    <apex:sectionHeader title="MPW Reticle Type" subtitle="Reticle Type" help="https://help.salesforce.com/htviewhelpdoc?id=co_edit.htm&siteLang=en_US" />
+    <apex:pageMessages id="errorSection" />
+    
+    <apex:form id="form1">
+        <apex:actionFunction name="AJAXRefresh" action="{!optionRecords}" rerender="mainBlock" status="TechIDStatus"/>
+        <apex:actionStatus id="TechIDStatus" stopText="">
+            <apex:facet name="start">
+                <div>
+                    <div class="popupBackground" />
+                    <div class="PopupPanel">
+                        <table border="0" width="100%" height="40%">
+                            <tr>
+                                <td align="center"><b>Please Wait</b></td>
+                            </tr>
+                            <tr>
+                                <td align="center"><img src="{!$Resource.LoadingGIF}"/></td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+            </apex:facet>
+        </apex:actionStatus>
+        <apex:pageBlock id="mainBlock"> 
+        
+            <apex:panelGrid columns="3">
+                <apex:outputLabel value="TechNode View:" style="text-align:left;font-weight:bold;padding-right:.230em;"/>
+                <apex:selectList id="geometry" value="{!strTechID}" size="1" onchange="AJAXRefresh();">
+                      <apex:selectOptions value="{!TechIDOptions}" />
+                </apex:selectList>
+            </apex:panelGrid>
+            
+            <apex:pageBlockButtons location="top">
+                <apex:commandButton value="Add New Tech Node" action="{!addNew}" />
+            </apex:pageBlockButtons>
+            
+            <apex:pageBlockTable id="mpwConfigList" value="{!listMPWConfigSettings}" var="objReticleType" rendered="{!IF(OR(listMPWConfigSettings.size == null,listMPWConfigSettings.size > 0), true, false)}">
+                
+                <apex:column >
+                    <apex:facet name="header">Action</apex:facet>
+                    <apex:commandLink value="Edit" action="/apex/MPWReticleTypeTranxVF?id={!objReticleType.strId}&&tranx=Edit&&returnURL={!currentURL}"/>               
+                </apex:column>
+                
+                <apex:column >
+                    <apex:outputLink value="{!$Page.MPWReticleTypeTranxVF}?id={!objReticleType.strId}&&tranx=view" target="_blank">{!objReticleType.strTechIDName}</apex:outputLink> 
+                </apex:column>  
+                               
+               
+                <apex:column headerValue="{!$ObjectType.MPW_Reticle_Type__c.fields.Reticle_Type__c.label}">
+                   {!objReticleType.Reticle_Type}
+                </apex:column>
+                <apex:column headerValue="{!$ObjectType.MPW_Reticle_Type__c.fields.CreatedByID.label}">
+                   {!objReticleType.CreatedByName}
+                </apex:column>
+                <apex:column headerValue="{!$ObjectType.MPW_Reticle_Type__c.fields.LastModifiedByID.label}">
+                    {!objReticleType.LastmodifyByName}
+                </apex:column>
+                <apex:facet name="footer">Showing Page {!currentPageNo} of {!totalNoOfPages} ({!totalNoOfRecords} Records)</apex:facet>
+            </apex:pageBlockTable>
+           
+            <apex:outputText value="No records retrieved." rendered="{!IF(listMPWConfigSettings.size == 0, true, false)}" />
+            
+            <!--Pagination Controls -->
+            <apex:outputPanel id="controlPanel" layout="block" style="margin: 0; white-space: nowrap; align: center; position: relative;" rendered="{!IF(totalNoOfRecords > 0, true, false)}">
+                <center>
+                    <apex:commandLink action="{!first}" rendered="{!HasPrevious}" style="text-decoration: none; color: #333;">
+                        <img src="/s.gif" title="First Page" alt="First Page" class="firstin" />
+                    </apex:commandLink>
+                    <apex:outputPanel layout="none" rendered="{!NOT(HasPrevious)}">
+                        <img src="/s.gif" alt="First Page" class="firstoff" />
+                        <apex:outputText style="color: #a8a8a8;" value="" />
+                    </apex:outputPanel> 
+                    <apex:commandLink action="{!previous}" rendered="{!HasPrevious}" style="text-decoration: none; color: #333;">
+                        <img src="/s.gif" title="Previous" alt="Previous" class="prev" />Previous
+                    </apex:commandLink>
+                    <apex:outputPanel layout="none" rendered="{!NOT(HasPrevious)}">
+                        <img src="/s.gif" alt="Previous" class="prevoff" />
+                        <apex:outputText style="color: #a8a8a8;" value="Previous" />
+                    </apex:outputPanel>                
+                    &nbsp; &nbsp;
+                    <apex:commandLink action="{!next}" rendered="{!HasNext}" style="text-decoration: none; color: #333;">
+                        Next<img src="/s.gif" title="Next" alt="Next" class="next" />
+                    </apex:commandLink>
+                    <apex:outputPanel layout="none" rendered="{!NOT(HasNext)}" style="color: #a8a8a8;">
+                        <apex:outputText style="color: #a8a8a8;" value="Next" />
+                        <img src="/s.gif" alt="Next" class="nextoff" />
+                    </apex:outputPanel>
+                    <apex:commandLink action="{!last}" rendered="{!HasNext}" style="text-decoration: none; color: #0000;">
+                        <img src="/s.gif" title="Last Page" alt="Last Page" class="lastin" />
+                    </apex:commandLink>
+                    <apex:outputPanel layout="none" rendered="{!NOT(HasNext)}">
+                        <apex:outputText style="color: #a8a8a8;" value="" />
+                        <img src="/s.gif" alt="Last Page" class="lastoff" />
+                    </apex:outputPanel>
+                </center>
+            </apex:outputPanel>
+                                                                              
+        </apex:pageBlock>
+        
+       
+        <apex:actionfunction name="sort" action="{!sort}" rerender="mpwConfigList" status="status">     
+            <apex:param name="sortfield" assignTo="{!sortField}" value=""/>
+            <apex:param name="sorttype" assignTo="{!sortType}" value=""/>            
+        </apex:actionfunction>
+    </apex:form>
+</apex:page>

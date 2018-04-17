@@ -1,0 +1,87 @@
+<!--
+    @ Author :- Akash
+    @ History: 
+        *13-Jul-2017        Revamped the below code due to isues in the hierarchy
+        Fixed 
+          1) Images not gettign diaplyed properly
+          2) New and addendum form not coming in proper place
+          3) Forms not getting hightlighted properly
+          4) legends not getting displayed properly
+          5) Order of the hierarchy was not correct
+          6) Stepplan form which was getting displayed was not correct
+          Issues fixed - 275,278,318,357,359,360,,361,387
+                            
+-->
+<apex:component controller="FMSHierarchyCompController" access="global">
+    <apex:attribute name="formId" assignTo="{!formObjId}" type="String" description="This is the Form Id for displaying FMS Hierarchy"/>
+    <apex:attribute name="newlySelected" assignTo="{!fmsTestObj}" type="Form_Management_System__c" description="This is the Form Id for displaying newly Inserted record Position"/>
+    <apex:pageBlock title="Form Hierarchy">
+  <table width="100%" style="border-collapse:collapse;border:1px solid black;" cellpadding="0">
+    <tr class="headerRow" style="border:1px solid black;">
+      <td align="center" style="border:1px solid black;"><b>Form Name (ID)</b>
+      </td>
+      <td align="center" style="border:1px solid black;"> <b>Form Type</b>
+      </td>
+      <td align="center" style="border:1px solid black;"><b>State</b>
+      </td>
+      <td align="center" style="border:1px solid black;"><b>Last Modified</b>
+      </td>
+    </tr>  
+    <apex:repeat value="{!lstFMSHierarchy}" var="frm">
+    <tr>
+      <td style="border-right:1px solid black;">
+        <!-- Shows hierarchy images -->
+      <apex:repeat value="{!mpFormIdDistanceFromMain[frm.Id]}" var="spc">               
+        <apex:image url="/img/tree/chain.gif" rendered="{!AND(spc!=0,MOD(spc,4)==0,OR(!mpFormIdIsLastNode[frm.Parent_Form_Id__c],AND(mpFormIdDistance[frm.Parent_Form_Id__c]>4,spc!=mpFormIdDistance[frm.Parent_Form_Id__c])))}"/>
+        <apex:outputText rendered="{!OR(spc==0,MOD(spc,4)!=0,AND(mpFormIdIsLastNode[frm.Parent_Form_Id__c],OR(mpFormIdDistance[frm.Parent_Form_Id__c]=4,mpFormIdDistance[frm.Parent_Form_Id__c]=spc)))}" >&nbsp;</apex:outputText>  
+      </apex:repeat>
+        <!-- Shows hierarchy images before Text-->
+      <apex:image url="/img/tree/minusStart.gif" rendered="{!mpFormIdDistance[frm.Id]=0}"/>
+      <apex:image url="/img/tree/minus.gif" rendered="{!AND(mpFormIdDistance[frm.Id]<>0,mpFormIdHasChild[frm.Id],!mpFormIdIsLastNode[frm.Id])}"/>
+      <apex:image url="/img/tree/nodeEnd.gif" rendered="{!AND(mpFormIdIsLastNode[frm.Id],!mpFormIdHasChild[frm.Id])}"/>
+      <apex:image url="/img/tree/minusEnd.gif" rendered="{!AND(mpFormIdIsLastNode[frm.Id],mpFormIdHasChild[frm.Id])}"/>
+      <apex:image url="/img/tree/node.gif" rendered="{!AND(!mpFormIdIsLastNode[frm.Id],!mpFormIdHasChild[frm.Id],mpFormIdDistance[frm.Id]<>0)}"/>
+        <!-- Shows text after images-->
+      <apex:outputLink value="{!mpFormIdURL[frm.Id]}" styleClass="columnHeadActiveBlack" style="{!if(OR(frm.Id=formObjId,AND(frm.Form_Type__c=currentFormType,CONTAINS(currentFormType,'Step'))) && formObjId<>copyFormParentId,'background-color:#FFA500;font-weight:bold;',if(CONTAINS(frm.id,'COPY'),'background-color:deepskyblue;font-weight:bold;',if(frm.id==copyFormParentId,'background-color:lightgreen;font-weight:bold;','')))}">
+      {!frm.Form_Name__c}{!if(NOT(ISBLANK(frm.Name)),'('&frm.Name&')','')}
+      </apex:outputLink>
+      <br/> 
+      </td>
+      <td style="padding-left:5px;border-right:1px solid black;"><label style="{!if(OR(frm.Id=formObjId,AND(frm.Form_Type__c=currentFormType,CONTAINS(currentFormType,'Step')))  && formObjId<>copyFormParentId ,'background-color:#FFA500;font-weight:bold;',if(CONTAINS(frm.id,'COPY'),'background-color:deepskyblue;font-weight:bold;',if(frm.id==copyFormParentId,'background-color:lightgreen;font-weight:bold;','')))}">{!frm.Form_Type__c}</label>
+      </td>
+      <td style="padding-left:5px;border-right:1px solid black;"><label style="{!if(OR(frm.Id=formObjId,AND(frm.Form_Type__c=currentFormType,CONTAINS(currentFormType,'Step')))  && formObjId<>copyFormParentId,'background-color:#FFA500;font-weight:bold;',if(CONTAINS(frm.id,'COPY'),'background-color:deepskyblue;font-weight:bold;',if(frm.id==copyFormParentId,'background-color:lightgreen;font-weight:bold;','')))}">{!if(AND(CONTAINS(frm.Form_Type__c,'Step Plan'),NOT(ISBLANK(frm.Latest_Step_Plan__c))),frm.Latest_Step_Plan__r.State_of_the_Form__c,frm.State_of_the_Form__c)}</label>
+      </td>
+      <td style="padding-left:5px;border-right:1px solid black;"><label style="{!if(OR(frm.Id=formObjId,AND(frm.Form_Type__c=currentFormType,CONTAINS(currentFormType,'Step')))  && formObjId<>copyFormParentId,'background-color:#FFA500;font-weight:bold;',if(CONTAINS(frm.id,'COPY')&&NOT(ISBLANK(frm.LastModifiedDate)),'background-color:deepskyblue;font-weight:bold;',if(frm.id==copyFormParentId,'background-color:lightgreen;font-weight:bold;','')))}">
+      <apex:outputField rendered="{!if(AND(CONTAINS(frm.Form_Type__c,'Step Plan'),NOT(ISBLANK(frm.Latest_Step_Plan__c))),true,false)}" value="{!frm.Latest_Step_Plan__r.lastmodifieddate}"/>
+      <apex:outputField rendered="{!if(AND(CONTAINS(frm.Form_Type__c,'Step Plan'),NOT(ISBLANK(frm.Latest_Step_Plan__c))),false,true)}" value="{!frm.lastmodifieddate}"/>
+      </label>
+      </td>
+    </tr>  
+    </apex:repeat>   
+  </table>
+  <!-- Below code portions  displays legends and renders them in specific conditions -->
+  <table width="100%" style="margin:25px;">
+           
+           <tr style="{!if(formObjId==copyFormParentId,'display:none;','')}">
+             <td rowspan="3" style="font-weight:bold;vertical-align:middle;" width="60px">LEGEND
+             </td>
+             <td style="background-color:#FFA500;" align="center">Orange
+             </td>
+             <td>{!if(inCopyPage,'Highlights the form you are copying.',if(AND(ISBLANK(copyFormParentId),copyOrAddendum),'Highlights the parent form for the addendum you are about to create.','Highlights the form you are viewing.'))} 
+             </td>
+           </tr>
+           <tr style="{!if(ISBLANK(copyFormParentId),'display:none;','')}">
+             <td style="background-color:lightgreen;"  align="center">Green
+             </td>
+             <td>Highlights the parent form of the addendum you are about to create.
+             </td>
+           </tr>
+           <tr style="{!if(!copyOrAddendum,'display:none;','')}">
+             <td style="background-color:deepskyblue;"  align="center">Blue
+             </td>
+             <td>Highlights where in the hierarchy your new addendum will go.
+             </td>
+           </tr>
+   </table>
+  </apex:pageBlock>
+</apex:component>

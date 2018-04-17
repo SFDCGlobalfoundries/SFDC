@@ -1,0 +1,261 @@
+<!-----------------------------------------------------------------------------------------------------------------------------------
+Page:          PIDMatches
+-------------------------------------------------------------------------------------------------------------------------------------
+Author:        Joydev Mondol (Cognizant - 153480)
+Created Date:  20/09/2013
+Reason:        Displays the Process Options in the form of a table that shows the following PID matches:
+                   1)Full Mask Set based on the PT selected
+                   2)Proposed Mask Set based on the user selection of IPs, Devices and Masks
+                   3)Exact Match if found
+                   4)Greater than proposed Mask Set(s) if found
+                   5)FEOL Mask Set(s) if found
+                   6)FEOL Mask Set(s) if found
+Change log:   SNune     -    08172016:  Updated Changes for case 00054936.
+                                        Added flags(isMaskStepsTab, isFeolTab, isBeolTab) for columns in Pageblocktables to dynamically render the
+                                        columns in each tab.
+              SNune     -    11162016: Made changes for case 00059192- Split the mask layer & reticle layers - Create another Tab next to FEOL/BEOL as a "Reticle"
+                                       Added flags for the tab "Reticle", isMaskSetTab.
+                                       Made changes to dynamically display "Mask Count/Reticle Count" name.
+                                       Made changes to log the exception in constructor through Page Action method.
+------------------------------------------------------------------------------------------------------------------------------------->
+
+<apex:page standardController="Apttus_Proposal__Proposal__c" 
+           extensions="PIDMatchesController"
+           showHeader="false"
+           sidebar="false" action="{!logException}">
+    <!-- DEBUG FIRST AID ------------------------------------------------------------------------------------------------------------
+    3A,3T,5H,BF,BH,BN,BP,CA,DE,DF,DG,EA,ED,HN,HO,HP,HT,JN,JP,LB,M1,M2,M3,M4,M5,M6,N3,NR,NT,NV,NW,OP,PC,PH,PR,PV,QE,QT,RP,RS,RX,SH,V1,V2,V3,V4,V5,VV,ZP(CL_X_1) 
+    <hr/><br/><br/>
+    LstMapMasterPID[0] <br/><br/> 
+    <apex:repeat value="{!LstMapMasterPID[0]}" var="pid">
+        {!pid}
+    </apex:repeat>
+    <br/><br/>
+    LstMapMasterMaskSets[0] <br/><br/> 
+    <apex:repeat value="{!LstMapMasterMaskSets[0]}" var="maskSet">
+        {!maskSet} - {!LstMapMasterMaskSets[0][maskSet]} <br/>
+    </apex:repeat>
+    --------------------------------------------------------------------------------------------------------------------------------->
+    <!--
+    <script>
+        window.onload = autoResize("066O0000000DIMG");
+        
+        function autoResize(id){
+            var newheight = 10;
+        
+            document.getElementById(id).height = (newheight) + "px";
+        }
+    </script>
+    -->
+    <!--
+    {!$User.ContactId}<br/><br/>
+    {!IF(ISPICKVAL($User.UserType,'Standard'), 'Standard', '')}
+    {!IF(ISPICKVAL($User.UserType,'PowerPartner'), 'PowerPartner', '')}
+    {!IF(ISPICKVAL($User.UserType,'CSPLitePortal'), 'CSPLitePortal', '')}
+    {!IF(ISPICKVAL($User.UserType,'CustomerSuccess'), 'CustomerSuccess', '')}
+    {!IF(ISPICKVAL($User.UserType,'PowerCustomerSuccess'), 'PowerCustomerSuccess', '')}
+    -->
+    
+    <!-- <apex:includeScript value="{!URLFOR($Resource.CPQJQueryFixheaderTable, 'jquery.js')}"/>
+    <apex:includeScript value="{!URLFOR($Resource.CPQJQueryFixheaderTable, 'javascript/fixheadertable.js')}"/>
+    <apex:stylesheet value="{!URLFOR($Resource.jQuery_FoundryView2, 'ui/css/ui-lightness/jquery-ui-1.9.1.custom.min.css')}"/>-->
+    <!-- <apex:stylesheet value="{!URLFOR($Resource.FixedTableHeader, 'base.css')}"/>-->
+    
+    <!-- <apex:stylesheet value="{!URLFOR($Resource.FixedTableHeader, 'jquery-ui-1.8.4.custom.css')}"/>
+    <apex:includeScript value="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.1.0/jquery.min.js"/>
+    <apex:includeScript value="{!URLFOR($Resource.FixedTableHeader, 'jquery.fixheadertable.js')}"/>-->
+    <script type="text/javascript">
+        /*var J$ = jQuery.noConflict();
+        J$(document).ready(function() {
+            J$('.fixme').fixheadertable({
+                 caption : 'My header is fixed !',
+                 height  : 200
+            });
+        });*/
+    </script>
+
+    <apex:pagemessage severity="info" 
+                      title="No configuration done to show Process Options."
+                      detail="Please configure a Process Technology to view Process Options available." 
+                      rendered="{!ISNULL(CurrentProposalPT)}"/>
+    <apex:pagemessage severity="info" 
+                      title="Mask Set not found."
+                      detail="No Mask Set is defined for the configured PT: {!CurrentProposalPT.Name} to find Process Options for." 
+                      rendered="{!AND(ISNULL(CurrentProposal.Mask_Set_Long__c),
+                                      !ISNULL(CurrentProposalPT))}"/>
+    <!--<apex:form rendered="{!!OR(ISNULL(CurrentProposalPT), 
+                               ISNULL(CurrentProposal.Mask_Set__c))}">-->
+                               <!-- changed reference of Mask_Set__c to Mask_Set_Long__c for the Case#00051463 -->
+        <apex:pageBlock mode="maindetail"
+                        rendered="{!!OR(ISNULL(CurrentProposalPT), 
+                                        ISNULL(CurrentProposal.Mask_Set_Long__c))}">
+                                        <!-- changed reference of Mask_Set__c to Mask_Set_Long__c for the Case#00051463 -->
+            <apex:pageblockTable value="{!LstMatchRows}"
+                                 var="PIDRow"
+                                 style="width:2px"
+                                 styleclass="fixme">
+                
+                <!--[Row headers]----------ZONE BEGINS------------------------------------------------------------------------------->
+                <apex:column headerValue="{!IF(isMaskStepsTab, 'Mask Process steps', IF(isMaskSetTab, 'Mask Set', 'Full mask set'))} ({!CurrentProposalProductCode})">
+                    {!IF(PIDRow=='Proposed' && !isMaskStepsTab, 'Proposed Mask Set', PIDRow)}
+                </apex:column>
+                <!--[Row headers]----------ZONE ENDS--------------------------------------------------------------------------------->
+                
+                <apex:column />
+                
+                <!--[PID Links]------------ZONE BEGINS-------------------------------------------------------------------------------->
+                <apex:column headerValue="Process ID">
+                    <apex:outputPanel rendered="{!IF(PIDRow != 'Proposed', 
+                                                     TRUE, 
+                                                     IF(MatchFound,
+                                                        TRUE,
+                                                        FALSE))}">
+                        <a href="/{!IF(PIDRow != 'Proposed',
+                                       LstMapMasterPID[0][LstMapMasterMaskSets[0][PIDRow]]['Id'],
+                                       IF(MatchFound,
+                                          LstMapMasterPID[0][LstMapMasterMaskSets[0]['Exact (1)']]['Id'],
+                                          ''))}"
+                           target="_blank">
+                            {!IF(PIDRow != 'Proposed',
+                                       LstMapMasterPID[0][LstMapMasterMaskSets[0][PIDRow]]['PID_Number__c'],
+                                       IF(MatchFound,
+                                          LstMapMasterPID[0][LstMapMasterMaskSets[0]['Exact (1)']]['PID_Number__c'],
+                                          ''))}
+                        </a>
+                    </apex:outputPanel>
+                </apex:column>
+                
+                <apex:column headerValue="{!IF(isMaskSetTab, 'Mask Count', 
+                                                                             IF(isFeolTab, 'FEOL Count',
+                                                                                                          IF(isBeolTab, 'BEOL Count','Full Mask Steps')))}">
+                    <apex:outputPanel layout="block" style="text-align:center">
+                        <apex:outputText value="{!maskCount[PIDRow]}" />
+                    </apex:outputPanel>    
+                </apex:column>
+                <!--[PID Links]------------ZONE ENDS---------------------------------------------------------------------------------->
+                
+                <apex:column />
+                
+                <!--[Extra FEOL]-----------ZONE BEGINS------------------------------------------------------------------------------->           
+                <apex:repeat value="{!LstExtraFEOLMaskSet}"
+                             var="Col">
+                    
+                    <apex:column headerValue="{!Col}"
+                                 style="width:10px;{!IF(CONTAINS(',' + SUBSTITUTE(SUBSTITUTE(LstMapMasterMaskSets[0][PIDRow],' ',''), '(', ',') + ',', ',' + Col + ','), 
+                                                        'background-color:Lavender;',
+                                                        '')}" rendered="{!(isFeolTab || isMaskStepsTab || isMaskSetTab)}">
+                       
+                        {!IF(PIDRow='Proposed',
+                             IF(CONTAINS(' ' + SUBSTITUTE(SUBSTITUTE(LstMapMasterMaskSets[0][PIDRow],' ',''),'(',' ') + ' ', ' ' + Col + ' '),
+                                Col,
+                                ''),
+                             IF(CONTAINS(',' + SUBSTITUTE(SUBSTITUTE(LstMapMasterMaskSets[0][PIDRow],' ',''),'(',',') + ',', ',' + Col + ','),
+                                Col,
+                                ''))}
+                    </apex:column>
+                </apex:repeat>
+                <!--[Extra FEOL]-----------ZONE ENDS---------------------------------------------------------------------------------> 
+                
+                <!--<apex:column />-->
+                
+                <!--[FEOL]------------------ZONE BEGINS------------------------------------------------------------------------------>                      
+                <apex:repeat value="{!LstFEOLMaskSet}"
+                             var="Col" rendered="{!(isFeolTab || isMaskStepsTab || isMaskSetTab)}">
+                    <apex:column headerValue="{!Col}"
+                                 style="width:10px;{!IF(PIDRow='Proposed',
+                                                        'background-color:orange;',
+                                                        IF(CONTAINS(PIDRow,'Exact ('),
+                                                           IF(CONTAINS(',' + SUBSTITUTE(SUBSTITUTE(LstMapMasterMaskSets[0][PIDRow],' ',''), '(', ',') + ',', ',' + Col + ','), 
+                                                              'background-color:GreenYellow ;', 
+                                                              ''),
+                                                           IF(CONTAINS(',' + SUBSTITUTE(SUBSTITUTE(LstMapMasterMaskSets[0][PIDRow],' ',''), '(', ',') + ',', ',' + Col + ','), 
+                                                              'background-color:lightyellow;', 
+                                                              '')))};" rendered="{!(isFeolTab || isMaskStepsTab || isMaskSetTab)}">
+                         {!IF(PIDRow='Proposed',
+                             IF(CONTAINS(' ' + SUBSTITUTE((LstMapMasterMaskSets[0][PIDRow]),'(',' ') + ' ', ' ' + Col + ' '),
+                                Col,
+                                ''),
+                             IF(CONTAINS(',' + SUBSTITUTE(SUBSTITUTE(LstMapMasterMaskSets[0][PIDRow],' ',''),'(',',') + ',', ',' + Col + ','),
+                                Col,
+                                ''))}
+                    </apex:column>
+                </apex:repeat>
+                <!--[FEOL]----------------ZONE ENDS----------------------------------------------------------------------------------> 
+                
+                <apex:column />
+                
+                <!--[BEOL]----------------ZONE BEGINS-------------------------------------------------------------------------------->          
+                <apex:repeat value="{!LstBEOLMaskSet}"
+                             var="Col" rendered="{!(isbeolTab || isMaskStepsTab || isMaskSetTab)}">
+                    <apex:column headerValue="{!Col}"
+                                 style="width:10px;{!IF(PIDRow='Proposed',
+                                                        'background-color:darkorange;',
+                                                        IF(CONTAINS(PIDRow,'Exact ('),
+                                                           IF(CONTAINS(',' + SUBSTITUTE(SUBSTITUTE(LstMapMasterMaskSets[0][PIDRow],' ',''), '(', ',') + ',', ',' + Col + ','), 
+                                                              'background-color:limegreen;', 
+                                                              ''),
+                                                           IF(CONTAINS(',' + SUBSTITUTE(SUBSTITUTE(LstMapMasterMaskSets[0][PIDRow],' ',''), '(', ',') + ',', ',' + Col + ','), 
+                                                              'background-color:yellow;', 
+                                                              '')))};" rendered="{!(isbeolTab || isMaskStepsTab || isMaskSetTab)}">
+                        {!IF(PIDRow='Proposed',
+                             IF(CONTAINS(' ' + SUBSTITUTE((LstMapMasterMaskSets[0][PIDRow]),'(',' ') + ' ', ' ' + Col + ' '),
+                                Col,
+                                ''),
+                             IF(CONTAINS(',' + SUBSTITUTE(SUBSTITUTE(LstMapMasterMaskSets[0][PIDRow],' ',''),'(',',') + ',', ',' + Col + ','),
+                                Col,
+                                ''))}
+                    </apex:column>
+                </apex:repeat>
+                <!--[BEOL]----------------ZONE ENDS-----------------------------------------------------------------------------------> 
+                
+                <!--<apex:column />-->
+                
+                <!--[Extra BEOL]-----------ZONE BEGINS-------------------------------------------------------------------------------->   
+                <apex:repeat value="{!LstExtraBEOLMaskSet}"
+                             var="Col">
+                    <apex:column headerValue="{!Col}"
+                                 style="width:10px;{!IF(CONTAINS(',' + SUBSTITUTE(SUBSTITUTE(LstMapMasterMaskSets[0][PIDRow],' ',''), '(', ',') + ',', ',' + Col + ','), 
+                                                        'background-color:lightsteelblue;',
+                                                        '')}" rendered="{!(isbeolTab || isMaskStepsTab || isMaskSetTab)}">
+                        {!IF(PIDRow='Proposed',
+                             IF(CONTAINS(' ' + SUBSTITUTE((LstMapMasterMaskSets[0][PIDRow]),'(',' ') + ' ', ' ' + Col + ' '),
+                                Col,
+                                ''),
+                             IF(CONTAINS(',' +SUBSTITUTE(SUBSTITUTE(LstMapMasterMaskSets[0][PIDRow],' ',''),'(',',') + ',', ',' + Col + ','),
+                                Col,
+                                ''))}
+                    </apex:column>
+                </apex:repeat>
+                <!--[Extra BEOL]-----------ZONE ENDS---------------------------------------------------------------------------------->
+                
+                <!--<apex:column />-->
+                
+                <!--[Mask Layer Length (Closest Match)]------------ZONE BEGINS-------------------------------------------------------->
+                <apex:column headerValue="Match Score % (Based on # of ML)" 
+                             style="background-color:#FAFAFA;"  rendered="{!NOT(isbeolTab || isFeolTab)}">
+                    <center><b>
+                        <apex:outputPanel rendered="{!IF(PIDRow != 'Proposed', TRUE, FALSE)}"
+                                          style="color:{!IF(VALUE(LstMapMasterPID[0][LstMapMasterMaskSets[0][PIDRow]]['No_Of_Mask_Layer__c']) 
+                                                            = ProposalMaskSetLength, 
+                                                            'Green',
+                                                            IF(VALUE(LstMapMasterPID[0][LstMapMasterMaskSets[0][PIDRow]]['No_Of_Mask_Layer__c']) 
+                                                               > ProposalMaskSetLength,
+                                                               'Blue',
+                                                               'Brown'))}">
+                            {!IF(VALUE(LstMapMasterPID[0][LstMapMasterMaskSets[0][PIDRow]]['No_Of_Mask_Layer__c']) = ProposalMaskSetLength, 
+                                 'Equal # of ML', 
+                                 IF(VALUE(LstMapMasterPID[0][LstMapMasterMaskSets[0][PIDRow]]['No_Of_Mask_Layer__c']) > ProposalMaskSetLength, 
+                                    TEXT(ABS(100-CEILING((VALUE(LstMapMasterPID[0][LstMapMasterMaskSets[0][PIDRow]]['No_Of_Mask_Layer__c'])/ProposalMaskSetLength)*100))) 
+                                    + '% More ML', 
+                                    TEXT(ABS(100-CEILING((VALUE(LstMapMasterPID[0][LstMapMasterMaskSets[0][PIDRow]]['No_Of_Mask_Layer__c'])/ProposalMaskSetLength)*100))) 
+                                    + '% Less ML'))}
+                        </apex:outputPanel>
+                    </b></center>
+                </apex:column>
+                <!--[Mask Layer Length (Closest Match)]------------ZONE ENDS---------------------------------------------------------->
+                
+            </apex:pageblockTable>
+            
+        </apex:pageBlock>
+    <!--</apex:form>-->
+</apex:page>

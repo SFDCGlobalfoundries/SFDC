@@ -1,0 +1,317 @@
+<apex:page standardController="Device__c" extensions="PSP_searchExtension" tabStyle="Device__c" sidebar="false" id="Page">
+<apex:includeScript value="{!$Resource.JS_PSPpages}"/>
+<apex:stylesheet value="{!$Resource.Stylesheet_PSP_Pages}"/>
+    <script>
+        function openLookup(baseURL, width, modified, searchParam){
+            var originalbaseURL = baseURL;
+            var originalwidth = width;
+            var originalmodified = modified;
+            var originalsearchParam = searchParam;
+            
+            var lookupType = baseURL.substr(baseURL.length-3, 3);
+            if (modified == '1') baseURL = baseURL + searchParam;
+            var isCustomLookup = false;
+        
+            // Following "001" is the lookup type for Account object
+            if(lookupType == "001"){
+                
+                var urlArr = baseURL.split("&");
+                var txtId = '';
+                
+                if(urlArr.length > 2) {
+                    urlArr = urlArr[1].split('=');
+                    txtId = urlArr[1];
+                }
+                // Following is the url of Custom Lookup page. You need to change that accordingly
+                baseURL = "/apex/PSP_CustomAccountLookup?txt=" + txtId;
+                // Following is the id of apex:form control "theForm". You need to change that accordingly
+                baseURL = baseURL + "&frm=" + escapeUTF("{!$Component.theForm}");
+                
+                // Following is the ID of inputField that is the lookup to be customized as custom lookup
+                if(txtId.indexOf('Account') > -1 ){
+                    isCustomLookup = true;
+                }
+                if(txtId.indexOf('vField_PreferredName') > -1 ){
+                    isCustomLookup = true;
+                }
+            }
+            // Following "006" is the lookup type for Opportunity object
+            if(lookupType == "006"){
+                
+                var urlArr = baseURL.split("&");
+                var txtId = '';
+                
+                if(urlArr.length > 2) {
+                    urlArr = urlArr[1].split('=');
+                    txtId = urlArr[1];
+                }
+                // Following is the url of Custom Lookup page. You need to change that accordingly
+                baseURL = "/apex/PSP_CustomOpportunityLookup?txt=" + txtId;
+                // Following is the id of apex:form control "theForm". You need to change that accordingly
+                baseURL = baseURL + "&frm=" + escapeUTF("{!$Component.theForm}");
+                
+                // Following is the ID of inputField that is the lookup to be customized as custom lookup
+                if(txtId.indexOf('oppLookupField') > -1 ){
+                    isCustomLookup = true;
+                }
+            }
+            if(isCustomLookup == true){
+                openPopup(baseURL, "lookup", 350, 480, "width="+width+",height=480,toolbar=no,status=no,directories=no,menubar=no,resizable=yes,scrollable=no", true);
+            }
+            else{
+                if (modified == '1') originalbaseURL = originalbaseURL + originalsearchParam;
+                openPopup(originalbaseURL, "lookup", 350, 480, "width="+originalwidth+",height=480,toolbar=no,status=no,directories=no,menubar=no,resizable=yes,scrollable=no", true);
+            } 
+        }
+        function showLookupForId(){ 
+            openLookup("/apex/PSP_CustomAccountLookup?lkfm=Page%3AtheForm&lknm=Page%3AtheForm%3ApageBlockId%3AsearchSection%3ApbSectionItem%3AvField_PreferredName&lktp=001",670,1,"");
+        } 
+        function showLookupForOppId(){ 
+            openLookup("/apex/PSP_CustomOpportunityLookup?lkfm=Page%3AtheForm&lknm=Page%3AtheForm%3ApageBlockId%3AsearchSection%3ApbSectionItem2%3AoppLookupField&lktp=006",670,1,"");
+        }
+    </script>
+    <c:loadingPanel ></c:loadingPanel>
+    <apex:pageMessages id="pageMessages"/>
+    
+    <apex:form id="theForm">
+        <apex:pageBlock id="pageBlockId">
+        
+            <apex:pageBlockButtons >
+                <apex:commandButton value="Search" action="{!Search}" rerender="pageMessages,tablePanel,LoadingStatusSpinner,myButtons" status="LoadingStatusSpinner"/>
+                <apex:commandButton value="Return" action="{!returnFunction}"/>
+                <apex:commandButton value="Export" action="{!ExportToExcel}"/>
+            </apex:pageBlockButtons>
+            
+            
+            <apex:inputHidden value="{!accId}" id="inputAccIdHidden"/>
+            <apex:inputHidden value="{!oppId}" id="inputOppIdHidden"/>
+                        
+            <apex:pageBlockSection title="Filter criterias:" id="searchSection">
+
+                <apex:pageBlockSectionItem id="pbSectionItem">
+                    <apex:outputLabel >Account</apex:outputLabel>
+                    <apex:outputPanel id="outputPanel2">
+                        <apex:inputText id="vField_PreferredName" disabled="false" title="Preferred name" accesskey="" value="{!accName}"/>
+                        <apex:image url="/s.gif" alt="Lookup (New Window)" styleClass="lookupIcon" onmouseout="this.className = 'lookupIcon';this.className = 'lookupIcon';" onmouseover="this.className = 'lookupIconOn';this.className = 'lookupIconOn';" onclick="javascript:showLookupForId()" title="Account Lookup" />
+                    </apex:outputPanel>
+                </apex:pageBlockSectionItem>
+                
+                <apex:selectList value="{!processGeometrySelected}" size="1" label="Process Geometry">
+                    <apex:selectOptions value="{!ProcessGeometries}"/>
+                </apex:selectList>
+                
+                <apex:pageBlockSectionItem id="pbSectionItem2">
+                    <apex:outputLabel >Opportunity</apex:outputLabel>
+                    <apex:outputPanel id="outputPanel3">
+                        <apex:inputText id="oppLookupField" disabled="false" title="Opportunity" accesskey="" value="{!oppName}"/>
+                        <apex:image url="/s.gif" alt="Opportunity Lookup" styleClass="lookupIcon" onmouseout="this.className = 'lookupIcon';this.className = 'lookupIcon';" onmouseover="this.className = 'lookupIconOn';this.className = 'lookupIconOn';" onclick="javascript:showLookupForOppId()" title="Opportunity Lookup" />
+                    </apex:outputPanel>
+                </apex:pageBlockSectionItem>
+                
+                <apex:selectList value="{!fabSelected}" size="1" label="FAB">
+                    <apex:selectOptions value="{!Fabs}"/>
+                </apex:selectList>
+                
+                <apex:inputCheckbox value="{!displayInPSP}" label="Only display Devices marked for PSP"/>
+                
+                <apex:selectList value="{!salesTerrSelected}" size="1" label="Sales Territory">
+                    <apex:selectOptions value="{!SalesTerritories}"/>
+                </apex:selectList>
+                
+                <apex:selectList value="{!yearofbegin}" size="1" required="true" label="Year of Start">
+                    <apex:selectOptions value="{!Years}"/>
+                </apex:selectList>
+                
+                <apex:selectList value="{!yearofStart}" size="1" required="true" label="Display: Starting Year">
+                    <apex:selectOptions value="{!YearsEnd}"/>
+                </apex:selectList>
+                
+                <apex:pageBlockSectionItem ></apex:pageBlockSectionItem>
+                
+                <apex:selectList value="{!yearofEnd}" size="1" required="true" label="Display: Ending Year">
+                    <apex:selectOptions value="{!YearsEnd}"/>
+                </apex:selectList>
+                
+            </apex:pageBlockSection>                        
+            <br/>
+            
+            <apex:outputPanel id="tablePanel">
+                
+            <table border="1" width="100%" style="border-collapse:collapse;border-color:#000000;">
+                <apex:facet name="footer">Showing Page # {!pageNumber} of {!totalPages}</apex:facet>
+                <caption style="background-color: #B9B9B9;"><b>Production Start Plan Details</b></caption>
+                <thead>
+                    <tr class="tg-center" style="background-color: #DCDCDC;">
+                        <th rowspan="3" scope="col" class="tg-center">Device</th>
+                        <th rowspan="3" scope="col" class="tg-center">Account</th>
+                        <th rowspan="3" scope="col" class="tg-center">FAB</th>
+                        <th rowspan="3" scope="col" class="tg-center">Opportunity</th>
+                        <th rowspan="3" scope="col" class="tg-center">Geometry</th>
+                        <apex:repeat value="{!lstYearsDisplay}" var="year">
+                            <th colspan="12" class="tg-center" scope="col">{!year}</th>
+                            <th colspan="1" rowspan="3" class="tg-center" scope="col">{!year}<br/>Total</th>
+                        </apex:repeat>
+                    </tr>
+                    <tr>
+                        <apex:repeat value="{!lstYearsDisplay}" var="year">
+                            <th colspan="3" style="background-color: #DCDCDC;" scope="col" class="tg-center">Q1</th>
+                            <th colspan="3" style="background-color: #DCDCDC;" scope="col" class="tg-center">Q2</th>
+                            <th colspan="3" style="background-color: #DCDCDC;" scope="col" class="tg-center">Q3</th>
+                            <th colspan="3" style="background-color: #DCDCDC;" scope="col" class="tg-center">Q4</th>
+                        </apex:repeat>
+                    </tr>
+                    <tr>
+                        <apex:repeat value="{!lstYearsDisplay}" var="year">
+                            <th colspan="1" scope="col">Jan</th>
+                            <th colspan="1" scope="col">Feb</th>
+                            <th colspan="1" scope="col">Mar</th>
+                            <th colspan="1" scope="col">Apr</th>
+                            <th colspan="1" scope="col">May</th>
+                            <th colspan="1" scope="col">Jun</th>
+                            <th colspan="1" scope="col">Jul</th>
+                            <th colspan="1" scope="col">Aug</th>
+                            <th colspan="1" scope="col">Sep</th>
+                            <th colspan="1" scope="col">Oct</th>
+                            <th colspan="1" scope="col">Nov</th>
+                            <th colspan="1" scope="col">Dec</th>
+                        </apex:repeat>
+                    </tr>
+                </thead>
+                <tbody>
+                    <apex:repeat value="{!SearchResult}" var="device" id="theTable">
+                        <tr>
+                            <td rowspan="2"><apex:outputLink value="/{!device.Id}" id="theLink"><apex:outputText value="{!IF((Len(device.name)<11),device.name, LEFT(device.name,10) + '<br>'+IF((Len(device.name) < 21), RIGHT(device.name,LEN(device.name)-10),RIGHT(LEFT(device.name,20),10)+'<BR>'+RIGHT(device.name, LEN(device.name)-20)))}" escape="false"></apex:outputText></apex:outputLink></td>
+                            <td rowspan="2"><apex:outputText value="{!IF((Len(device.Account__r.name)<11),device.Account__r.name, LEFT(device.Account__r.name,10) + '<br>'+IF((Len(device.Account__r.name) < 21), RIGHT(device.Account__r.name,LEN(device.Account__r.name)-10),RIGHT(LEFT(device.Account__r.name,20),10)+'<BR>'+RIGHT(device.Account__r.name, LEN(device.Account__r.name)-20)))}" escape="false"></apex:outputText></td>
+                            <td rowspan="2">{!device.Fab__c}</td>
+                            <td rowspan="2"><apex:outputText value="{!IF((Len(device.Opportunity2__r.name)<11),device.Opportunity2__r.name, LEFT(device.Opportunity2__r.name,10) + '<br>'+IF((Len(device.Opportunity2__r.name) < 21), RIGHT(device.Opportunity2__r.name,LEN(device.Opportunity2__r.name)-10),RIGHT(LEFT(device.Opportunity2__r.name,20),10)+'<BR>'+RIGHT(device.Opportunity2__r.name, LEN(device.Opportunity2__r.name)-20)))}" escape="false"></apex:outputText></td>
+                            <td rowspan="2">{!device.Geometry__c}</td>
+                            <apex:repeat value="{!device.DevicePSPs_Data__r}" var="devicePSP">
+                                <td><apex:outputText value="{!devicePSP.Month_1__c}"/></td>
+                                <td><apex:outputText value="{!devicePSP.Month_2__c}"/></td>
+                                <td><apex:outputText value="{!devicePSP.Month_3__c}"/></td>
+                                <td><apex:outputText value="{!devicePSP.Month_4__c}"/></td>
+                                <td><apex:outputText value="{!devicePSP.Month_5__c}"/></td>
+                                <td><apex:outputText value="{!devicePSP.Month_6__c}"/></td>
+                                <td><apex:outputText value="{!devicePSP.Month_7__c}"/></td>
+                                <td><apex:outputText value="{!devicePSP.Month_8__c}"/></td>
+                                <td><apex:outputText value="{!devicePSP.Month_9__c}"/></td>
+                                <td><apex:outputText value="{!devicePSP.Month_10__c}"/></td>
+                                <td><apex:outputText value="{!devicePSP.Month_11__c}"/></td>
+                                <td><apex:outputText value="{!devicePSP.Month_12__c}"/></td>
+                                <td style="background-color:#B9B9B9;font-weight:bold;" colspan="1" rowspan="2"><apex:outputText value="{!devicePSP.Month_1__c+devicePSP.Month_2__c+devicePSP.Month_3__c+devicePSP.Month_4__c+devicePSP.Month_5__c+devicePSP.Month_6__c+devicePSP.Month_7__c+devicePSP.Month_8__c+devicePSP.Month_9__c+devicePSP.Month_10__c+devicePSP.Month_11__c+devicePSP.Month_12__c}"/></td>
+                            </apex:repeat>
+                        </tr>
+                        <tr>
+                            <apex:repeat value="{!device.DevicePSPs_Data__r}" var="devicePSP">
+                                <td colspan="3" class="tg-center"><apex:outputText value="{!devicePSP.WaferStart_Quarter1__c}"/></td>
+                                <td colspan="3" class="tg-center"><apex:outputText value="{!devicePSP.WaferStart_Quarter2__c}"/></td>
+                                <td colspan="3" class="tg-center"><apex:outputText value="{!devicePSP.WaferStart_Quarter3__c}"/></td>
+                                <td colspan="3" class="tg-center"><apex:outputText value="{!devicePSP.WaferStart_Quarter4__c}"/></td>
+                            </apex:repeat>
+                        </tr>
+                    </apex:repeat>
+                    
+                    <tr style="background-color:#ffdd99;">
+                        <td style="text-align: center;" colspan="3" rowspan="2"><b>Prototype Wafer Outs</b></td>
+                        <td colspan="2" rowspan="1"><b>Monthly TTL</b></td>
+                        <apex:repeat value="{!lstprototypeWaferOutsTTL}" var="waferForecastRec">
+                            <td class="tg-center"><apex:outputText value="{!waferForecastRec.month1}"/></td>
+                            <td class="tg-center"><apex:outputText value="{!waferForecastRec.month2}"/></td>
+                            <td class="tg-center"><apex:outputText value="{!waferForecastRec.month3}"/></td>
+                            <td class="tg-center"><apex:outputText value="{!waferForecastRec.month4}"/></td>
+                            <td class="tg-center"><apex:outputText value="{!waferForecastRec.month5}"/></td>
+                            <td class="tg-center"><apex:outputText value="{!waferForecastRec.month6}"/></td>
+                            <td class="tg-center"><apex:outputText value="{!waferForecastRec.month7}"/></td>
+                            <td class="tg-center"><apex:outputText value="{!waferForecastRec.month8}"/></td>
+                            <td class="tg-center"><apex:outputText value="{!waferForecastRec.month9}"/></td>
+                            <td class="tg-center"><apex:outputText value="{!waferForecastRec.month10}"/></td>
+                            <td class="tg-center"><apex:outputText value="{!waferForecastRec.month11}"/></td>
+                            <td class="tg-center"><apex:outputText value="{!waferForecastRec.month12}"/></td>
+                            <td style="background-color:#FFFF00;font-weight:bold;" colspan="1" rowspan="2"><apex:outputText value="{!waferForecastRec.month1+waferForecastRec.month2+waferForecastRec.month3+waferForecastRec.month4+waferForecastRec.month5+waferForecastRec.month6+waferForecastRec.month7+waferForecastRec.month8+waferForecastRec.month9+waferForecastRec.month10+waferForecastRec.month11+waferForecastRec.month12}"/></td>
+                        </apex:repeat>
+                    </tr>
+                    <tr style="background-color:#ffdd99;">
+                        <td colspan="2" rowspan="1"><b>Qtrly TTL</b></td>
+                        <apex:repeat value="{!lstprototypeWaferOutsTTL}" var="waferForecastQuarterRec">
+                            <td colspan="3" class="tg-center"><apex:outputText value="{!waferForecastQuarterRec.quarter1}"/></td>
+                            <td colspan="3" class="tg-center"><apex:outputText value="{!waferForecastQuarterRec.quarter2}"/></td>    
+                            <td colspan="3" class="tg-center"><apex:outputText value="{!waferForecastQuarterRec.quarter3}"/></td>    
+                            <td colspan="3" class="tg-center"><apex:outputText value="{!waferForecastQuarterRec.quarter4}"/></td>    
+                        </apex:repeat>
+                    </tr>
+                    
+                    <tr style="background-color:#dad971;">
+                        <td style="text-align: center;" colspan="3" rowspan="2"><b>Production Wafer Outs</b></td>
+                        <td colspan="2" rowspan="1"><b>Monthly TTL</b></td>
+                        <apex:repeat value="{!lstproductionWaferOutsTTL}" var="waferForecastRec">
+                            <td class="tg-center"><apex:outputText value="{!waferForecastRec.month1}"/></td>
+                            <td class="tg-center"><apex:outputText value="{!waferForecastRec.month2}"/></td>
+                            <td class="tg-center"><apex:outputText value="{!waferForecastRec.month3}"/></td>
+                            <td class="tg-center"><apex:outputText value="{!waferForecastRec.month4}"/></td>
+                            <td class="tg-center"><apex:outputText value="{!waferForecastRec.month5}"/></td>
+                            <td class="tg-center"><apex:outputText value="{!waferForecastRec.month6}"/></td>
+                            <td class="tg-center"><apex:outputText value="{!waferForecastRec.month7}"/></td>
+                            <td class="tg-center"><apex:outputText value="{!waferForecastRec.month8}"/></td>
+                            <td class="tg-center"><apex:outputText value="{!waferForecastRec.month9}"/></td>
+                            <td class="tg-center"><apex:outputText value="{!waferForecastRec.month10}"/></td>
+                            <td class="tg-center"><apex:outputText value="{!waferForecastRec.month11}"/></td>
+                            <td class="tg-center"><apex:outputText value="{!waferForecastRec.month12}"/></td>
+                            <td style="background-color:#FFFF00;font-weight:bold;" colspan="1" rowspan="2"><apex:outputText value="{!waferForecastRec.month1+waferForecastRec.month2+waferForecastRec.month3+waferForecastRec.month4+waferForecastRec.month5+waferForecastRec.month6+waferForecastRec.month7+waferForecastRec.month8+waferForecastRec.month9+waferForecastRec.month10+waferForecastRec.month11+waferForecastRec.month12}"/></td>
+                        </apex:repeat>
+                    </tr>
+                    <tr style="background-color:#dad971;">
+                        <td colspan="2" rowspan="1"><b>Qtrly TTL</b></td>
+                        <apex:repeat value="{!lstproductionWaferOutsTTL}" var="waferForecastQuarterRec">
+                            <td colspan="3" class="tg-center"><apex:outputText value="{!waferForecastQuarterRec.quarter1}"/></td>
+                            <td colspan="3" class="tg-center"><apex:outputText value="{!waferForecastQuarterRec.quarter2}"/></td>    
+                            <td colspan="3" class="tg-center"><apex:outputText value="{!waferForecastQuarterRec.quarter3}"/></td>    
+                            <td colspan="3" class="tg-center"><apex:outputText value="{!waferForecastQuarterRec.quarter4}"/></td>    
+                        </apex:repeat>
+                    </tr>
+                    
+                    <tr style="background-color:#b3daff;">
+                        <td style="text-align: center;" colspan="3" rowspan="2"><b>Opportunity Forecast</b></td>
+                        <td colspan="2" rowspan="1"><b>Monthly TTL</b></td>
+                        <apex:repeat value="{!lstOppWaferOuts}" var="waferForecastRec">
+                            <td class="tg-center"><apex:outputText value="{!waferForecastRec.month1}"/></td>
+                            <td class="tg-center"><apex:outputText value="{!waferForecastRec.month2}"/></td>
+                            <td class="tg-center"><apex:outputText value="{!waferForecastRec.month3}"/></td>
+                            <td class="tg-center"><apex:outputText value="{!waferForecastRec.month4}"/></td>
+                            <td class="tg-center"><apex:outputText value="{!waferForecastRec.month5}"/></td>
+                            <td class="tg-center"><apex:outputText value="{!waferForecastRec.month6}"/></td>
+                            <td class="tg-center"><apex:outputText value="{!waferForecastRec.month7}"/></td>
+                            <td class="tg-center"><apex:outputText value="{!waferForecastRec.month8}"/></td>
+                            <td class="tg-center"><apex:outputText value="{!waferForecastRec.month9}"/></td>
+                            <td class="tg-center"><apex:outputText value="{!waferForecastRec.month10}"/></td>
+                            <td class="tg-center"><apex:outputText value="{!waferForecastRec.month11}"/></td>
+                            <td class="tg-center"><apex:outputText value="{!waferForecastRec.month12}"/></td>
+                            <td style="background-color:#FFFF00;font-weight:bold;" colspan="1" rowspan="2"><apex:outputText value="{!waferForecastRec.month1+waferForecastRec.month2+waferForecastRec.month3+waferForecastRec.month4+waferForecastRec.month5+waferForecastRec.month6+waferForecastRec.month7+waferForecastRec.month8+waferForecastRec.month9+waferForecastRec.month10+waferForecastRec.month11+waferForecastRec.month12}"/></td>
+                        </apex:repeat>
+                    </tr>
+                    <tr style="background-color:#b3daff;">
+                        <td colspan="2" rowspan="1"><b>Qtrly TTL</b></td>
+                        <apex:repeat value="{!lstOppWaferOuts}" var="waferForecastQuarterRec">
+                            <td colspan="3" class="tg-center"><apex:outputText value="{!waferForecastQuarterRec.quarter1}"/></td>
+                            <td colspan="3" class="tg-center"><apex:outputText value="{!waferForecastQuarterRec.quarter2}"/></td>    
+                            <td colspan="3" class="tg-center"><apex:outputText value="{!waferForecastQuarterRec.quarter3}"/></td>    
+                            <td colspan="3" class="tg-center"><apex:outputText value="{!waferForecastQuarterRec.quarter4}"/></td>    
+                        </apex:repeat>
+                    </tr>
+              
+                </tbody>
+                
+            </table>
+            Showing Page # {!pageNumber} of {!totalPages}
+            <center>
+                <apex:commandButton action="{!Beginning}" title="Beginning" value="<<" disabled="{!disablePrevious}" reRender="tablePanel,LoadingStatusSpinner" status="LoadingStatusSpinner"/>
+                <apex:commandButton action="{!Previous}" title="Previous" value="<" disabled="{!disablePrevious}" reRender="tablePanel,LoadingStatusSpinner" status="LoadingStatusSpinner"/>        
+                <apex:commandButton action="{!Next}" title="Next" value=">" disabled="{!disableNext}" reRender="tablePanel,LoadingStatusSpinner" status="LoadingStatusSpinner"/>
+                <apex:commandButton action="{!End}" title="End" value=">>" disabled="{!disableNext}" reRender="tablePanel,LoadingStatusSpinner" status="LoadingStatusSpinner"/>
+            </center>
+                  
+            </apex:outputPanel>                        
+            
+        </apex:pageBlock>
+        
+    </apex:form>   
+</apex:page>

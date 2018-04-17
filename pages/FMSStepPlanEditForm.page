@@ -1,0 +1,212 @@
+<!--
+    @ Author :- Cognizant
+    @ History:         
+        10-July-2017        Ram Rai            Added the Fix for the to Order the Button. Issue #412
+        15-July-2017        Ram Rai            Last Modified Date FieldChange.Issue #389
+-->
+<apex:page standardController="Form_Management_System__c" extensions="FMSStepPlanEditExt" showHeader="true" sidebar="true" >
+
+  
+  <script type='text/javascript' src= '//ajax.googleapis.com/ajax/libs/jquery/1.6.2/jquery.min.js'>
+        </script>
+       <apex:includeScript value="{!URLFOR($Resource.jquery, 'js/jquery-ui-1.9.2.custom.js')}"/>
+    <apex:includeScript value="{!URLFOR($Resource.jqPlugin, '/jquery.blockUI.js')}"/>      
+    <script type="text/javascript">
+
+function showSimpleDialog(){    
+   var sd = new SimpleDialog("Test"+Dialogs.getNextId(), true);    
+   sd.setTitle("Warning");   
+   sd.createDialog();   
+   window.parent.sd = sd;   
+   var ex = sd.setContentInnerHTML("<p align='center' ><img src='/img/msg_icons/warning24.png'/> <b>Warning!</b> <br/></p><p align='center'>The data you are attempting to save is either incomplete or has errors. <br/> <br/> You can either go back and correct the errors, or proceed to save this form anyway (this will save only the fields with valid data).</p><p align='center'><br /><button class='btn' onclick='window.parent.sd.hide(); return false;'>Back to the form</button> &nbsp; &nbsp; &nbsp; &nbsp; <button class='btn' onclick='save(); return true;'>Save Anyway</button></p>"); 
+   sd.show();   
+   return ex;
+ }
+ 
+ 
+ function showDialogforCancel(){
+            var sd = new SimpleDialog("Test"+Dialogs.getNextId(), true);    
+            sd.createDialog(); 
+            sd.setWidth(400);               
+            window.parent.sd = sd;
+            var ex = sd.setContentInnerHTML("<img src='/img/msg_icons/warning24.png'/> <b>Warning!</b> <br/><br/>Are you sure you want to Cancel your changes?<br/> Any changes that you made to this form since the last Save will be lost. <br/><br/><p align='center'><button class='btn' onclick='cancelFormFunction(); window.parent.sd.hide(); return true;'>Confirm</button>&nbsp; &nbsp; &nbsp; &nbsp; <button class='btn' onclick='window.parent.sd.hide(); return false;'>Cancel</button></p>"); 
+                sd.show();   
+                return ex;
+        }
+       
+  
+</script>
+   <!-- <apex:pagemessages id="errorMsg" />-->
+    <apex:form id="stForm" >
+  <apex:pageMessages id="showmsg"></apex:pageMessages>
+    <apex:actionFunction name="save" action="{!save}"/>
+    <apex:actionFunction name="cancelFormFunction" action="{!cancel}" status="blockUI">       
+        </apex:actionFunction>
+    <c:FMSNameDesc ></c:FMSNameDesc>
+    <!--   <apex:pagemessages id="errorMsg" /> -->
+       <apex:pageBlock id="maintbl" title="Form Page 1" >
+       <!--Corrected the Below text as per requirement -- Ram Rai -->
+       <h3> Step Plan Approval Form:</h3>
+  <p>This form is used to review, communicate your acceptance/rejection and store the final Step Plan. The published Step Plan is based upon inputs provided in the FMS Main Form.</p>
+ <br/>
+  <table class="list" border="0" cellpadding="0" cellspacing="0">
+
+    <apex:repeat value="{!wrapperList}" var="int">
+    
+        <tr>                 
+                   <apex:repeat value="{!int}" var="value" rendered="{!(int.counterWrap!=1 && int.wrapFmObj.PrelimOrFinal__c =='Preliminary') }">
+           <td colspan="3"><h1> Preliminary Step Plan:</h1>
+            <h1> {!value.counterWrap} </h1>
+           </td>
+          
+         </apex:repeat>
+         
+           <apex:repeat value="{!int}" var="value" rendered="{!(int.counterWrap==1 && int.wrapFmObj.PrelimOrFinal__c =='Preliminary') }">
+           <td ><h1> Preliminary Step Plan:</h1>
+            
+           </td>
+          
+          
+         </apex:repeat>
+         
+         <apex:repeat value="{!int}" var="value" rendered="{!int.wrapFmObj.PrelimOrFinal__c !='Preliminary'}">
+           <td ><h1> Final Step Plan:</h1>
+            
+           </td>
+          
+          
+         </apex:repeat>
+           
+             
+       </tr>  
+       
+          <tr>
+         
+           <td colspan="3">
+           
+            <p>  Please review the attached Preliminary Step Plan at your earliest convenience. In order to complete the approval or rejection of this Prelimnary Step Plan, <b>Save and Exit</b> the completed form, then select either <b>Submit Step Plan Approval </b>or <b>Step Plan Rejection</b> from the <b> Possible Form Actions  </b> menu. Please note that delayed approvals will affect the Release cycle times.</p>   
+           </td>
+        
+       </tr>
+   <!--Published Date fix for Step Plan Issue #389.    -->
+   <tr> 
+        <apex:repeat value="{!int.wrapFmObj}" var="value">
+               <td colspan="1">
+           <h1>  Published:</h1>         </td><td>{!value.createdDate}</td>
+         </apex:repeat>
+       </tr>     
+      
+      <tr> 
+        <apex:repeat value="{!int.wrapFmObj}" var="value">
+               <td colspan="1">
+           <h1>  Step Plan for Review:</h1>
+           </td>
+         </apex:repeat>
+       </tr>   
+       
+           <tr> 
+        <apex:repeat value="{!int.wrapFmObj}" var="value">
+              
+            <td colspan="1"> <h3>Step Plan File:</h3></td> <td><h3>Size:</h3> </td>
+         </apex:repeat>
+       </tr>  
+       
+       
+       
+             
+       <apex:repeat value="{!int.lstattch}" var="value" rendered="{!int.lstattch !=null}">
+        <tr> 
+        
+        <apex:outputPanel rendered="{!value.ContentType =='application/pdf'}"><td ><apex:outputlink value="/servlet/servlet.FileDownload?file={!value.id}" target="_blank">{!value.name }</apex:outputlink></td><td>{!value.BodyLength} KB</td></apex:outputPanel>
+        </tr>
+        
+     
+       </apex:repeat>
+       <tr>
+        <apex:repeat value="{!int.wrapFmObj}" var="value">
+              
+            <td colspan="1"> <h3>Reticle Layout File:</h3></td> <td><h3>Size:</h3> </td>
+         </apex:repeat>
+       </tr>  
+       
+        <apex:repeat value="{!int.lstattch}" var="value" rendered="{!int.lstattch !=null}">
+        <tr> 
+        
+        <apex:outputPanel rendered="{!value.ContentType =='text/xml'}"> <td><apex:outputlink value="/servlet/servlet.FileDownload?file={!value.id}" target="_blank">{!value.name }</apex:outputlink></td><td>{!value.BodyLength} KB</td></apex:outputPanel>
+        </tr>
+          
+       </apex:repeat>
+       
+             <tr> 
+
+   
+                    <td >
+           <h1>  Select One:</h1>  
+           <apex:outputPanel id="ou" ><div style="font-size: 1.5em; font-weight: bold; color: #c00;margin-left: 68px;width: 10px; margin-top: -17px; ">*</div>  
+               </apex:outputPanel>   
+               </td > 
+               
+          <td  colspan="3">
+          
+
+    <apex:inputField value="{!int.wrapFmObj.Selection__c}" rendered="{!IF((int.Max) ,true,false)}" id="sel1" >
+    
+        <apex:actionSupport event="onchange" action="{!displResnBox}" />
+          <script type="text/javascript">
+            (function(){
+                var e = document.querySelectorAll('[id$="sel1"]')[0];
+                if (e && !e[0].value) {e.remove(0);}
+            })();
+            </script>
+         </apex:inputField>
+       <apex:outputPanel rendered="{!IF((int.Max) ,true,false)}"> <img src="/img/alohaSkin/help_orange.png" title="{!$ObjectType.Form_Management_System__c.fields.Selection__c.InlineHelpText}" height="13" width="13"  /></apex:outputPanel>
+        <apex:outputtext value="{!int.wrapFmObj.Selection__c}" rendered="{!!IF((int.Max),true,false)}" />
+        
+        </td>
+       
+       </tr>  
+        
+      <!--  <apex:outputPanel rendered="{!IF(((resonBox) && (int.Max)),true,false)}">-->
+  
+          <tr > 
+       <apex:outputPanel rendered="{!int.wrapFmObj.Selection__c == 'Reject Preliminary Step Plan'}">
+        <td >
+           <h1>  Reason(s) for Rejection. Please enter specific changes required.:</h1>  <apex:outputPanel ><div style="font-size: 1.5em; font-weight: bold; color: #c00;margin-left: 372px;width: 10px;margin-top: -19px; ">*</div>  
+               </apex:outputPanel>         </td>
+           <td>
+           <apex:inputField value="{!int.wrapFmObj.RejectionReason__c}" rendered="{!IF(int.wrapFmObj.Selection__c == 'Reject Preliminary Step Plan' && (int.Max),true,false)}" /> 
+            
+           <apex:outputField value="{!int.wrapFmObj.RejectionReason__c}" rendered="{!!int.Max}"/> 
+           <img src="/img/alohaSkin/help_orange.png" title="{!$ObjectType.Form_Management_System__c.fields.RejectionReason__c.InlineHelpText}" height="13" width="13"  />
+           </td>  
+           </apex:outputPanel>      
+       </tr> 
+            
+       <!-- </apex:outputPanel>-->
+         <tr style="height: 30px;"></tr>
+       <tr></tr>       
+     <!-- <tr> 
+        
+         <td colspan="3">
+           <h1> Reviewed By:</h1>         </td>        
+       </tr>--> 
+       
+    </apex:repeat>
+
+  </table>
+  
+</apex:pageBlock>
+
+         <div style="float:left; margin-left:485px">
+          
+          <apex:commandLink value="Save and Exit" action="{!saveandExit}" styleClass="btn"  style="text-decoration:none;padding:4px;" id="theButton"  oncomplete="window.scrollTo(0,0);showSimpleDialog();"  rerender="showmsg"/>
+            <apex:commandLink value="Save" action="{!save}" styleClass="btn" style="text-decoration:none;padding:4px;" /> 
+             <!--<apex:commandButton value="Cancel" immediate="true" action="{!cancel}" onclick="if(!confirm('Are you sure you want to Cancel your changes? Any changes that you made to this form since the last Save will be lost.')){return false;}"/>-->
+             <apex:commandButton value="Cancel" onclick="showDialogforCancel(); window.scrollTo(0,0); return false;" />
+                 
+        </div>
+    
+
+    </apex:form>
+
+</apex:page>

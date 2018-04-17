@@ -1,0 +1,491 @@
+<!--
+    Author: Baijnath Rathour/Anirban Roy
+    Description: This serves as the visualforce page for the Expose Control Form Customer Portal Page.
+    History: 
+        BRathour    06282013    - page creation.
+        ARoy        07032013    - page modification to include all functionalities.
+        ARoy        10022013    - page modification to display customer portal name, phone and email address for 
+                                  Status = 'Undeclared' as per the information of current portal user.
+        ARoy        10072013    - page modification to remove Reference Id as it was a redundant field as CRMDID No is already present.
+        ARoy        10302013    - removed the required fields and put the field validation on submit for approval.
+        ARoy        11272013    - modified for change in verbiage for GTC and non-GTC users.
+        ARoy        12022013    - modified for change in verbiage of Export Control Default and Custom Template.
+        ARoy        03062014    - added Question 8 in the Export Control Form. (Case : 00005251)
+        DBiswal     11112014    - added code to display CCAT Number under Question 5.         
+		ARoy		03082017	- added Fab9/10 check for display reassign Button
+-->
+<apex:page standardController="Export_Control_Form__c" extensions="ExportControlEditController" action="{!init}" showheader="true" sidebar="false" cache="false">
+    <style type="text/css">
+        .trcolor{background-color:#eaeaea;}
+    </style>
+    <apex:includeScript value="{!URLFOR($Resource.jQuery_Device_Migration, 'jquery-1.10.2.min.js')}"/>
+    <script language="javascript">
+        
+        var selectedChkbox;        
+
+        window.onload= function()
+        {
+            var selectChBoxes = document.getElementsByTagName('input');
+            for(var i=0;i<selectChBoxes.length;i++){
+                if(selectChBoxes[i].type=='checkbox'){
+                    if(selectChBoxes[i].checked){
+                        selectedChkbox = selectChBoxes[i];
+                    }
+                }
+            }           
+                
+        }
+        
+        function deselectOther(chkBox) {
+            if (chkBox.checked) {
+                if ((chkBox != selectedChkbox) && (selectedChkbox != null)) {
+                    selectedChkbox.checked = false;
+                }
+                selectedChkbox = chkBox;
+            }            
+        }
+        
+        function dataIsValid(id){
+            var errorStr = '';
+            
+            //===================added newly to remove the required fields and put that check on submit for approval=======================//
+            
+            if(document.getElementById('{!$Component.form.pb.ecCustTradeCompConPer}') 
+                    && document.getElementById('{!$Component.form.pb.ecCustTradeCompConPer}').value == ''){
+                errorStr = errorStr + 'Please enter value in Customer Trade Compliance Contact Person field.\n';
+            }
+            
+            if(document.getElementById('{!$Component.form.pb.ecEmailAdd}') 
+                    && document.getElementById('{!$Component.form.pb.ecEmailAdd}').value == ''){
+                errorStr = errorStr + 'Please enter value in Email Address field.\n';
+            }
+            
+            if(document.getElementById('{!$Component.form.pb.ecPhone}') 
+                    && document.getElementById('{!$Component.form.pb.ecPhone}').value == ''){
+                errorStr = errorStr + 'Please enter value in Phone field.\n';
+            }
+                        
+            if(document.getElementById('{!$Component.form.pb.ecProdDesc}') 
+                    && document.getElementById('{!$Component.form.pb.ecProdDesc}').value == ''){
+                errorStr = errorStr + 'Please enter value in Product Description field.\n';
+            }
+            
+            if(document.getElementById('{!$Component.form.pb.ecWeaponProd}') 
+                    && document.getElementById('{!$Component.form.pb.ecWeaponProd}').value == ''){
+                errorStr = errorStr + 'Please enter value in Weapon Development field.\n';
+            }
+            
+            if(document.getElementById('{!$Component.form.pb.mAppProdChk}') 
+                    && document.getElementById('{!$Component.form.pb.mAppProdChk}').value == ''){
+                errorStr = errorStr + 'Please enter value in Military App Product field.\n';
+            }
+            
+            if(document.getElementById('{!$Component.form.pb.iTARProdChk}') 
+                    && document.getElementById('{!$Component.form.pb.iTARProdChk}').value == ''){
+                errorStr = errorStr + 'Please enter value in ITAR Product field.\n';
+            }
+            
+            if(document.getElementById('{!$Component.form.pb.usEARProdChk}') 
+                    && document.getElementById('{!$Component.form.pb.usEARProdChk}').value == ''){
+                errorStr = errorStr + 'Please enter value in US EAR Product field.\n';
+            }
+            
+            if(document.getElementById('{!$Component.form.pb.nonUSEARProdChk}') 
+                    && document.getElementById('{!$Component.form.pb.nonUSEARProdChk}').value == ''){
+                errorStr = errorStr + 'Please enter value in Non US Controlled Product field.\n';
+            }                        
+            
+            //============================end of the section================================================================================//
+            
+            if(document.getElementById('{!$Component.form.pb.mAppProdChk}') 
+                && document.getElementById('{!$Component.form.pb.mAppProdChk}').value == 'Yes' 
+                    && document.getElementById('{!$Component.form.pb.mAppProdDetail}') 
+                        && document.getElementById('{!$Component.form.pb.mAppProdDetail}').value == ''){
+                errorStr = errorStr + 'Please specify description for Military Application.\n';
+            }
+            if(document.getElementById('{!$Component.form.pb.iTARProdChk}') 
+                  && document.getElementById('{!$Component.form.pb.iTARProdChk}').value == 'Yes'
+                        && (document.getElementById('{!$Component.form.pb.iTARProdDetail}')
+                            && document.getElementById('{!$Component.form.pb.iTARProdDetail}').value == ''
+                                && document.getElementsByName('{!$Component.form.pb.myFile1}'+':inputFile:file')[0].value == '' 
+                                    && (document.getElementById('{!$Component.form.pb.myFile1Exst}')==null || document.getElementById('{!$Component.form.pb.myFile1Exst}').innerHTML == '') )){
+                errorStr = errorStr + 'Please specify Q4 attachment/description.\n';
+            }
+            
+            if(document.getElementsByName('{!$Component.form.pb.myFile1}'+':inputFile:file')[0] 
+                && document.getElementsByName('{!$Component.form.pb.myFile1}'+':inputFile:file')[0].size > (1024 * 1024 * 5)){
+                errorStr = errorStr + 'Q4 attachment size cannot exceed 5MB.';
+            }
+            
+            if(document.getElementById('{!$Component.form.pb.usEARProdChk}')  
+                  && document.getElementById('{!$Component.form.pb.usEARProdChk}').value == 'Yes'
+                        && (document.getElementById('{!$Component.form.pb.usEARProdDetail}') 
+                           && document.getElementById('{!$Component.form.pb.usEARProdDetail}').value == ''
+                                && document.getElementsByName('{!$Component.form.pb.myFile2}'+':inputFile:file')[0].value == '' 
+                                    && (document.getElementById('{!$Component.form.pb.myFile2Exst}')==null || document.getElementById('{!$Component.form.pb.myFile2Exst}').innerHTML == ''))){
+                errorStr = errorStr + 'Please specify Q5 attachment/description.\n';
+            }
+            
+            if(document.getElementsByName('{!$Component.form.pb.myFile2}'+':inputFile:file')[0] 
+                && document.getElementsByName('{!$Component.form.pb.myFile2}'+':inputFile:file')[0].size > (1024 * 1024 * 5)){
+                errorStr = errorStr + 'Q5 attachment size cannot exceed 5MB.';
+            }
+            
+            if(document.getElementById('{!$Component.form.pb.nonUSEARProdChk}') 
+                && document.getElementById('{!$Component.form.pb.nonUSEARProdChk}').value == 'Yes' 
+                        && document.getElementById('{!$Component.form.pb.nonUSEARProdDetails}').value == ''){
+                errorStr = errorStr + 'Please specify Non US EAR Product Details.\n';
+            }
+            
+            var boxes = $('input[class=chkbox]:checked');
+            if($(boxes).size()==0){
+                errorStr = errorStr + 'Please specify Harmonized System.\n';
+            }
+            
+            if($('.otherHarmonSys').parent().parent().find('input:checkbox:first').is(':checked')==true 
+                && $('.otherHarmonSys').val()==''){
+                errorStr = errorStr + 'Please specify the other harmonized system.\n';
+            }
+            
+            // added Question 8 validation in the Export Control Form
+            //*******************************Start***********************************//
+            var tempdate=new Date('{!ExportControl.CreatedDate}');
+            var d = new Date();
+            //d.setFullYear(2014,2,12);
+            d.setFullYear(parseInt('{!$Label.ExportControlYear}'), parseInt('{!$Label.ExportControlMonth}'), parseInt('{!$Label.ExportControlDay}'));
+            
+            if(tempdate>=d && document.getElementById('{!$Component.form.pb.endUserCustName}') 
+                && document.getElementById('{!$Component.form.pb.endUserCustName}').value == ''){
+                errorStr = errorStr + 'Please enter value in End User Customer Name field.\n';
+            } 
+            
+            //*******************************End**********************************//           
+                                  
+            if(errorStr != ''){                
+                errorStr = errorStr.replace(/^\s+|\s+$/g, '');
+                alert(errorStr);
+            }
+            
+            /*else if(document.getElementById(id).value=='Reassign'){
+                saveWithReassign();
+            }*/
+            
+            else if(document.getElementById(id).value=='Submit'){
+                afterValidationSubmit();
+            }
+            
+            /*else{
+                afterValidation();
+            }*/
+        }
+        
+        function openPdf(){
+            var url = window.location.href;
+            if(url.indexOf('GlobalfoundryView') != -1){
+                window.open('/GlobalfoundryView/ExportControlPdf?deviceid={!devId}');
+            }else{
+                window.open('/apex/ExportControlPdf?deviceid={!devId}');
+            }
+        }
+    </script>
+    <div id="mainDiv">
+        <apex:form id="form">
+            <apex:pageMessages escape="false" />
+            <apex:pageBlock mode="Edit" id="pb">             
+            <table width="1024" style="font-size:small; text-align:center; font-family:arial, helvetica, sans-serif">
+                <tbody>
+                    <tr> 
+                        <td><h3>{!$Label.Export_Control_Form_Header}</h3>
+                        </td>
+                    </tr>
+                </tbody></table>       
+              <table width="1024" cellpadding="3" cellspacing="1" style="border:1px solid #000000;font-family:arial, helvetica, sans-serif;font-size:small">
+                    <tbody>                     
+                        <tr> 
+                            <td class="Table-Item" style="width:20%;background-color:#666666;color:#ffffff">
+                                <apex:outputLabel value="{!$ObjectType.Export_Control_Form__c.Fields.Status__c.Label}"/>
+                            </td>
+                            <td style="width:30%">
+                                <apex:outputtext value="{!ExportControl.EC_Status__c}" />                                                    
+                            </td>
+                            <!--<td class="Table-Item" style="width:20%;background-color:#666666;color:#ffffff">{!$Label.Export_Control_Ref_Number}</td>
+                            <td style="width:30%">
+                                <apex:outputtext value="{!deviceCRMDID}"/>
+                            </td>-->
+                            <td class="Table-Item" style="width:20%;background-color:#666666;color:#ffffff">
+                                <apex:outputLabel value="{!$Label.EXP_CNTR_DEVICE_NAME}"/>
+                            </td>
+                            <td style="width:30%">
+                                <apex:outputtext value="{!deviceName}"/> 
+                            </td>
+                        </tr>
+                        <tr> 
+                            <td class="Table-Item" style="width:20%;background-color:#666666;color:#ffffff">
+                                <apex:outputLabel value="{!$Label.EXP_CNTR_CUST_NAME}"/>
+                            </td>
+                            <td style="width:30%"> 
+                                <apex:outputtext value="{!deviceAccountName}" style="width: 200px;" />        
+                            </td>
+                            <td class="Table-Item" style="width:20%;background-color:#666666;color:#ffffff">
+                                <apex:outputLabel value="{!$Label.EXP_CNTR_CRM_DEV_ID}"/>
+                            </td>
+                            <td style="width:30%">
+                                <apex:outputtext value="{!deviceCRMDID}" style="width: 200px;"/>
+                            </td>                         
+                        </tr>
+                        <tr> 
+                            <td class="Table-Item" style="width:20%;background-color:#666666;color:#ffffff">
+                                <apex:outputLabel value="{!$Label.EXP_CNTR_PROJ_NAME}"/>
+                            </td>
+                            <td style="width:30%">
+                                <apex:outputtext value="{!deviceProjName}"/>
+                            </td>
+                            <td class="Table-Item" style="width:20%;background-color:#666666;color:#ffffff">
+                                <apex:outputLabel value="{!$ObjectType.Export_Control_Form__c.Fields.Phone__c.Label}"/>
+                            </td>
+                            <td style="width:30%"> 
+                                <apex:inputfield id="ecPhone" value="{!ExportControl.Phone__c}" style="width: 200px;" rendered="{!isReadOnly==false}"/>
+                                <apex:outputtext value="{!ExportControl.Phone__c}" style="width: 200px;" rendered="{!isReadOnly}"/>
+                            </td>                            
+                        </tr>
+                        <tr> 
+                            <td class="Table-Item" style="width:20%;background-color:#666666;color:#ffffff">
+                                <apex:outputLabel value="{!$Label.EXP_CNTR_FAB}"/>
+                            </td>
+                            <td style="width:30%">
+                                <apex:outputtext value="{!deviceFab}"/> 
+                            </td>
+                            <td class="Table-Item" style="width:20%;background-color:#666666;color:#ffffff">
+                                <apex:outputLabel value="{!$ObjectType.Export_Control_Form__c.Fields.Email_Address__c.Label}"/>
+                            </td>
+                            <td style="width:30%"> 
+                                <apex:inputfield id="ecEmailAdd" value="{!ExportControl.Email_Address__c}" style="width: 200px;" rendered="{!isReadOnly==false}"/>
+                                <apex:outputtext value="{!ExportControl.Email_Address__c}" style="width: 200px;" rendered="{!isReadOnly}"/>        
+                            </td>
+                        </tr>
+                        <tr> 
+                            <td class="Table-Item" style="width:20%;background-color:#666666;color:#ffffff">
+                                <apex:outputLabel value="{!$ObjectType.Export_Control_Form__c.Fields.Customer_Trade_Compliance_Contact_Person__c.Label}"/>
+                            </td>
+                            <td style="width:30%">
+                                <apex:inputfield id="ecCustTradeCompConPer" value="{!ExportControl.Customer_Trade_Compliance_Contact_Person__c}" style="width: 200px;" rendered="{!isReadOnly==false}"/>
+                                <apex:outputtext value="{!ExportControl.Customer_Trade_Compliance_Contact_Person__c}" style="width: 200px;" rendered="{!isReadOnly}"/> 
+                            </td>                                                    
+                        </tr>
+                    </tbody>
+                </table>
+                <br/>
+                <table width="1024" cellpadding="3" cellspacing="1" class="Subtable" style="border:1px solid; font-family:arial, helvetica, sans-serif;font-size:small">  
+                    <tr class="trcolor"> 
+                        <td style="width:600px" valign="top" colspan="3" class="Table-Item">
+                            <apex:outputLabel >{!$Label.ExpQ1}</apex:outputLabel>
+                        </td>
+                        <td colspan="2">
+                            <apex:inputfield id="ecProdDesc" value="{!ExportControl.Product_Description__c}" style="width:430px" rendered="{!isReadOnly==false}"/>
+                            <apex:outputtext value="{!ExportControl.Product_Description__c}" style="width:430px" rendered="{!isReadOnly}"/>
+                        </td>
+                  </tr>
+                  <tr>    
+                    <td style="width:600px" valign="top" colspan="3" class="Table-Item">
+                        <apex:outputLabel >{!$Label.ExpQ2}</apex:outputLabel>
+                    </td>
+                    <td width="50">   
+                        <apex:inputfield id="ecWeaponProd" value="{!ExportControl.Weapon_Product__c}" rendered="{!isReadOnly==false}"/>
+                        <apex:outputtext value="{!ExportControl.Weapon_Product__c}" rendered="{!isReadOnly}"/>      
+                    </td>
+                  </tr>  
+                  <tr class="trcolor"> 
+                    <td colspan="3" class="Table-Item">
+                        <apex:outputLabel >{!$Label.ExpQ3}</apex:outputLabel>
+                    </td>
+                    <td colspan="2">
+                       <apex:inputfield id="mAppProdChk" value="{!ExportControl.Military_App_Product__c}" rendered="{!isReadOnly==false}"/>
+                       <apex:outputtext value="{!ExportControl.Military_App_Product__c}" rendered="{!isReadOnly}"/>
+                    </td>
+                  </tr>
+                  <tr class="trcolor"> 
+                    <td colspan="3" class="Table-Item">
+                        <apex:outputLabel >{!$Label.ExpQ3_Desc}</apex:outputLabel>
+                    </td>
+                    <td colspan="2">
+                        <apex:inputfield id="mAppProdDetail" value="{!ExportControl.Military_App_Product_Details__c}" style="width:430px" rendered="{!isReadOnly==false}"/>
+                        <apex:outputtext value="{!ExportControl.Military_App_Product_Details__c}" style="width:430px" rendered="{!isReadOnly}"/>
+                    </td>
+                  </tr>
+                  <tr> 
+                    <td colspan="3" class="Table-Item">
+                        <apex:outputLabel >{!$Label.ExpQ4}</apex:outputLabel>
+                    </td>
+                    <td colspan="2">
+                        <apex:inputfield id="iTARProdChk" value="{!ExportControl.ITAR_Product__c}" rendered="{!isReadOnly==false}"/>
+                        <apex:outputtext value="{!ExportControl.ITAR_Product__c}" rendered="{!isReadOnly}"/>
+                    </td>
+                  </tr>
+                  <tr> 
+                    <td colspan="3" class="Table-Item">
+                        <apex:outputLabel >{!$Label.ExpQ4_Attach}</apex:outputLabel>
+                    </td>
+                    <td colspan="2">                        
+                        <apex:inputFile id="myFile1" value="{!myfile.body}" filename="{!myfile.Name}" rendered="{!isReadOnly==false}"/> 
+                        <apex:outputLink id="myFile1Exst" value="{!URLFOR($Action.Attachment.Download, myfile.Id)}" target="_blank" rendered="{!(myfile.parentId!=null && isReadOnly==false)}">
+                            <apex:outputtext value="{!If(myfile.parentId!=null, myfile.Name, '')}"/>
+                        </apex:outputLink>
+                        <apex:outputtext value="{!If(myfile.parentId!=null, myfile.Name, '')}" rendered="{!isReadOnly}"/>        
+                    </td>
+                  </tr>
+                  <tr> 
+                    <td colspan="3" class="Table-Item">
+                        <apex:outputLabel >{!$Label.ExpQ4_Desc}</apex:outputLabel>
+                    </td>
+                    <td colspan="2">
+                        <apex:inputfield id="iTARProdDetail" value="{!ExportControl.ITAR_Product_Details__c}" style="width:430px" rendered="{!isReadOnly==false}"/>
+                        <apex:outputtext value="{!ExportControl.ITAR_Product_Details__c}" style="width:430px" rendered="{!isReadOnly}"/>
+                    </td>
+                  </tr>                 
+                  <tr class="trcolor"> 
+                    <td colspan="3" class="Table-Item">
+                        <apex:outputLabel >{!$Label.ExpQ5}</apex:outputLabel><br/>
+                    </td>
+                    <td colspan="2">
+                        <apex:inputfield id="usEARProdChk" value="{!ExportControl.US_EAR_Product__c}" rendered="{!isReadOnly==false}"/>
+                        <apex:outputtext value="{!ExportControl.US_EAR_Product__c}" rendered="{!isReadOnly}"/>
+                    </td>
+                  </tr>
+                  <tr class="trcolor"> 
+                    <td colspan="3" class="Table-Item">
+                        <apex:outputLabel >{!$Label.ExpQ5_Attach}</apex:outputLabel>
+                    </td>
+                    <td colspan="2"> 
+                        <apex:inputFile id="myFile2" value="{!myfile2.body}" filename="{!myfile2.Name}" rendered="{!isReadOnly==false}"/>
+                        <apex:outputLink id="myFile2Exst" value="{!URLFOR($Action.Attachment.Download, myfile2.Id)}" target="_blank" rendered="{!(myfile2.parentId!=null && isReadOnly==false)}">
+                            <apex:outputtext value="{!If(myfile2.parentId!=null, myfile2.Name, '')}"/>
+                        </apex:outputLink>
+                        <apex:outputtext value="{!If(myfile2.parentId!=null, myfile2.Name, '')}" rendered="{!isReadOnly}"/>
+                    </td>
+                  </tr>
+                  <tr class="trcolor"> 
+                    <td colspan="3" class="Table-Item">
+                        <apex:outputLabel >{!$Label.ExpQ5_Desc}</apex:outputLabel>
+                    </td>
+                    <td colspan="2">
+                        <apex:inputfield id="usEARProdDetail" value="{!ExportControl.US_EAR_Product_Details__c}" style="width:430px" rendered="{!isReadOnly==false}"/>
+                        <apex:outputText value="{!ExportControl.US_EAR_Product_Details__c}" style="width:430px" rendered="{!isReadOnly}"/>
+                    </td>
+                  </tr>   
+     <!-- 11112014 DBiswal - To display CCAT Number --> 
+        <tr class="trcolor">  
+          <td colspan="3" class="Table-Item"> 
+              <apex:outputLabel >{!$Label.ExpQ5_CCAT}</apex:outputLabel> 
+          </td> 
+          <td colspan="2"> 
+              <apex:inputfield id="ccatNo" value="{!ExportControl.CCAT_Number__c}" style="width:430px" rendered="{!isReadOnly==false}"/> 
+              <apex:outputText value="{!ExportControl.CCAT_Number__c}" style="width:430px" rendered="{!isReadOnly}"/> 
+          </td> 
+        </tr>   
+        <!-- 11112014 DBiswal - To display CCAT Number -->                                 
+                  <tr> 
+                    <td colspan="3" class="Table-Item">
+                        <apex:outputLabel >{!$Label.ExpQ6}</apex:outputLabel>
+                    </td>
+                    <td colspan="2">
+                        <div align="left">  
+                            <apex:inputfield id="nonUSEARProdChk" value="{!ExportControl.Non_US_EAR_Product__c}" rendered="{!isReadOnly==false}"/>
+                            <apex:outputText value="{!ExportControl.Non_US_EAR_Product__c}" rendered="{!isReadOnly}" />
+                        </div>
+                    </td>
+                  </tr>
+                  <tr> 
+                    <td colspan="3" class="Table-Item">
+                        <apex:outputLabel >{!$Label.ExpQ6_Desc}</apex:outputLabel>
+                        <div style="height:3px"></div><BR/>
+                        <apex:outputLabel rendered="{!IF(deviceExpConTemplate=='Exp_Ctrl_Cust01',true,false)}">{!$Label.ExpQ6_Note}</apex:outputLabel>
+                    </td>
+                    <td colspan="2">
+                        <apex:inputfield id="nonUSEARProdDetails" value="{!ExportControl.Non_US_EAR_Product_Details__c}" style="width:430px" rendered="{!isReadOnly==false}"/>
+                        <apex:outputText value="{!ExportControl.Non_US_EAR_Product_Details__c}" style="width:430px" rendered="{!isReadOnly}" />
+                    </td>
+                  </tr>
+                  <tr class="trcolor"> 
+                    <td colspan="5" class="Table-Item">
+                        <apex:outputLabel escape="false" value="{!$Label.ExpQ7}" /> 
+                      </td>
+                  </tr>
+                  <tr class="trcolor"> 
+                    <td colspan="5" class="Table-Item" align="center">                        
+                        <table border="1" style="width:50%;">
+                            <tr>
+                                <th>{!$Label.Export_Control_Form_HS_Code_Header_1}</th>
+                                <th>{!$Label.Export_Control_Form_HS_Code_Header_2}</th>
+                                <th>{!$Label.Export_Control_Form_HS_Code_Header_3}</th>
+                            </tr>
+                            <apex:repeat value="{!expConHSCodeList1}" var="expConHSCode" id="theRepeat">
+                                <tr>
+                                    <td style="text-align:center;"><apex:inputCheckBox styleClass="chkbox" value="{!expConHSCode.selected}" onclick="deselectOther(this)" disabled="{!isReadOnly}"/></td>
+                                    <td><apex:outputText value="{!expConHSCode.expConHSCode}"/></td>
+                                    <td><apex:outputText value="{!expConHSCode.expConHSDescription}" rendered="{!expConHSCode.expConHSCode!='Other'}"/>
+                                    <apex:outputText value="Specify HS Code (" rendered="{!(expConHSCode.expConHSCode=='Other' && isReadOnly==false)}"/>                                                                       
+                                    <apex:inputField id="otherHarmonSys" styleclass="otherHarmonSys" value="{!ExportControl.Other_Harmonized_System__c}" rendered="{!(expConHSCode.expConHSCode=='Other' && isReadOnly==false)}"/>
+                                    <apex:outputText value="{!ExportControl.Other_Harmonized_System__c}" rendered="{!(expConHSCode.expConHSCode=='Other' && isReadOnly)}"/>
+                                    <apex:outputText value=")" rendered="{!(expConHSCode.expConHSCode=='Other' && isReadOnly==false)}"/></td>
+                                </tr>
+                            </apex:repeat>                            
+                        </table>
+                    </td>
+                  </tr>
+                  <!-- Adding the Question 8 : Start -->
+                  <tr> 
+                    <td colspan="3" class="Table-Item">
+                        <apex:outputLabel >{!$Label.ExpQ8}</apex:outputLabel><br/>
+                        <apex:outputLabel >{!$Label.ExpQ8_Desc}</apex:outputLabel>
+                    </td>
+                    <td colspan="2">
+                        <div align="left">  
+                            <apex:inputfield id="endUserCustName" value="{!ExportControl.End_User_Customer_Name__c}" style="width:430px" rendered="{!isReadOnly==false}"/>
+                            <apex:outputText value="{!ExportControl.End_User_Customer_Name__c}" style="width:430px" rendered="{!isReadOnly}" />
+                        </div>
+                    </td>
+                  </tr>
+                  <!-- Adding the Question 8 : End -->
+                  <tr class="trcolor">
+                      <td colspan="5">
+                          <apex:outputLabel rendered="{!isGTCUser==false && isExpCusTemplate==false}">
+                                  {!$Label.EXPORT_CONTROL_OTHER_CUSTOM_TEXT1}<u>{!ExportControl.Customer_Trade_Compliance_Contact_Person__c}</u>
+                                  {!$Label.EXPORT_CONTROL_OTHER_CUSTOM_TEXT4}&nbsp;<u>{!deviceAccountName}</u>&nbsp;{!$Label.EXPORT_CONTROL_OTHER_CUSTOM_TEXT3}
+                          </apex:outputLabel>
+                          <apex:outputLabel rendered="{!isGTCUser==false && isExpCusTemplate}">
+                                  {!$Label.EXPORT_CONTROL_OTHER_CUSTOM_TEXT1}<u>{!ExportControl.Customer_Trade_Compliance_Contact_Person__c}</u>
+                                  {!$Label.EXPORT_CONTROL_OTHER_CUSTOM_TEXT2}&nbsp;<u>{!deviceAccountName}</u>&nbsp;{!$Label.EXPORT_CONTROL_OTHER_CUSTOM_TEXT3}
+                          </apex:outputLabel>
+                          <apex:outputLabel rendered="{!isGTCUser}">
+                                  <u>{!gtcUserName}</u>{!$Label.EXPORT_CONTROL_TEXT1}                                 
+                          </apex:outputLabel>
+                      </td>                      
+                  </tr>
+                  <tr class="trcolor">
+                      <td colspan="5">
+                          <apex:outputLabel >
+                                  {!$Label.EXPORT_CONTROL_DATE_TEXT}
+                                  <u><apex:outputText value="{0,date,MM'/'dd'/'yyyy}">
+                                      <apex:param value="{!Today()}" />
+                                  </apex:outputText></u>
+                                  {!$Label.EXPORT_CONTROL_DATE_FORMAT}
+                          </apex:outputLabel>
+                      </td>
+                  </tr>
+              </table>
+              <apex:pageBlockButtons >                 
+                  <apex:actionFunction name="afterValidationSubmit" action="{!submitForApproval}" rendered="{!isReadOnly==false}"/>
+                  <apex:commandButton value="{!$Label.Exp_Control_Save}" action="{!saveRecord}" rendered="{!isReadOnly==false}" id="Save"/>                  
+                  <apex:commandButton value="{!$Label.Exp_Control_Submit_For_Approval}" onclick="dataIsValid(this.id);return false;" rendered="{!isReadOnly==false}" id="SubmitForApproval" />
+                  <apex:commandButton value="{!$Label.Export_Control_Form_Print_Pdf}" onclick="openPdf();return false;" rendered="{!ExportControl.Status__c=='Submitted' || ExportControl.Status__c=='Approved'}"/>
+                  <apex:commandButton value="{!$Label.Export_Control_Cancel}" action="{!cancel}" />                  
+                  <apex:commandButton value="{!$Label.Export_Control_Form_Reassign}" action="{!saveWithReassign}" rendered="{!((ExportControl.Status__c=='Draft' || ExportControl.Status__c=='Pending Resubmission') && isFab9_10Check!='Yes' && isReadOnly==false) || ((ExportControl.Status__c=='Draft' || ExportControl.Status__c=='Pending Resubmission' || ExportControl.Status__c=='Undeclared') && isFab9_10Check=='Yes')}" id="Reassign" />
+                  <!--<apex:commandButton value="{!$Label.Exp_Control_Save}" onclick="dataIsValid(this.id);return false;" rendered="{!isReadOnly==false}" id="Save"/> 
+                  <apex:actionFunction name="afterValidation" action="{!saveRecord}" rendered="{!isReadOnly==false}"/>
+                  <apex:actionFunction name="saveWithReassign" action="{!saveWithReassign}" rendered="{!isReadOnly==false}"/>
+                  <apex:commandButton value="{!$Label.Export_Control_Form_Reassign}" onclick="dataIsValid(this.id);return false;" rendered="{!isReadOnly==false && (ExportControl.Status__c=='Draft' || ExportControl.Status__c=='Pending Resubmission')}" id="Reassign" />-->                                    
+              </apex:pageBlockButtons>             
+            </apex:pageblock>   
+        </apex:form>
+     </div>
+</apex:page>

@@ -1,0 +1,708 @@
+<!-- 
+    Author: Abhita Bansal
+    Description: This is the Visualforce page for the Class eWSRFormsNewEditExtension
+    History: 
+    ABansal     11/05/2014 - Code Creation
+    Abansal     11/06/2014 - Add the Save Functionality
+    ABansal     11/07/2014 - Add the Edit Functionality
+    ABansal     11/10/2014 - Add the Function for Mask Layers
+    ABansal     11/11/2014 - Add the Function for Requested date
+    Abansal     11/12/2014 - Add the Functionality for Notification Group
+    ABansal     11/13/2014 - Change the Functionality for Notification Group
+    ABansal     11/14/2014 - Change the Functionality for Requested Date
+    ABansal     11/17/2014 - Add the Logic for Attachment to attach the Documents in Notes And Attachment
+    Abansal     11/18/2014 - Add the Logic of Part Id to override the standard Lookup
+    ABansal     11/19/2014 - Add the Requested Date Functionality for All record Types
+    ABansal     11/20/2014 - Add the Logic of date fields when Additional Time Cycle Required is yes
+    ABansal     11/21/2014 - Update the rerendering issue for Wafer starting Material
+    Abansal     11/24/2014 - Update the logic to provide the access to Fab Execution Members
+    ABansal     11/25/2014 - Update the logic for Process id from picklist to text Field
+    ABansal     11/26/2014 - Change the Requested date logic for Fab 7
+    ABansal     11/27/2014 - Add the Logic for Plan Start Date 
+    Abansal     11/28/2014 - Revert back the Changes for the Notification Group
+    ABansal     12/01/2014 - Add the logic for Part id to show the records on the basis of form Record Type
+    ABansal     12/02/2014 - Make All fields Read only when Planner update the record
+    ABansal     12/03/2014 - Update the functionlity of Plan Start Date for Fab 7
+    Abansal     12/04/2014 - Update the issue for the Edit Functionality
+    ABansal     12/05/2014 - Put the validation rules if the values is null
+    ABansal     12/08/2014 - Put the check on user to avooid the Read Only access error
+    ABansal     12/09/2014 - Add the pop up functionality if Lot Quantity is greater than Remaiming Quanitity
+    Abansal     12/10/2014 - Update the logic for Various Functionality
+    ABansal     12/11/2014 - Revert back the Changes for Requested Date for Fab 7
+    ABansal     12/15/2014 - Hide the Starting Material for Fab 3E
+    ABansal     12/16/2014 - Made Part Id required field
+    ABansal     12/17/2014 - Update the field from Part Id to Device Id to get the records from PO Lead Time object
+    ABansal     01/07/2015 - Revert back the changes from Device Id to Part Id to get the records from eWSR Device object
+    Abansal     01/13/2015 - updating the code for Enhancement 1 and 2 for Approval process
+    ABansal     01/21/2015 - Updating the code for Enhancement 5 to make the Wafer Starting Material custom picklist
+    Abansal     01/27/2015 - Adding the code to create the custom lookup for "Customer Name" Field
+    ABansal     01/28/2015 - Adding the Field "Loy Type" and make the "Are You Provide Start Material" field required
+-->
+<apex:page standardcontroller="eWSR_Form__c" extensions="eWSRFormsNewEditExtension" id="eWSRForm">
+   
+    <!-- JQuery Library -->
+    <script src="//ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js"></script>
+    <script src="//ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery-ui.min.js"></script>
+    <script src="//ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery-ui.css"></script>
+ 
+    <script type="text/javascript">
+        
+         var $j = jQuery.noConflict();
+         $j(document).ready(function(){
+         $j("[id$='eWSRForm:vform:pageedit:j_id76:j_id77:lotOwner_mlktp']").hide();
+        
+         if('{!recName}' == 'FAB 3E'){
+             $j("[id$='eWSRForm:vform:pageedit:appProcess:manager1_mlktp']").hide();
+             $j("[id$='eWSRForm:vform:pageedit:appProcess:manager2_mlktp']").hide();
+             $j("[id$='eWSRForm:vform:pageedit:appProcess:manager3_mlktp']").hide();
+             $j("[id$='eWSRForm:vform:pageedit:appProcess:budMan_mlktp']").hide();
+             
+         }
+         if('{!recName}' == 'FAB 2' || '{!recName}' == 'FAB 3' || '{!recName}' == 'FAB 5' || '{!recName}' == 'FAB 5JV' || '{!recName}' == 'FAB 6'){
+             $j("[id$='eWSRForm:vform:pageedit:appProcess:manager1_mlktp']").hide();
+             $j("[id$='eWSRForm:vform:pageedit:appProcess:manager2_mlktp']").hide();
+             $j("[id$='eWSRForm:vform:pageedit:appProcess:manager3_mlktp']").hide();
+             $j("[id$='eWSRForm:vform:pageedit:appProcess:depDir1_mlktp']").hide();
+             $j("[id$='eWSRForm:vform:pageedit:appProcess:depDir2_mlktp']").hide();
+             $j("[id$='eWSRForm:vform:pageedit:appProcess:depDir3_mlktp']").hide();
+         }
+         
+         if('{!recName}' == 'FAB 7'){
+             $j("[id$='eWSRForm:vform:pageedit:appProcess:progMan_mlktp']").hide();
+             $j("[id$='eWSRForm:vform:pageedit:appProcess:hod_mlktp']").hide();
+         }
+   
+         });
+         
+         function openLookup(baseURL, width, modified, searchParam){
+         
+            var originalbaseURL = baseURL;
+            var originalwidth = width;
+            var originalmodified = modified;
+            var originalsearchParam = searchParam;
+            
+            var lookupType = baseURL.substr(baseURL.length-3, 3);
+            if (modified == '1') baseURL = baseURL + searchParam;
+            
+            var Id = "{!$Setup.eWSR_Device_Id__c.Id__c}";
+            //alert(Id);
+            var isCustomLookup = false;
+    
+            // Following "a9Q" is the lookup type for eWSR Devices object so change this as per your standard or custom object
+            if(lookupType == Id){
+  
+                var urlArr = baseURL.split("&");
+                var txtId = '';
+                if(urlArr.length > 2) {
+                    urlArr = urlArr[1].split('=');
+                    txtId = urlArr[1];
+                }
+                var rec = '{!recName}';
+               // alert(rec);  
+                  
+                // Following is the url of Custom Lookup page. You need to change that accordingly
+                baseURL = "/apex/eWSRCustPartIDLookupPage?txt=" + txtId + "&recNameForm="+rec ;
+      
+                // Following is the id of apex:form control "myForm". You need to change that accordingly
+                baseURL = baseURL + "&frm=" + escapeUTF("{!$Component.vform}");
+                if (modified == '1') {
+                    baseURL = baseURL + "&lksearch=" + searchParam;
+                }
+      
+                // Following is the ID of inputField that is the lookup to be customized as custom lookup
+                if(txtId.indexOf('partId') > -1 ){
+                   isCustomLookup = true;
+                }
+            }
+        
+            if(isCustomLookup == true){
+                openPopup(baseURL, "lookup", 350, 480, "width="+width+",height=480,toolbar=no,status=no,directories=no,menubar=no,resizable=yes,scrollable=no", true);
+            }
+            else {
+              if (modified == '1') originalbaseURL = originalbaseURL + originalsearchParam;
+              openPopup(originalbaseURL, "lookup", 350, 480, "width="+originalwidth+",height=480,toolbar=no,status=no,directories=no,menubar=no,resizable=yes,scrollable=no", true);
+            } 
+            
+            
+        }
+        
+        
+        function getMaskLayers(value){
+          //alert('hi');
+          var processId = value;
+          //alert(processId);
+          getMask(value);
+        }
+       
+        function getDates(value){
+           //alert(value);
+           getFab(value);
+        }
+       
+        function getMaskPro(value){
+           //alert(value);
+           getMaskP(value);
+        }
+       
+        function getPriority(value){
+           //alert(value);
+           getP(value);
+        }
+       
+        function getOSD(value){
+          // alert(value);
+           getPOSD(value);
+        }
+       
+        function getSPSRs(value){
+           //alert(value);
+           getSPSR(value);
+        }
+       
+        function getSOP(value){
+           //alert(value);
+           getSop(value); 
+        }
+       
+        function getAddDays(value){
+           //alert(value);
+           getADays(value); 
+        }
+       
+        function getStartMat(value){
+           //alert(value);
+           if(value == 'Yes' || value == 'No'){
+               getStartMater(value); 
+           }
+           else{
+               getStartMater1(value);
+           }
+        }
+       
+        function getvalStartMat(value){
+           //alert(value);
+           getValStartMater(value); 
+        }
+       
+        function getModule(value){
+           //alert(value);
+           getMod(value); 
+        }
+       
+        function getProgram(value){
+           //alert(value);
+           getProg(value); 
+        }
+       
+        function getName(value){
+           //alert(value);
+           getUserName(value); 
+        }
+       
+        function getSelected(){
+           //alert(value);
+           getSel(); 
+        }
+       
+        function getwafStaMaterial(value){
+           //alert(value);
+           getwaStrMat(value); 
+        }
+        
+    </script>
+
+    <style type="text/css">
+           .customPopup{
+                background-color: white;
+                border-style: solid;
+                border-width: 2px;
+                left: 50%;
+                padding:10px;
+                position: absolute;
+                z-index: 9999;
+                width: 600px;
+                margin-left: -250px;
+                top:700px;
+            }
+           .popupBackground{
+                background-color:black;
+                opacity: 0.20; 
+                filter: alpha(opacity = 20);
+                position: absolute;
+                width: 100%;
+                height: 100%;
+                top: 0;
+                left: 0;
+                z-index: 9998;
+            }
+    </style>
+
+    
+    <apex:sectionheader title="Edit {!$ObjectType.eWSR_Form__c.label}" subtitle="{!IF(ISNULL(eWSR_Form__c.name), 'New eWSR Form',eWSR_Form__c.name)}" id="Editar"/>
+    
+    <apex:outputPanel id="myMsg">
+        <apex:pageMessages />   
+    </apex:outputPanel>
+    
+    <apex:form id="vform">
+              
+        <apex:outputpanel id="popup">
+            <apex:outputpanel rendered="{!valueBool}">
+   
+                <apex:outputpanel styleclass="popupBackground" layout="block" id="block"/>
+                <apex:outputpanel styleClass="customPopup"  layout="block" id="block1">
+                    <center>
+                        There is not enough wafer balance to cover this request.<br/><br/>
+                    <apex:actionRegion >
+                        <apex:commandbutton value="OK" action="{!yes}" id="yes" reRender="popup"/>
+                    </apex:actionRegion>
+                    </center>
+                </apex:outputpanel>
+            </apex:outputpanel>
+        </apex:outputpanel>
+
+        <apex:actionRegion >
+            <apex:actionFunction name="getsel" action="{!selectclick}" rerender="abcd" >
+                <apex:param name="site" value=""  />
+            </apex:actionFunction>
+        </apex:actionRegion>
+            
+        <apex:actionRegion >
+            <apex:actionFunction name="getMask" action="{!masklayers}" rerender="tNumMask" >
+                <apex:param name="site" value=""  />
+            </apex:actionFunction>
+        </apex:actionRegion>
+
+        <apex:actionRegion >
+            <apex:actionFunction name="getSPSR" action="{!SPSRvalues}" rerender="days, myMsg" >
+                <apex:param name="site1" value=""  />
+            </apex:actionFunction>
+        </apex:actionRegion>
+
+        <apex:actionRegion >
+            <apex:actionFunction name="getMod" action="{!Modvalues}" rerender="" >
+                <apex:param name="Module" value=""  />
+            </apex:actionFunction>
+        </apex:actionRegion>
+
+        <apex:actionRegion >
+            <apex:actionFunction name="getProg" action="{!Progvalues}" rerender="" >
+                <apex:param name="Program" value=""  />
+            </apex:actionFunction>
+        </apex:actionRegion>
+
+        <apex:actionRegion >
+            <apex:actionFunction name="getSop" action="{!SOPvalues}" rerender="days, myMsg" >
+                <apex:param name="site2" value=""  />
+            </apex:actionFunction>
+        </apex:actionRegion>
+
+        <apex:actionRegion >
+            <apex:actionFunction name="getADays" action="{!AddDaysValues}" rerender="days, myMsg" >
+                <apex:param name="site3" value=""  />
+            </apex:actionFunction>
+        </apex:actionRegion>
+
+        <apex:actionRegion >
+            <apex:actionFunction name="getFab" action="{!dateValue}" rerender="ref" >
+                <apex:param name="date" value="" />
+            </apex:actionFunction>
+        </apex:actionRegion>
+
+        <apex:actionRegion >
+            <apex:actionFunction name="getMaskP" action="{!maskPro}" rerender="days, EquiQuant, myMsg">
+                <apex:param name="mPro" value="" />
+            </apex:actionFunction>
+        </apex:actionRegion>
+
+        <apex:actionRegion >
+            <apex:actionFunction name="getP" action="{!lotPriority}" reRender="days, myMsg">
+                <apex:param name="lPro" value="" />
+            </apex:actionFunction>
+        </apex:actionRegion>
+
+        <apex:actionRegion >
+            <apex:actionFunction name="getStartMater" action="{!proStartMat}" rerender="valStartMaterial, waferStartMat,others">
+                <apex:param name="startMaterial" value=""  />
+            </apex:actionFunction>
+        </apex:actionRegion>
+
+        <apex:actionRegion >
+            <apex:actionFunction name="getStartMater1" action="{!proStartMat}" rerender="waferStartMat,valStartMaterial,others" >
+                <apex:param name="startMaterial" value=""  />
+            </apex:actionFunction>
+        </apex:actionRegion>
+
+        <apex:actionRegion >
+            <apex:actionFunction name="getUserName" action="{!Search}" rerender="abcd" >
+                <apex:param name="p1" value=""  />
+            </apex:actionFunction>
+        </apex:actionRegion>
+
+        <apex:actionRegion >
+            <apex:actionFunction name="getValStartMater" action="{!valStartMat}" rerender="waferStartMat, others" >
+                <apex:param name="valstartMaterial" value=""  />
+            </apex:actionFunction>
+        </apex:actionRegion>
+
+        <apex:actionRegion >
+            <apex:actionFunction name="getwaStrMat" action="{!valwaStrMaterial}" rerender="others" >
+                <apex:param name="valwaStrMat" value=""  />
+            </apex:actionFunction>
+        </apex:actionRegion>
+
+        <apex:pageblock mode="edit" title="Edit {!$ObjectType.eWSR_Form__c.label}" id="pageedit">
+    
+            <apex:pageblockbuttons id="pgbuttons"> 
+                <apex:commandbutton value="Save" action="{!Save}" id="Save"/>
+                <apex:commandbutton value="Cancel" action="{!Cancel}" id="Cancel"/>
+            </apex:pageblockbuttons>
+            
+            <apex:pageblocksection showheader="true" columns="2" id="void" >
+                <apex:outputfield value="{!eWSR_Form__c.Status__c}" id="status"/>   
+                <apex:outputField value="{!eWSR_Form__c.RecordTypeId}" id="rTypeID"/>            
+            </apex:pageblocksection>
+            
+            <apex:pageBlockSection title="Originator Section" showheader="true" columns="2" id="OrgSection">
+                <apex:outputfield value="{!eWSR_Form__c.ownerID}" label="Originator" id="org"/>
+                <apex:outputfield value="{!eWSR_Form__c.Contact_Number__c}" id="conNum"/>
+                <apex:inputfield value="{!eWSR_Form__c.Module__c}" required="true" id="module" onchange="getModule(this.value);" rendered="{! !othersSection}"/>
+                <apex:outputfield value="{!eWSR_Form__c.Module__c}" rendered="{!othersSection}" id="module1"/> 
+                <apex:outputfield value="{!eWSR_Form__c.Dept_Cost_Center_Number__c}" id="deptCost"/>
+                <apex:inputfield value="{!eWSR_Form__c.Program__c}" id="program" rendered="{!recName='FAB 7' && !othersSection}" onchange="getProgram(this.value);" required="true"/>
+                <apex:outputfield value="{!eWSR_Form__c.Program__c}" id="program1" rendered="{!recName='FAB 7' && othersSection}" />
+            </apex:pageBlockSection>
+            
+            <apex:pageBlockSection >
+                <apex:pageBlockSectionItem > 
+                    <apex:outputlabel value="Lot Owner" for="lotOwner"/>    
+                    <apex:actionRegion >
+                        <apex:outputPanel >
+                            <apex:inputfield value="{!eWSR_Form__c.Lot_Owner__c}" id="lotOwner" required="true" rendered="{! !othersSection}">
+                            <apex:actionSupport event="onchange" action="{!lotOwnValue}" rerender="OwnerFields"/>                                      
+                            </apex:inputfield>  
+                            <apex:outputfield value="{!eWSR_Form__c.Lot_Owner__c}" id="lotOwner1" rendered="{!othersSection}" />
+                        </apex:outputPanel> 
+                    </apex:actionRegion>
+                </apex:pageBlockSectionItem>                          
+            </apex:pageBlockSection>
+            
+            <apex:pageBlockSection id="OwnerFields">
+                <apex:outputfield value="{!eWSR_Form__c.Lot_Owner_s_Contact_Number__c}" id="lotOwnerCon"/>    
+                <apex:outputfield value="{!eWSR_Form__c.Lot_Owner_s_Department__c}" id="lotOwnerDep"/>
+                <apex:outputfield value="{!eWSR_Form__c.Emp_ID__c}" id="empID"/>
+            </apex:pageBlockSection>
+            
+           
+            <apex:pageBlockSection title="Notification Group" showHeader="true" columns="1" id="notiGroup1">
+               <br/>
+                <apex:actionRegion > 
+                    <apex:panelGrid columns="3" id="user">
+                        <apex:outputlabel value="Search:"/> 
+                        <apex:inputText value="{!name}" />
+                        <apex:commandButton value="Search" action="{!Search}" reRender="abcd"/>
+                    </apex:panelGrid>
+                          
+                    <apex:panelGrid columns="3" id="abcd">
+                        <apex:selectList id="sel1" value="{!leftselected}" multiselect="true" style="width:200px" size="5">
+                            <apex:selectOptions value="{!unselectedvalues}" />
+                        </apex:selectList>
+                        <apex:panelGroup >
+                            <br/>                                           
+                            <apex:image value="/s.gif" alt="Add" styleClass="rightArrowIcon" title="Add" >
+                                <apex:actionSupport event="onclick" action="{!selectclick}" reRender="abcd"/>
+                            </apex:image>
+                            <br/><br/>
+                            <apex:image value="/s.gif" alt="Remove" styleClass="leftArrowIcon" title="Remove" >
+                                <apex:actionSupport event="onclick" action="{!unselectclick}" reRender="abcd"/>
+                            </apex:image>                    
+                        </apex:panelGroup>
+                        <apex:selectList id="sel2" value="{!rightselected}" multiselect="true" style="width:200px" size="5">
+                            <apex:selectOptions value="{!SelectedValues}" />
+                        </apex:selectList>
+                    </apex:panelGrid>         
+                </apex:actionRegion>    
+            </apex:pageBlockSection>       
+            
+            <apex:pageBlockSection title="Purpose Of Wafer Start" showHeader="true" columns="2" id="PurWaferStart" rendered="{! !othersSection}">
+                <apex:inputfield value="{!eWSR_Form__c.Experiment_purpose__c}" required="true" id="expPurpose"/>
+                <apex:inputfield value="{!eWSR_Form__c.Is_it_a_repeating_experiment__c}" required="true" id="repExp"/>
+                <apex:inputfield value="{!eWSR_Form__c.Details__c}" id="details"/>    
+                
+                <apex:pageBlockSectionItem >
+                    <apex:outputLabel value="Details_of_Expt"/>
+                    <apex:inputFile id="attachment" value="{!filebody1}" filename="{!filename1}"/>                 
+                </apex:pageBlockSectionItem>               
+            </apex:pageBlockSection>   
+            
+            <apex:pageBlockSection title="Purpose Of Wafer Start" showHeader="true" columns="2" id="PurWaferStart1" rendered="{!othersSection}">
+                <apex:outputfield value="{!eWSR_Form__c.Experiment_purpose__c}" id="expPurpose"/>
+                <apex:outputfield value="{!eWSR_Form__c.Is_it_a_repeating_experiment__c}" id="repExp"/>
+                <apex:outputfield value="{!eWSR_Form__c.Details__c}" id="details"/>
+                
+                <apex:pageBlockSectionItem >
+                    <apex:outputLabel value="Details_of_Expt"/>
+                    <apex:inputFile id="attachment" value="{!filebody1}" filename="{!filename1}"/>                 
+                </apex:pageBlockSectionItem>               
+            </apex:pageBlockSection>   
+            
+            <apex:pageBlockSection title="Lot Details" showHeader="true" columns="2" id="lotDetails">               
+                <apex:inputfield value="{!eWSR_Form__c.Lot_Type__c}" id="lotType" required="true" rendered="{! !othersSection && recName='FAB 7'}" style="width:300px"/>
+           <!-- </apex:pageBlockSection>
+            
+            <apex:pageBlockSection >-->
+                <apex:inputfield value="{!eWSR_Form__c.Reticle_Arrived__c}" id="retArr" rendered="{! !othersSection}"/>
+                <apex:inputfield value="{!eWSR_Form__c.Sort_Program_Available__c}" id="sortProg" rendered="{! !othersSection}"/>
+                <apex:inputfield value="{!eWSR_Form__c.Is_this_Backup_Lot__c}" id="backLot" rendered="{! !othersSection}"/>
+                <apex:inputfield value="{!eWSR_Form__c.Is_this_a_Flying_Start_Cross_Fab_Lot__c}" id="flyStart" rendered="{! !othersSection}"/>
+                <apex:inputfield value="{!eWSR_Form__c.Turnkey_Program_Available__c}" id="TurkProg" rendered="{!recName='FAB 7' && !othersSection}" />
+                
+                <apex:outputfield value="{!eWSR_Form__c.Lot_Type__c}" id="lotType1" rendered="{!othersSection && recName='FAB 7'}"/>
+                <apex:outputfield value="{!eWSR_Form__c.Reticle_Arrived__c}" id="retArr1" rendered="{!othersSection}"/>
+                <apex:outputfield value="{!eWSR_Form__c.Sort_Program_Available__c}" id="sortProg1" rendered="{!othersSection}"/>
+                <apex:outputfield value="{!eWSR_Form__c.Is_this_Backup_Lot__c}" id="backLot1" rendered="{!othersSection}"/>
+                <apex:outputfield value="{!eWSR_Form__c.Is_this_a_Flying_Start_Cross_Fab_Lot__c}" id="flyStart1" rendered="{!othersSection}"/>
+                <apex:outputfield value="{!eWSR_Form__c.Turnkey_Program_Available__c}" id="TurkProg1" rendered="{!othersSection}"/>
+                
+                <apex:pageBlockSectionItem > 
+                    <apex:outputlabel value="Customer Name"/>
+                    <apex:actionRegion >
+                    <apex:outputPanel >
+                        <apex:inputfield value="{!eWSR_Form__c.Customer_Name__c}" id="custName" required="true" rendered="{! !othersSection}">
+                        <apex:actionSupport event="onchange" action="{!custShort}" rerender="showShort"/>                
+                        </apex:inputfield>  
+                        <apex:outputfield value="{!eWSR_Form__c.Customer_Name__c}" id="custName1" rendered="{!othersSection}" />
+                    </apex:outputPanel> 
+                    </apex:actionRegion> 
+                </apex:pageBlockSectionItem>                     
+            </apex:pageBlockSection>  
+                                     
+            <apex:pageBlockSection id="showShort">       
+                      <apex:outputfield value="{!eWSR_Form__c.Customer_Shortname__c}" id="custShort"/> 
+            </apex:pageBlockSection>   
+             
+            <apex:pageBlockSection columns="2" showHeader="true" id="blank">
+             
+                    <apex:pageblockSectionItem >
+                        <apex:outputLabel value="Part ID"/>
+                        <apex:actionRegion >   
+                            <apex:inputfield value="{!eWSR_Form__c.Part_ID__c}" id="partId" rendered="{! !othersSection}" required="true">             
+                                <apex:actionSupport event="onchange" action="{!masklayers}" reRender="tNumMask"/>
+                            </apex:inputfield> 
+                            <apex:outputfield value="{!eWSR_Form__c.Part_ID__c}" id="partId1" rendered="{!othersSection}" /> 
+                        </apex:actionRegion>                 
+                    </apex:pageblockSectionItem>
+            </apex:pageBlockSection>
+            
+            <apex:pageBlockSection id="tNumMask"> 
+                <apex:outputfield value="{!eWSR_Form__c.Process_ID__c}" id="processId"/>
+                <apex:outputfield value="{!eWSR_Form__c.Total_Number_of_Mask_Layer__c}" rendered="{!If(eWSR_Form__c.Total_Number_of_Mask_Layer__c!=null,true,false)}" id="tNumMask1" />
+                <apex:inputField value="{!eWSR_Form__c.Total_Number_of_Mask_Layer__c}" rendered="{!If(eWSR_Form__c.Total_Number_of_Mask_Layer__c==null,true,false)}" id="tNumMask2"/>
+            </apex:pageBlockSection>
+            
+            <apex:pageBlockSection >
+                <apex:inputfield value="{!eWSR_Form__c.Are_you_providing_start_material__c}" id="proStartMaterial" required="true" onchange="getStartMat(this.value);" rendered="{! !othersSection}" style="width:300px"/>
+                <apex:outputfield value="{!eWSR_Form__c.Are_you_providing_start_material__c}" id="proStartMaterial1" rendered="{!othersSection}"/>
+            </apex:pageBlockSection>
+            
+            <apex:pageBlockSection id="valStartMaterial">
+                <apex:inputfield value="{!eWSR_Form__c.Value_for_Wafer_Starting_Material__c}" id="valStartMaterial" rendered="{!showSelectField && !othersSection}" onchange="getvalStartMat(this.value);" /> 
+                <apex:outputfield value="{!eWSR_Form__c.Value_for_Wafer_Starting_Material__c}" id="valStartMaterial1" rendered="{!showSelectField && othersSection}" /> 
+            </apex:pageBlockSection>     
+                                       
+            <apex:pageBlockSection id="waferStartMat">    
+                <apex:outputfield value="{!eWSR_Form__c.Wafer_Starting_Material__c}" id="startMaterial3" rendered="{!showSelectField1}"/>
+                <apex:pageblockSectionItem rendered="{!showSelectField2 && !othersSection}">
+                    <apex:outputLabel value="Wafer Start Material" />
+                        <apex:selectList size="1" value="{!wafStaMat}" id="startMaterial1" onChange="getwafStaMaterial(this.value);">
+                            <apex:selectOptions value="{!wafStaMats}" />
+                        </apex:selectList>
+                </apex:pageblockSectionItem>
+                <!--<apex:inputfield value="{!eWSR_Form__c.Wafer_Starting_Material__c}" id="startMaterial1" rendered="{!showSelectField2 && !othersSection}"/>-->
+                <apex:outputfield value="{!eWSR_Form__c.Wafer_Starting_Material__c}" id="startMaterial2" rendered="{!showSelectField2 && othersSection}"/>   
+                <apex:inputfield value="{!eWSR_Form__c.Wafer_Starting_Material__c}" id="startMaterial4" rendered="{!showSelectField4 && !othersSection}"/>     
+                <apex:outputfield value="{!eWSR_Form__c.Wafer_Starting_Material__c}" id="startMaterial5" rendered="{!showSelectField4 && othersSection}"/>         
+            </apex:pageBlockSection> 
+            
+            <apex:pageBlockSection id="others">
+                <apex:inputfield value="{!eWSR_Form__c.Others__c}" id="others" rendered="{!showOtherWaferField && !othersSection}"/>
+                <apex:outputfield value="{!eWSR_Form__c.Others__c}" id="others1" rendered="{!showOtherWaferField && othersSection}"/>
+            </apex:pageBlockSection>
+            
+            <apex:pageBlockSection >
+                <apex:pageBlockSectionItem > 
+                    <apex:outputlabel value="Full Loop/Short Loop"/> 
+                    <apex:actionRegion >   
+                        <apex:outputPanel >
+                            <apex:inputfield value="{!eWSR_Form__c.Full_loop_Short_loop__c}" id="FuShLoop" rendered="{! !othersSection}">
+                                <apex:actionSupport event="onchange" action="{!required}" rerender="Mask, EquiQuant"/>                
+                            </apex:inputfield>  
+                            <apex:outputfield value="{!eWSR_Form__c.Full_loop_Short_loop__c}" id="FuShLoop1" rendered="{!othersSection}" />
+                        </apex:outputPanel> 
+                    </apex:actionRegion>
+                </apex:pageBlockSectionItem>
+            
+                <apex:inputfield value="{!eWSR_Form__c.Customer_Lot_Prefix_or_Full_lot_ID__c}" id="custLot" required="{!reqField1}" rendered="{! !othersSection}"/>
+                <apex:outputfield value="{!eWSR_Form__c.Customer_Lot_Prefix_or_Full_lot_ID__c}" id="custLot1" rendered="{!othersSection}"/>
+            </apex:pageBlockSection>
+           
+            <apex:pageBlockSection id="Mask">   
+                <apex:inputfield value="{!eWSR_Form__c.No_of_Mask_Layers_Processing__c}" id="noMask" rendered="{!recName='FAB 7' && !othersSection}" required="{!reqField}" onchange="getMaskPro(this.value);"/>
+                <apex:outputfield value="{!eWSR_Form__c.No_of_Mask_Layers_Processing__c}" id="noMask1" rendered="{!recName='FAB 7' && othersSection}" />
+            </apex:pageBlockSection>
+                         
+            <apex:pageBlockSection >  
+                <apex:inputfield value="{!eWSR_Form__c.Bill_to_Customer__c}" id="billCust" rendered="{! !othersSection && (recName='FAB 7'|| recName='FAB 3E' || recName='FAB 6')}"/>
+                <apex:inputfield value="{!eWSR_Form__c.Source_of_the_Raw_Wafer__c}" id="rawWafer" rendered="{! !othersSection}"/>
+                
+                <apex:outputfield value="{!eWSR_Form__c.Bill_to_Customer__c}" id="billCust1" rendered="{!othersSection && (recName='FAB 7'|| recName='FAB 3E' || recName='FAB 6')}"/>
+                <apex:outputfield value="{!eWSR_Form__c.Source_of_the_Raw_Wafer__c}" id="rawWafer1" rendered="{!othersSection}"/>
+                
+                <apex:inputfield value="{!eWSR_Form__c.Starting_Material_based_on_Part_ID__c}" id="startPartId" rendered="{! !othersSection && (recName='FAB 7' || recName='FAB 6')}" />
+                <apex:outputfield value="{!eWSR_Form__c.Starting_Material_based_on_Part_ID__c}" id="startPartId1" rendered="{!othersSection && (recName='FAB 7' || recName='FAB 6')}" /> 
+                   
+                <apex:inputfield value="{!eWSR_Form__c.Lot_Priority__c}" id="lotPri" rendered="{!recName='FAB 7' && !othersSection}" onchange="getPriority(this.value);" required="true"/>
+                <apex:outputfield value="{!eWSR_Form__c.Lot_Priority__c}" id="lotPri1" rendered="{!recName='FAB 7' && othersSection}" />
+                
+                <apex:pageBlockSectionItem > 
+                    <apex:outputlabel value="Wafer Quantity"/> 
+                    <apex:actionRegion >   
+                        <apex:outputPanel >
+                            <apex:inputfield value="{!eWSR_Form__c.Lot_Quantity_No_of_Wafers__c}" id="lotQuan" required="true" rendered="{! !othersSection}">
+                                <apex:actionSupport event="onchange" action="{!valueEq}" rerender="EquiQuant, myMsg2"/>                
+                            </apex:inputfield> 
+                            <apex:outputfield value="{!eWSR_Form__c.Lot_Quantity_No_of_Wafers__c}" id="lotQuan1" rendered="{!othersSection}" />
+                        </apex:outputPanel> 
+                    </apex:actionRegion>                    
+                </apex:pageBlockSectionItem>
+                
+                <apex:pageBlockSectionItem HelpText="{!$ObjectType.eWSR_Form__c.fields.Lot_Count__c.inlineHelpText}" rendered="{! !othersSection}">
+                    {!$ObjectType.eWSR_Form__c.fields.Lot_Count__c.label}
+                    <apex:inputField value="{!eWSR_Form__c.Lot_Count__c}" required="true"/>
+                </apex:pageBlockSectionItem>
+                
+                <apex:outputfield value="{!eWSR_Form__c.Lot_Count__c}" id="lotCount1" rendered="{!othersSection}"/>               
+                                
+                <apex:pageBlockSectionItem > 
+                    <apex:outputlabel value="Requested Start Date"/> 
+                    <apex:actionRegion >   
+                        <apex:outputPanel >
+                            <apex:inputfield value="{!eWSR_Form__c.Requested_Start_Date__c}" id="ReqStart" rendered="{! !othersSection}">
+                                <apex:actionSupport event="onchange" action="{!checkDate}" reRender="Quant, myMsg2, popup"/>            
+                            </apex:inputfield>  
+                            <apex:pageMessages id="myMsg2" />
+                            <apex:outputfield value="{!eWSR_Form__c.Requested_Start_Date__c}" id="ReqStart1" rendered="{!othersSection}" />
+                        </apex:outputPanel> 
+                    </apex:actionRegion>
+                </apex:pageBlockSectionItem>    
+                
+                <apex:outputfield value="{!eWSR_Form__c.Equivalent_Quantity__c}" id="EquiQuant" rendered="{!recName='FAB 7'|| recName='FAB 3E' || recName='FAB 6'}"/>           
+             
+            </apex:pageBlockSection>          
+
+            <apex:pageBlockSection id="Quant">
+                <apex:outputfield value="{!eWSR_Form__c.Forecast_Quantity__c}" id="forQuan" />
+                <apex:outputfield value="{!eWSR_Form__c.Remaining_Quantity__c}" id="remQuan" />              
+            </apex:pageBlockSection>
+            
+            <apex:pageBlockSection >
+                <apex:inputfield value="{!eWSR_Form__c.Lot_Comment_If_any__c}" id="lotComm" rendered="{! !othersSection}"/>
+                <apex:inputfield value="{!eWSR_Form__c.Special_Instruction__c}" id="SpIns" rendered="{! !othersSection}"/>
+                <apex:outputfield value="{!eWSR_Form__c.Lot_Comment_If_any__c}" id="lotComm1" rendered="{!othersSection}"/>
+                <apex:outputfield value="{!eWSR_Form__c.Special_Instruction__c}" id="SpIns1" rendered="{!othersSection}"/>
+            </apex:pageBlockSection>
+          
+            
+            <apex:pageBlockSection title="Special Requirement" showheader="true" columns="2" id="SplReq">
+                             
+                <apex:pageBlockSectionItem > 
+                    <apex:outputlabel value="Additional Cycle Time Required"/>
+                    <apex:actionRegion >   
+                        <apex:outputPanel >
+                            <apex:inputfield value="{!eWSR_Form__c.Additional_Cycle_Time_required__c}" id="lotQuan" required="true" rendered="{! !othersSection}">
+                                <apex:actionSupport event="onchange" action="{!display}" rerender="SplReq"/>                
+                            </apex:inputfield> 
+                            <apex:outputfield value="{!eWSR_Form__c.Additional_Cycle_Time_required__c}" id="lotQuan1" rendered="{!othersSection}" /> 
+                        </apex:outputPanel> 
+                    </apex:actionRegion>
+                </apex:pageBlockSectionItem>
+                
+                <apex:inputfield value="{!eWSR_Form__c.No_of_SPSRs__c}" id="sPSRs" rendered="{!show && !othersSection}" onchange="getSPSRs(this.value);" required="true"/>
+                <apex:inputfield value="{!eWSR_Form__c.No_of_SOP_Holds__c}" id="sOP" rendered="{!show && !othersSection}" onchange="getSOP(this.value);" required="true"/>
+                <apex:inputfield value="{!eWSR_Form__c.No_of_Additional_days_required__c}" id="addReq" rendered="{!show && !othersSection}" onchange="getAddDays(this.value);" required="true"/>
+                
+                <apex:outputfield value="{!eWSR_Form__c.No_of_SPSRs__c}" id="sPSRs1" rendered="{!show && othersSection}"/>
+                <apex:outputfield value="{!eWSR_Form__c.No_of_SOP_Holds__c}" id="sOP1" rendered="{!show && othersSection}"/>
+                <apex:outputfield value="{!eWSR_Form__c.No_of_Additional_days_required__c}" id="addReq1" rendered="{!show && othersSection}"/>
+            </apex:pageBlockSection>
+             
+            <apex:pageBlockSection id="days">  
+                <apex:outputfield value="{!eWSR_Form__c.Total_days_added_to_standard_OSD__c}" id="daysOD" />
+                <apex:outputfield value="{!eWSR_Form__c.Total_Cycle_Time__c}" id="cycleTime" rendered="{!recName='FAB 7'}"/>
+            </apex:pageBlockSection>
+            
+            <apex:pageBlockSection title="Approval Process Users" showheader="true" columns="2" id="appProcess" rendered="{! !othersSection}"> 
+                 <apex:inputfield value="{!eWSR_Form__c.Manager_1__c}" id="manager1" required="true" rendered="{!recName='FAB 2' || recName='FAB 3' || recName='FAB 3E'
+                                                                          || recName='FAB 5' || recName='FAB 5JV' || recName='FAB 6'}"/>
+                 <apex:inputfield value="{!eWSR_Form__c.Department_Director_1__c}" id="depDir1" required="true" rendered="{!recName='FAB 2' || recName='FAB 3'
+                                                                          || recName='FAB 5' || recName='FAB 5JV' || recName='FAB 6'}"/>
+                 <apex:inputfield value="{!eWSR_Form__c.Manager_2__c}" id="manager2" rendered="{!recName='FAB 2' || recName='FAB 3' || recName='FAB 3E'
+                                                                          || recName='FAB 5' || recName='FAB 5JV' || recName='FAB 6'}"/>
+                 <apex:inputfield value="{!eWSR_Form__c.Department_Director_2__c}" id="depDir2" rendered="{!recName='FAB 2' || recName='FAB 3'
+                                                                          || recName='FAB 5' || recName='FAB 5JV' || recName='FAB 6'}"/>
+                 <apex:inputfield value="{!eWSR_Form__c.Manager_3__c}" id="manager3" rendered="{!recName='FAB 2' || recName='FAB 3' || recName='FAB 3E'
+                                                                          || recName='FAB 5' || recName='FAB 5JV' || recName='FAB 6'}"/>                                                        
+                 <apex:inputfield value="{!eWSR_Form__c.Department_Director_3__c}" id="depDir3" rendered="{!recName='FAB 2' || recName='FAB 3'
+                                                                          || recName='FAB 5' || recName='FAB 5JV' || recName='FAB 6'}"/>                                                                                                             
+                 <apex:inputfield value="{!eWSR_Form__c.Budget_Manager__c}" id="budMan" required="true"  rendered="{!recName='FAB 3E'}" />
+                 <apex:inputfield value="{!eWSR_Form__c.Program_Manager__c}" id="progMan" required="true"  rendered="{!recName='FAB 7'}" />
+                 <apex:inputfield value="{!eWSR_Form__c.HOD__c}" id="hod" required="true"  rendered="{!recName='FAB 7'}"/>
+            </apex:pageBlockSection>  
+            
+            <apex:pageBlockSection title="Approval Process Users" showheader="true" columns="2" id="appProcess1" rendered="{!othersSection}"> 
+                 <apex:outputfield value="{!eWSR_Form__c.Manager_1__c}" id="manager1" rendered="{!recName='FAB 2' || recName='FAB 3' || recName='FAB 3E'
+                                                                          || recName='FAB 5' || recName='FAB 5JV' || recName='FAB 6'}"/>
+                 <apex:outputfield value="{!eWSR_Form__c.Department_Director_1__c}" id="depDir1" rendered="{!recName='FAB 2' || recName='FAB 3'
+                                                                          || recName='FAB 5' || recName='FAB 5JV' || recName='FAB 6'}"/>
+                 <apex:outputfield value="{!eWSR_Form__c.Manager_2__c}" id="manager2" rendered="{!recName='FAB 2' || recName='FAB 3' || recName='FAB 3E'
+                                                                          || recName='FAB 5' || recName='FAB 5JV' || recName='FAB 6'}"/>
+                 <apex:outputfield value="{!eWSR_Form__c.Department_Director_2__c}" id="depDir2" rendered="{!recName='FAB 2' || recName='FAB 3'
+                                                                          || recName='FAB 5' || recName='FAB 5JV' || recName='FAB 6'}"/>
+                 <apex:outputfield value="{!eWSR_Form__c.Manager_3__c}" id="manager3" rendered="{!recName='FAB 2' || recName='FAB 3' || recName='FAB 3E'
+                                                                          || recName='FAB 5' || recName='FAB 5JV' || recName='FAB 6'}"/>
+                 <apex:outputfield value="{!eWSR_Form__c.Department_Director_3__c}" id="depDir3" rendered="{!recName='FAB 2' || recName='FAB 3'
+                                                                          || recName='FAB 5' || recName='FAB 5JV' || recName='FAB 6'}"/>  
+                 <apex:outputfield value="{!eWSR_Form__c.Budget_Manager__c}" id="budMan" rendered="{!recName='FAB 3E'}" />
+                 <apex:outputfield value="{!eWSR_Form__c.Program_Manager__c}" id="progMan" rendered="{!recName='FAB 7'}" />
+                 <apex:outputfield value="{!eWSR_Form__c.HOD__c}" id="hod" rendered="{!recName='FAB 7'}"/>                
+            </apex:pageBlockSection> 
+            
+            <apex:pageBlockSection title="Fab Execution Planning" showheader="true" columns="2" id="fabExe" rendered="{!fabExecutionSection && (recName='FAB 2' 
+                                          || recName='FAB 3' || recName='FAB 3E' || recName='FAB 5' || recName='FAB 5JV' || recName='FAB 6')}">
+                <apex:inputfield value="{!eWSR_Form__c.Lot_ID_Assigned__c}" id="lotAss" required="true"/>
+                <apex:inputfield value="{!eWSR_Form__c.Plan_Start_Date__c}" id="planStart" required="true"/>
+                <apex:inputfield value="{!eWSR_Form__c.Plan_Finish_Date__c}" id="planFinish"/>
+                <apex:inputfield value="{!eWSR_Form__c.Plan_Fab_Out_Date__c}" id="fabOut"/>
+                <apex:inputfield value="{!eWSR_Form__c.Plan_OSD__c}" id="planOSD" />
+                <apex:inputfield value="{!eWSR_Form__c.Remarks__c}" id="remark"/>
+            </apex:pageBlockSection> 
+                        
+            <apex:pageBlockSection title="Fab Execution Planning" showheader="true" columns="2" id="fabExe1" rendered="{!fabExecutionSection && recName='FAB 7'}">
+                <apex:inputfield value="{!eWSR_Form__c.Lot_ID_Assigned__c}" id="lotAss1" required="true"/>
+                <apex:inputfield value="{!eWSR_Form__c.Plan_Start_Date__c}" id="planStart1" required="true" onchange="getDates(this.value);"/>  
+                <apex:inputfield value="{!eWSR_Form__c.Plan_Finish_Date__c}" id="planFinish1"/>
+            </apex:pageBlockSection>
+            
+            <apex:pageBlockSection id="ref" rendered="{!fabExecutionSection && recName='FAB 7'}">              
+                <apex:outputfield value="{!eWSR_Form__c.Plan_Fab_Out_Date__c}" id="fabout1" />
+                <apex:outputfield value="{!eWSR_Form__c.Plan_OSD__c}" id="planOSD1" />
+            </apex:pageBlockSection>
+            
+            <apex:pageBlockSection rendered="{!fabExecutionSection && recName='FAB 7'}">
+                <apex:inputfield value="{!eWSR_Form__c.Remarks__c}" id="remark1"/>
+            </apex:pageBlockSection>
+                                 
+        </apex:pageBlock>
+    </apex:form>
+    
+</apex:page>

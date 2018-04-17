@@ -1,0 +1,114 @@
+<!--
+ Page:          CPQFeatureDescriptionSearchPage
+ -------------------------------------------------------------------------------------------------------------------------------------
+ Author:        Amrita Agarwala
+ Created Date:  10/17/2016
+ Reason:        VF page for feature Description search utility. 
+-->
+<apex:page controller="CPQFeatureDescriptionSearchController" showHeader="false" 
+           sidebar="false" >
+  <script>
+        function checkAll(obj)
+        {
+            var inputElem = document.getElementsByTagName("input");
+           
+            for(var i=0; i<inputElem.length; i++)
+            {
+                 if(obj.checked)
+                      inputElem[i].checked = true;
+                 else
+                      inputElem[i].checked = false;
+            }
+        }
+        
+       function uncheckSelectAllCheckBox(){
+            var inputElem = document.getElementsByTagName("input");
+            var length = inputElem.length;
+           for(var i=0; i<inputElem.length; i++)
+            { var name = inputElem[i].getAttribute("name");
+                 if(name.indexOf("selectAllCheckboxID")>=0)
+                      inputElem[i].checked = false;
+                
+            }
+        }
+    </script>
+    <apex:pageMessages />
+    <apex:form >
+
+      <apex:pageBlock title="Device to Feature Conversion" >
+      <apex:actionRegion renderRegionOnly="false"> 
+             <apex:pageBlockSection columns="1">   
+                         
+                    <apex:selectList value="{!selectedGeometry}" multiselect="false" label="Geometry" style="overflow:auto;width:250px;height:20px" size="1">                    
+                        <apex:selectOptions value="{!geometries}" />
+                        <apex:actionSupport event="onchange" action="{!onSelectedGeometry}"   rerender="PTselectlist" />
+                    </apex:selectList><p/> 
+                                
+                </apex:pageBlockSection></apex:actionRegion>  
+                
+            <apex:actionRegion renderRegionOnly="false">
+               <apex:outputPanel id="PTselectlist">    
+                <apex:pageBlockSection columns="1" > 
+                    <apex:selectList value="{!selectedPT}" multiselect="false" label="Process Technology" style="overflow:auto;width:250px;height:20px" size="1">                    
+                        <apex:selectOptions value="{!items}"/>
+                    </apex:selectList><p/>
+                </apex:pageBlockSection>
+            </apex:outputPanel> </apex:actionRegion>
+          
+            <apex:pageBlockSection showHeader="false" columns="2" id="block1">            
+                <apex:pageBlockSectionItem >
+                  <apex:outputLabel value="Model Name  " for="modelNameInput" style="cellspacing: 20px;width: 250px;"/> 
+                  <apex:inputText value="{!modelNameInput}"  id="NameInput" style="width: 250px;" />
+                </apex:pageBlockSectionItem>
+                        
+                <apex:pageBlockSectionItem >                
+                    <apex:outputLabel value="Select Xml File" for="file"/>
+                    <apex:inputFile fileName="{!fileName}" value="{!body}"/>
+                </apex:pageBlockSectionItem>       
+         </apex:pageBlockSection> 
+                
+         <apex:pageBlockButtons location="bottom">           
+              <apex:commandButton value="Search" action="{!getSearchResult}"/>
+              <apex:commandButton value="Clear Data" action="{!clearData}"/>
+             <apex:commandLink action="{!generatePDF}" target="_blank" style="text-decoration:none" rendered="{!renderExportData}">
+                <apex:commandButton value="Export Data" />
+             </apex:commandLink>
+         </apex:pageBlockButtons>        
+                 
+       </apex:pageBlock>
+       <apex:pageBlock id="resulttable"  title="Results for {!bundleProductName}" rendered="{!renderResultTable}"  >
+    
+            <apex:pageBlockSection >
+                <apex:actionRegion id="pageTable" renderRegionOnly="false">
+                <apex:pageBlockTable value="{!paginationSearchResults}" var="record" style="width:90%;" columns="3"  width="90%"  >               
+                  
+                    <apex:column >
+                        <apex:facet name="header">
+                            <apex:inputCheckbox onclick="checkAll(this)" value="{!selectAllcheckbox}" id="selectAllCheckboxID" >
+                            <apex:actionSupport event="onchange" action="{!selectall}" />
+                            </apex:inputCheckbox>
+                        </apex:facet>
+                        <apex:inputCheckbox onclick="uncheckSelectAllCheckBox()" value="{!record.isSelected}" />
+                        
+                   </apex:column>    
+                    <apex:column value="{!record.p.Description}" title="Model Name" headerValue="Model Name"  />
+                    <apex:column value="{!record.p.Name}" title="Feature Description" headerValue="Feature Description"/>
+                </apex:pageBlockTable>
+                
+                  </apex:actionRegion>
+            </apex:pageBlockSection>
+   
+            <apex:pageBlockButtons location="bottom">
+            
+                 <apex:commandButton value="<<" action="{!Firstbtn}" disabled="{!prev}" />
+                 <apex:commandButton value="<" action="{!prevbtn}" disabled="{!prev}" />
+                 <apex:commandButton value=">" action="{!Nextbtn}" disabled="{!next}"  />
+                 <apex:commandButton value=">>" action="{!lastbtn}" disabled="{!next}" />
+               
+            </apex:pageBlockButtons>
+            
+        </apex:pageBlock>
+       
+    </apex:form>
+ 
+</apex:page>

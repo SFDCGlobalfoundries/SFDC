@@ -1,0 +1,85 @@
+<apex:page standardController="Package__c" extensions="clsVFDeProvisionPackageController">
+<script type="text/javascript">
+function checkAll(cb){
+        var inputElem = document.getElementsByTagName('input');                     
+        for(var i=0; i<inputElem.length; i++){                                                   
+            inputElem[i].checked = cb.checked;               
+        }
+    }
+function checkContacts(cb,accid){
+        var inputElem = document.getElementsByTagName('input');                            
+        for(var i=0; i<inputElem.length; i++){ 
+            if(inputElem[i].parentNode.getAttribute('rowid')==accid){                                                 
+                inputElem[i].checked = cb.checked;   
+            }            
+        }
+    }
+ 
+</script>
+<apex:form >
+<apex:outputPanel id="msgblk">
+<apex:pagemessages />
+</apex:outputPanel>
+<apex:outputPanel id="accblk">
+  <apex:pageBlock rendered="{!NOT(renderContacts)}" title="Package DeProvisioning">
+     <apex:outputLabel value="No Customer found for De-Provisioning" rendered="{!lstwAccounts.size=0}"/> 
+     <apex:pageBlockButtons >
+       <apex:commandbutton value="Cancel" action="{!Cancel}" />
+       <apex:commandbutton value="Next" action="{!next}" rerender="accblk,usrblk,msgblk"/>
+      </apex:pageBlockButtons>
+      <apex:pageBlockSection collapsible="true" title="Select Accounts" columns="1" rendered="{!NOT(lstwAccounts.size=0)}"> 
+         <apex:PageBlockTable var="v" value="{!lstwAccounts}">
+         <apex:column rendered="{!NOT(lstwAccounts.size=0)}" width="30%">  
+            <apex:facet name="header">
+            <apex:inputcheckbox onchange="checkAll(this);"/>
+            </apex:facet>
+            <apex:inputCheckbox value="{!v.selected}"/>
+           </apex:column>
+           <apex:column headerValue="Name" value="{!v.acc.Name}" rendered="{!NOT(lstwAccounts.size=0)}" width="70%" />
+        </apex:PageBlockTable>
+      </apex:pageBlockSection>
+  </apex:pageBlock>
+</apex:outputPanel>
+
+<apex:outputPanel id="usrblk">
+ <apex:pageBlock rendered="{!renderContacts}" title="Package DeProvisioning">
+   <apex:pageBlockSection collapsible="true" title="DeProvision From Contacts" columns="1">
+     <apex:pageBlock >
+       <apex:pageblocktable var="w" value="{!selectedlstwAccounts}">
+         <apex:column >
+<!--apex:PageBlock Title="{!w.acc.Name}"-->
+               <apex:pageBlockSection title="{!w.acc.Name}" columns="1">
+                  <apex:PageBlockTable var="u" value="{!w.usrwrap}">
+                            <apex:column width="15%" >
+                            <apex:facet Name="header">
+                            <apex:inputcheckbox onchange="checkContacts(this,'{!w.acc.id}');"/>
+                            </apex:facet>
+                            <div id="divid" rowid="{!w.acc.id}">
+                            <apex:inputCheckbox value="{!u.selected}"/>
+                            </div>
+                            </apex:column>
+                    <!--apex:column value="{!u.usr.FirstName}" headerValue="First Name"/-->
+                    <!--apex:column value="{!u.usr.LastName}" headerValue="Last Name"/-->
+                    
+                            <apex:column headerValue="Contact Name" width="30%">
+                            <apex:outputText value="{!u.usr.Name}" />             
+                            </apex:column>
+                            <apex:column headerValue="Contact Email" width="70%">
+                            <apex:outputText value="{!u.usr.Email}"/>             
+                             </apex:column>
+                  </apex:PageBlockTable>
+            </apex:pageBlockSection>
+<!--/apex:PageBlock-->
+          </apex:column>
+        </apex:pageblocktable>
+      </apex:pageBlock>
+    </apex:pageBlockSection>
+    
+   <apex:pageblockButtons >
+        <apex:CommandButton value="DeProvision" action="{!deProvisionPackage}"/>
+        <apex:commandButton value="Cancel" action="{!cancel}"/>
+   </apex:pageblockButtons>
+</apex:pageBlock>
+</apex:outputPanel>
+</apex:form>
+</apex:page>

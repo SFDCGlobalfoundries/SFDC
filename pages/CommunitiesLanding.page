@@ -1,0 +1,173 @@
+<!-- Commented by Cognizant (FOUNDRYVIEW - Case# 4487) --------------------- BEGIN -------------------------------------------------
+     Reason: To modify the landing page of portal users the Terms and Conditions VF page which by OOTB is not supported.     
+     Date: 11-MAR-2014                                                                                                           -->
+<!--<apex:page id="communitiesLandingPage" 
+           controller="CommunitiesLandingController" 
+           action="{!forwardToStartPage}"
+           title="{!$Label.site.site_login}">
+</apex:page>-->
+<!-- Commented by Cognizant (FOUNDRYVIEW - Case# 4487) --------------------- END -------------------------------------------------->
+
+
+
+<!-- Modified by Cognizant (FOUNDRYVIEW - Case# 4487) --------------------- BEGIN --------------------------------------------------
+     Reason: To modify the landing page of portal users the Terms and Conditions VF page which by OOTB is not supported.     
+     Date: 11-MAR-2014         
+
+Added downloadPDF() functionality -Ravikiran Nadella-04/19/2016
+	 -->
+
+<!-- Modified by Global Foundries -Dinesh---------------------------------- BEGIN --------------------------------------------------
+     Reason: To hide PopUp  Terms and Conditions for impersonating user and visible for actual customer login.
+     Date: 2-MAR-2017     -->  
+                        
+<apex:page id="communitiesLandingPage" 
+           controller="CommunitiesLandingController" 
+
+        title="{!$Label.site.site_login}">
+<style>
+.fixed-dialog { position:"fixed" }
+</style>       
+    <apex:form >
+        <apex:actionFunction name="redirectToHomePage" action="{!redirectToHomePage}" />
+        <apex:actionFunction name="redirectToLogInPage" action="{!redirectToLogInPage}" />
+        <apex:actionFunction name="redirecttoHomePage1" action="{!redirecttoHomePage1}"/>
+        
+        <apex:includeScript value="{!URLFOR($Resource.jQuery_FoundryView2, 'jquery-1.8.2.min.js')}" />
+        <apex:includeScript value="{!URLFOR($Resource.jQuery_FoundryView2, 'ui/jquery-ui-1.9.1.custom.min.js')}" />
+ <!--        
+        <script src="https://cs5.salesforce.com/soap/ajax/26.0/connection.js"/>
+        <script src="https://cs5.salesforce.com/js/functions.js"/>
+  -->       
+        <script src="/soap/ajax/26.0/connection.js"/>
+        <script src="/js/functions.js"/>
+        
+        <apex:stylesheet value="{!URLFOR($Resource.jQuery_FoundryView2, 'ui/css/ui-lightness/jquery-ui-1.9.1.custom.min.css')}"/>
+
+    </apex:form>
+    
+    <script type="text/javascript">
+        var j$ = jQuery.noConflict(); 
+        
+        
+            
+        function gotoAccept(){        
+            
+            redirectToHomePage();
+            
+        }
+        
+        // Added by Dinesh 02/03/2017
+        function gotoHome(){
+            redirecttoHomePage1();
+        }
+        function gotoDecline(){
+
+            redirectToLogInPage();
+            
+        } 
+        
+        function downloadPDF(){
+
+         window.open('{!$Label.EULA}','_blank');           
+            
+        } 
+        
+        j$(window).load(function (){                                              
+           
+            
+            var prevUrl=document.referrer; // Changed for 4487
+         
+            if(!(prevUrl.indexOf('secur/logout.jsp')>-1)){  // Changed for 4487
+            
+            var jisGuestUser = '{!IsGuestUser}';
+            var jisTncAccepted = '{!IsTncAccepted}';
+            var jisLatestTNCActive = '{!IsLatestTNCActive}';
+            var jtncBody = '{!JSENCODE(TnCBody)}';
+            var jisRealUser = '{!IsRealUser}';
+            
+           
+            var count = document.getElementsByClassName('highImportance').length;   
+            if(jisGuestUser == 'true' && count==0){
+                
+                
+                if(jisTncAccepted == 'false' && jtncBody != '' && jisLatestTNCActive == 'true' && jisRealUser == 'true'){         
+                       
+                    
+                    var iframe_url = "<div id='tncbody'>"
+                                   + "    <table style='height:100;width:100'>"
+                                   + "        <tr style='height:100;width:100'>"
+                                   + "           <td>"
+                                   + "               <textarea id='tncbodytext' "
+                                   + "                         rows='10' "
+                                   + "                         cols='105' "
+                                   + "                         readonly='readonly' "
+                                   + "                         style='font-size:14px;font-family:Times New Roman;height:auto;width:550'>"
+                                   +                     jtncBody
+                                   + "               </textarea>"
+                                   + "           </td>"
+                                   + "       </tr>"
+                                   + "       <tr>"
+                                   + "           <td>"
+                                   + "               <input type='submit' value='Accept' onClick='gotoAccept()'>"
+                                   + "               <input type='submit' value='Decline' onClick='gotoDecline()'>"
+                                   + "           </td>"
+                                   + "       </tr>"
+                                   + "       <tr>"
+                                   + "           <td>"
+                                   + "               <input type='submit' value='Download as PDF' onClick='downloadPDF()'>"
+                                   + "           </td>"
+                                   + "       </tr>"
+                                   + "   </table>"
+                                   + "</div>";
+                    
+                    
+                    
+                    var j$modalDialog = j$("<div id='tnccontainer'></div>")
+                    .html(iframe_url) 
+                    .dialog({ 
+                        autoOpen: false, 
+                        closeOnEscape: false,
+                        title: 'Community Terms and Conditions', 
+                        resizable: true, 
+                        width: '50%',
+                        height:'280',                     
+                        autoResize: true, 
+                        modal: true, 
+                        draggable: true,                    
+                        position : ['center',150],
+                        dialogClass: "fixed-dialog"
+                    }); 
+                    
+                                        
+                               
+                    j$modalDialog.dialog({
+                       open: function(event, ui) { j$(".ui-dialog-titlebar-close").hide(); }
+                    });   
+                    
+                    j$modalDialog.dialog('open');
+             
+                } else {
+                    
+                    
+                    gotoAccept();
+                }
+            } else {
+                
+                
+                gotoHome();
+            }
+            } // Added on 25-Aprfor 4487 
+            // Added on 25-Apr for 4487 Start -
+            else
+               { 
+               
+                             
+               window.parent.location="{!$Site.Prefix}/secur/logout.jsp";               
+                } 
+            // Added on 25-Apr for 4487 End -
+            
+        });
+    </script>
+</apex:page>
+<!-- Modified by Cognizant (FOUNDRYVIEW - Case# 4487) --------------------- BEGIN ------------------------------------------------->

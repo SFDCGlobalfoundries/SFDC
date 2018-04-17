@@ -1,0 +1,161 @@
+<apex:page standardController="MRS_Layer_Chip_Association__c" showHeader="false" sideBar="false" standardStylesheets="false" extensions="MRSVoidChipExtn">
+<apex:stylesheet value="{!URLFOR($Resource.Swift_MRS,'css/FrameMockup.css')}"/>  
+<apex:stylesheet value="{!URLFOR($Resource.Swift_MRS,'css/jquery.scombobox.min.css')}"/>
+<apex:stylesheet value="{!URLFOR($Resource.Swift_MRS,'css/style.css')}"/>
+<apex:form >
+<!--Wrapper Div Starts-->
+<div id="wrapper">
+
+            <!--Breadcrumb Starts-->
+            <div class="breadcrumb" id="breadcrumbDiv">
+                    <label><a href="javascript:void(0);" onclick="openMyDevices();"><u>My Devices</u></a></label> &gt;
+                    <label>Tapeout</label> &gt;
+                    <label>MRS</label> &gt;
+                    <label><apex:outputLink value="{!$Page.VFMRSLayerSummary}"><u>Layer Summary</u></apex:outputLink></label> &gt;
+                    <label><a href="javascript:window.history.back();"><u>Layer Chip Summary</u></a></label> &gt;
+                    <label>Void Chip</label>
+                </div>
+            <!--Breadcrumb Ends-->
+            
+            <div id="createDRT" class="right-panel-section">
+                <!-- Start DRT Right side Header-->
+                <h3>Void Chip</h3> 
+                <!-- End Right side Header-->                 
+                
+        <div class="quicklinks">
+                <a href="#"><img src="{!URLFOR($Resource.Swift_MRS,'images/expToCsv.png')}" width="24" height="24" alt="Export to CSV" title="Export to CSV" onclick="javascript:exportToCSV();"/></a>
+                <a href="#"><img src="{!URLFOR($Resource.Swift_MRS,'images/excel-icon.png')}" width="23" height="23" alt="Export to Excel" title="Export to Excel" onclick="javascript:exportToExcel();"/></a>          
+                <a href="{!$Label.SWIFT_Support_Link}" target="_blank"><img src="{!URLFOR($Resource.Swift_MRS,'images/help-icon.png')}" width="23" height="23" alt="Help"  title="Help"/></a>
+        </div>
+        
+                <!-- --------------- First Row Starts --------------- -->
+               <div id="firstRowContentDiv" class="right-section-row right-section-row-borderbottom">   
+                    <dl><dt class="bold-font">Customer Name:</dt><dd class="pading-left">{!mrsChipLayerlst.Customer_Name__r.Name}</dd></dl>
+                    <dl>
+                        <dt class="bold-font">Mask Set Title:</dt>
+                        <dd class="pading-left">
+                          {!mrsChipLayerlst.PTRF__r.MaskSetTitle__r.Name}
+                        </dd>
+                        <dt class="dt-style-margin bold-font">Mask Layer:</dt>
+                        <dd class="no-padding">
+                            {!mrsChipLayerlst.Layer__r.Name}
+                        </dd>
+                    </dl>
+                    <div class="clear"></div>
+                </div>
+
+                <!-- --------------- First Row Ends --------------- -->
+                <!-- --------------- Second Row Starts --------------- -->
+                
+                <div id="secondRowContentDiv" class="right-section-row no-padding-top">
+                <apex:pageMessages id="drtMessage"/>
+                <div class="error-container margin-top-10 black-font">Please confirm your 'Void' selection</div>
+                
+                <div class="perform_table">
+                <br/>
+          <apex:outputPanel id="perform_table_id" rendered="true" >  
+           <table class="data-table" id="void-chip-table">
+           
+            <thead>
+              <tr>
+                <th class="tcell-width-150">Chip</th>
+                <th class="tcell-width-150">PTRF/DRT Number</th>
+                <th class="tcell-width-163">Layer Chip Status</th>
+              </tr>
+            </thead>
+           
+            <tbody>
+              <tr>
+                <td>{!displayWrapperObj.chipName}</td>
+                <td><!--<apex:outputLink value="/{!displayWrapperObj.ptrfId}" title="{!displayWrapperObj.ptrfOrDRTNumber}" >{!displayWrapperObj.ptrfOrDRTNumber}</apex:outputLink> -->
+                
+                <!-- TASK-2469 -->
+                <!--                 
+                <apex:outputLink value="{!if(isBreadcrumbActive,'/GlobalfoundryView','')}/apex/VFMRSPTRFDetail?ptrfURL={!displayWrapperObj.ptrfId}" title="{!displayWrapperObj.ptrfOrDRTNumber}" target="_blank">{!displayWrapperObj.ptrfOrDRTNumber}</apex:outputLink>
+                -->                
+                <apex:outputLink value="{! $Label.HYPERLINK_TO_SWIFT + displayWrapperObj.ptrfOrDRTNumber }" title="{!displayWrapperObj.ptrfOrDRTNumber}" target="_blank">{!displayWrapperObj.ptrfOrDRTNumber}</apex:outputLink>
+                <!-- TASK-2469 END -->
+                
+                </td>
+                <td><center>{!displayWrapperObj.layerChipStatus}</center></td>
+              </tr>
+            </tbody>
+           
+          </table>
+        </apex:outputPanel> 
+         
+             </div>
+                 <apex:outputPanel >
+                    <dl id="secondcreatedrt" class="margin-top-10">
+                            <dt class="full-width no-margin-top">Void Reason:<span class="red-font">*</span></dt>
+                            <dd class="full-width no-margin-top">
+                           <!-- <textarea></textarea> -->
+                           
+                           <apex:inputTextarea value="{!voidReason}" id="voidId"/>
+                            </dd>        
+                    </dl> 
+                   </apex:outputPanel>
+                        <input type="button" value="Proceed" id="approve-button" class="approve-button-style" onclick="proceed();"/>
+                    <input type="button" value="Discard" id="approve-button" class="approve-button-style margin-left-30" onclick="discard();"/>
+             </div>
+
+             
+    <!-- --------------- Second Row Ends --------------- -->    
+      </div>     
+    <div class="clear"></div>
+    <!--End of container div--> 
+</div>
+<!--End of Wrapper div-->
+<apex:actionFunction name="acfn_proceed" action="{!proceed}" reRender="drtMessage,perform_table_id" oncomplete="SwiftGen.rowHover();returnToLayerChip();"/>
+
+<apex:actionFunction name="acfn_discard" action="{!discard}" />
+
+<apex:actionFunction name="acfn_exportToExcel" action="{!exportToExcel}" /> 
+<apex:actionFunction name="acfn_exportToCSV" action="{!exportToCSV}" /> 
+</apex:form>
+<script>
+ function proceed()
+ {
+     acfn_proceed();
+     
+ }
+ function discard()
+ {
+     var oldURL = document.referrer;
+     window.history.back()
+
+ }
+ function exportToExcel()
+ {
+     acfn_exportToExcel();
+ }
+ function exportToCSV()
+ {
+     
+     acfn_exportToCSV();
+ }
+ function openMyDevices() {
+     try {
+         parent.refreshPage();
+     }catch(e) {
+         window.location.reload($label.SWIFT_COMMUNITY_URL+'MyDevices');
+     }
+ }
+ function returnToLayerChip(){
+    
+    var voidDes = document.getElementById("j_id0:j_id4:voidId").value;
+    if(voidDes != null && voidDes.trim().length != 0){
+        //alert('fsdfsdfsdff');
+        window.location.href = document.referrer;
+     }
+ }
+ 
+</script>
+<script type="text/javascript" src="{!URLFOR($Resource.Swift_MRS,'js/jquery.min.js')}"></script>
+<script type="text/javascript" src="{!URLFOR($Resource.Swift_MRS,'js/leftmenu.js')}"></script>
+<script type="text/javascript" src="{!URLFOR($Resource.Swift_MRS,'js/jquery.scombobox.min.js')}"></script>
+<script type="text/javascript" src="{!URLFOR($Resource.Swift_MRS,'js/advancedDataGrid.js')}"></script>
+<script type="text/javascript" src="{!URLFOR($Resource.Swift_MRS,'js/common-script.js')}"></script>
+<script type="text/javascript" src="{!URLFOR($Resource.Swift_MRS,'js/sort.js')}"></script>
+
+</apex:page>

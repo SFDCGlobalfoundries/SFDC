@@ -1,0 +1,190 @@
+<apex:page standardController="RMA__c" extensions="RMA_MassUploadExtension" sidebar="false">
+    
+    <c:LoadingStatusSpinner />
+    <apex:sectionHeader title="RMA Edit" subtitle="{!RMA__c.Name}"/>
+    <apex:form >
+        <apex:pageMessages escape="false"/>
+        <apex:pageBlock >
+            <apex:pageBlockSection collapsible="true" columns="1" title="Instructions for Mass Upload"> 
+                <apex:pageMessage severity="INFO" title="Go through the following steps to Mass Upload the Line Items:" strength="1">
+                    1. Click on the link <i><b>'Download Template for RMA Import'</b></i> to download the template.<br/>
+                    2. Open the template and fill in Column A (Lot Number) with the Lot IDs to be claimed for the RMA.<br/>
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Please note that the Lot IDs should be the exact ID.<br/>
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;All the Lots entered should belong to the same FAB and Customer.<br/>
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;If one of the Lot is of Intercompany, then all the Lots entered should be of Intercompany type.<br/>
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;You can upload upto 100 Lots at a time.<br/>
+                    3. Column B (Adjusted Unit Price), C (Scrap Limit), D (Yield), and E(Die Quantity) are optional. Column E will be mandatory and registered if the RMA is by the Dies.<br/>
+                    4. Do not delete the headers i.e. Row 1.<br/>
+                    5. Save the file on to your desktop.<br/>
+                    6. Click the <i><b>'Choose File'</b></i> button to upload the file saved on your dektop.<br/>
+                    7. Click on <i><b>'Import RMA Invoices'</b></i>.<br/>
+                    8. All the Lot information will be automatically populated and displayed onto the screen. Make any edits as necessary. <br/>
+                    9. Click on <i><b>'Insert Line Items'</b></i> button . All the Lots are now entered in the RMA for the claim.<br/>
+                </apex:pageMessage>
+            </apex:pageBlockSection>
+            
+            <apex:pageBlockButtons location="top">
+                <apex:commandButton value="Import RMA Invoices" action="{!importCSVFile}"/>
+                <apex:commandButton action="{!ReturnToRMA}" value="Return"/>
+            </apex:pageBlockButtons>
+            <apex:pageBlockSection columns="1"> 
+                <apex:inputFile value="{!csvFileBody}"  filename="{!csvAsString}"/>
+            </apex:pageBlockSection>
+            <a href="/sfc/servlet.shepherd/version/download/{!templateId}?asPdf=false&operationContext=CHATTER">Download Template for RMA Import</a>
+            <br/><br/>
+            
+        </apex:pageBlock>
+    </apex:form>
+
+    <apex:form >
+        <apex:inputHidden value="{!RMA__c.RMA_By__c}"/>
+        <apex:inputHidden value="{!RMA__c.Customer__c}"/>
+        <apex:inputHidden value="{!RMA__c.Fab__c}"/>
+        
+        <apex:pageBlock rendered="{!lstRMARIwrapper.Size>0}" id="pageBlockId" >
+            <apex:pageBlockButtons >
+                <apex:commandButton action="{!InsertLineItems}" value="Insert Line Items"/>
+                <!--<apex:commandButton action="{!ReturnToRMA}" value="Return"/>-->
+            </apex:pageBlockButtons>
+            
+            <apex:pageBlockTable value="{!lstRMARIwrapper}" var="rmaInvWrap">
+                <apex:column headerValue="Select"><apex:inputCheckbox value="{!rmaInvWrap.isSelected}"/></apex:column>
+                <apex:column value="{!rmaInvWrap.rmaInv.Lot_Number__c}"/>
+                <apex:column value="{!rmaInvWrap.rmaInv.Invoice_Number__c}"/>
+                <apex:column value="{!rmaInvWrap.rmaInv.Invoice_Date__c}"/>
+                <apex:column value="{!rmaInvWrap.rmaInv.Fab_Group__c}"/>
+                <apex:column headerValue="Intercompany?" rendered="{!RMA__c.Fab__c != 'FAB 9' && RMA__c.Fab__c != 'FAB 10' && RMA__c.Fab__c != 'ALTIS'}">
+                    <apex:inputCheckbox value="{!rmaInvWrap.isIntercompany}" disabled="true"/>
+                </apex:column>
+                <apex:column value="{!rmaInvWrap.rmaInv.Purchase_Order_Number__c}"/>
+                <apex:column value="{!rmaInvWrap.rmaInv.Device__c}"/>
+                <apex:column value="{!rmaInvWrap.rmaInv.Process__c}"/>
+                <apex:column value="{!rmaInvWrap.rmaInv.Scrap_Limit__c}"/>
+                <apex:column value="{!rmaInvWrap.rmaInv.Wafer_Yield__c}"/>
+                <apex:column value="{!rmaInvWrap.rmaInv.GDPW__c}"/>
+                <apex:column value="{!rmaInvWrap.rmaInv.Bill_Quantity__c}"/>
+                <apex:column rendered="{!RMA__c.RMA_By__c == 'Die'}">
+                    <apex:facet name="header">Die Quantity<br/>(CSR Submission)</apex:facet>
+                    <apex:outputField value="{!rmaInvWrap.rmaInv.Die_Quantity__c}"/>
+                </apex:column>
+                <apex:column rendered="{!RMA__c.RMA_By__c == 'Module'}">
+                    <apex:facet name="header">Module Quantity<br/>(CSR Submission)</apex:facet>
+                    <apex:outputField value="{!rmaInvWrap.rmaInv.Module_Quantity__c}"/>
+                </apex:column>
+                <apex:column rendered="{!RMA__c.RMA_By__c == 'Wafer' && (RMA__c.Fab__c != 'FAB 9' && RMA__c.Fab__c != 'FAB 10' && RMA__c.Fab__c != 'ALTIS')}">
+                    <apex:facet name="header">Wafer Id<br/>(CSR Submission)</apex:facet>
+                    <apex:outputField value="{!rmaInvWrap.rmaInv.Wafer_Id_CSR_Submission__c}" />
+                </apex:column>
+                <apex:column rendered="{!RMA__c.RMA_By__c == 'Wafer' && (RMA__c.Fab__c == 'FAB 9' || RMA__c.Fab__c == 'FAB 10' || RMA__c.Fab__c == 'ALTIS')}">
+                    <apex:facet name="header">Wafer Id<br/>(CSR Submission)</apex:facet>
+                    <apex:outputField value="{!rmaInvWrap.rmaInv.Wafer_Id_Fab_9_10_CSR_Submission__c}" />
+                </apex:column>                
+                <apex:column headerValue="Unit Selling Price" value="{!rmaInvWrap.UnitPrice}" rendered="{!RMA__c.RMA_By__c != 'Die'}"/>
+                <apex:column headerValue="Die Selling Price" value="{!rmaInvWrap.rmaInv.Die_Selling_Price__c}" rendered="{!RMA__c.RMA_By__c == 'Die'}"/>
+                <apex:column headerValue="Adjusted Unit Price" rendered="{!RMA__c.ReasonCode__c != 'R81'}" value="{!rmaInvWrap.AdjtPrice}"/>
+                <apex:column rendered="{!RMA__c.ReasonCode__c == 'R81'}">
+                    <apex:facet name="header">Existing Form<br/>Factor Price</apex:facet>
+                    <apex:outputText value="{!rmaInvWrap.AdjtPrice}" />
+                </apex:column>
+                                
+                <apex:column rendered="{!RMA__c.ReasonCode__c == 'R81'}">
+                    <apex:facet name="header">Existing Form<br/>Factor Quantity</apex:facet>
+                    <apex:outputText value="{!rmaInvWrap.rmaInv.Existing_Form_Factor_Quantity__c}" />
+                </apex:column>
+                
+                <apex:column rendered="{!RMA__c.ReasonCode__c == 'R81'}">
+                    <apex:facet name="header">Existing Form<br/>Factor</apex:facet>
+                    <apex:outputText value="{!rmaInvWrap.rmaInv.Existing_Form_Factor__c}" />
+                </apex:column>
+                
+                <apex:column headerValue="Action">
+                    <apex:commandButton value="Edit" action="{!EditLotInfo}" status="LoadingStatusSpinner" reRender="tstpopup" style="float:right;">
+                        <apex:param name="WaferToEdit" value="{!IF(RMA__c.Fab__c != 'FAB 9' && RMA__c.Fab__c != 'FAB 10' && RMA__c.Fab__c != 'ALTIS',rmaInvWrap.rmaInv.Wafer_Id_CSR_Submission__c,rmaInvWrap.rmaInv.Wafer_Id_Fab_9_10_CSR_Submission__c)}" assignTo="{!WaferToEdit}"/>
+                        <apex:param name="LotInvToEdit" value="{!rmaInvWrap.rmaInv.Lot_Number__c}" assignTo="{!LotInvToEdit}"/>
+                        <apex:param name="InvNumToEdit" value="{!rmaInvWrap.rmaInv.Invoice_Number__c}" assignTo="{!InvNumToEdit}"/>
+                    </apex:commandButton>
+                </apex:column>
+            </apex:pageblocktable>
+        </apex:pageBlock>
+        
+        <apex:outputPanel id="tstpopup">
+            <apex:pageBlock rendered="{!showPopUp}">
+                <apex:outputPanel styleClass="popupBackground" layout="block"/>
+                <apex:outputPanel styleClass="custPopup" layout="block">
+                <apex:pageMessages id="LotEditBeforeInsert"/>
+                    <apex:pageBlockSection title="Edit the Line Item Selection" columns="1">
+                        <apex:outputText value="{!WaferToEdit}" label="Initial Wafer Selection" rendered="{!RMA__c.RMA_By__c == 'Wafer'}"/>
+                        <apex:pageBlockSection id="testId" rendered="{!RMA__c.RMA_By__c == 'Wafer' || ItemType == 'SD'}">
+                            <apex:pageBlockSectionItem >
+                                Select Wafers (New Selection)
+                                <c:MultiselectPicklist leftLabel="Available" 
+                                leftOption="{!leftOptions}"
+                                rightLabel="Chosen"
+                                rightOption="{!rightOptions}"
+                                size="5"
+                                width="120px"/>
+                            </apex:pageBlockSectionItem>
+                        </apex:pageblockSection>
+                        <apex:pageBlockSection >
+                            <apex:inputText value="{!waferYield}" label="Wafer Yield"/>
+                            <apex:inputText value="{!adjustedPrice}" label="{!IF(RMA__c.ReasonCode__c != 'R81','Adjusted Unit Price','Existing Form Factor Price')}"/>
+                            <apex:inputText value="{!scrapLimit}" label="Scrap Limit"/>
+                            <apex:inputText value="{!dieQuantity}" label="Die Quantity" rendered="{!RMA__c.RMA_By__c == 'Die'}"/>
+                            <apex:inputText value="{!formFactorQuantity}" label="Existing Form Factor Quantity" rendered="{!RMA__c.ReasonCode__c == 'R81'}"/>
+                            <apex:inputText value="{!modQuantity}" label="Module Quantity" rendered="{!RMA__c.RMA_By__c == 'Module'}"/>
+                            <apex:selectList value="{!formFactor}" multiselect="false" size="1" label="Existing Form Factor" rendered="{!RMA__c.ReasonCode__c == 'R81'}">
+                                <apex:selectOption itemValue="" itemLabel="--None--"/>
+                                <apex:selectOption itemValue="Die" itemLabel="Die"/>
+                                <apex:selectOption itemValue="Die on Wafer" itemLabel="Die on Wafer"/>
+                                <apex:selectOption itemValue="Module" itemLabel="Module"/>
+                                <apex:selectOption itemValue="Module on Card" itemLabel="Module on Card"/>
+                                <apex:selectOption itemValue="Wafer" itemLabel="Wafer"/>
+                                <apex:selectOption itemValue="Wafer Carcass" itemLabel="Wafer Carcass"/>
+                            </apex:selectList>
+                        </apex:pageBlockSection>
+                    </apex:pageBlockSection>
+                    <center>
+                        <apex:commandButton value="Update" 
+                                            action="{!UpdateLineItems}"
+                                            rerender="tstpopup,pageBlockId" 
+                                            status="LoadingStatusSpinner"/>
+                                            
+                        <apex:commandButton value="Cancel" 
+                                            action="{!CancelPopup}"
+                                            rerender="tstpopup,pageBlockId" 
+                                            status="LoadingStatusSpinner"/>
+                                            
+                    </center>
+                </apex:outputPanel>
+            </apex:pageBlock>
+        </apex:outputPanel>
+        
+    </apex:form>
+    
+    <style>
+        .custPopup{
+            background-color: white;
+            border-width: 2px;
+            border-style: solid;
+            z-index: 200;
+            left: 50%;
+            padding:10px;
+            position: absolute;
+            width: 600px;
+            margin-left: -300px;
+            top:50px;
+        }  
+        .popupBackground{
+            background-color:black;
+            opacity: 0.20;
+            filter: alpha(opacity = 20);
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            z-index: 199;
+        }
+    </style>
+    
+</apex:page>

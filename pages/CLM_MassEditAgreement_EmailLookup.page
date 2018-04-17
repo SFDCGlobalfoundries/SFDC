@@ -1,0 +1,74 @@
+<!-- 
+   Type Name: CLM_Mass Edit Agreement_EmailLookup.page
+   Author: Ruchi Talwaria
+   Purpose:- To alleviate the need to update bulk agreements manually for particular set of fields on click of Mass Edit button on list view page.
+
+   Change History: 
+   Author: 
+   Modified Date: 
+-->
+
+<apex:page title="LookUp" controller="CLM_AgreementMassEditCntrlExt" readOnly="true" action="{!userEmailLookUp}" sidebar="false" showChat="false" showHeader="false" tabStyle="Apttus__APTS_Agreement__c">
+    <script>
+    function sendemailIds(rowno){
+        var tableval = document.getElementById('{!$Component.lookupform:selectuserblock:selectusertable}');
+        var emailstoSend = ''; 
+        row = tableval.rows[rowno];
+        var unformemail_1 = '';     
+             var unformemail1 = row.cells[1].lastChild.innerHTML;
+             if(unformemail1 != ''){                       
+                 unformemail_1 = unformemail1.split(">")[1];
+             }
+             if(unformemail_1 != ''){
+                 unformemail_1 = unformemail_1.slice(0, -3);  
+             }  
+             if(unformemail_1 != ''){
+                 if(emailstoSend == ''){
+                     emailstoSend = unformemail_1;
+                 } 
+             }               
+            
+            if(emailstoSend != ''){
+                top.window.opener.callParent(emailstoSend,'{!sClass}');
+                top.close();
+            } 
+        }
+    </script>
+    
+    <style>
+        .headerRow .headerStyle{
+        font-size:13px !important;
+        }
+        
+        .panelWrapper .mainTitle{
+        font-size:18px !important;
+        } 
+        
+        .message{
+    	font-size:15px !important;
+        font-weight:Normal !important;
+        } 
+        
+    </style>
+    
+    <apex:form id="lookupform">
+        <apex:outputPanel styleClass="panelWrapper" layout="block">
+            <apex:pageBlock title="Select User" id="selectuserblock">
+                <b>Search for User:</b>&nbsp;
+            <apex:inputText value="{!searchvalue}" title="Search for User"/>&nbsp;&nbsp;
+            <apex:commandButton value="Search" action="{!userEmailLookUp}"/>
+            <apex:pageMessages id="pagemessage"/>
+            <apex:variable value="{!1}" var="rowno"/>
+            <apex:pageBlockTable value="{!userlist1}" var="eachUser" id="selectusertable">
+                <apex:column headerValue="Name" onclick="sendemailIds('{!rowno}');" headerClass="headerStyle">
+                    <apex:variable var="rowno" value="{!rowno+1}"/>
+                    <a id="{!eachUser.Id}" style="cursor:pointer;">{!eachUser.Name}</a>
+                </apex:column>
+                <apex:column headerValue="User Email" value="{!eachUser.Email}" headerClass="headerStyle"/>              
+                <apex:column value="{!eachUser.MobilePhone}" headerValue="Mobile Phone" headerClass="headerStyle"/>                
+                <apex:column value="{!eachUser.Manager.Name}" headerValue="User Manager" headerClass="headerStyle"/>
+            </apex:pageBlockTable> 
+        </apex:pageBlock>
+        </apex:outputPanel>                    
+    </apex:form>
+</apex:page>

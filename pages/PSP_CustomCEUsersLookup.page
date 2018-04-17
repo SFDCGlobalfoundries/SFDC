@@ -1,0 +1,59 @@
+<!--
+    Label:  PSP_CustomCEUsersLookup
+    Author: Deepti Narayan Biswal
+    Description: This page has Functionality to select CE users in a lookup window.
+    History:
+    DBiswal    04072016    Created.
+    DBiswal    05302017    Added user lookup for ASIC.
+-->
+<apex:page title="User Lookup" controller="PSP_CustomCEUsersLookupController" showChat="false" showHeader="false" sidebar="false" tabStyle="Account_Team_Proxy__c">
+    
+    <apex:form id="ceform">
+        <apex:pageBlock title="{!IF(asicFlag=='true','Search Users','CE Users')}" tabStyle="Account_Team_Proxy__c" id="cepb">
+            <apex:pageMessages id="pgMsg" />
+            <apex:outputPanel id="searchop" rendered="{!IF(asicFlag=='true',true,false)}">
+                <apex:inputText id="usersearch" value="{!userval}" style="width:34%" onkeypress="return enterfunction(event);"/>&nbsp;&nbsp;
+                <apex:commandButton value="Go!" action="{!searchUsers}" reRender="cepb" status="searchstat"/>
+                <apex:actionFunction name="refresh" action="{!searchUsers}" status="searchstat"/>
+                <apex:actionStatus id="searchstat" >
+                    <apex:facet name="start" >
+                      <img src="/img/loading.gif" />                    
+                    </apex:facet>
+                </apex:actionStatus>
+            </apex:outputPanel>
+            <br/><br/>
+            <apex:pageblockTable value="{!listceUsers}" var="ceuser" id="cetable"  rendered="{!listceUsers.size > 0}">
+                
+                <apex:column headerValue="Name">
+                    <apex:outputLink value="javascript:sendceIds('{!ceuser.Id}','{!ceuser.Name}');" onclick="if(navigator.userAgent.toLowerCase().indexOf('firefox') <= -1){window.close();}">{!ceuser.Name}</apex:outputLink>
+                    <script>
+                      function sendceIds(id,name){
+                          var recId = id;
+                          var recName = name;
+                          
+                          top.opener.document.getElementById('devMilestone:form1:pb1:inputuserIdHidden').value= recId ; 
+                          top.opener.document.getElementById('devMilestone:form1:pb1:ceinput').value= recName;
+                          window.close();
+                      }
+                      //handle enter key
+                      function enterfunction(e){
+                          var keynum;
+                          if(window.event)
+                          {
+                              keynum = e.keyCode;
+                          }            
+                          if(keynum == 13) 
+                          { 
+                              refresh();
+                              return false; 
+                          }
+                      }
+                    </script>
+                </apex:column>
+                <apex:column value="{!ceuser.Title}" headerValue="Title"/>
+                <apex:column value="{!ceuser.Email}" headerValue="Email"/>
+                <apex:column value="{!ceuser.Phone}" headerValue="Phone"/>
+            </apex:pageblockTable>            
+        </apex:pageBlock>
+    </apex:form>
+</apex:page>

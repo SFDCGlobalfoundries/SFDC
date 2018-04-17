@@ -1,0 +1,103 @@
+<!-- 
+Type Name: VFR_RTeamRoomHomePage.page
+Author: Global Foundries (Dinesh Suggala) 
+Created Date: 14th July 2017
+Reason: This Page is used for overriding the visualforce tab "R Team Rooms"
+Change History:
+Author: Dinesh Suggala
+Modified Date: 18/10/2017
+Reason:Added the code to hide New button
+Author:Dinesh Suggala
+Modified Date:26/2/2018
+Reason:Updated the code with hostname instead of href
+ -->
+<apex:page StandardController="Restricted_Team_Room__c" tabstyle="R_Team_Rooms__tab" extensions="cls_RTeamRoomHomeController">
+<!--<apex:includeScript value="//ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js" />
+<apex:includeScript value="//cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.17.8/js/jquery.tablesorter.min.js" />
+<apex:stylesheet value="//cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.17.8/css/theme.blue.css" />-->
+<apex:includeScript value="{!$Resource.JqueryD}"/>
+<apex:includeScript value="{!URLFOR($Resource.tablesorter, 'tablesorter-master/dist/js/jquery.tablesorter.min.js')}"/>
+<apex:stylesheet value="{!URLFOR($Resource.tablesorter, 'tablesorter-master/dist/css/theme.blue.css')}" />
+
+
+ <apex:sectionHeader title="R Team Room " subtitle="Home" help="https://help.salesforce.com/articleView?id=co_overview.htm&siteLang=en_US&type=0"/>
+ <script>
+        function checkloggedinURL(rteamroom,event){
+           var hostname=window.location.hostname;
+           if(hostname.indexOf('{!$Setup.GlobalFoundry_View__c.CipherCloudURLCheck__c}')==-1 ) {
+            alert('In order to access the Team Room ,Please use ITAR Login URL');
+           } 
+           else{      
+            window.open('{!Isportal}'=='false' ? '/GlobalfoundryView/apex/VFR_TeamRoomDetail?id='+rteamroom :'/apex/VFR_TeamRoomDetail?id='+rteamroom ,'_blank');                      
+           }
+         }  
+         
+         
+      $(document).ready(function(){          
+          tablesort(); 
+          HideButton();          
+           });     
+           
+           function tablesort(){
+            $("[id$='rTable']").tablesorter({theme: 'blue'});
+           }
+		   
+		   //Added by Dinesh on 18/10/2017
+		   function HideButton(){
+           
+           var hostname=window.location.hostname;
+           if(hostname.indexOf('{!$Setup.GlobalFoundry_View__c.CipherCloudURLCheck__c}')==-1 ) {
+            $("[id$='newbtn']").hide();
+            }
+           
+           }
+  </script>       
+ <apex:form id="form1">
+   <apex:actionRegion >
+   <apex:selectList value="{!RFilterId}" size="1" id="filterMenu">View:
+            <apex:selectOptions value="{!RTeamExistingViews}"></apex:selectOptions>
+            <apex:actionSupport event="onchange"  action="{!resetFilter}" rerender="rTable" status="ajaxStatus"  oncomplete="tablesort(); return false;"/>
+   </apex:selectList>
+   </apex:actionRegion>
+   <br/><br/><br/>
+ <apex:pageBlock > 
+   <apex:pageblockButtons location="top">
+    <apex:commandButton value="New" action="{!newpage}" rendered="{!Isportal}" id="newbtn"/>
+   </apex:pageblockButtons>
+  <apex:actionStatus id="ajaxStatus" startText="Loading..."  stopText=""/>
+  <apex:pageBlockSection title="R Team Room" columns="1">
+  <apex:outputLabel rendered="{!RTeamRooms.size==0}">No records to display</apex:outputLabel> 
+  <apex:pageBlockTable value="{!RTeamRooms}" var="rteam" id="rTable" styleClass="tablesort">
+  
+  <apex:column headerValue="Restricted Team Room Name">
+     <apex:outputLink onclick="checkloggedinURL('{!rteam.Id}',event); return false;">{!rteam.Name}</apex:outputLink>   
+   </apex:column>
+   
+   <apex:column headerValue="Record Type">
+    <apex:outputtext value="{!rteam.RecordType.Name}"/>
+   </apex:column>
+   
+   <apex:column headerValue="Primary Account">
+     <apex:outputtext value="{!rteam.R_Primary_Account__r.Name}"/>
+   </apex:column>
+   
+   <apex:column headerValue="Created By">
+     <apex:outputtext value="{!rteam.CreatedBy.Name}"/>
+   </apex:column>
+
+    <apex:column headerValue="CreatedDate ">
+     <apex:outputtext value="{0,date,MM/dd/yy}">
+      <apex:param value="{!rteam.CreatedDate }"/>
+     </apex:outputtext>
+   </apex:column>   
+  </apex:pageBlockTable>
+  </apex:pageBlockSection>
+   <apex:pageBlockButtons location="bottom">
+                <apex:commandButton action="{!firstPage}" value="|<<" reRender="rTable"  status="ajaxStatus" oncomplete="tablesort(); return false;"/>
+                <apex:commandButton action="{!prev}" value="Previous" reRender="rTable"  status="ajaxStatus" oncomplete="tablesort(); return false;"/>
+                <apex:commandButton action="{!next}" value="Next" reRender="rTable"  status="ajaxStatus" oncomplete="tablesort(); return false;"/>
+                <apex:commandButton action="{!lastPage}" value=">>|" reRender="rTable"  status="ajaxStatus" oncomplete="tablesort(); return false;"/>
+   </apex:pageBlockButtons>
+ </apex:pageBlock>
+ </apex:form>
+</apex:page>

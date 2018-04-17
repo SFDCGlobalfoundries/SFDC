@@ -1,0 +1,109 @@
+<!--
+* Author: Sakthi
+* Project: Global Foundries 
+* Description: Page is created for selecting the milestone and showing the approved signoff details.
+* History:
+*    Sandesh 25/09/2016 Add logic to hide and display checkbox based in the permission set of logged in user. 
+-->
+<apex:page controller="DesignExecutionSignOffController" tabStyle="Custom_Design__c" action="{!listOfApprovedMileStoneRecords}">
+    <apex:form >
+        <div>
+            <apex:actionRegion renderRegionOnly="false">
+                <apex:outputPanel id="popup">
+                    <apex:outputPanel styleClass="popupBackground" layout="block" rendered="{!displayPopUp}"/>
+                    <apex:outputPanel styleClass="customPopup" layout="block" rendered="{!displayPopUp}">
+                        <apex:outputText style="font-style:italic;color:Red;font-weight:bold" value="Are you sure you want to reset?"/>
+                        <br/><br/>
+                        <apex:commandButton value="Ok" action="{!resetSignOffDetail}" rerender="popup"/>
+                        <apex:commandButton value="Cancel" action="{!closePopup}" rerender="popup"/>
+                    </apex:outputPanel>
+                </apex:outputPanel>
+            </apex:actionRegion>
+        </div>    
+        <apex:pageBlock >
+          <apex:pageMessages id="showmsg"></apex:pageMessages>
+          <div>
+                <table border="0" width="100%">
+                   <tr>
+                        <td style="width:25%">
+                            <b> RTx Checklist: </b> 
+                            <apex:selectList value="{!selectedRT}" size="1" multiselect="false" >
+                                <apex:selectOptions value="{!SignOffRTDetail}" />                    
+                            </apex:selectList>
+                        </td>
+                        <td style="width:5%">&nbsp;</td>
+                        <td style="width:70%">
+                            <apex:pageBlockTable value="{!listOfsignOffModue}" var="sfps">
+                                <apex:column headerValue="Stage" >
+                                    <apex:outputLink value="/apex/DesignExecutionSignOff?deId={!sfps.Design_Execution__c}&RTName={!sfps.stage__c}" rendered="{!NOT(BEGINS(sfps.stage__c,'RTM'))}">{!sfps.stage__c}</apex:outputLink>
+                                    <apex:outputLink value="/apex/DesignExecutionSignOffRTM?deId={!sfps.Design_Execution__c}&RTName={!sfps.stage__c}" rendered="{!BEGINS(sfps.stage__c,'RTM')}">{!sfps.stage__c}</apex:outputLink>
+                                    </apex:column>
+                                <apex:column headerValue="RIT Type" value="{!sfps.Design_Execution__r.Option__r.RIT_Type__c}"/>
+                                <apex:column headerValue="PE Approval" > 
+                                    <apex:outputText rendered="{!AND(sfps.PE_Approval__c ==null,NOT(BEGINS(sfps.stage__c,'RTM')),NOT(BEGINS(sfps.stage__c,'RTC')))}">Not Req.</apex:outputText>
+                                    <apex:outputPanel rendered="{!sfps.PE_Approval_User__c !=null}">
+                                    	(<apex:outputField label="" value="{!sfps.PE_Approval_User__c}"/>)&nbsp;
+                                    </apex:outputPanel>
+                                    <apex:outputPanel rendered="{!AND(sfps.PE_Approval_Name__c !=null, sfps.PE_Approval_User__c ==null, sfps.PE_Approval__c !=null)}">
+                                    	(<apex:outputField label="" value="{!sfps.PE_Approval_Name__c}"/>)&nbsp;
+                                    </apex:outputPanel>
+                                    <apex:outputText value="{0,date,MM'/'dd'/'yyyy}" rendered="{!sfps.PE_Approval__c !=null}">
+                                        <apex:param value="{!sfps.PE_Approval__c}" />
+                                    </apex:outputText>
+                                </apex:column>
+                                <apex:column headerValue="PD Approval" >
+                                    <apex:outputText rendered="{!sfps.PD_Approval__c ==null}"></apex:outputText>
+                                    <apex:outputPanel rendered="{!sfps.PD_Approval_User__c !=null}">
+                                    	(<apex:outputField label="" value="{!sfps.PD_Approval_User__c}" />)&nbsp;
+                                    </apex:outputPanel>
+                                    <apex:outputPanel rendered="{!AND(sfps.PD_Approval_User__c ==null, sfps.PD_Approval_Name__c !=null, sfps.PD_Approval__c !=null)}">
+                                    	(<apex:outputField label="" value="{!sfps.PD_Approval_Name__c}"/>)&nbsp;
+                                    </apex:outputPanel>
+                                    <apex:outputText value="{0,date,MM'/'dd'/'yyyy}" rendered="{!sfps.PD_Approval__c !=null}">
+                                        <apex:param value="{!sfps.PD_Approval__c}" />
+                                    </apex:outputText>
+                                </apex:column>
+                                <apex:column headerValue="DCE Approval" >
+                                    <apex:outputText rendered="{!sfps.DCE_Approval__c ==null}"></apex:outputText>
+                                    <apex:outputPanel rendered="{!sfps.DCE_Approval_User__c !=null}">
+                                    	(<apex:outputField label="" value="{!sfps.DCE_Approval_User__c}" />)&nbsp;
+                                    </apex:outputPanel>
+                                    <apex:outputPanel rendered="{!AND(sfps.DCE_Approval_User__c ==null, sfps.DCE_Approval_Name__c !=null, sfps.DCE_Approval__c !=null)}">
+                                    	(<apex:outputField label="" value="{!sfps.DCE_Approval_Name__c}"/>)&nbsp;
+                                    </apex:outputPanel>
+                                    <apex:outputText value="{0,date,MM'/'dd'/'yyyy}" rendered="{!sfps.DCE_Approval__c !=null}">
+                                        <apex:param value="{!sfps.DCE_Approval__c}" />
+                                    </apex:outputText>
+                                </apex:column>
+                                <apex:column headerValue="AE Approval" >
+                                    <apex:outputText rendered="{!sfps.AE_Approval__c ==null}"></apex:outputText>
+                                    <apex:outputPanel rendered="{!sfps.AE_Approval_User__c !=null}">
+                                         (<apex:outputField label="" value="{!sfps.AE_Approval_User__c}" />)&nbsp;
+                                    </apex:outputPanel>
+                                    <apex:outputPanel rendered="{!AND(sfps.AE_Approval_User__c ==null, sfps.AE_Approval_Name__c !=null, sfps.AE_Approval__c !=null)}">
+                                    	(<apex:outputField label="" value="{!sfps.AE_Approval_Name__c}"/>)&nbsp;
+                                    </apex:outputPanel>
+                                    <apex:outputText value="{0,date,MM'/'dd'/'yyyy}" rendered="{!sfps.AE_Approval__c !=null}">
+                                        <apex:param value="{!sfps.AE_Approval__c}" />
+                                    </apex:outputText>
+                                </apex:column>
+                           </apex:pageBlockTable> 
+                           <apex:outputText value="No records are available currently" rendered="{!listOfsignOffModue.size ==0}"/> 
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="width:35%">
+                            <apex:commandButton value="Continue" action="{!OpenSignOffForm}" /> &nbsp;&nbsp;
+                            <apex:commandButton value="Back to Design Phase Form" action="{!cancelExecutionDetail}"/> 
+                            <apex:commandButton value="Send Sign-off Notification" action="{!sendSignOffTeamMemberEmail}" />
+                            <apex:commandButton value="Reset Sign-off" action="{!showPopup}" rendered="{!resetBtnDisp}"/>
+                        </td>
+                        <td style="width:5%">&nbsp;</td>
+                        <td style="width:60%">&nbsp;</td>
+                    </tr>
+                    
+                </table>
+            </div>
+        </apex:pageBlock>
+    </apex:form>
+</apex:page>

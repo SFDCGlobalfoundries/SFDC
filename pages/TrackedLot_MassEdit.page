@@ -1,0 +1,114 @@
+<!--
+    Author: Nikhil Jain
+    Description: This serves as the visualforce page for the 'Mass Edit' of 'Tracked Lot' records associated to particular 'Lot Tracker' record.
+    History: 
+        NJain    20/12/2013    - page creation.
+        NJain    24/01/2014    - Changed the field referenced for Planned F/O Date from Project_Fabout_Date__c to Planned_Fabout_Date__c
+        NJain    07/02/2014    - Replaced 'Customer Device Id' with 'Device Id(MES)'
+-->
+<apex:page standardController="Tracked_Lot__c" recordSetVar="unused" sidebar="false" extensions="TrackedLotMassEditExtension">
+    
+    <style type="text/css">
+        .headerRow{
+            background-color: #D6ECFF !important;
+            font-size:100% !important; 
+        }
+        .dateFormat{
+             visibility:hidden;
+             display:none;
+        }
+    </style>
+    <c:loadingPanel ></c:loadingPanel>
+    
+    <apex:includeScript value="{!$Resource.UtilJS}" />
+    <apex:form >
+        <apex:pageBlock title="Mass Edit for Tracker Lots">
+            <apex:pageBlockButtons >
+                <!--<apex:commandButton value="Save" action="{!save}" rendered="{!noRecordsSelected==false}" />--->
+                <apex:commandButton value="Save" action="{!saveCustom}" rendered="{!noRecordsSelected==false}" rerender="LoadingStatusSpinner,pageMessage" status="LoadingStatusSpinner"/>
+                <apex:commandButton value="Return" action="{!cancel}"/>
+            </apex:pageBlockButtons>
+            
+            <apex:pageMessages id="pageMessage"/>
+            
+            <apex:pageBlockSection columns="1">
+                <apex:outputText style="font-weight:bold;color:red;" value="No Tracked Lot records were selected for Mass Edit, please go back and select 1 or more records." rendered="{!noRecordsSelected}" /> 
+                <apex:outputText style="font-weight:bold;" value="Note: All modifications made on the page will be lost if Return button is clicked without clicking the Save button first." rendered="{!noRecordsSelected == false}" /> 
+            </apex:pageBlockSection>
+            
+            <apex:pageBlockTable id="tableN" value="{!selected}" var="a" border="2px;">
+                <apex:column style="height:50px; background-color: #F0F8FF !important;border:1.0px solid lightgray;" >                               
+                          <apex:facet name="header">Fab</apex:facet>
+                          <apex:outputField value="{!a.Manufacturing_Lot__r.Fab_Group__c}"/>                                                                              
+                </apex:column>
+                <apex:column style="height:50px;border:1.0px solid lightgray;">                               
+                          <apex:facet name="header">Type</apex:facet>
+                          <apex:inputField value="{!a.Type__c}" style="font-weight:bold;"/>                                                                              
+                </apex:column>
+                <apex:column style="height:50px;text-align:center; background-color: #F0F8FF !important;border:1.0px solid lightgray;"  >                               
+                          <apex:facet name="header">Tech</apex:facet>
+                          <apex:outputField value="{!a.Geometry__c}"/>
+                </apex:column>
+                <apex:column style="height:50px;border:1.0px solid lightgray;"  >                               
+                          <apex:facet name="header">PO#</apex:facet>
+                          <apex:outputField value="{!a.Manufacturing_Lot__r.Purchase_Order_Number__c}"/>                                                                              
+                </apex:column>
+                <apex:column style="height:50px;border:1.0px solid lightgray;"  >                               
+                          <apex:facet name="header">GDPW </apex:facet>
+                          <apex:inputField value="{!a.GDPW__c}" style="font-weight:bold;width:50px;"/>                                                                              
+                </apex:column>
+                <apex:column style="height:50px; background-color: #F0F8FF !important;border:1.0px solid lightgray;"  >                               
+                          <apex:facet name="header">Device</apex:facet>
+                          <apex:outputText value="{!a.Manufacturing_Lot__r.Device_ID_MES__c}" style="font-weight:bold;"/>                                                                              
+                </apex:column>
+                <apex:column style="height:50px; background-color: #F0F8FF !important;border:1.0px solid lightgray;"  >                               
+                          <apex:facet name="header">Lot ID</apex:facet>
+                          <apex:outputText value="{!a.Manufacturing_Lot__r.name}" style="font-weight:bold;"/>                                                                              
+                </apex:column>
+                <apex:column style="height:50px;border:1.0px solid lightgray;"  >                               
+                          <apex:facet name="header">Qty</apex:facet>
+                          <apex:inputField value="{!a.QTY_Description__c}" style="font-weight:bold;width:50px;"/>                                                                              
+                </apex:column>
+                <apex:column style="height:50px; text-align:center;background-color: #F0F8FF !important;border:1.0px solid lightgray;"  >                               
+                          <apex:facet name="header">WIP QTY</apex:facet>
+                          <apex:outputField value="{!a.Manufacturing_Lot__r.Current_Wafer_Quantity_In_Lot__c}"/>                                                                              
+                </apex:column>
+                <apex:column style="height:50px;border:1.0px solid lightgray;" >                               
+                          <apex:facet name="header">T/o Date</apex:facet>
+                          <apex:inputField value="{!a.Tapeout_Date__c}" style="font-weight:bold;"/>                                                                              
+                </apex:column>
+                <apex:column style="height:50px;border:1.0px solid lightgray;" >                               
+                          <apex:facet name="header">Proj Reticle ETA</apex:facet>
+                          <apex:inputField value="{!a.Reticle_ETA__c}" style="font-weight:bold;"/>                                                                              
+                </apex:column>
+                <apex:column style="height:50px; background-color: #F0F8FF !important;border:1.0px solid lightgray;"  >                               
+                          <apex:facet name="header">Planned<br/>F/o Date</apex:facet>
+                          <apex:outputText value="{0,date,MM'/'dd'/'yyyy}">
+                              <apex:param value="{!a.Manufacturing_Lot__r.Planned_Fabout_Date__c}"/>                                                                              
+                          </apex:outputText>    
+                </apex:column>
+                <apex:column style="height:50px; background-color: #F0F8FF !important;border:1.0px solid lightgray;"  >                               
+                          <apex:facet name="header">CSD</apex:facet>
+                          <apex:outputField value="{!a.Current_CSD_ML__c}"/>                                                                              
+                </apex:column>
+                <apex:column style="height:50px;text-align:center; background-color: #F0F8FF !important;border:1.0px solid lightgray;"  >                               
+                          <apex:facet name="header">Current <br/>Stage</apex:facet>
+                          <apex:outputField value="{!a.Current_Stage_ML__c}"/>                                                                              
+                </apex:column>
+                <apex:column style="height:50px;text-align:center; background-color: #F0F8FF !important;border:1.0px solid lightgray;"  >                               
+                          <apex:facet name="header">Bal ML</apex:facet>
+                          <apex:outputField value="{!a.Remaining_Mask_Count__c }"/>                                                                              
+                </apex:column>
+                <apex:column style="height:50px; text-align:center;background-color: #F0F8FF !important;border:1.0px solid lightgray;"  >                               
+                          <apex:facet name="header">Total<br/>Mask</apex:facet>
+                          <apex:outputField value="{!a.Manufacturing_Lot__r.Total_Mask_Count__c}"/>                                                                              
+                </apex:column>
+                <apex:column style="height:50px;border:1.0px solid lightgray;"  >                               
+                          <apex:facet name="header">Remarks</apex:facet>
+                          <apex:inputField value="{!a.Remarks__c}" style="font-weight:bold;"/>                                                                              
+                </apex:column>
+            </apex:pageBlockTable>  
+        </apex:pageBlock>
+    </apex:form>
+    
+</apex:page>

@@ -1,0 +1,216 @@
+<!--
+* Author: Anil Kumar
+* Company: JK Technosoft
+* Project: MPW
+* Description: Used for viewing and setting notification interval for Assignment already done
+* History:
+*    Anil Kumar 31/05/2016  - Created
+-->
+<apex:page title="Manufacturing Lot Assignment Summary" controller="MPWLotAssignmentSummaryController" showHeader="true" sidebar="true" id="lotassignid" >
+    <apex:includeScript value="{!URLFOR($Resource.MPWAssignment, '/MPWAssignment/jquery-1.10.2.js')}" />
+    <apex:includeScript value="{!URLFOR($Resource.MPWAssignment, '/MPWAssignment/jquery-ui.js')}" />
+    
+    <apex:stylesheet value="{!URLFOR($Resource.MPWAssignment, '/MPWAssignment/MPWLotAssignmentSummaryCSS.css')}" />
+    <apex:includeScript value="{!URLFOR($Resource.MPWAssignment, '/MPWAssignment/MPWLotAssignmentSummaryJS.js')}" />
+    
+    <style>
+        .mpw-popup {
+            width: 80%;
+            left: 10%;
+        }
+    </style>
+    
+    <div class="mpw-main" >
+    
+        <apex:outputpanel id="err" >
+            <apex:pageMessages />
+        </apex:outputpanel>
+        
+        <apex:form id="frm" >
+            <apex:actionfunction name="saveAssignmentSummaryAF" action="{!saveAssignmentSummary}" rerender="frm, err" oncomplete="stopLoading();" />
+            <apex:actionfunction name="loadAssignmentSummaryAF" action="{!loadAssignmentSummary}" rerender="frm, err" oncomplete="stopLoading();" />
+            <apex:actionfunction name="loadPopupMPWWIPLotAF" action="{!loadPopupMPWWIPLot}" rerender="popup, err" oncomplete="stopLoading();showPopup('{!strAssignmentName}');" >
+                <apex:param name="param1" value="" assignTo="{!strAssignmentName}" />
+                <apex:param name="param2" value="" assignTo="{!strAssignmentUserId}" />
+            </apex:actionfunction>
+            
+            <div class="mpw-loading-background"></div>
+            <div class="mpw-loading" >
+                <img src="/img/loading32.gif" title="/img/loading32.gif" /><br/><br/>
+                <span>Please Wait...</span>
+            </div>
+            
+            <div class="mpw-popup-background"></div>
+            <div class="mpw-popup" >
+                <div class="mpw-popup-close" onclick="hidePopup();" title="Close" >+</div>
+                <h3 class="mpw-popup-title" >
+                    <span>Assignment Summary - <span id="assignmentName" ></span></span>
+                </h3>
+                <apex:outputpanel id="popup" >
+                    <div class="mpw-popup-content" >
+                        <div style="padding:10px 20px 20px 20px;">
+                            <apex:outputpanel rendered="{!lstPopupMPWWIPLot.size > 0}" > 
+                                <div style="font-size: 11px;text-align: right;margin-bottom: 5px;font-weight: bold;" >Total Assignments: {!lstPopupMPWWIPLot.size}</div>
+                                <div style="overflow: auto;height: 50vh;" > 
+                                    <table class="mpw-popup-table" >
+                                        <thead>
+                                            <tr style="border-bottom: 1px solid #CEC9C9;border-top: 1px solid #CEC9C9;" >
+                                                <th rowspan="2" onclick="sortColumn(0);" class="mpw-disable-select" style="text-align: left;border-left: 1px solid #D4D4D4;cursor:pointer;" >Manufacturing Lot</th>
+                                                <th rowspan="2" onclick="sortColumn(1);" class="mpw-disable-select" style="cursor:pointer;" >MPW Prime Die</th>
+                                                <th rowspan="2" onclick="sortColumn(2);" class="mpw-disable-select" style="cursor: pointer;" >MPW Form#</th>
+                                                <th rowspan="2" onclick="sortColumn(3);" class="mpw-disable-select" style="cursor: pointer;" >Company</th>
+                                                <th rowspan="2" onclick="sortColumn(4);" class="mpw-disable-select" style="cursor:pointer;" >MPW Train</th>
+                                                <th rowspan="2" onclick="sortColumn(5);" class="mpw-disable-select" style="cursor:pointer;" >MPW MES Part ID</th>
+                                                <th colspan="2" >Bare Die Shipment Forecast Date</th>
+                                                <th colspan="2" >Current Scheduled Date</th>
+                                                <th rowspan="2" onclick="sortColumn(10);" class="mpw-disable-select" style="border-right: 1px solid #D4D4D4;cursor:pointer;" >Assignment Type</th>
+                                            </tr>
+                                            <tr style="border-bottom: 1px solid #CEC9C9;border-top: 1px solid #CEC9C9;" >
+                                                <th onclick="sortColumn(6);" class="mpw-disable-select" style="cursor:pointer;width: 100px;" >Baseline</th>
+                                                <th onclick="sortColumn(7);" class="mpw-disable-select" style="cursor:pointer;width: 100px;" >Override</th>
+                                                <th onclick="sortColumn(8);" class="mpw-disable-select" style="cursor:pointer;width: 100px;" >Baseline</th>
+                                                <th onclick="sortColumn(9);" class="mpw-disable-select" style="cursor:pointer;width: 100px;" >Override</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody style="border-bottom: 1px solid #CEC9C9;" >
+                                            <apex:repeat value="{!lstPopupMPWWIPLot}" var="mpwwip" >
+                                                <tr >
+                                                    <td style="text-align: left;border-left: 1px solid #D4D4D4;" data-value="{!mpwwip.oMPWWIPLot.Manufacturing_Lot_Id__c}" >
+                                                        <a href="/{!mpwwip.oMPWWIPLot.Manufacturing_Lot__c}" target="_blank" >{!mpwwip.oMPWWIPLot.Manufacturing_Lot_Id__c}</a>
+                                                    </td>
+                                                    <td data-value="{!mpwwip.oMPWWIPLot.Prime_Die_Name__c}" >
+                                                        <a href="/{!mpwwip.oMPWWIPLot.MPW_Prime_Die__c}" target="_blank" >{!mpwwip.oMPWWIPLot.Prime_Die_Name__c}</a>
+                                                    </td>
+                                                    <td data-value="{!mpwwip.oMPWWIPLot.MPW_form__c}" >
+                                                        <a href="/{!mpwwip.oMPWWIPLot.MPW_Prime_Die__r.MPW_Form__c}" target="_blank" >{!mpwwip.oMPWWIPLot.MPW_form__c}</a>
+                                                    </td>
+                                                    <td data-value="{!mpwwip.oMPWWIPLot.MPW_Form_Customer_Account_Name__c}" >
+                                                        <a href="/{!mpwwip.oMPWWIPLot.MPW_Prime_Die__r.MPW_Form__r.Customer_Company_Name__c}" target="_blank" >{!mpwwip.oMPWWIPLot.MPW_Form_Customer_Account_Name__c}</a>
+                                                    </td>
+                                                    <td data-value="{!mpwwip.oMPWWIPLot.MPW_Train_Name__c}" >{!mpwwip.oMPWWIPLot.MPW_Train_Name__c}</td>
+                                                    <td data-value="{!mpwwip.oMPWWIPLot.MPW_MES_Part_ID__c}" >{!mpwwip.oMPWWIPLot.MPW_MES_Part_ID__c}</td>
+                                                    <td data-value="{!mpwwip.strForecastDateBL}" >
+                                                        <apex:outputText value="{0,date,dd MMM, YYYY}" > 
+                                                            <apex:param value="{!mpwwip.oMPWWIPLot.Bare_Die_Shipment_Forecast_Date_BL__c}" /> 
+                                                        </apex:outputText>
+                                                    </td>
+                                                    <td data-value="{!mpwwip.strForecastDateOR}" >
+                                                        <apex:outputText value="{0,date,dd MMM, YYYY}" > 
+                                                            <apex:param value="{!mpwwip.oMPWWIPLot.Bare_Die_Shipment_Forecast_Date_OR__c}" /> 
+                                                        </apex:outputText>
+                                                    </td>
+                                                    <td data-value="{!mpwwip.strCSDBL}" >
+                                                        <apex:outputText value="{0,date,dd MMM, YYYY}" > 
+                                                            <apex:param value="{!mpwwip.oMPWWIPLot.Current_Scheduled_Date_CSD__c}" /> 
+                                                        </apex:outputText>
+                                                    </td>
+                                                    <td data-value="{!mpwwip.strCSDOR}" >
+                                                        <apex:outputText value="{0,date,dd MMM, YYYY}" > 
+                                                            <apex:param value="{!mpwwip.oMPWWIPLot.Current_Scheduled_Date_CSD_OR__c}" /> 
+                                                        </apex:outputText>
+                                                    </td>
+                                                    <td data-value="{!mpwwip.oMPWWIPLot.Assignment_Type__c}" 
+                                                        style="border-right: 1px solid #D4D4D4;" >{!mpwwip.oMPWWIPLot.Assignment_Type__c}
+                                                    </td>
+                                                </tr>
+                                            </apex:repeat>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </apex:outputpanel> 
+                        </div>
+                    </div>
+                </apex:outputpanel> 
+            </div>
+            
+            <div class="mpw-main-title-icon" >
+                <img src="/img/icon/factory32.png" style="" title="Manufacturing Lot Assignment Summary" />
+            </div>
+            <div class="mpw-main-title" >Manufacturing Lot Assignment Summary</div>
+            <div class="mpw-main-back" >
+                <a href="/apex/MPWLotAssignment" target="_self" style="text-decoration: none;" >
+                &#60;&#60;&nbsp;Back To Manufacturing Lot Assignment
+                </a>
+            </div>
+            
+            <div class="mpw-save-btn-section" style="height: 20px;" >
+                <apex:outputpanel rendered="{!lstAssignmentGroups.size > 0}" >
+                    <input class="mpw-save-btn" type="button" value="Save" onclick="validateSave();" title="Save Assignment Summary Settings" /> 
+                </apex:outputpanel>
+                <apex:selectlist styleClass="mpw-select-assignment"  value="{!strSelectAssignment}" size="1" 
+                    multiselect="false" onchange="startLoading();loadAssignmentSummaryAF();" >
+                    <apex:selectoption itemValue="my" itemLabel="My Assignments" />
+                    <apex:selectoption itemValue="all" itemLabel="All Assignments" />
+                </apex:selectlist>
+            </div>
+            
+            <apex:outputpanel id="op" rendered="{!if(lstAssignmentGroups.size > 0, true, false)}" >
+                <table class="mpw-mfg-table" >
+                    <thead>
+                        <tr style="border-bottom: 1px solid #CEC9C9;border-top: 1px solid #CEC9C9;" >
+                            <th style="text-align: left;border-left: 1px solid #D4D4D4;width: 150px;" >Assignment Group Name</th> 
+                            <th >Saved User</th>
+                            <th >Total Assignments</th>
+                            <th >Notification Start Date</th>
+                            <th >Notification End Date</th>
+                            <th style="border-right: 1px solid #D4D4D4;width: 100px;" >Notification Interval (Days)</th>
+                        </tr>
+                    </thead>
+                    <tbody style="border-bottom: 1px solid #CEC9C9;" >
+                        <apex:repeat value="{!lstAssignmentGroups}" var="assign" > 
+                            <tr>
+                                <td style="text-align: left;border-left: 1px solid #D4D4D4;" >
+                                    <span style="text-decoration:underline;cursor:pointer;" 
+                                        onclick="startLoading();loadPopupMPWWIPLotAF('{!assign.oMPWWIPLot.Assignment_Group_Name__c}', '{!assign.oMPWWIPLot.Saved_User__c}');" >
+                                        {!assign.oMPWWIPLot.Assignment_Group_Name__c}
+                                    </span>
+                                </td>
+                                <td ><apex:outputfield value="{!assign.oMPWWIPLot.Saved_User__c}" /></td>
+                                <td >{!assign.intAssignmentCount}</td>
+                                <td >
+                                    <apex:inputfield value="{!assign.oMPWWIPLot.Notification_Start_Date__c}" rendered="{!assign.isAllowEdit}" />
+                                    <apex:outputfield value="{!assign.oMPWWIPLot.Notification_Start_Date__c}" rendered="{!!assign.isAllowEdit}" />
+                                </td>
+                                <td >
+                                    <apex:inputfield value="{!assign.oMPWWIPLot.Notification_End_Date__c}" rendered="{!assign.isAllowEdit}" />
+                                    <apex:outputfield value="{!assign.oMPWWIPLot.Notification_End_Date__c}" rendered="{!!assign.isAllowEdit}" />
+                                </td>
+                                <td style="border-right: 1px solid #D4D4D4;" >
+                                    <apex:inputfield value="{!assign.oMPWWIPLot.Notification_Interval_Days__c}" rendered="{!assign.isAllowEdit}" styleClass="mpw-notification-input" onblur="validateInterval(this);" /> 
+                                    <apex:outputfield value="{!assign.oMPWWIPLot.Notification_Interval_Days__c}" rendered="{!!assign.isAllowEdit}" /> 
+                                </td>
+                            </tr>
+                        </apex:repeat>
+                    </tbody>
+                </table>
+            </apex:outputpanel>  
+            <apex:outputpanel rendered="{!if(lstAssignmentGroups.size > 0, false, true)}" >
+                <table class="mpw-mfg-table" >
+                    <thead>
+                        <tr style="border-bottom: 1px solid #CEC9C9;border-top: 1px solid #CEC9C9;" >
+                            <th style="text-align: left;border-left: 1px solid #D4D4D4;width: 150px;" >Assignment Group Name</th> 
+                            <th >Saved User</th>
+                            <th >Total Assignments</th>
+                            <th >Notification Start Date</th>
+                            <th >Notification End Date</th>
+                            <th style="border-right: 1px solid #D4D4D4;width: 100px;" >Notification Interval (Days)</th>
+                        </tr>
+                    </thead>
+                    <tbody style="border-bottom: 1px solid #CEC9C9;" >
+                        <tr>
+                            <td style="border-left: 1px solid #D4D4D4;border-right: 1px solid #D4D4D4;height: 100px;" colspan="6" >
+                                No Assignment Found.
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </apex:outputpanel>
+        </apex:form>
+        <apex:outputpanel rendered="{!showPopupOnLoad}" >
+            <script>
+                loadPopupMPWWIPLotAF('{!strAssignmentName}', '{!strAssignmentUserId}');
+            </script>
+        </apex:outputpanel>
+    </div>
+
+</apex:page>

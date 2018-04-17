@@ -1,0 +1,388 @@
+<apex:page showHeader="true" sidebar="false" standardController="Checklist_Container__c" extensions="DeviceChecklistHierarchyViewCtrlExt" docType="html-5.0" tabStyle="DeviceChecklist__tab">
+    <head>
+        <meta http-equiv="X-UA-Compatible" content="IE=9"/>
+        <apex:stylesheet value="{!URLFOR($Resource.ChecklistResouces, 'ChecklistResouces/css/bootstrap.css')}" />
+        <apex:stylesheet value="{!URLFOR($Resource.ChecklistResouces, 'ChecklistResouces/css/datepicker.css')}" />
+        <apex:stylesheet value="{!URLFOR($Resource.ChecklistResouces, 'ChecklistResouces/css/npi.css')}" />
+        <apex:stylesheet value="{!URLFOR($Resource.ChecklistResouces, 'ChecklistResouces/css/DeviceChecklistHierarchy.css')}" />
+        <apex:includeScript value="{!URLFOR($Resource.ChecklistResouces, 'ChecklistResouces/js/jquery-1.10.2.min.js')}" />
+        <apex:includeScript value="{!URLFOR($Resource.ChecklistResouces, 'ChecklistResouces/js/bootstrap.min.js')}" />
+        <apex:includeScript value="{!URLFOR($Resource.ChecklistResouces, 'ChecklistResouces/js/bootstrap-datepicker.js')}" />
+        <apex:includeScript value="{!URLFOR($Resource.ChecklistResouces, 'ChecklistResouces/js/DeviceChecklistHierarchy.js')}" />
+        <style type="text/css">
+            #detHeader{
+              font-weight:bolder;
+              padding-top: 5px;
+              padding-bottom: 5px;
+              /*padding-left: 25px;*/
+              text-align:center;
+            }
+            .datepicker{
+                z-index:1151;
+            }
+            .saveEditsButtonAfterUpdate{
+                background-color: #d9534f; 
+                border-color: #d43f3a; 
+            }
+            .popupBackground, .PopupPanel{
+                z-index:1155;
+            }
+            .ownerlookupcell > select{
+                display:none !important;
+            }
+            .saveButton{
+                margin-top: 0px !important;
+                margin-bottom: 0px !important;
+            }
+            /*.overdueTask{
+                border:1px dotted red;
+            }*/
+            .overdueTaskDeadline{
+                background-color:rgb(255,120,120);
+            }
+            .removeButton{
+                padding: 5px 10px;
+                background-color: #d9534f; 
+                border-color: #d43f3a; 
+                display:inline;
+                /*margin-right: 12px;*/
+                margin-right: 22px;
+            }
+            .addTaskButton{
+                float: right;
+                margin-right: 20px !important;
+            }
+           
+            .hasToolTip:hover {
+              position: relative;
+            }
+
+            .hasToolTip[tooltipText]:hover:after {
+              content: attr(tooltipText);
+              padding: 4px 8px;
+              color: #333;
+              position: absolute;
+              left: 0;
+              top: 100%;
+              white-space: nowrap;
+              z-index: 20px;
+             text-decoration: none;
+              opacity: 1;
+              width: 15em;
+              z-index: 1000;
+              background-color: #fefdb9;
+              padding: 2px 5px;
+              border: 1px solid orange;
+              text-align: left;
+              white-space: normal;
+              font-weight: normal;
+              color: #000;
+              text-align:left;
+              text-justify: inter-word;
+            }
+            .ClosedTask {
+                background-color: rgb(201, 194, 194) !important;
+                opacity: .9;
+            }
+        </style>
+        <script>
+        function setFocus() {
+            document.getElementById("hiddenElement").focus();
+        }
+        function addTaskUnder(projectId, projectName, order){
+            $('#projectName').html(projectName);
+            $('#projectId').val(projectId);
+            $('#taskSortNumber').val(order);
+            $("#myModal").modal();
+            $('.dp1').datepicker();
+        };
+
+        function addTask(){
+            var projectId = $('#projectId').val();
+            var sortOrder = $('#taskSortNumber').val();
+            addTaskFunction(projectId, sortOrder);
+        }
+
+        function openTaskPopup(){
+            $("#chatterModel").modal();    
+        }
+
+        $().ready(function(){
+            setFocus();
+            $('.hasHelpText').mouseenter(
+                function(event){
+                    $('#helpText').offset($(event.target).offset());
+                  
+                  //$('#helpText').offset({left:$(event.target).offset().left, top:$(event.target).offset().top +15} );
+                  $('#helpText').html($(event.target).attr('tooltipText'));
+                  $('#helpText').css('display', 'inline-block');
+                  $('#helpText').html($(event.target).attr('tooltipText'));
+
+                });
+                $('.hasHelpText').mouseleave(function(event){
+                  $('#helpText').css('display', 'none');
+                }
+              );
+        });
+        function removeProject(projectId){
+            var r = confirm('{!$Label.Device_Checklist_Project_Delete_Alert_Message}');
+            if (r == true) {
+                removeProjectFromChecklist(projectId);
+            }      
+        }
+        
+        </script>
+    </head>
+    <body >
+    <apex:form >
+    <div id='wholepage'>
+    <div style='display:block; background-color: #FC8744;'>
+        <apex:pageBlock id="programDetailsSection">
+            <apex:pageBlockSection columns="2" collapsible="true" title="Checklist Details">
+                <apex:pageBlockSectionItem >
+                    <apex:outputLabel value="Checklist Name" for="programName"/>
+                    <a id='programName' href='/{!programDetails.id}'>{!programDetails.Name}</a>
+                </apex:pageBlockSectionItem>
+                <apex:outputField value="{!programDetails.Device__c}"/>
+                <apex:outputField value="{!programDetails.Account__c}"/>
+                <apex:outputField value="{!programDetails.Opportunity_Program__c}"/>
+                <apex:outputField value="{!programDetails.Opportunity__c}"/>
+                <apex:outputField value="{!programDetails.OwnerId}"/>
+                <!-- Change Log:    Updated     -     JOYDEV     -     30/07/2014 - begin -->
+                <apex:pageBlockSectionItem labelStyle="padding-top:13px">
+                    <apex:outputLabel value="Last Sync Date"/>
+                    <apex:outputPanel >
+                        <apex:outputField value="{!programDetails.DeviceChecklistLastSyncDate__c}" id="syncdate"/>&nbsp;&nbsp;&nbsp;
+                        <apex:commandLink action="{!SyncTasks}" type="image/png" reRender="hcontainer,syncdate" status="saveTrip" title="Sync Tasks" rendered="{!!programDetails.Archive_Project__c}">
+                            <apex:image value="{!$Resource.SyncIcon}" height="20" width="20"/>
+                        </apex:commandlink>
+                    </apex:outputPanel> 
+                </apex:pageblockSectionItem>
+                <!-- Change Log:    Updated     -     JOYDEV     -     30/07/2014 - end -->
+                <apex:outputField value="{!programDetails.BX_041__c}"/>
+                <apex:pageBlockSectionItem rendered="{!isAdmin}">
+                    <apex:outputLabel value="Project Archived"/>
+                    <apex:outputPanel >
+                        <apex:outputField value="{!programDetails.Archive_Project__c}"/>
+                        <apex:commandButton action="{!archiveChecklist}" value="Archive Checklist" reRender="programDetailsSection,hcontainer,ownerSelect,saveEdits" rendered="{!!programDetails.Archive_Project__c}" status="archivingStatus" />
+                        <apex:commandButton action="{!unarchiveChecklist}" value="Unarchive Checklist" reRender="programDetailsSection,hcontainer,ownerSelect,saveEdits" rendered="{!programDetails.Archive_Project__c}" status="archivingStatus" />
+                        <apex:actionStatus id="archivingStatus">
+                            <apex:facet name="start">
+                                 <img src="/img/loading.gif"/>
+                            </apex:facet>
+                        </apex:actionStatus> 
+                    </apex:outputPanel>
+                </apex:pageBlockSectionItem>
+            </apex:pageBlockSection>
+        </apex:pageBlock>
+    </div>
+    <div id='toolBar' align='center'>
+        <div style="margin: 0px auto !important; text-align: center;">
+            <div style='display: inline-block;'>
+                <a id='reportsPage' value="Reports" href='/apex/DeviceChecklistReportsView?id={!programDetails.id}' class='showReports saveButton'>Show Reports</a>
+            </div>
+
+            <div style='display: inline-block;'>
+                <apex:outputPanel id="ownerSelect">
+                    <label for="selectUser">Task owned by : </label>
+                    <select name="user" id="selectUser">
+                        <option value="All">All</option>
+                        <apex:repeat value="{!taskOwners}" var="owner">
+                            <option value="{!owner}">{!taskOwners[owner]}</option>
+                        </apex:repeat>
+                    </select>
+                    <input type="checkbox" id='openTasks'/>
+                    <label for="openTasks">Open </label>
+                    <input type="checkbox" id='closedTasks'/>
+                    <label for="closedTasks">Completed </label>
+                    <input type="checkbox" id='flagedTasks'/>
+                    <label for="flagedTasks">Flagged </label>
+                </apex:outputPanel>
+
+            </div>
+            <div style='display: inline-block;'>
+                <apex:commandLink styleClass="saveButton saveEditsButton" action="{!saveEdits}" value="Save Edits" reRender="hcontainer,ownerSelect,saveEdits" status="saveTrip" id="saveEdits"/>
+            </div>
+            <div style='display: inline-block;'>
+                <div class="links" style="margin-left:50px;"><a href="/apex/DeviceChecklistHelpPage" title="Help for this Page (New Window)" target="_blank"><span class="helpLink">Help for this Page</span ><img src="/s.gif" alt="" class="helpIcon" title="" style="margin-left:5px;"/></a></div>
+            </div>
+            <div style="clear: both"></div>
+        </div>
+    </div>
+    <div>
+        <apex:outputPanel id="hcontainer" styleClass="payloadContainer">
+            <apex:pageMessages />
+            <apex:actionFunction action="{!removeProjectFromChecklist}" name="removeProjectFromChecklist" reRender="hcontainer,newTaskPanel" status="saveTrip">
+              <apex:param assignTo="{!projectToBeRemoved}" name="projectId" value=""/>
+            </apex:actionFunction>
+            <ul  style='padding-left:100px;padding-right:100px;'>
+                <apex:repeat value="{!ContainerTree.chldContainer}" var="cont1">
+                    <li>
+                        <div class='projectRow'>
+                            <span class='iconcollapse'></span>
+                            <span class='iconexpand' style='display:none;'></span>
+                            <span>{!cont1.name}</span>
+                            <span style='float:right;display:{!IF(isAdmin, "", "none")}'><a href="javascript:void(0);" class="saveButton removeButton" onclick="removeProject('{!cont1.pid}')">Remove</a></span>
+                        </div>
+                        <c:DeviceChecklistHierarchyComponent container="{!cont1}" isAdmin="{!isAdmin}"/>
+                        <ul class='children'>
+                            <apex:repeat value="{!cont1.chldContainer}" var="cont2">
+                                <li>
+                                    <div class='projectRow'>
+                                        <span class='iconcollapse'></span>
+                                        <span class='iconexpand' style='display:none;'></span>
+                                        <span>{!cont2.name}</span>
+                                        <span style='float:right; display:{!IF(isAdmin, "", "none")}'><a href="javascript:void(0);" class="saveButton removeButton" onclick="removeProject('{!cont2.pid}')">Remove</a></span>
+                                    </div>
+                                    <c:DeviceChecklistHierarchyComponent container="{!cont2}" isAdmin="{!isAdmin}"/>
+                                    <ul>
+                                        <apex:repeat value="{!cont2.chldContainer}" var="cont3">
+                                            <li>
+                                                <div class='projectRow'>
+                                                    <span class='iconcollapse'></span>
+                                                    <span class='iconexpand' style='display:none;'></span>
+                                                    <span>{!cont3.name}</span>
+                                                    <span style='float:right; display:{!IF(isAdmin, "", "none")}'><a href="javascript:void(0);" class="saveButton removeButton" onclick="removeProject('{!cont3.pid}')">Remove</a></span>
+                                                </div>
+                                                <c:DeviceChecklistHierarchyComponent container="{!cont3}" isAdmin="{!isAdmin}"/>
+                                                <ul>
+                                                    <apex:repeat value="{!cont3.chldContainer}" var="cont4">
+                                                        <li>
+                                                            <div class='projectRow'>
+                                                                <span class='iconcollapse'></span>
+                                                                <span class='iconexpand' style='display:none;'></span>
+                                                                <span>{!cont4.name}</span>
+                                                                <span style='float:right; display:{!IF(isAdmin, "", "none")}'><a href="javascript:void(0);" class="saveButton removeButton" onclick="removeProject('{!cont4.pid}')">Remove</a></span>
+                                                            </div>
+                                                            <c:DeviceChecklistHierarchyComponent container="{!cont4}" isAdmin="{!isAdmin}"/>
+                                                            <ul>
+                                                                <apex:repeat value="{!cont4.chldContainer}" var="cont5">
+                                                                    <li>
+                                                                        <div class='projectRow'>
+                                                                            <span class='iconcollapse'></span>
+                                                                            <span class='iconexpand' style='display:none;'></span>
+                                                                            <span>{!cont5.name}</span>
+                                                                            <span style='float:right; display:{!IF(isAdmin, "", "none")}'><a href="javascript:void(0);" class="saveButton removeButton" onclick="removeProject('{!cont5.pid}')">Remove</a></span>
+                                                                    </div>
+                                                                        <c:DeviceChecklistHierarchyComponent container="{!cont5}" isAdmin="{!isAdmin}"/>
+                                                                    </li>
+                                                                </apex:repeat>
+                                                            </ul>
+                                                        </li>
+                                                    </apex:repeat>
+                                                </ul>
+                                            </li>
+                                        </apex:repeat>
+                                    </ul>
+                                </li>
+                            </apex:repeat>
+                        </ul>
+
+                    </li>
+                </apex:repeat>
+            </ul>
+            <script>
+                bindAllEvents();
+                $( "input.updatedTask:checked").prop('checked', false);
+            </script>
+        </apex:outputPanel>
+        </div>
+      </div>
+      </apex:form>
+      <apex:form >
+      <apex:actionFunction reRender="taskChatterFeed" name="showChatterForTask" status="saveTrip">
+          <apex:param assignTo="{!showFeedForTask}" name="chatterTaskId" value=""/>
+      </apex:actionFunction>
+      <apex:actionStatus id="saveTrip" stopText="">
+          <apex:facet name="start">
+              <div>
+                  <div class="popupBackground" />
+                  <div class="PopupPanel">
+                      <table border="0" width="100%" height="100%">
+                          <tr>
+                              <td align="center"><b>Loading... Please Wait...</b></td>
+                          </tr>
+                          <tr>
+                              <td align="center"><img src="{!URLFOR($Resource.ChecklistResouces, 'ChecklistResouces/Processing.gif')}"/></td>
+                          </tr>
+                      </table>
+                  </div>
+              </div>
+          </apex:facet>
+      </apex:actionStatus>
+  </apex:form>
+<div style='display:none;' title="Task Details" id="chatterModel" class="modal">
+    <apex:outputPanel id="taskChatterFeed">
+        <div class="modal-dialog" style="background:white">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal">
+                    <span class="glyphicon glyphicon-remove-circle" style="font-size:20px !important"></span>
+                </button>
+                <h3><apex:outputField value="{!showFeedForTaskRecord.Name}" style="font-weight:900; font-size: 18px !important"/></h3>
+            </div>
+            <div class="modal-body">
+                <apex:pageBlock >
+                    <apex:pageBlockSection columns="2">
+                        <apex:outputField value="{!showFeedForTaskRecord.Container__c}"/>
+                        <apex:outputField value="{!showFeedForTaskRecord.Deadline__c}"/>
+                        <apex:outputField value="{!showFeedForTaskRecord.Red_Flag__c}"/>
+                        <apex:outputField value="{!showFeedForTaskRecord.Days_Due_Before_TO__c}"/>
+                        <apex:outputField value="{!showFeedForTaskRecord.Override_Tapeout_Date__c}"/>
+                        <apex:outputField value="{!showFeedForTaskRecord.Device_TO_Date__c}"/>
+                        <apex:outputField value="{!showFeedForTaskRecord.Dependency_Tootip__c}" label="Condition to Complete"/>
+                        <apex:outputField value="{!showFeedForTaskRecord.Completed_Date__c}" label="Completed Date"/>
+                    </apex:pageBlockSection>
+                </apex:pageBlock>
+                <chatter:feed id="chatterFeed" feedItemType="TextPost" showPublisher="true" rendered="true" entityId="{!showFeedForTaskRecord.id}"/>
+            </div>
+        </div>
+    </apex:outputPanel>
+  </div>
+  <apex:form >
+  <apex:actionFunction action="{!insertTask}" name="addTaskFunction" reRender="hcontainer,newTaskPanel" status="saveTrip">
+      <apex:param assignTo="{!projectId}" name="projectId" value=""/>
+      <apex:param assignTo="{!sortOrder}" name="sortOrder" value=""/>
+    </apex:actionFunction>
+    <div id="myModal" class="modal" tabindex="-1" role="dialog">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal">
+                    <span class="glyphicon glyphicon-remove-circle" style="font-size:20px !important"></span>
+                </button>
+                <h3>New Task Details</h3>
+            </div>
+        <div class="modal-body">
+            <apex:outputPanel id="newTaskPanel">
+                <apex:pageBlock >
+                    <apex:pageBlockSection columns="1">
+                        <!--<apex:outputField value="{!newTask.Checklist_Container__c}"/>-->
+                        <tr>
+                            <th class="labelCol vfLabelColTextWrap  first " scope="row">Project</th>
+                            <td class="data2Col  first ">
+                                <span id="projectName">Project Name</span>
+                            </td>
+                        </tr>
+                        <apex:inputField value="{!newTask.Name}"/>
+                        <apex:inputField value="{!newTask.Override_Tapeout_Date__c}"/>
+                        <apex:inputText value="{!newTask.Days_Due_Before_TO__c}"/>
+                        <apex:inputText value="{!newTask.Deadline__c}"  styleClass="dp1"/>
+                        <apex:inputField value="{!newTask.OwnerId}" id="NewTaskUser"/>
+                        
+                        <input id="projectId" type='hidden'/>
+                        <input id="taskSortNumber" type='hidden' />
+                    </apex:pageBlockSection>
+                </apex:pageBlock>
+            </apex:outputPanel>
+        </div>
+        <div class="modal-footer">
+            <a href="javascript:void(0);" class="saveButton" onclick="addTask()"  style="display:inline-block" data-dismiss="modal">Save</a>
+            <a href="javascript:void(0);" class="saveButton" data-dismiss="modal" style="display:inline-block">Close</a>
+        </div>
+        </div>
+    </div>
+</div>
+  </apex:form>
+  <input id="hiddenElement" type="hidden" />
+</body>
+</apex:page>

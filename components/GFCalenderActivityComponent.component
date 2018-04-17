@@ -1,0 +1,1532 @@
+<!--
+Type Name: GFCalenderActivityComponent.component
+Author: Cognizant Technology Solutions
+Created Date: 21-5-2013
+Reason: The component is used to display the Calendar in the Team Room detail page of the logged in user.  
+Change History:
+Author: 
+Modified Date: 
+Reason: 
+-->
+
+<apex:component controller="clsGFCalendarComponentController" >
+
+    <apex:attribute name="pObjectId"            description="The object instance id which owns activity history"        type="String"  required="true"  assignTo="{!objectId}"/>
+    <apex:attribute name="pTypeName"            description="The object type name"                                      type="String"  required="true"  assignTo="{!typeName}"/>
+    <apex:attribute name="pShowOpenActivities"  description="show open activities flag"                                 type="Boolean" required="false" assignTo="{!showOpenActivities}"/>
+    <apex:attribute name="pShowActivityHistory" description="show activity history flag"                                type="Boolean" required="false" assignTo="{!showActivityHistory}"/>
+    <apex:attribute name="pOpenActivityColor"   description="The Open Activity Background Color"                        type="String"  required="false" assignTo="{!openActivityColor}"/>
+    <apex:attribute name="pPastActivityColor"   description="The Past Activity Background Color"                        type="String"  required="false" assignTo="{!pastActivityColor}"/>
+    <apex:attribute name="pProviders"           description="The GF Cal Activity Provider Class Names(comma delimited)" type="String"  required="false" assignTo="{!providers}"/>
+    
+    <apex:includeScript value="{!URLFOR($Resource.jquery, 'js/jquery-1.8.3.min.js')}"/>
+    <apex:includeScript value="{!URLFOR($Resource.gf, 'js/gf.js')}"/>
+
+    <style type="text/css">
+    
+        .activityType
+        {
+           padding-left:20px;
+           padding-bottom:5px;
+        }
+        
+        .main-pane
+        {
+            width: 100%;
+            border: solid 0px #AAAAAA;
+        }
+        
+        .monthcalendar table
+        {
+            border-collapse:collapse;
+        }
+        
+        .monthHeader
+        {
+            font-size: 28px;
+            text-align: center;
+            font-weight: bold;
+        }
+        
+        .separator {
+            border-color: -moz-use-text-color #457A9C -moz-use-text-color -moz-use-text-color;
+            border-style: none dotted none none;
+            border-width: medium 1px medium medium;
+            margin: 4px 10px 0 0;
+            padding: 2px 0 0 4px;
+        }
+        
+        .today
+        {   
+           background-color:#FFE6CC;   
+        }
+        
+        .calBtnBarBackup
+        {
+            border-bottom: solid 1px #AAAAAA;
+            border-right: solid 1px #AAAAAA;
+            border-left: solid 1px #AAAAAA;
+            background-color: #EEEEEE;
+            vertical-align: middle;
+            padding-top: 10px;
+            padding-bottom: 5px;
+            background: #cccccc url({!URLFOR($Resource.gfcal, 'images/gfhdr.png')}) 50% 50% repeat-x;
+        }
+        
+        .calBtnBar
+        {
+            border-top: solid 1px #AAAAAA;
+            border-bottom: solid 1px #AAAAAA;
+            border-right: solid 1px #AAAAAA;
+            border-left: solid 1px #AAAAAA; 
+            background-color: #FFFFFF;
+            vertical-align: middle;
+            padding-top: 5px;        
+        }
+        
+        .calBtn
+        {
+            border: solid 1px #AAAAAA;
+            background-color: #F3F7FB;    
+        }
+        
+        .calBtn a
+        {
+            color: black;
+        }
+        
+        .calBtn button
+        {
+            margin: 1px 1px 10px 1px;
+            border: 1px;
+        }
+        
+        .calTypeBtn
+        {
+            border: solid 1px #AAAAAA;   
+        }
+        
+        .calTypeBtn button
+        {
+            margin: 1px 1px 5px 1px;
+            border: 1px;
+        }
+        
+        .calendar
+        {
+        
+        }
+        
+        .calendar table {
+            border-color: #AAAAAA;
+            border-style: solid;
+            border-width: 1px 1px;
+            width: 100%;
+            font-size: inherit;
+            border-collapse: collapse;
+            border-spacing: 0;
+        }
+        
+        .calendar td {
+            border-color: #AAAAAA;
+            border-style: solid;
+            border-width: 1px 1px 0 0;    
+            height: 10.1em;
+            padding: 0;
+            z-index: 0;
+        }
+        
+        .day_meetings
+        {
+           list-style-type:none;
+           margin:0;
+           padding:0;
+           
+        }
+        
+        .day_meetings li
+        {
+            margin:2px;
+            padding:0px;   
+        }
+        
+        .hasMeetings
+        {
+            font-weight:bold;
+            color:blue;
+        }
+        
+        .disabled {
+            background-color: #F3F7FB;
+        }
+        
+        .selected {
+            background-color: #DBDBFF;
+        }
+        
+        .calendar td.disabled div {
+            background-color: #F3F7FB;
+            color: #999999;
+            height: 100%;
+        }
+        
+        .calendar td .highlight {
+            cursor: pointer;
+            position: relative;
+        }
+        
+        .calendar td a.firstweek-dayLabel {
+            clear: both;
+            color: #000000;
+            display: block;
+            font-size: 85%;
+            margin: 0.7em 0.7em 0 0;
+            text-align: right;
+            text-decoration: none;
+        }
+        
+        .calendar td a.dayLabel {
+            clear: both;
+            color: #AAAAAA;
+            display: block;
+            font-size: 85%;
+            margin: 0.7em 0.7em 0 0;
+            text-align: right;
+            text-decoration: none;    
+        }
+        
+        .calendar div.day {    
+            height: 100%;
+            width: 100%;
+        }
+        
+        .dialogLabel
+        {
+            font-weight:bold;
+        }
+        
+        #weekLabel
+        {
+            font-size: 24px;
+            text-align: center;
+            font-weight: bold;
+        }
+        
+        #dayLabel
+        {
+            font-size: 24px;
+            text-align: center;
+            font-weight: bold;
+        }
+        
+        
+        #weekCalendar table {
+            border-color: #AAAAAA;
+            border-style: solid;
+            border-width: 1px 1px 1px 1px;
+            width: 100%;
+            font-size: inherit;
+            border-collapse: collapse;
+            border-spacing: 0;   
+        }
+        
+        #weekCalendar .firstHalfHour{
+            border-color: #AAAAAA;
+            border-style: dotted;
+            border-style: solid solid dotted solid; 
+            border-width: 1px 1px 1px 1px;
+            padding: 0;
+            z-index: 0;
+            height: 15px;
+            width: 12.5%
+        }
+        
+        #weekCalendar .secondHalfHour{
+            border-color: #AAAAAA;
+            border-style: solid;
+            border-width: 0 0 1px 1px;
+            padding: 0;
+            z-index: 0;
+            height: 15px;
+            width: 12.5%
+        }
+        
+        #dayCalendar table {
+            border-color: #AAAAAA;
+            border-style: solid;
+            border-width: 1px 1px 1px 1px;
+            width: 100%;
+            font-size: inherit;
+            border-collapse: collapse;
+            border-spacing: 0;   
+        }
+        
+        #dayCalendar .firstHalfHour{
+            border-color: #AAAAAA;
+            border-style: dotted;
+            border-style: solid solid dotted solid; 
+            border-width: 1px 1px 1px 1px;
+            padding: 0;
+            z-index: 0;
+            height: 15px;
+            width: 90%
+        }
+        
+        #dayCalendar .secondHalfHour{
+            border-color: #AAAAAA;
+            border-style: solid;
+            border-width: 0 0 1px 1px;
+            padding: 0;
+            z-index: 0;
+            height: 15px;
+            width: 90%
+        }        
+    </style>
+
+    <script type="text/javascript">
+    
+        var j$ = jQuery.noConflict();
+        var activityManager = null;
+        var calController = null;
+        
+        if (!('indexOf' in Array.prototype)) {
+            Array.prototype.indexOf= function(find, i /*opt*/) {
+                if (i===undefined) i= 0;
+                if (i<0) i+= this.length;
+                if (i<0) i= 0;
+                for (var n= this.length; i<n; i++)
+                    if (i in this && this[i]===find)
+                        return i;
+                return -1;
+            };
+        }
+        
+        function Activity(id,type,psubject,psdate,pedate,purl,activityColor,pfilterObject)
+        {
+            this.id = id;
+            this.type = type;
+            this.subject = psubject;
+            this.startDate = psdate;
+            this.endDate = pedate;
+            this.url = purl;
+            this.activityColor = activityColor;
+            if(pfilterObject)
+            {
+                this.filterObject = pfilterObject;
+            }else
+            {
+              this.filterObject = null;
+            }
+        }
+        
+        Activity.prototype.isMultiDay = function()
+        {
+          if((this.endDate != null)&&(this.endDate instanceof Date))
+          {
+             return true; 
+          }
+          return false;
+        };
+        
+        Activity.prototype.getFilterObject = function()
+        {
+            return this.filterObject;
+        };
+        
+        Activity.prototype.isInRange = function(pdate)
+        {
+          if(this.startDate == null)
+             return false;
+             
+          if(!this.isMultiDay())
+          {
+          
+             if((pdate.getFullYear()==this.startDate.getFullYear()) &&(pdate.getMonth()==this.startDate.getMonth())&&(pdate.getDate()==this.startDate.getDate()))
+             {
+                 return true;
+             }
+             
+          }else
+          {
+              if(( pdate.getTime() >= this.startDate.getTime())&&(pdate.getTime() <= this.endDate.getTime()))
+              {
+                  return true;
+              }
+          }  
+          return false;
+        };
+        
+        function ActivityManager(config)
+        {
+            this.showOpenActivities = {!showOpenActivities};
+            this.showActivityHistory = {!showActivityHistory}; 
+            this.allActivities = new Array();
+            this.openActivities = new Array();
+            this.pastActivities = new Array();
+            this.filter = new Array();
+            this.filter[this.filter.length] = 'oa';
+            this.filter[this.filter.length] = 'ah';
+            <apex:repeat value="{!providerActivityTypes}" var="pat" id="filterPatRepeat">
+                this.filter[this.filter.length] = '{!pat.typeCode}';
+            </apex:repeat>    
+            this.nvFilter = new Array();
+            var typeKey = null;
+            var typeValue = null;
+            <apex:repeat value="{!providerActivityTypes}" var="pat" id="filterPatRepeat2">
+                typeKey = '{!pat.typeKey}';
+                typeValue = '{!pat.typeValue}';
+                if((typeKey != '')&&(typeValue != ''))
+                {
+                    this.nvFilter[this.nvFilter.length] = { code: '{!pat.typeCode}', key :'{!pat.typeKey}', value : '{!pat.typeValue}', on:true };
+                }
+            </apex:repeat>    
+            this.empty = new Array();
+        }
+        
+        ActivityManager.prototype.getAllActivities = function()
+        {
+            if(this.filter.length > 0)
+            {
+               var fa = new Array();
+               
+               var filterObject = null;
+               for(var i = 0; i < this.allActivities.length; ++i)
+               {
+                   if(this.filter.indexOf(this.allActivities[i].type)!=-1)
+                   {
+                      fa[fa.length] = this.allActivities[i];
+                   }else
+                   {
+                      filterObject = this.allActivities[i].getFilterObject();
+                      if(filterObject !=null)
+                      {
+                         for(var j = 0; j < this.nvFilter.length; ++j)
+                         {
+                            if(!this.nvFilter[j].on)
+                            {
+                               continue;
+                            }
+                            if(filterObject[this.nvFilter[j].key] == this.nvFilter[j].value)
+                            {
+                               fa[fa.length] = this.allActivities[i];
+                               break;
+                            }
+                         }
+                      }
+                   }
+               }
+               return fa;
+            }
+            return this.empty;
+        };
+        
+        ActivityManager.prototype.getPastActivities = function()
+        {
+            return this.pastActivities;
+        };
+        
+        ActivityManager.prototype.getOpenActivities = function()
+        {
+            return this.openActivities;
+        };
+        
+        ActivityManager.prototype.setFilter = function(filter)
+        {
+            this.filter = filter;
+            for(var i = 0; i < this.nvFilter.length; ++i)
+            {
+                if(this.filter.indexOf(this.nvFilter[i].code)== -1)
+                {
+                   this.nvFilter[i].on = false;   
+                }else
+                {
+                  this.nvFilter[i].on = true; 
+                }
+            }
+        };
+        
+        ActivityManager.prototype.addActivity = function(activity)
+        {
+            this.allActivities[this.allActivities.length] = activity;
+        };
+        
+        ActivityManager.prototype.addPastActivity = function(activity)
+        {
+            if(!this.showActivityHistory)
+            {
+                //IGNORE
+                return;
+            }
+            this.pastActivities[this.pastActivities.length] = activity;
+            this.allActivities[this.allActivities.length] = activity;
+        };
+        
+        ActivityManager.prototype.addOpenActivity = function(activity)
+        {
+            if(!this.showOpenActivities)
+            {
+                //IGNORE
+                return;
+            }
+            this.openActivities[this.openActivities.length] = activity;
+            this.allActivities[this.allActivities.length] = activity;
+        };
+        
+        function loadActivities()
+        {
+          var aId = null;
+          var aUrl = null;
+          var startDateStr = null;
+          var startDate = null;
+          var endDateStr = null;
+          var endDate = null;
+          var aSubject = null;
+          var a = null;
+          var urlCheck ;  
+          var url = window.location.toString(); 
+          var resUrl = '{!$Label.Community_Name}';
+          
+          if(url.indexOf(resUrl) != -1) {
+              urlCheck = true;
+          }else{
+              urlCheck = false;
+          }
+          
+            <apex:repeat value="{!activityHistories}" var="ah" id="ahJSRepeat">
+                  aId = "{!ah.Id}";
+                  aUrl = "{!URLFOR('/')}{!ah.Id}";
+                  startDateStr = '<apex:outputText value="{0,date,MM'/'dd'/'yyyy}"><apex:param value="{!ah.ActivityDate}" /></apex:outputText>';
+                  startDate = new Date(startDateStr);
+                  endDate = null;
+                  aSubject = "{!JSENCODE(ah.Subject)}";
+                  a = new Activity(aId,"ah",aSubject,startDate,endDate,aUrl,"{!pastActivityColor}");
+                  activityManager.addPastActivity(a); 
+            </apex:repeat>
+        
+            <apex:repeat value="{!openActivities}" var="oa" id="oaJSRepeat">
+                  aId = '{!oa.Id}';
+                  aUrl = "{!URLFOR('/')}{!oa.Id}";
+                  startDateStr = '<apex:outputText value="{0,date,MM'/'dd'/'yyyy}"><apex:param value="{!oa.ActivityDate}" /></apex:outputText>';
+                  startDate = new Date(startDateStr);
+                  endDate = null;
+                  aSubject = "{!JSENCODE(oa.Subject)}";
+                  a = new Activity(aId,"oa",aSubject,startDate,endDate,aUrl,"{!openActivityColor}");
+                  activityManager.addOpenActivity(a);
+            </apex:repeat>
+            
+           
+            <apex:repeat value="{!providerActivities}" var="pa" id="paJSRepeat">
+                  aId = "{!pa.Id}";
+                  //aUrl = "{!URLFOR('/')}{!pa.Id}";
+                  if(urlCheck == true){
+                      aUrl = "{!URLFOR('/')}"+resUrl+'/'+"{!pa.Id}";
+                  }else{
+                      aUrl = "{!URLFOR('/')}{!pa.Id}";
+                  }
+                  startDateStr = '<apex:outputText value="{0,date,MM'/'dd'/'yyyy}"><apex:param value="{!pa.StartDate}" /></apex:outputText>';
+                  startDate = new Date(startDateStr);
+                  endDateStr = '<apex:outputText value="{0,date,MM'/'dd'/'yyyy}"><apex:param value="{!pa.EndDate}" /></apex:outputText>';
+                  if(endDateStr != '')
+                  {
+                      endDate = new Date(endDateStr);
+                  }
+                  else
+                  {
+                      endDate = null;
+                  }
+                  aSubject = "{!JSENCODE(pa.Subject)}";  
+                  a = new Activity(aId,"{!pa.type}",aSubject,startDate,endDate,aUrl,"{!pa.backgroundColor}",{!pa.JSFilter});
+                  activityManager.addActivity(a);
+            </apex:repeat>
+        }
+        
+        function Calendar(pdate)
+        {
+            this.now = new Date();
+            this.currentDate = this.now;
+            this.selectedDate = this.now;
+            if((pdate)&&(pdate !=null))
+            {
+                this.setCurrentDate(pdate);
+            }else
+            {
+                this.setCurrentDate(this.now);
+            }
+        }
+        
+        Calendar.prototype.getSysDate = function(){ return this.now;};
+        Calendar.prototype.getCurrentDate = function(){ return this.currentDate;};
+        Calendar.prototype.getSelectedDate = function(pdate){   return this.selectedDate;};
+        Calendar.prototype.setSelectedDate = function(pdate){   this.selectedDate = pdate;};
+        Calendar.prototype.setCurrentDate = function(pdate)
+        {
+            this.currentDate = pdate;
+            this.firstDayOfMonth = new Date(this.currentDate.getFullYear(),this.currentDate.getMonth(),1,0,0,0,0);
+            
+            if(this.currentDate.getMonth() == 0)
+            {
+                //DEC OF PREV YEAR
+                this.prevMonth = new Date(this.currentDate.getFullYear()-1,11,1,0,0,0,0);
+                
+            }else
+            {
+                //PREVIOUS MONTH OF CURRENT YEAR
+                this.prevMonth = new Date(this.currentDate.getFullYear(),this.currentDate.getMonth()-1,1,0,0,0,0);
+            }
+            if(this.currentDate.getMonth() == 11)
+            {
+                this.nextMonth = new Date(this.currentDate.getFullYear()+1,0,1,0,0,0,0);
+            }else
+            {
+                this.nextMonth = new Date(this.currentDate.getFullYear(),this.currentDate.getMonth()+1,1,0,0,0,0);
+            }
+            this.feb28 = new Date(this.currentDate.getFullYear(),1,28,0,0,0,0);
+            this.feb29 = new Date(this.currentDate.getFullYear(),1,29,0,0,0,0);
+        };
+        
+        Calendar.prototype.getMonthName = function(pmonthIndex)
+        {
+            var monthIndex = this.currentDate.getMonth();
+            if(pmonthIndex)
+            {
+                monthIndex = pmonthIndex;
+            }
+            
+            if(pmonthIndex == 0)
+            {
+                monthIndex = 0;
+            }
+            
+            switch(monthIndex)
+            {
+            case 0:
+                return "January";
+            case 1:
+                return "Feb";
+            case 2:
+                return "March";
+            case 3:
+                return "April";
+            case 4:
+                return "May";
+            case 5:
+                return "June";
+            case 6:
+                return "July";
+            case 7:
+                return "August";
+            case 8:
+                return "September";
+            case 9:
+                return "October";
+            case 10:
+                return "November";
+            case 11:
+                return "December";
+            }
+        };
+        
+        
+        Calendar.prototype.getNumDaysInMonth = function(monthIndex)
+        {    
+            switch(monthIndex)
+            {
+            case 0:
+                return 31;
+            case 1:
+                if(this.feb29.getMonth()==1)
+                    return 29;
+                return 28;
+            case 2:
+                return 31;
+            case 3:
+                return 30;
+            case 4:
+                return 31;
+            case 5:
+                return 30;
+            case 6:
+                return 31;
+            case 7:
+                return 31;
+            case 8:
+                return 30;
+            case 9:
+                return 31;
+            case 10:
+                return 30;
+            case 11:
+                return 31;
+            }
+        };
+        
+        Calendar.prototype.getNumDaysInPrevMonth = function()
+        {
+            var monthIndex = this.prevMonth.getMonth();
+            return this.getNumDaysInMonth(monthIndex);
+        };
+        
+        Calendar.prototype.getPrevMonthFirstVisibleDay = function()
+        {
+            var numDaysPrevMonth = this.getNumDaysInPrevMonth();
+            var firstVisibleDay = this.getFirstDayOfWeekForMonth();
+            var visDay = numDaysPrevMonth - (7 - (7-firstVisibleDay))+1;
+            if(visDay > numDaysPrevMonth)
+            {
+                visDay = numDaysPrevMonth - 6;
+            }
+            return visDay;
+        };
+        
+        Calendar.prototype.getNumDaysInCurrentMonth = function()
+        {
+            var monthIndex = this.currentDate.getMonth();
+            return this.getNumDaysInMonth(monthIndex);
+        };
+        
+        Calendar.prototype.getYear = function(){    return this.currentDate.getFullYear();};
+        Calendar.prototype.getFirstDayOfWeekForMonth = function(){  return this.firstDayOfMonth.getDay();};
+        Calendar.prototype.getFirstDayOfCurrentWeek = function(){   return this.getFirstDayOfWeek(this.currentDate);};
+        Calendar.prototype.getFirstDayOfCurrentSelectedWeek = function(){   return this.getFirstDayOfWeek(this.selectedDate);};
+        Calendar.prototype.getLastDayOfCurrentWeek = function(){    return this.getLastDayOfWeek(this.currentDate);};
+        Calendar.prototype.getLastDayOfCurrentSelectedWeek = function(){return this.getLastDayOfWeek(this.selectedDate);};
+        Calendar.prototype.getFirstDayOfWeek = function(pdate)
+        {
+            var fd = new Date(pdate.getFullYear(),pdate.getMonth(),pdate.getDate(),0,0,0,0);
+            var dayOfWeekIndex = pdate.getDay();
+            var dayOfWeek = (dayOfWeekIndex + 7) % 7; 
+            fd.setDate(fd.getDate()-dayOfWeek);
+            
+            //alert("in:" + pdate + ",dayOfWeekIndex:"+ dayOfWeekIndex + ",dayOfWeek" + dayOfWeek + ",begin:" + fd);
+            return fd;
+        };
+        
+        Calendar.prototype.getLastDayOfWeek = function(pdate)
+        {
+            var ld = new Date(pdate.getFullYear(),pdate.getMonth(),pdate.getDate(),0,0,0,0);
+            var dayOfWeekIndex = pdate.getDay();
+            var dayOfWeek = (dayOfWeekIndex + 7) % 7; 
+            ld.setDate(ld.getDate()+ (6-dayOfWeek));
+          
+            return ld;
+        };
+        
+        Calendar.prototype.getPreviousMonth = function(){   return this.prevMonth;};
+        Calendar.prototype.getNextMonth = function(){return this.nextMonth;};
+        Calendar.prototype.rollBack1Month = function(){ this.setCurrentDate(this.getPreviousMonth());};
+        Calendar.prototype.rollForward1Month = function(){  this.setCurrentDate(this.getNextMonth());};
+        Calendar.prototype.rollToMonth = function(month){
+            var rollDate = new Date(this.currentDate.getFullYear(),month,1,0,0,0,0);
+            this.setCurrentDate(rollDate);
+        };
+        
+        Calendar.prototype.rollToYear = function(year)
+        {
+            var rollDate = new Date(year,this.currentDate.getMonth(),1,0,0,0,0);
+            this.setCurrentDate(rollDate);
+        };
+        
+        Calendar.prototype.reset = function()
+        {
+            this.setCurrentDate(this.now);
+        };
+        
+        
+        //////////////////////////////////////////
+        // Calendar Controller Class
+        //////////////////////////////////////////
+        function CalendarController(refreshCalendar,updateDateSelection)
+        {
+            this.refreshCalendar = refreshCalendar;
+            this.updateDateSelection = updateDateSelection;
+            this.activities = null;
+            this.cal = new Calendar();
+            this.selectedIndex = -1;
+            this.MAX_MEETINGS_PER_CELL = 3;
+        }
+        
+        CalendarController.prototype.getCalendar = function(){  return this.cal;};
+        CalendarController.prototype.getSelectedIndex = function(){ return this.selectedIndex;};
+        CalendarController.prototype.setSelectedIndex = function(pindex){   this.selectedIndex = pindex;};
+        CalendarController.prototype.calLeft = function()
+        {
+            
+            this.cal.rollBack1Month();
+            this.refreshCalendar();
+            this.updateDateSelection();
+        };
+        
+        CalendarController.prototype.calRight = function()
+        {
+            this.cal.rollForward1Month();
+            this.refreshCalendar();
+            this.updateDateSelection();
+        };
+        
+        CalendarController.prototype.selectMonth = function(month)
+        {
+            this.cal.rollToMonth(month);
+            this.refreshCalendar();
+            this.updateDateSelection();
+        };
+        
+        CalendarController.prototype.selectYear = function(year)
+        {
+            this.cal.rollToYear(year);
+            this.refreshCalendar();
+            this.updateDateSelection();
+        };
+        
+        CalendarController.prototype.reset = function()
+        {
+            this.cal.reset();
+            this.refreshCalendar();
+            this.updateDateSelection();
+        };
+        
+        CalendarController.prototype.addActivitiesToWeekCalendar = function(pactivities)
+        {
+           
+            //NOTE THIS CALCULATION IS BASED ON THE OVERALL PAGE LAYOUT, IF PAGE LAYOUT WAS TO CHANGE THIS WOULD NEED TO BE ADJUSTED ACCORDINGLY
+           
+            this.addActivitiesToWeekCells(pactivities,".weekCell");
+        };
+        
+        CalendarController.prototype.addActivitiesToWeekCells = function(pactivities,cellSelector)
+        {
+            this.activities = pactivities;
+            
+            var me = this;
+            var activity = null;
+            var empty = "";
+            var style = empty;
+            var title = null;
+            var markup = null;
+            var flag = false;
+                
+            //LOOP THROUGH WEEK CALENDAR HALF HOUR CELLS
+            j$(cellSelector).each(function()
+            {
+                var dayDate = j$(this).data('dayDate');
+                var hours = j$(this).data('hours');
+                var minutes = j$(this).data('minutes');
+                
+                //EMPTY THE CELL
+                j$('div',this).empty();
+                markup = "<ul class='day_meetings'>";
+                flag = false;
+                      
+                //LOOP THROUGH ACTIVITIES TO SEE WHICH ARE VISIBLE ON CURRENT DAY
+                for(var i = 0; i < me.activities.length; ++i)
+                {
+                    activity = me.activities[i];
+        
+                    //CHECK IF MONTH/DAY/YEAR MATCHUP FOR CURRENT CALENDAR DAY CELL
+                   
+                    if(activity.isInRange(dayDate))
+                    {
+                        markup += "<li style='background-color:" + activity.activityColor + ";'><a href='"+ activity.url + "' target='_parent'>" +  activity.subject +  "</a></li>"
+                        flag = true;
+                    }
+                }
+                
+                if(flag)
+                { 
+                  markup += "</ul>";
+                  j$('div',this).append(markup);
+                }       
+            });    
+        };
+        
+        CalendarController.prototype.addActivities = function(pactivities)
+        {
+            this.activities = pactivities;
+            if(this.activities == null)
+            {
+                alert('activities are null =' + this.activities);
+                return;
+            }
+            
+            var me = this;
+            var flags = new Array();
+            for(var i = 0; i <= 31; ++i)
+            {
+                flags[i] = false;
+            }
+                
+            //LOOP THROUGH CALENDAR DAY CELLS
+            j$(".day").each(function()
+            {        
+                    //GET THE DATE FOR THE CURRENT DAY
+                    var dayDate = j$(this).data('dayDate');
+                    var cellIndex = j$(this).data('cellIndex');
+                    //CLEAR THE CONTENTS  style='margin-left:0;padding-left:1em;
+                    j$("ul",this).empty();
+                    
+                    var count = 0;
+                    var ah = null;
+                    
+                    //LOOP THROUGH ACTIVITIES TO SEE WHICH ARE VISIBLE ON CURRENT DAY
+                    for(var i = 0; i < me.activities.length; ++i)
+                    {
+                        ah = me.activities[i];
+                                               
+                                //CHECK IF MONTH/DAY/YEAR MATCHUP FOR CURRENT CALENDAR DAY CELL
+                                if(ah.isInRange(dayDate))
+                                {
+                                    flags[cellIndex] = true;
+                                    if(count < me.MAX_MEETINGS_PER_CELL)
+                                    {                             
+                                        j$("ul",this).append("<li style='background-color:" + ah.activityColor + ";'><a href='"+ ah.url + "' target='_parent'>" +  ah.subject +  "</a></li>");                                
+                                    }
+                                    ++count;
+                                }                                                                                                       
+                    }//END FOR
+                                
+                    //CHECK IF THERE WERE MORE MEETINGS THAT COULD BE RENDERED IN CELL
+                    if(count > me.MAX_MEETINGS_PER_CELL)
+                    {
+                        j$("ul",this).append("<li>...</li>");
+                    }        
+            });    
+        };
+        
+        function filter()
+        {
+          //alert('filter');
+          var checked = false;
+          var value = null;
+          var activityTypes = new Array();
+          
+            j$(".activityType").each(function()
+            {
+                checked = j$("input",this).is(':checked');
+                value = j$("input",this).val();
+                if(checked)
+                {
+                   activityTypes[activityTypes.length] = value;           
+                }
+            });
+            
+            activityManager.setFilter.call(activityManager,activityTypes);
+            
+             //GET ALL ACTIVITIES FROM ACTIVITIES MANAGER
+            var activities = activityManager.getAllActivities.call(activityManager);
+            
+            //ADD TO CALENDAR
+            calController.addActivities.call(calController,activities);
+            calController.addActivitiesToWeekCalendar.call(calController,activities);
+        }
+        
+        function showMonthSelection(owner)
+        {
+            var current = j$('.monthChoices',owner);
+            current.slideDown();
+        }
+        
+        function leaveSelectMonth(owner)
+        {
+            var current = j$('.monthChoices',owner);
+            current.fadeOut(200);
+        }
+        
+        function showYearSelection(owner)
+        {
+            var current = j$('.yearChoices',owner);
+            current.slideDown();
+        }
+        
+        function leaveSelectYear(owner)
+        {
+            var current = j$('.yearChoices',owner);
+            current.fadeOut(200);
+        }
+        
+        function refreshCalendar()
+        {   
+            var yearChoices = "<table width='100%'>";
+            var cal = calController.getCalendar();
+            var sysDate = cal.getSysDate();
+            var currentYear = cal.getYear();
+        
+            var i = 0;
+        
+            for(i = 1; i <=5; ++i)
+            {
+                yearChoices += "<tr><td><a href='#' onclick='calController.selectYear("+ (currentYear+i)+");' >"+(currentYear+i)+"</a></td><td><a href='#' onclick='calController.selectYear("+ (currentYear-i)+");' >"+(currentYear-i)+"</td></tr>"; 
+            }
+        
+            yearChoices += "<tr><td colspan='2'><a href='#' onclick='calController.reset();' >Back to Current</a></td></tr>";
+            yearChoices += "</table>";
+            
+            j$('.monthHeader').empty();
+            j$('.monthHeader').append("<div style='position:relative;float:left;width:100%;'><div style='position:relative;float:left;width:50%;' class='monthBtn'><div style='position:relative;float:right;cursor:pointer;' id='monthBtn'>"+
+                    "<span id='scrollCalLeftBtn' style='padding-right:20px;'>&lt;</span>" +
+                    cal.getMonthName() + 
+                    "<div class='monthChoices' style='position:absolute;display:none;z-index:999;width:300px;left:10px;border-color: white black black;border-style:solid;border-width:1px;margin-left:0;padding:0;top:100%;opacity:1.0;background-color:white;font-size:16px;font-weight:normal;text-align:left;padding-left:15px;'>"+
+                    "<div><a href='#' onclick='calController.selectMonth(0);' >January</a></div>" +
+                    "<div><a href='#' onclick='calController.selectMonth(1);' >Febraury</a></div>" +
+                    "<div><a href='#' onclick='calController.selectMonth(2);' >March</a></div>" +
+                    "<div><a href='#' onclick='calController.selectMonth(3);' >April</a></div>" +
+                    "<div><a href='#' onclick='calController.selectMonth(4);' >May</a></div>" +
+                    "<div><a href='#' onclick='calController.selectMonth(5);' >June</a></div>" +
+                    "<div><a href='#' onclick='calController.selectMonth(6);' >July</a></div>" +
+                    "<div><a href='#' onclick='calController.selectMonth(7);' >August</a></div>" +
+                    "<div><a href='#' onclick='calController.selectMonth(8);' >September</a></div>" +
+                    "<div><a href='#' onclick='calController.selectMonth(9);' >October</a></div>" +
+                    "<div><a href='#' onclick='calController.selectMonth(10);' >November</a></div>" +
+                    "<div><a href='#' onclick='calController.selectMonth(11);' >December</a></div>" +
+                    "<div><a href='#' onclick='calController.reset();' >Back to Current</a></div>" +
+                    "</div></div></div>  <div style='position:relative;float:left;width:50%;text-align:left;cursor:pointer;' class='yearBtn'>&nbsp;&nbsp;" +
+                    + cal.getYear() + 
+                    "<span id='scrollCalRightBtn' style='padding-left:20px;'>&gt;</span>" +
+                    "<div class='yearChoices' style='position:absolute;display:none;z-index:999;width:300px;left:10px;border-color: white black black;border-style:solid;border-width:1px;margin-left:0;padding:0;top:100%;opacity:1.0;background-color:white;font-size:16px;font-weight:normal;text-align:left;padding-left:15px;'>"+
+                    yearChoices +
+                    "</div></div></div>");
+            j$('.monthBtn').click(function(){showMonthSelection(this);});
+            j$('.yearBtn').click(function(){showYearSelection(this);});
+            j$('.monthBtn').mouseleave(function(){leaveSelectMonth(this);});
+            j$('.yearBtn').mouseleave(function(){leaveSelectYear(this);});
+            j$("#scrollCalLeftBtn").click(function(){calController.calLeft();});
+            j$("#scrollCalRightBtn").click(function(){calController.calRight();});
+            
+            var firstDayOfMonth = cal.getFirstDayOfWeekForMonth();
+            var numDaysInMonth = cal.getNumDaysInCurrentMonth();
+            var numDaysInPrevMonth = cal.getNumDaysInPrevMonth();
+            var dayCounter = cal.getPrevMonthFirstVisibleDay();
+            var smallDayCounter = cal.getPrevMonthFirstVisibleDay();
+            var disable = true;
+            var cellIndex = 0;
+            var smallCellIndex = 0;
+            var day = 0;
+            var month = 0;
+            var year = 0;
+        
+            //LOOP THROUGH FIRST WEEK CALENDAR CELLS(DAY LABELS LINKS), PARENT DIV CONTAINS THE MONTH CALENDAR DAY DIV
+            j$('.calendar td a.firstweek-dayLabel').each(function(index) {
+                    j$(this).empty();
+                    j$(this).append(dayCounter);
+                    day = dayCounter;
+        
+                    //STORE CELL INDEX FOR CURRENT CALENDAR MONTH CELL
+                    j$(this).parent().data('cellIndex', cellIndex);
+        
+                    //CHECK IF DISABLED
+                    if(disable)
+                    {
+                        j$(this).parent().parent().addClass("disabled");
+                        j$(this).parent().parent().data("disabled",true);
+                        month = cal.getPreviousMonth().getMonth();
+                        year = cal.getPreviousMonth().getFullYear();
+                    }else
+                    {
+                        j$(this).parent().parent().removeClass("disabled");
+                        j$(this).parent().parent().data("disabled",false);
+                        month = cal.getCurrentDate().getMonth();
+                        year = cal.getCurrentDate().getFullYear();
+                    }
+                    
+                    ++dayCounter;
+                    ++cellIndex;
+                    if(dayCounter > numDaysInPrevMonth)
+                    {
+                        dayCounter = 1;
+                        disable = false;
+                    }
+        
+                    //IF NO DAY CURRENTLY SELECTED BY USER CHECK IF CURRENT DAY MATCHES TODAY
+                    if(calController.getSelectedIndex() == -1)
+                    {
+                        //CHECK IF DAY MATCHES TODAY
+                        if((sysDate.getDate() == day)&&(sysDate.getMonth()==month)&&(sysDate.getFullYear() == year))
+                        {                   
+                            j$(this).parent().parent().addClass("selected");
+                            j$(this).parent().parent().removeClass("disabled");
+                        }
+                    }
+                    
+                    //CHECK IF TODAY AND HIGHLIGHT IT, REGARDLESS OF SELECTION
+                    if((sysDate.getDate() == day)&&(sysDate.getMonth()==month)&&(sysDate.getFullYear() == year))
+                    {
+                        j$(this).parent().parent().addClass("today");
+                    }
+        
+                    //STORE THE DAY DATE FOR THE CALENDAR DAY CELL
+                    j$(this).parent().data('dayDate', new Date(year,month,day,0,0,0,0));            
+            });
+               
+            j$('.calendar td a.dayLabel').each(function(index) {
+                j$(this).empty();
+                j$(this).append(dayCounter);
+                day = dayCounter;
+                j$(this).parent().data('cellIndex', cellIndex);
+                if(disable)
+                {
+                    j$(this).parent().parent().addClass("disabled");
+                    j$(this).parent().parent().data("disabled",true);
+                    month = cal.getNextMonth().getMonth();
+                    year = cal.getNextMonth().getFullYear();
+                }else
+                {
+                    j$(this).parent().parent().removeClass("disabled");
+                    j$(this).parent().parent().data("disabled",false);
+                    month = cal.getCurrentDate().getMonth();
+                    year = cal.getCurrentDate().getFullYear();
+                }
+                
+                ++dayCounter;
+                ++cellIndex;
+                if(dayCounter > numDaysInMonth)
+                {
+                    dayCounter = 1;
+                    disable = true;
+                }
+        
+                if(calController.getSelectedIndex() == -1)
+                {
+                    if((sysDate.getDate() == day)&&(sysDate.getMonth()==month)&&(sysDate.getFullYear() == year))
+                    {
+                        //alert("day=" + day + ",month=" + month + ",year="+ year);
+                        j$(this).parent().parent().addClass("selected");
+                        j$(this).parent().parent().removeClass("disabled");
+                    }
+                }
+                
+                 //CHECK IF TODAY AND HIGHLIGHT IT, REGARDLESS OF SELECTION
+                 if((sysDate.getDate() == day)&&(sysDate.getMonth()==month)&&(sysDate.getFullYear() == year))
+                 {
+                    j$(this).parent().parent().addClass("today");
+                 }
+                
+                j$(this).parent().data('dayDate', new Date(year,month,day,0,0,0,0));
+            });
+           
+            //GET ALL ACTIVITIES FROM ACTIVITIES MANAGER
+            var activities = activityManager.getAllActivities.call(activityManager);
+            
+            //ADD TO CALENDAR
+            calController.addActivities.call(calController,activities);       
+        }
+        
+        function updateDateSelection()
+        {    
+            //LOOP THROUGH DAYS
+            j$(".day").each(function()
+            {
+                //GET CURRENT CELL INDEX
+                var cellIndex = j$(this).data('cellIndex');
+        
+                //CHECK IF IT MATCHES THE SELECTED INDEX
+                if(cellIndex == calController.getSelectedIndex())
+                {
+                    //GET THE DIV DATE
+                    var dayDate = j$(this).data('dayDate');
+                    
+                    //SET AS SELECTED DATE
+                    calController.getCalendar().setSelectedDate(dayDate);
+                    
+                    //REMOVE DISABLED CLASS
+                    j$(this).parent().removeClass("disabled");                       
+                }
+            });    
+        }
+        
+        /**
+         * Called when a day cell is clicked on month calendar.
+         */
+        function selectDate(day,selector,otherSelector)
+        {
+            var cellIndex = day.data('cellIndex');
+            var dayDate = day.data('dayDate');
+            
+            calController.getCalendar().setSelectedDate(dayDate);
+            calController.setSelectedIndex(cellIndex);
+            
+            //DESELECT OTHERS
+            j$(selector).each(function(){
+                j$(this).parent().removeClass("selected");
+                var disabled = j$(this).parent().data('disabled');
+                if((disabled)&&(!j$(this).parent().hasClass("disabled")))
+                {
+                    j$(this).parent().addClass("disabled");
+                }
+            });
+            
+            day.parent().addClass("selected");
+            day.parent().removeClass("disabled");
+            
+            j$(otherSelector).each(function(){
+                j$(this).parent().removeClass("selected");
+                var disabled = j$(this).parent().data('disabled');
+                if((disabled)&&(!j$(this).parent().hasClass("disabled")))
+                {
+                    $(this).parent().addClass("disabled");
+                }
+                var otherCellIndex = j$(this).data('cellIndex');
+                if(cellIndex == otherCellIndex)
+                {
+                    j$(this).parent().addClass("selected");
+                    j$(this).parent().removeClass("disabled");
+                }
+            });     
+        }
+        
+        /**
+         * Called when a half hour cell is clicked on week calendar.
+         */
+        function selectDay(weekCell)
+        {
+            var dayDate = weekCell.data('dayDate');
+            calController.getCalendar().setSelectedDate(dayDate);
+            
+            j$(".weekCell").each(function()
+                    {
+                        var cellDate = j$(this).data('dayDate');
+                        
+                        if((cellDate.getDate() == dayDate.getDate())&&(cellDate.getFullYear() == dayDate.getFullYear())&&(cellDate.getMonth() == dayDate.getMonth()))
+                        {
+                            j$(this).addClass("selected");
+                        }else
+                        {
+                            j$(this).removeClass("selected");    
+                        }
+                    });
+            
+            //HIGHLIGHT SELECTED DATE ON SMALL MONTH CALENDAR
+            j$(".smallday").each(function()
+            {
+                var cellDate = j$(this).data('dayDate');
+                
+                if((cellDate.getDate() == dayDate.getDate())&&(cellDate.getFullYear() == dayDate.getFullYear())&&(cellDate.getMonth() == dayDate.getMonth()))
+                {
+                    j$(this).parent().addClass("selected");
+                }else
+                {
+                    j$(this).parent().removeClass("selected");   
+                }
+            });
+            
+            //HIGHLIGHT SELECTED DATE ON LARGE MONTH CALENDAR
+            j$(".day").each(function()
+            {
+                        var cellDate = j$(this).data('dayDate');
+                        var cellIndex = j$(this).data('cellIndex');
+                        
+                        if((cellDate.getDate() == dayDate.getDate())&&(cellDate.getFullYear() == dayDate.getFullYear())&&(cellDate.getMonth() == dayDate.getMonth()))
+                        {
+                            j$(this).parent().addClass("selected");
+                            calController.setSelectedIndex(cellIndex);
+                        }else
+                        {
+                            j$(this).parent().removeClass("selected");   
+                        }
+            });    
+        }
+        
+        function showMonthCalendar()
+        {
+            j$("#weekCalendar").hide();
+            j$("#monthCalendar").show();
+            j$("#weekLabel").hide();
+            j$("#monthLabel").show();
+        }
+        
+        function resizeParentIFrame(height)
+        {
+            //alert(parent.document);
+            //j$('iframe',parent.document).css('height', '200px');
+        }
+        
+        function showWeekCalendar()
+        {
+            refreshWeekCalendar();
+            j$("#monthCalendar").hide();
+            resizeParentIFrame(200);
+            j$("#weekCalendar").show();
+            j$("#monthLabel").hide();
+            j$("#weekLabel").show();
+        }
+        
+        function refreshWeekCalendar()
+        {
+            var cal = calController.getCalendar();
+            var firstDay = cal.getFirstDayOfCurrentSelectedWeek();
+            var lastDay = cal.getLastDayOfCurrentSelectedWeek();    
+            var verbose = false;
+            /*
+            if((firstDay.getFullYear() == 2011)&&(firstDay.getMonth() == 10)&&(firstDay.getDate() == 6))
+            {
+                verbose = true;
+            }
+            */
+            var days = new Array();
+            days[0] = firstDay;
+            if(verbose)
+            {
+                alert("0=" + days[0]);  
+            }
+            for(var i = 1; i <= 5; ++i)
+            {
+                days[i] = GF.date.DATE_UTIL.addDays(firstDay,i);
+                if(verbose)
+                {
+                    alert(i + "=" + days[i]);
+                }
+            }
+            days[6] = lastDay;
+            
+            if(verbose)
+            {
+                alert("6="+days[6]);
+            }
+            
+            var selectedDate = cal.getSelectedDate();
+            var id = null;
+            var sid = null;
+            var tokens = null;
+            var row = null;
+            var col = null;
+            //var label = cal.getMonthName(firstDay.getMonth()) + " " + firstDay.getDate();
+            //label += " - " ;
+    var dateInt = firstDay.getDate();
+    var monthName = cal.getMonthName(firstDay.getMonth()).substring(0,3);
+    var label = cal.getMonthName(firstDay.getMonth()) + " " + dateInt;    
+    
+    j$("#SunDiv").text("Sunday - "+ (dateInt) + " " + monthName);
+    j$("#MonDiv").text("Monday - "+ (dateInt+1) + " " + monthName);
+    j$("#TueDiv").text("Tuesday - "+ (dateInt+2) + " " + monthName);
+    j$("#WedDiv").text("Wednesday - "+ (dateInt+3) + " " + monthName);
+    j$("#ThuDiv").text("Thursday - "+ (dateInt+4) + " " + monthName);
+    j$("#FriDiv").text("Friday - "+ (dateInt+5) + " " + monthName);
+    j$("#SatDiv").text("Saturday - "+ (dateInt+6) + " " + monthName);
+    label += " - " ;
+
+            if(firstDay.getMonth() != lastDay.getMonth())
+            {
+               
+                label += cal.getMonthName(lastDay.getMonth());
+                label += " ";
+            }
+            label += lastDay.getDate();
+            j$("#weekLabel").empty();
+            j$("#weekLabel").append(label);
+            
+            var minutes = null;
+            var hour = null;
+            var dayDate = null;
+        
+            j$(".weekCell").each(function()
+            {
+                j$(this).removeClass('selected');
+                id = j$(this).attr("id");
+                
+                if(id != null)
+                {
+                    sid = ""+id;
+                    tokens = sid.split("_");
+                    if(tokens.length == 2)
+                    {
+                        row = tokens[0];
+                        col = tokens[1];
+                        row = parseInt(row);
+                        col = parseInt(col);
+                                
+                        if(selectedDate.getDay() == col)
+                        {
+                            j$(this).addClass('selected');
+                        }
+                                        
+                        dayDate = days[parseInt(col)];
+                        j$(this).data('dayDate',dayDate);
+                                                        
+                        minutes = j$(this).data('minutes');
+                        if(minutes == null)
+                        {                                        
+                            if(row%2 == 0)
+                            {
+                                minutes = 30;
+                                j$(this).data('minutes',minutes);
+                               
+                            }else
+                            {
+                                minutes = 0;
+                                j$(this).data('minutes',minutes);                       
+                            }
+                        }
+                        
+                        hour = j$(this).data('hours');
+                        if(hour == null)
+                        {
+                            if(row%2 == 0)
+                            {
+                                hour = (row/2) - 1;
+                                j$(this).data('hours',hour);
+                               
+                            }else
+                            {
+                                hour = parseInt(parseInt(row)/2);
+                                j$(this).data('hours',hour);                       
+                            }                    
+                        }                
+                    }            
+                }
+            });
+            
+            //GET ALL ACTIVITIES FROM ACTIVITIES MANAGER
+            var activities = activityManager.getAllActivities.call(activityManager);
+            
+            //ADD TO CALENDAR
+            calController.addActivitiesToWeekCalendar.call(calController,activities);      
+        }
+        
+        function initCalendar()
+        {
+           activityManager = new ActivityManager();
+           calController = new CalendarController(refreshCalendar,updateDateSelection);
+           loadActivities();   
+           refreshCalendar();    
+        }
+        
+        function bindEventHandlers()
+        {
+            j$("#monthTabBtn").click(function(){showMonthCalendar();});
+            j$("#weekTabBtn").click(function(){showWeekCalendar();});
+            j$(".day").click(function(){selectDate(j$(this),".day",".smallday");});
+            j$(".smallday").click(function(){selectDate(j$(this),".smallday",".day");});
+            j$(".weekCell").click(function(){selectDay(j$(this));});
+            j$(".activityType").click(function(){filter();});
+        }
+         
+        j$(document).ready(function()
+        {
+              
+           bindEventHandlers();
+           initCalendar();  
+           showWeekCalendar();   
+        });
+        
+    </script>
+    
+    <table style="width: 100%;">
+    <tr>
+    <td>
+    <table style="width: 100%;">
+        <tr>
+            <td>
+            <table>
+                <tr>
+                <td>
+                    <button id="monthTabBtn" type="button" tabindex="0">Month</button>
+                    <button id="weekTabBtn" type="button" tabindex="1">Week</button>
+                </td>
+                </tr>
+            </table>
+            </td>
+        </tr>
+        
+        <form> 
+        <tr>       
+            <td style="text-align:left;font-weight:bold;font-size:18px;width: 30%;">Filter</td>
+        </tr>
+        <tr>
+            <apex:repeat value="{!providerActivityTypes}" var="pat" id="patRepeat">
+            <td style="background-color:{!pat.backgroundColor};width: 30%;">
+                <div class="activityType" style="background-color:{!pat.backgroundColor};">
+                    <input type="checkbox" name="{!pat.typeLabel}" checked="true" value="{!pat.typeCode}">{!pat.typeLabel}</input>
+                </div>
+            </td>
+            </apex:repeat>
+        </tr>
+        </form>
+     </table>
+     </td>
+     </tr>
+     <tr>
+     <td>
+     <table style="width: 100%;">       
+        <tr>
+            <td >
+                <div style="float:left; text-align:center;width:100%;" id="monthLabel" class="monthHeader"></div>
+                <div style="display:none;float:left; text-align:center;width:100%;" id="weekLabel" >Week</div>
+            </td>
+        </tr>
+        <tr>
+            <td id="monthCalendar" class="calendar">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Sun</th>
+                                <th>Mon</th>
+                                <th>Tue</th>
+                                <th>Wed</th>
+                                <th>Thu</th>
+                                <th>Fri</th>
+                                <th>Sat</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <apex:repeat value="{!numDaysInWeek}" var="day" id="theRepeat">
+                                <td style="width: 12.5%">
+                                   <div class = "day">                       
+                                      <a class="firstweek-dayLabel"></a>
+                                      <ul class="day_meetings"></ul>
+                                   </div>
+                                </td>
+                                </apex:repeat>
+                            </tr>
+                            <apex:repeat value="{!numWeeks}" var="week" id="theRepeat2">
+                            <tr>
+                                    <apex:repeat value="{!numDaysInWeek}" var="day" id="theRepeat3">
+                                    <td   style="width: 12.5%">
+                                        <div class = "day">                       
+                                          <a class="dayLabel"></a>
+                                          <ul class="day_meetings"></ul>
+                                        </div>
+                                    </td>
+                                    </apex:repeat>
+                            </tr>
+                            </apex:repeat>
+                        </tbody>
+                    </table>
+            </td>
+            <td id="weekCalendar" style="display:none;">
+                    <table >
+                        <thead>
+                            <tr>
+                                <!-- <th>Sunday</th>
+                                <th>Monday</th>
+                                <th>Tuesday</th>
+                                <th>Wednesday</th>
+                                <th>Thursday</th>
+                                <th>Friday</th>
+                                <th>Saturday</th>-->
+                                <th><div id="SunDiv">Sunday</Div></th>
+                                <th><div id="MonDiv">Monday</Div></th>
+                                <th><div id="TueDiv">Tuesday</Div></th>
+                                <th><div id="WedDiv">Wednesday</Div></th>
+                                <th><div id="ThuDiv">Thursday</Div></th>
+                                <th><div id="FriDiv">Friday</Div></th>
+                                <th><div id="SatDiv">Saturday</Div></th>
+
+                            </tr>
+                            </thead>
+                            <tbody id="weekTableBody">
+                            <tr>
+                                <td id='1_0' style='height:200px;' class='firstHalfHour weekCell' ><div style='position:relative;float:left;width:100%;' class='halfHourDiv'></div></td>
+                                <td id='1_1' style='height:200px;' class='firstHalfHour weekCell' ><div style='position:relative;float:left;width:100%;' class='halfHourDiv'></div></td>
+                                <td id='1_2' style='height:200px;' class='firstHalfHour weekCell' ><div style='position:relative;float:left;width:100%;' class='halfHourDiv'></div></td>
+                                <td id='1_3' style='height:200px;' class='firstHalfHour weekCell' ><div style='position:relative;float:left;width:100%;' class='halfHourDiv'></div></td>
+                                <td id='1_4' style='height:200px;' class='firstHalfHour weekCell' ><div style='position:relative;float:left;width:100%;' class='halfHourDiv'></div></td>
+                                <td id='1_5' style='height:200px;' class='firstHalfHour weekCell' ><div style='position:relative;float:left;width:100%;' class='halfHourDiv'></div></td>
+                                <td id='1_6' style='height:200px;' class='firstHalfHour weekCell' ><div style='position:relative;float:left;width:100%;' class='halfHourDiv'></div></td>
+                            </tr>
+                            </tbody>
+                    </table>
+            </td>
+        </tr>
+   </table>
+   </td>
+   </tr>
+   </table>
+</apex:component>

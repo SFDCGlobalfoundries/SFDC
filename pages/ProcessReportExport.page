@@ -1,0 +1,273 @@
+<apex:page controller="ProcessReportCntrlr" showHeader="false" sidebar="false" renderAs="{!renderAsPDF}" contentType="{!renderAsExcel}" cache="true">
+    <head>
+        <style type="text/css">            
+             @page{
+                size: landscape;        
+             }
+             tr {
+                 page-break-inside:avoid; 
+                 page-break-after:auto;
+             }
+             .dynamic-header {
+                 vertical-align:top;
+                 {!IF(genReport = 'pdf',IF(addedColumnsCount > 3,'font-size:8px',IF(addedColumnsCount > 1,'font-size:9px','font-size:11px')),'font-size: 12px')};
+             }
+             .dynamic-data {
+                 {!IF(genReport = 'pdf',IF(addedColumnsCount > 3,'font-size:7px',IF(addedColumnsCount > 1,'font-size:8px','font-size:10px')),'font-size: 12px')};
+                 overflow-wrap: break-word;
+                 word-wrap: break-word;
+                 vertical-align:top;
+             }                          
+             .tbl {                                  
+                 table-layout:auto;
+                 -fs-table-paginate:paginate;
+                 width: 100%;
+                 {!IF(NOT(ISBLANK(viewProcessDetails)),'page-break-after:always','')};            
+             }           
+             .empty-column-content {
+                 display: none;               
+             } 
+             .section-detail {              
+                 padding-bottom: 10px;
+                 padding-top: 10px;
+                 page-break-inside:avoid; 
+             }
+             .tbl-detail {
+                 table-layout:auto;
+                 vertical-align:top;
+                 -fs-table-paginate:paginate;                 
+                 width: 100%;                
+                 {!IF(genReport = 'pdf','font-size: 11px','font-size: 12px')};                           
+             } 
+             .bottom-space {
+                 padding-bottom: 10px;
+             }  
+             .break {                 
+                 page-break-after:always; 
+             }
+             .top-space {
+                 padding-top: 10px;
+             }      
+        </style>
+    </head>     
+    <table width="100%">
+        <tr>
+            <td align="center">    
+                <apex:image value="{!URLFOR($Resource.GFLogo)}" width="50%" height="50%" style="position:relative;background-repeat:repeat-x;left: 0cm; top:0cm;" rendered="{!AND(genReport == 'pdf')}"/>
+            </td>        
+        </tr>   
+    </table>        
+    <apex:outputPanel layout="block" rendered="{!showList}" style="margin-top:10px;margin-bottom:25px">
+        <apex:panelGrid columns="1" >
+            <apex:outputText value="Geometry: {!geometry}" style="font-weight:bold;font-size:16px"/>                    
+                        <apex:outputText value="Process Technology: {!ptname}" style="font-weight:bold;font-size:16px" rendered="{!NOT(ISBLANK(ptName))}"/>
+                        <apex:outputText value="PT Number: {!ptNumber}" style="font-weight:bold;font-size:16px" rendered="{!NOT(ISBLANK(ptNumber))}"/>
+                        <apex:outputText value="Process Family: {!family}" style="font-weight:bold;font-size:16px" rendered="{!NOT(ISBLANK(family))}"/>           
+                        <apex:outputText value="Category: {!category}" style="font-weight:bold;font-size:16px" rendered="{!NOT(ISBLANK(category))}"/>           
+                        <apex:outputText value="PID Number: {!pidNumber}" style="font-weight:bold;font-size:16px" rendered="{!NOT(ISBLANK(pidNumber))}"/>
+                        <apex:outputText value="Mask Layer: {!maskLayer}" style="font-weight:bold;font-size:16px" rendered="{!NOT(ISBLANK(maskLayer))}"/>
+                        <apex:outputText value="Process Name: {!processName}" style="font-weight:bold;font-size:16px" rendered="{!NOT(ISBLANK(processName))}"/>           
+                        <apex:outputText value="IO Voltage: {!ioVoltage}" style="font-weight:bold;font-size:16px" rendered="{!NOT(ISBLANK(ioVoltage))}"/>                                   
+                        <apex:outputText value="HV Voltage: {!HVVoltage}" style="font-weight:bold;font-size:16px" rendered="{!NOT(ISBLANK(HVVoltage))}"/>           
+                        <apex:outputText value="Core Voltage: {!coreVoltage}" style="font-weight:bold;font-size:16px" rendered="{!NOT(ISBLANK(coreVoltage))}"/>           
+                        <apex:outputText value="Poly Gate Type: {!gateType}" style="font-weight:bold;font-size:16px" rendered="{!NOT(ISBLANK(gateType))}"/>           
+                        <apex:outputText value="Tech Type: {!techType}" style="font-weight:bold;font-size:16px" rendered="{!NOT(ISBLANK(techType))}"/>           
+                        <apex:outputText value="Number of Processes: {!processList.processCount}" style="font-weight:bold;font-size:16px"/>                    
+        </apex:panelGrid>
+    </apex:outputPanel>
+    <apex:outputPanel rendered="{!AND(genReport = 'excel')}">
+        <br/>         
+    </apex:outputPanel>  
+    <apex:dataTable value="{!processList.rows}" var="i" width="100%" border="1" rendered="{!AND(processList.rows.size > 0)}" cellpadding="5px" styleclass="tbl" headerclass="dynamic-header" rowClasses="dynamic-data">                                  
+        <apex:repeat value="{!i.fields}" var="col"> 
+            <!-- setting header for apex:column under apex:repeat will not work -->
+            <!-- workaround is to create another list of string for the headers -->
+            <!-- and define it in another apex:repeat                           --> 
+            
+            <apex:column rendered="{!AND(col.name = 'Customer Release',NOT(isExternalUser))}">
+                <apex:outputText value="{!col.value}" style=""/>
+            </apex:column>                                                  
+                                                                                 
+            <apex:column rendered="{!AND(NOT(CONTAINS('Customer Release',col.name)),OR(CONTAINS(addedColumns,col.name),NOT(col.isOptional)))}" style="{!IF(AND(col.name = 'Mask Layers'),'width:150px','')}">                                
+                <apex:outputText value="{!SUBSTITUTE(
+                                              SUBSTITUTE(
+                                                  SUBSTITUTE(col.value,'_',' '),
+                                                  ',',', '),
+                                              ';','; ')}" />                                                                                                   
+            </apex:column>                                  
+        </apex:repeat>
+        
+        
+        <!--Define the headers here and hide the empty cells that are created -->                       
+        <apex:repeat value="{!processList.tableColumns}" var="col">                        
+            <apex:column styleClass="empty-column-content" rendered="{!AND(AND(col = 'Customer Release',NOT(isExternalUser)),OR(CONTAINS(addedColumns,col),NOT(CONTAINS(processList.optionalColumnsText,col))))}">
+                <apex:facet name="header">
+                    <apex:outputPanel layout="block">
+                        <apex:outputPanel layout="block" style="float:left">                                                 
+                            <apex:outputText value="Customer Release"/>
+                        </apex:outputPanel>
+                    </apex:outputPanel>
+                </apex:facet>          
+            </apex:column>
+            <apex:column styleClass="empty-column-content" rendered="{!AND(NOT(CONTAINS('Customer Release',col)),OR(CONTAINS(addedColumns,col),NOT(CONTAINS(processList.optionalColumnsText,col))))}">   
+                <apex:facet name="header">
+                    <apex:outputPanel layout="block">
+                        <apex:outputPanel layout="block" style="float:left"> 
+                            <apex:outputText value="{!col}" rendered="{!NOT(CONTAINS('Available to Sell;Process Name;NO OF RETICLES',col))}"/>
+                            <apex:outputText value="Process ID" rendered="{!AND(col = 'Process Name')}"/>
+                            <apex:outputText value="PID Lifecycle" rendered="{!AND(col = 'Available to Sell')}"/>
+                            <apex:outputText value="No Of Reticles" rendered="{!AND(col = 'NO OF RETICLES')}"/>
+                        </apex:outputPanel>                                                                                        
+                    </apex:outputPanel>
+                </apex:facet>          
+            </apex:column>                       
+        </apex:repeat>                                                 
+    </apex:dataTable>    
+    <apex:outputPanel rendered="{!AND(genReport = 'excel')}">
+        <br/>         
+    </apex:outputPanel>                    
+    <apex:repeat value="{!processList.rows}" var="i">                       
+        <apex:outputPanel layout="block"  rendered="{!AND(CONTAINS(viewProcessDetails,i.process.PID_Number__c))}">   
+            <apex:outputPanel layout="block" styleClass="break"/>            
+            <apex:outputPanel rendered="{!AND(genReport = 'excel')}">
+                <br/>         
+            </apex:outputPanel> 
+                                 
+            <apex:outputPanel layout="block" styleClass="bottom-space">
+                <apex:outputText value="Process {!i.process.PID_Number__c}" style="font-size:20px"/>
+            </apex:outputPanel>
+            
+            <apex:outputPanel rendered="{!AND(genReport = 'excel')}">
+                <br/>         
+            </apex:outputPanel> 
+            
+            <apex:panelGrid width="100%" styleClass="section-detail">
+                <apex:outputPanel layout="block" styleClass="bottom-space">
+                    <apex:outputText value="Overview" style="font-size:16px"/>
+                </apex:outputPanel>                            
+                <apex:dataTable value="{!$ObjectType.Process__c.FieldSets.Process_Details_Section}" var="f" columns="2" styleClass="tbl-detail" border="1" cellpadding="2px">
+                    <apex:column value="{!f.label}" rendered="{!AND(CONTAINS('Process Owner;CUSTOMER INITIAL;Customer Release',f.label),NOT(isExternalUser))}" style="font-weight:bold;width:150px"/>
+                    <apex:column value="{!f.label}" rendered="{!NOT(CONTAINS('Process Owner;CUSTOMER INITIAL;Customer Release',f.label))}" style="font-weight:bold;width:150px"/>
+                    <apex:column rendered="{!AND(CONTAINS('Process Owner;CUSTOMER INITIAL;Customer Release',f.label),NOT(isExternalUser))}">
+                        <apex:outputText value="{!IF(NOT(CONTAINS('date;double;integer',f.type)),SUBSTITUTE(SUBSTITUTE(i.process[f],';','; '),',',', '),i.process[f])}"/>     
+                    </apex:column>
+                    <apex:column rendered="{!NOT(CONTAINS('Process Owner;CUSTOMER INITIAL;Customer Release',f.label))}">
+                        <apex:outputText value="{!IF(NOT(CONTAINS('date;double;integer',f.type)),SUBSTITUTE(SUBSTITUTE(i.process[f],';','; '),',',', '),i.process[f])}"/>     
+                    </apex:column>
+                </apex:dataTable>               
+            </apex:panelGrid>
+            
+            <apex:outputPanel rendered="{!AND(genReport = 'excel')}">
+                <br/>         
+            </apex:outputPanel> 
+            
+            <apex:panelGrid width="100%" styleClass="section-detail">
+                <apex:outputPanel layout="block" styleClass="bottom-space">
+                    <apex:outputText value="Mask Layers" style="font-size:16px"/>
+                </apex:outputPanel>                            
+                <apex:dataTable value="{!$ObjectType.Process__c.FieldSets.Mask_Layers_Section}" var="f" columns="2" styleClass="tbl-detail" border="1" cellpadding="2px">
+                    <apex:column value="{!f.label}" style="font-weight:bold;width:150px"/>
+                    <apex:column >
+                        <apex:outputText value="{!IF(NOT(CONTAINS('date;double;integer',f.type)),SUBSTITUTE(SUBSTITUTE(i.process[f],';','; '),',',', '),i.process[f])}"/>     
+                    </apex:column>
+                </apex:dataTable>               
+            </apex:panelGrid>
+            
+            <apex:outputPanel rendered="{!AND(genReport = 'excel')}">
+                <br/>         
+            </apex:outputPanel> 
+            
+            <apex:panelGrid width="100%" styleClass="section-detail">
+                <apex:outputPanel layout="block" styleClass="bottom-space">
+                    <apex:outputText value="Process Feature" style="font-size:16px"/>
+                </apex:outputPanel>                            
+                <apex:dataTable value="{!$ObjectType.Process__c.FieldSets.Process_Feature_Section}" var="f" columns="2" styleClass="tbl-detail" border="1" cellpadding="2px">
+                    <apex:column value="{!f.label}" style="font-weight:bold;width:150px"/>
+                    <apex:column >
+                        <apex:outputText value="{!IF(NOT(CONTAINS('date;double;integer',f.type)),SUBSTITUTE(SUBSTITUTE(i.process[f],';','; '),',',', '),i.process[f])}"/>     
+                    </apex:column>
+                </apex:dataTable>               
+            </apex:panelGrid>
+            
+            <apex:outputPanel rendered="{!AND(genReport = 'excel')}">
+                <br/>         
+            </apex:outputPanel> 
+            
+            <apex:panelGrid width="100%" styleClass="section-detail">
+                <apex:outputPanel layout="block" styleClass="bottom-space">
+                    <apex:outputText value="Process Features FEOL and BEOL" style="font-size:16px"/>
+                </apex:outputPanel>                            
+                <apex:dataTable value="{!$ObjectType.Process__c.FieldSets.Process_Features_FEOL_and_BEOL_Section}" var="f" columns="2" styleClass="tbl-detail" border="1" cellpadding="2px">
+                    <apex:column value="{!f.label}" style="font-weight:bold;width:150px"/>
+                    <apex:column >
+                        <apex:outputText value="{!IF(NOT(CONTAINS('date;double;integer',f.type)),SUBSTITUTE(SUBSTITUTE(i.process[f],';','; '),',',', '),i.process[f])}"/>     
+                    </apex:column>
+                </apex:dataTable>               
+            </apex:panelGrid>
+            
+            <apex:outputPanel rendered="{!AND(genReport = 'excel')}">
+                <br/>         
+            </apex:outputPanel> 
+            
+            <apex:panelGrid width="100%" styleClass="section-detail">
+                <apex:outputPanel layout="block" styleClass="bottom-space">
+                    <apex:outputText value="Process Modules - Standard and Transistors" style="font-size:16px"/>
+                </apex:outputPanel>                            
+                <apex:dataTable value="{!$ObjectType.Process__c.FieldSets.Standard_and_Transistors_Section}" var="f" columns="2" styleClass="tbl-detail" border="1" cellpadding="2px">
+                    <apex:column value="{!f.label}" style="font-weight:bold;width:150px"/>
+                    <apex:column >
+                        <apex:outputText value="{!IF(NOT(CONTAINS('date;double;integer',f.type)),SUBSTITUTE(SUBSTITUTE(i.process[f],';','; '),',',', '),i.process[f])}"/>     
+                    </apex:column>
+                </apex:dataTable>               
+            </apex:panelGrid>
+            
+            <apex:outputPanel rendered="{!AND(genReport = 'excel')}">
+                <br/>         
+            </apex:outputPanel> 
+            
+            <apex:panelGrid width="100%" styleClass="section-detail">
+                <apex:outputPanel layout="block" styleClass="bottom-space">
+                    <apex:outputText value="Process Modules - Analog/RF" style="font-size:16px"/>
+                </apex:outputPanel>                            
+                <apex:dataTable value="{!$ObjectType.Process__c.FieldSets.Analog_RF_Section}" var="f" columns="2" styleClass="tbl-detail" border="1" cellpadding="2px">
+                    <apex:column value="{!f.label}" style="font-weight:bold;width:150px"/>
+                    <apex:column >
+                        <apex:outputText value="{!IF(NOT(CONTAINS('date;double;integer',f.type)),SUBSTITUTE(SUBSTITUTE(i.process[f],';','; '),',',', '),i.process[f])}"/>     
+                    </apex:column>
+                </apex:dataTable>               
+            </apex:panelGrid>
+            
+            <apex:outputPanel rendered="{!AND(genReport = 'excel')}">
+                <br/>         
+            </apex:outputPanel> 
+            
+            <apex:panelGrid width="100%" styleClass="section-detail">
+                <apex:outputPanel layout="block" styleClass="bottom-space">
+                    <apex:outputText value="Process Modules - Special and Others" style="font-size:16px"/>
+                </apex:outputPanel>                            
+                <apex:dataTable value="{!$ObjectType.Process__c.FieldSets.Special_and_Others_Section}" var="f" columns="2" styleClass="tbl-detail" border="1" cellpadding="2px">
+                    <apex:column value="{!f.label}" style="font-weight:bold;width:150px"/>
+                    <apex:column >
+                        <apex:outputText value="{!IF(NOT(CONTAINS('date;double;integer',f.type)),SUBSTITUTE(SUBSTITUTE(i.process[f],';','; '),',',', '),i.process[f])}"/>     
+                    </apex:column>
+                </apex:dataTable>               
+            </apex:panelGrid>
+            
+            <apex:outputPanel rendered="{!AND(genReport = 'excel')}">
+                <br/>         
+            </apex:outputPanel> 
+            
+            <apex:panelGrid width="100%" styleClass="section-detail">
+                <apex:outputPanel layout="block" styleClass="bottom-space">
+                    <apex:outputText value="Process Documentation" style="font-size:16px"/>
+                </apex:outputPanel>                            
+                <apex:dataTable value="{!$ObjectType.Process__c.FieldSets.Process_Documentation_Section}" var="f" columns="2" styleClass="tbl-detail" border="1" cellpadding="2px">
+                    <apex:column value="{!f.label}" style="font-weight:bold;width:150px"/>
+                    <apex:column >
+                        <apex:outputText value="{!IF(NOT(CONTAINS('date;double;integer',f.type)),SUBSTITUTE(SUBSTITUTE(i.process[f],';','; '),',',', '),i.process[f])}"/>     
+                    </apex:column>
+                </apex:dataTable>               
+            </apex:panelGrid>
+        </apex:outputPanel>                                          
+    </apex:repeat>                                                 
+</apex:page>

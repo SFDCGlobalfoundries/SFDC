@@ -1,0 +1,81 @@
+<!-- 
+  Type Name:  WRAlertPage.page
+  Author: Cognizant
+  Created Date:  24-May-2015
+  Reason: 
+  Change History:
+  Author: 
+  Modified Date: 
+  Reason: 
+   -->
+<apex:page standardController="Bug__c" showChat="false">
+    <script type="text/javascript" src="/soap/ajax/29.0/connection.js"></script>
+    <script type="text/javascript" language="javascript">
+        window.onload=function()
+            {                          
+                var isUpdate = true;   
+                var sumofLOECheckbox = {!Bug__c.Sum_of_Components_LOEs__c};
+                var totalLevelofEffort ={!Bug__c.Total_Level_of_Effort__c};
+                var isAutoUpdateLOE = {!Bug__c.IsAutoUpdateLOE__c};
+                
+                if (sumofLOECheckbox == true && isAutoUpdateLOE!= true) {
+                    if(totalLevelofEffort==0){                    
+                        updateWR();
+                    }else{
+                        autoUpdateLOE();
+                    }
+                }
+            }   
+        function updateWR(){
+            
+            var myquery = "SELECT Id,IsAutoUpdateLOE__c,Sum_of_Components_LOEs__c  FROM Bug__c WHERE Id='{!Bug__c.Id}' LIMIT 1 ";
+            var result = sforce.connection.query(myquery);
+            var records = result.getArray("records");
+            if (!window.location.origin) {
+                window.location.origin = window.location.protocol + "//" + window.location.hostname + (window.location.port ? ':' + window.location.port : '');
+            }            
+            var WRurl = window.location.origin;
+            WRurl = WRurl + '/' + '{!Bug__c.Id}';
+            if(records[0]){
+                var wrObj = records[0];
+                if (confirm("{!$Label.WR_Alert_TotalLOE_Message}")) {
+                    wrObj.IsAutoUpdateLOE__c = 1;
+                    wrObj.Total_LOE__c = 0;
+                    var update = sforce.connection.update([wrObj]);
+                    if (update[0].getBoolean("success")) {
+                        window.open(WRurl, target = '_top');
+                        return false;
+                    }
+                }else{
+                    wrObj.Sum_of_Components_LOEs__c = 0;
+                    var update = sforce.connection.update([wrObj]);            
+                    if (update[0].getBoolean("success")) {
+                        window.open(WRurl, target = '_top');
+                        return false;
+                    }
+                }
+            }       
+        };
+        
+        function autoUpdateLOE(){
+                    
+            var myquery = "SELECT Id,IsAutoUpdateLOE__c FROM Bug__c WHERE Id='{!Bug__c.Id}' LIMIT 1 ";
+            var result = sforce.connection.query(myquery);
+            var records = result.getArray("records");
+            if (!window.location.origin) {
+                window.location.origin = window.location.protocol + "//" + window.location.hostname + (window.location.port ? ':' + window.location.port : '');
+            }            
+            var WRurl = window.location.origin;
+            WRurl = WRurl + '/' + '{!Bug__c.Id}';
+            if(records[0]){
+                var wrObj = records[0];
+                wrObj.IsAutoUpdateLOE__c = 1;
+                var update = sforce.connection.update([wrObj]);
+                if (update[0].getBoolean("success")) {
+                    window.open(WRurl, target = '_top');
+                    return false;
+                }
+            }       
+        };
+    </script>
+</apex:page>

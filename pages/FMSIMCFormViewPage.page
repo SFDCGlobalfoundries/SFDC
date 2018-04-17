@@ -1,0 +1,1193 @@
+<!-- 
+    Author: Anil Kumar Reddy L
+    Company: GLOBALFOUNDRIES
+    Project: FMS 2.0
+    Description: Page used to View the IMC Form.
+    Change History: 
+    Date               Name                    Comments
+    10/1/2016          Anil Kumar Reddy L      Fix for Adendum Form creation issue.
+    14/02/2017       Anirban Roy            Added redirect button to FMS Search page
+    19/04/2017       Anirban Roy            Modified on line numbers 758,759,778,779.
+    19-May-2017      Abhita Bansal          Added the code for Catch-up Release T39 Point 1 and 2
+    11-Jul-2017      Abhita Bansal          Changed By Abhita for UAT Issue #445 
+	01-Nov-2017		 Anirban Roy			Modified code to incorporate TA review comments to remove a blank table in Additional Contacts.
+    -->
+<apex:page standardController="Form_Management_System__c" extensions="FMSIMCFormExt" showHeader="true" sidebar="true" id="IMCFromPage">
+    <apex:includeScript value="{!URLFOR($Resource.jquery, 'js/jquery-1.8.3.min.js')}"/>
+    <apex:includeScript value="{!URLFOR($Resource.jquery, 'js/jquery-ui-1.9.2.custom.js')}"/>
+    <apex:includeScript value="{!URLFOR($Resource.jqPlugin, '/jquery.blockUI.js')}"/>
+    <apex:stylesheet value="{!URLFOR($Resource.jquery, 'css/ui-lightness/jquery-ui-1.9.2.custom.css')}"/>
+    <style type="text/css">
+        body div{
+        font-family: Arial !important;
+        }
+    </style>
+    <style>  
+        .bPageBlock .requiredInput .requiredBlock{background-color: #F6FBF6;}  
+        .requiredInput .requiredBlock::before { display: block; content: "*"; font-size: 1.5em; font-weight: bold; color: #c00; margin-left: -8px; margin-top: -2px; }  
+        p{
+        color:brown;
+        }
+        .popup {
+        background-color: white;
+        border-width: 2px;
+        border-style: solid;
+        z-index: 9999;
+        left: 31%;
+        padding:10px;
+        position: absolute;
+        width: 500px;
+        margin-left: -250px;
+        top:40px;
+        width:1000px;  
+        height:650px;     
+        }
+        .popup1{
+        background-color: white;
+        border-width: 2px;
+        border-style: solid;
+        z-index: 9999;
+        left: 41%;
+        padding:10px;
+        position: absolute;
+        width: 500px;
+        margin-left: -250px;
+        top:40px;
+        width:500px;  
+        height:350px;     
+        }
+        .popupBg {
+        background-color:black;
+        filter: alpha(opacity = 20);
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        top: 0;
+        left: 0;
+        z-index: 9998;
+        }
+        .closeButton {
+        float: right;
+        }
+        .message1 {
+            display:none;
+        }
+        .error1 {
+            display:none;
+        }
+        a{
+            text-decoration: none;
+        }
+    </style>
+    <script>
+    function launchPrintWindow(IMCFormObjId){
+        window.open("/apex/FMSIMCFormViewPrintPDF?id="+IMCFormObjId);
+    }
+</script>
+    
+    <script>    
+        $j = jQuery.noConflict();
+        //Anil - addendum - Commented code
+        /*function showSimpleDialog(custName){ 
+           addendumparaFunction('CreateAddendum');
+            
+        }  */
+        function pickselectedVal(){
+            var e = document.getElementById("createAddOpt");
+            var str = e.options[e.selectedIndex].value;
+            console.log('Value selected - '+str);
+            if(str==' '){
+                $j('.error1').show();
+            }else{
+                $j('.error1').hide();
+                createAddendumFunction(str);
+            }
+        }
+        function showMessageRIT(){
+            $j = jQuery.noConflict();    
+            var e = document.getElementById("createAddOpt");
+            var str = e.options[e.selectedIndex].value;
+            if(str == 'RIT'){               
+                $j('.message1').show();
+            }else{
+                $j('.message1').hide();
+            }
+        }
+    
+        function showDialogforActions(actionName){
+            
+                var sd = new SimpleDialog("Test"+Dialogs.getNextId(), true);    
+            //sd.setTitle("Warning");   
+                sd.createDialog(); 
+                sd.setWidth(400);               
+                window.parent.sd = sd;
+            if(actionName == 'Freeze'){
+                var ex = sd.setContentInnerHTML("<img src='/img/msg_icons/warning24.png'/> <b>Warning!</b> <br/><br/>Are you sure you want to complete this form action? <br/> <br/> Freezing signifies that the form content is accurate and may be utilized by GLOBALFOUNDRIES in preparation for a tapeout. Once frozen, you will no longer be able to edit this form without intervention from your Foundry Technical Representative. <br/><br/><p align='center'><button class='btn' onclick='freezeFormActionFunction(); window.parent.sd.hide(); return true;'>Continue</button>&nbsp; &nbsp; &nbsp; &nbsp; <button class='btn' onclick='window.parent.sd.hide(); return false;'>Cancel</button></p>"); // Corrected the spelling for UAT Issue #323
+                sd.show();   
+                return ex;
+            }
+            else if(actionName == 'Submit'){
+            
+                var ex = sd.setContentInnerHTML("<img src='/img/msg_icons/warning24.png'/> <b>Warning!</b> <br/><br/>Are you sure you want to complete this form action? <br/> <br/> Submitting this form signifies that you are preparing to collaborate with the Foundry. While in this state, you may continue to edit the form. <br/><br/><p align='center'><button class='btn' onclick='submitFormActionFuntion(); window.parent.sd.hide(); return true;'>Continue</button>&nbsp; &nbsp; &nbsp; &nbsp; <button class='btn' onclick='window.parent.sd.hide(); return false;'>Cancel</button></p>"); 
+                sd.show();   
+                return ex;
+            }
+            else if(actionName == 'makeFromInActive'){
+                
+            var ex = sd.setContentInnerHTML("<img src='/img/msg_icons/warning24.png'/> <b>Warning!</b> <br/><br/>Are you sure you want to complete this form action? <br/> <br/> Making this form inactive signifies that you wish to retain it in FMS, but do not plan to continue working with it. <br/><br/><p align='center'><button class='btn' onclick='makeFormInActiveActionFuntion(); window.parent.sd.hide(); return true;'>Continue</button>&nbsp; &nbsp; &nbsp; &nbsp; <button class='btn' onclick='window.parent.sd.hide(); return false;'>Cancel</button></p>"); 
+                sd.show();   
+                return ex;
+            }
+            
+            else if(actionName == 'makeFormActive'){
+            var ex = sd.setContentInnerHTML("<img src='/img/msg_icons/warning24.png'/> <b>Warning!</b> <br/><br/>Are you sure you want to complete this form action? <br/> <br/> Make this form active again if you wish to continue working with it. The form will return to its previous state.<br/><br/><p align='center'><button class='btn' onclick='makeFormActiveActionFuntion(); window.parent.sd.hide(); return true;'>Continue</button>&nbsp; &nbsp; &nbsp; &nbsp; <button class='btn' onclick='window.parent.sd.hide(); return false;'>Cancel</button></p>"); 
+                sd.show();   
+                return ex;
+            }
+             
+        }
+    
+        //Start Bug489-Anil Kumar Reddy - Modified delete popup
+        function showDialogforDelete(){
+            var sd = new SimpleDialog("Test"+Dialogs.getNextId(), true);    
+            sd.setTitle("Warning");   
+            sd.createDialog(); 
+            sd.setWidth(400);               
+            window.parent.sd = sd;
+            var ex = sd.setContentInnerHTML("<img src='/img/msg_icons/warning24.png'/> <b>Warning!</b> <br/><br/>Are you sure you want to delete this form? <br/><br/> <b>The form will no longer be retrievable once deleted.</b> <br/><br/> Note: The form delete operation may take 1-2 minutes to complete. Please do not perform any other operations during this time. We appreciate your patience. <br/><br/><p align='center'><button class='btn' onclick='DeleteFormActionFunction(); window.parent.sd.hide(); return true;'>Confirm</button>&nbsp; &nbsp; &nbsp; &nbsp; <button class='btn' onclick='window.parent.sd.hide(); return false;'>Cancel</button></p>"); 
+                sd.show();   
+                return ex;
+        }
+       //End Bug489-Anil Kumar Reddy - Modified delete popup
+    
+    </script>
+    <!--Start - Addendum - Anil - commented Unnecessarey Code -->
+    <!--<apex:outputPanel id="addendumpnl">-->
+    <script>   
+    /*
+    function createAddendum(custName){
+        var theControllerValue = '{!popupCreateAdd}';
+        if(theControllerValue == 'true'){
+           var sd = new SimpleDialog("Test"+Dialogs.getNextId(), true);    
+           sd.setTitle("New Addendum Form Creation");   
+           sd.createDialog();   
+           sd.setWidth(530); 
+           window.parent.sd = sd;  
+           var str = "<h1><u><center>New Addendum Form Creation</center></u></h1> <br/><span><p>Please verify you are placing your addendum in the correct place, then select an addendum type below in order to proceed.</p> The addendum form being created will be associated with the customer "+custName+".<br/><br/></span><div><label><b>Select new addendum form type:</b>&nbsp;<b style=\"color:#c00;\">*&nbsp;&nbsp;&nbsp;</b></label><select id=\"createAddOpt\" onchange=\"showMessageRIT();\"><option value=\" \">== Select Form Type ==</option><option value=\"IMC\">Incremental Mask Change (IMC)</option><option value=\"RIT\">Design Data Submission (RIT)</option></select><span class=\"error1\"><p style=\"margin-left: 195px;\">* This is a required field.</p></span></div><br/><span class=\"message1\"><p>IMPORTANT: Please ensure that you are attaching this RIT addendum to the correct parent form to avoid delays in design data processing. The form hierarchy above must display a direct connection from this RIT to the parent form (Main or IMC) applicable to this tapeout. If you are unsure of the correct placement, please consult your Foundry Technical Representative. <br/><br/>To change your addendum placement, click \"Cancel\", navigate to the desired parent form, and select \"Create an addendum\". To proceed with your current placement, enter a form name, an optional description, and click \"Continue\".</p></span><br/><p align='center'><br /><button class='btn' onclick='pickselectedVal(); return true;'>Continue</button>&nbsp; &nbsp; &nbsp; &nbsp; <button class='btn' onclick='window.parent.sd.hide(); return false;'>Cancel</button> </p>";
+           var ex = sd.setContentInnerHTML(str); 
+           sd.show();            
+           return ex;
+       }
+    }*/
+    </script>
+
+    <apex:form id="IMCForm">
+        <apex:pagemessages id="errorMsg" /><!--Changed by Abhita for new UAT Issue #324-->
+
+        <c:FMSNameDesc ></c:FMSNameDesc>
+
+        <c:FMSHierarchy formId="{!fId}"></c:FMSHierarchy>
+        
+        <apex:actionFunction name="paraFunction" action="{!showPopup}" reRender="IMCForm, popup, createAddPanel,errorMsg,addendumpnl" status="blockUI">
+            <apex:param id="bname" name="stateVal" value="" />
+        </apex:actionFunction>
+        <!-- Anil Kumar Reddy L 10/1/2016 End : Rerender Error message-->
+        <apex:actionFunction name="freezeFormActionFunction" action="{!freezeForm}" status="blockUI">       
+        </apex:actionFunction>
+        <apex:actionFunction name="submitFormActionFuntion" action="{!submitForm}" status="blockUI">       
+        </apex:actionFunction>
+        <apex:actionFunction name="makeFormInActiveActionFuntion" action="{!makeFormInactive}" status="blockUI">       
+        </apex:actionFunction>
+        <apex:actionFunction name="makeFormActiveActionFuntion" action="{!makeFormActive}" status="blockUI">       
+        </apex:actionFunction>
+        <apex:actionFunction name="createAddendumFunction" action="{!continueCheck}" reRender="IMCForm" status="blockUI">
+            <apex:param id="addenId" name="addenType" value="" />
+        </apex:actionFunction>
+        <!--Start Bug489-Anil Kumar Reddy - Modified delete popup--> 
+        <apex:actionFunction name="DeleteFormActionFunction" action="{!deleteForm}" status="blockUI">       
+        </apex:actionFunction>
+        <apex:actionStatus onstart="blockPage()" onstop="unblockPage()" id="blockUI"/>
+        <!--End Bug489-Anil Kumar Reddy - Modified delete popup-->
+        
+        <apex:pageBlock title="FMS 'Form State' Change" rendered="{!popupVal}">
+            <apex:pageblockSection columns="1">
+                <apex:pageBlockSectionItem >
+                    <apex:outputLabel value="Current Form State: "/>
+                    <apex:outputField value="{!IMCFormObj.State_of_the_Form__c}"/>
+                </apex:pageblockSectionItem>
+                <apex:pageBlockSectionItem >
+                    <apex:outputLabel value="Changing to Form State: "/>
+                    <apex:outputText value="{!requestMsg}"/>
+                </apex:pageblockSectionItem>
+                <apex:outputPanel rendered="{!requestMsg == 'RequestToThaw'}">
+                    <p style="color:black;margin-left: 10px">Please note: Request for GLOBALFOUNDRIES to thaw (unfreeze) the form to allow editing. GLOBALFOUNDRIES will evaluate and allow editing only if possible, depending on the overall status of your release.</p>
+                </apex:outputPanel>
+                <apex:outputPanel rendered="{!requestMsg == 'Thawed'}">
+                    <p style="color:black;margin-left: 10px">Please note: Thawing will unfreeze the form to allow editing.</p>
+                </apex:outputPanel>
+                <apex:pageblockSection columns="1">
+                    
+                    <apex:outputPanel >
+                        <apex:outputLabel value="Please provide a brief description explaining the reason for this action:" style="font-weight:bold;"/><!--Added by Abhita for New UAT Issue #325-->
+                        <span style="display: inline; font-size: 1.5em; font-weight: bold; color: #c00; position: relative;">&nbsp;*</span>
+                    </apex:outputPanel>
+                </apex:pageblocksection>
+                <apex:outputPanel >
+                    <apex:inputTextarea value="{!stateChangeComments}" style="height:150px; width:600px;" html-maxlength="500"/>
+                </apex:outputPanel>
+            </apex:pageblockSection>
+            &nbsp;&nbsp;&nbsp;&nbsp;
+            <apex:commandButton value="Continue" action="{!continueCheck}" rerender="IMCForm, errorMsg" oncomplete="window.scrollTo(0,0);" status="blockUI"/>
+            &nbsp;&nbsp;&nbsp;
+            <apex:commandButton value="Cancel" action="{!closePopup}" immediate="true" rerender="IMCForm" status="blockUI"/>   <!--Changed By Abhita for UAT Issue #445-->     
+        </apex:pageBlock>
+        <apex:pageBlock title="Possible from Actions" rendered="{! !popupVal}">
+            <!--<apex:outputPanel id="popup">
+                <apex:outputPanel id="popInnerOutputPnl" styleClass="popupBg" layout="block" rendered="{!popupVal}">
+                    <apex:outputPanel id="popInnerOutputPn2" styleClass="popup" layout="block" rendered="{!popupVal}">
+                        <apex:pagemessages id="errorMsg1" />
+                        <apex:commandButton value="X" title="Close the popup" action="{!closePopup}" immediate="true" styleClass="closeButton" rerender="popup"/>
+                        <c:FMSNameDesc formID="{!fId}"></c:FMSNameDesc>
+                        <h1><u>FMS "Form State" Change</u></h1>
+                        <apex:pageblockSection columns="1">
+                            <apex:pageBlockSectionItem >
+                                <apex:outputLabel value="Current Form State: "/>
+                                <apex:outputField value="{!IMCFormObj.State_of_the_Form__c}"/>
+                            </apex:pageblockSectionItem>
+                            <apex:pageBlockSectionItem >
+                                <apex:outputLabel value="Changing to Form State: "/>
+                                <apex:outputText value="{!requestMsg}"/>
+                            </apex:pageblockSectionItem>
+                            <p>Please Note: Request for GLOBALFOUNDRIES to thaw (unfreeze) the form to allow editing. GLOBALFOUNDRIES will evaluate and allow editing only if possible, depending on the overall status of your release.</p>
+                            <apex:pageblockSection columns="2">
+                                <apex:outputLabel value="Please provide brief description explaining the reason for this action:" style="font-style:bold;"/>
+                                <apex:outputPanel >
+                                    <div class="requiredInput" style="margin-left:-108px;">
+                                        <div class = "requiredBlock"></div>
+                                    </div>
+                                </apex:outputPanel>
+                            </apex:pageblocksection>
+                            <apex:outputPanel >
+                                <apex:inputTextarea value="{!stateChangeComments}" style="height:150px; width:600px;"/>
+                            </apex:outputPanel>
+                        </apex:pageblockSection>
+                        &nbsp;&nbsp;&nbsp;&nbsp;
+                        <apex:commandButton value="Continue" action="{!continueCheck}" rerender="popup" oncomplete="window.scrollTo(0,0);"/>
+                        &nbsp;&nbsp;&nbsp;
+                        <apex:commandButton value="Cancel" action="{!closePopup}" immediate="true" rerender="popup"/>
+                    </apex:outputPanel>
+                </apex:outputPanel>
+            </apex:outputPanel>-->
+            <!-- 10th Aug 2016 -- Ashwin Dash   --   Added popup for  create addendum   -->
+            <!--<apex:outputPanel id="createAddPanel">
+                <apex:outputPanel id="createAddPanel1" styleClass="popupBg" layout="block" rendered="{!popupCreateAdd}">
+                    <apex:outputPanel id="createAddPanel2" styleClass="popup1" layout="block" rendered="{!popupCreateAdd}">
+                        <!-- Once include the hierarchy change the styleclass to popop ->
+                        <apex:pagemessages id="errorMsg2"/>
+                        <apex:commandButton value="X" title="Close the popup" action="{!closePopup}" immediate="true" styleClass="closeButton" rerender="createAddPanel"/>
+                        <h1><u>New Addendum Form Creation</u></h1>
+                        <br/>
+                        <!--<c:FMSHierarchy formId="{!formId}"></c:FMSHierarchy><br/><br/>-> <!-- Uncomment it once the changes have been done->
+                        <apex:pageblockSection columns="1">
+                            <p>Please verify you are placing your addendum in the correct place, then select an addendum type below in order to proceed. The addendum form being created will be associated with the customer  </p>
+                            <br/>               
+                            <apex:pageblockSectionItem >
+                                <apex:outputLabel value="Select new addendum form type:"/>
+                                <apex:outputPanel >
+                                    <div class = "requiredInput">
+                                        <div class = "requiredBlock"></div>
+                                        <apex:selectList id="selectAddendumId" value="{!selCreateAddendum}" multiselect="false" size="1" >
+                                            <apex:selectOptions value="{!SelectAddendumValues}"/>
+                                        </apex:selectList>
+                                    </div>
+                                </apex:outputPanel>
+                            </apex:pageblockSectionItem>
+                        </apex:pageblockSection>
+                        <br/><br/>
+                        &nbsp;&nbsp;&nbsp;&nbsp;
+                        <apex:commandButton value="Continue" action="{!continueCheck}" rerender="createAddPanel" oncomplete="window.scrollTo(0,0);"/>
+                        &nbsp;&nbsp;&nbsp;
+                        <apex:commandButton value="Cancel" action="{!closePopup}" immediate="true" rerender="createAddPanel"/>
+                    </apex:outputPanel>
+                </apex:outputPanel>
+            </apex:outputPanel>-->
+            <apex:outputLabel style="font-style:italic;font-size:10pt;color:black;"> 
+                The selected form may have one or more action paths available to you based on your granted permissions and the current state of the form. Select the
+                desired action to trigger that action, or select the Back to form select button to return to the form selection page.
+            </apex:outputLabel>
+            <br/> <br/>
+            <apex:outputPanel >
+                <apex:pageblockSection columns="1">
+                    <apex:outputField value="{!IMCFormObj.State_of_the_Form__c}" Label="Current Form State:"/>
+                    <apex:outputField value="{!IMCFormObj.Mandatory_State_Change_Comments__c}" label="Reason for State Change:" rendered="{!(IMCFormObj.State_of_the_Form__c == 'RequestToThaw' || IMCFormObj.State_of_the_Form__c == 'Thawed') && (IMCFormObj.Mandatory_State_Change_Comments__c != null || IMCFormObj.Mandatory_State_Change_Comments__c != '')}"/>
+                </apex:pageblockSection>
+                <br/>
+                <apex:outputPanel >
+                    <html>
+                        <table class="list" style="width:1030px">
+                            <tr class="headerRow" align="center">
+                                <td style="font-size: 8pt;width:200px">Action</td>
+                                <td style="font-size: 8pt;">Description</td>
+                            </tr>
+                            <!-- <apex:variable rendered="{!IMCFormObj.QuoteOnly__c == 'Yes' && IMCFormObj.State_of_the_Form__c == 'Draft'}" value="" var="v">
+                                <tr class="datarow">
+                                    <td class="datacell">
+                                        <apex:commandLink style="width:120px" action="{!submitForQuote}">Submit for Quote</apex:commandLink>
+                                    </td>
+                                    <td class="datacell">
+                                        <apex:outputLabel >
+                                            Submitting this “quote only” Business Form signifies that you are ready for GLOBALFOUNDRIES to review and respond with a quote. <br/> After Business Form submission, the “quote” question may be changed to “No” to allow the Technical Form to be completed
+                                        </apex:outputLabel>
+                                    </td>
+                                </tr>
+                                </apex:variable> -->
+                            <apex:variable rendered="{!((IMCFormObj.QuoteOnly__c != 'Yes' && (IMCFormObj.State_of_the_Form__c != 'InactiveDraft' && IMCFormObj.State_of_the_Form__c != 'SubmitForQuote' && IMCFormObj.State_of_the_Form__c != 'InactiveSubmitForQuote' && IMCFormObj.State_of_the_Form__c != 'InactiveSubmitted' && IMCFormObj.State_of_the_Form__c != 'InactiveThawed' && IMCFormObj.State_of_the_Form__c != 'Frozen')))}" value="" var="v">
+                                <tr class="datarow">
+                                    <td class="datacell">
+                                        <!--<apex:commandLink style="width:120px;color:blue;" action="{!freezeForm}" onclick="if(!confirm('Warning: Are you sure...')){return false;}">Freeze Form</apex:commandLink>-->
+                                        <apex:commandLink style="width:120px;color:blue;" onclick="showDialogforActions('Freeze'); window.scrollTo(0,0); return false;">Freeze Form</apex:commandLink>
+                                    </td>
+                                    <td class="datacell">
+                                        <apex:outputLabel >
+                                            Freezing signifies that the form content is accurate and may be utilized by GLOBALFOUNDRIES in preparation for a tapeout.<br/> Once frozen, you will no longer be able to edit this form without intervention from your Foundry Technical Representative.
+                                        </apex:outputLabel>
+                                    </td>
+                                </tr>
+                            </apex:variable>
+                            
+                            <apex:variable rendered="{!((IMCFormObj.State_of_the_Form__c == 'Draft' || IMCFormObj.State_of_the_Form__c == 'Submitted' || (IMCFormObj.State_of_the_Form__c == 'Thawed' && (!isPortalUser || isFMSAdmin))))}" value="" var="v"> <!--Added the condition for new UAT Issue #350-->
+                                <tr class="datarow">
+                                    <td class="datacell">
+                                        <!--<apex:commandLink style="width:120px;color:blue;" action="{!makeFormInactive}" >Make Form Inactive</apex:commandLink>
+                                        <apex:commandLink style="width:120px;color:blue;" action="{!makeFormInactive}" onclick="if(!confirm('Are you sure you want to complete this form action?\n\nMaking this form inactive signifies that you wish to retain it in FMS, but do not plan to continue working with it.')){return false;}">Make Form Inactive</apex:commandLink>-->
+                                        
+                                        <apex:commandLink style="width:120px;color:blue;" onclick="showDialogforActions('makeFromInActive'); window.scrollTo(0,0); return false;">Make Form Inactive</apex:commandLink>
+                                    </td>
+                                    <td class="datacell">
+                                        <apex:outputLabel >
+                                            Making this form inactive signifies that you wish to retain it in FMS, but do not plan to continue working with it.
+                                        </apex:outputLabel>
+                                    </td>
+                                </tr>
+                            </apex:variable>
+                            
+                            <apex:variable rendered="{!((IMCFormObj.QuoteOnly__c != 'Yes' && (IMCFormObj.State_of_the_Form__c == 'Draft' || IMCFormObj.State_of_the_Form__c == 'SubmitForQuote')))}" value="" var="v">
+                                <tr class="datarow">
+                                    <td class="datacell">
+                                        <!--<apex:commandLink style="width:120px;color:blue;" action="{!submitForm}" onclick="if(!confirm('Are you sure you want to complete this form action?\n\nSubmitting this form signifies that you are preparing to collaborate with the Foundry. While in this state your may continue to edit the form.')){return false;}">Submit Form</apex:commandLink>-->
+                                        <apex:commandLink style="width:120px;color:blue;" onclick="showDialogforActions('Submit'); window.scrollTo(0,0); return false;">Submit Form</apex:commandLink>
+                                    </td>
+                                    <td class="datacell">
+                                        <apex:outputLabel >
+                                            Submitting this form signifies that you are preparing to collaborate with the Foundry. While in this state, you may continue to edit the form.
+                                        </apex:outputLabel>
+                                    </td>
+                                </tr>
+                            </apex:variable>
+                            
+
+                            <apex:variable rendered="{! (IMCFormObj.State_of_the_Form__c == 'Frozen')}" value="" var="v">
+                                <tr class="datarow">
+                                    <td class="datacell">
+                                        <apex:commandLink style="width:120px;color:blue;" onclick="paraFunction('RequestToThaw'); return false;" >Request to Thaw Form for editing</apex:commandLink>
+                                    </td>
+                                    <td class="datacell">
+                                        <apex:outputLabel >
+                                            Request for GLOBALFOUNDRIES to thaw (unfreeze) the form to allow editing.  GLOBALFOUNDRIES will evaluate and allow editing only if possible, depending on the overall status of your release.
+                                        </apex:outputLabel>
+                                    </td>
+                                </tr>
+                            </apex:variable>
+                            <apex:variable rendered="{! (((!isPortalUser || isFMSAdmin) && (IMCFormObj.State_of_the_Form__c == 'Frozen' || IMCFormObj.State_of_the_Form__c == 'RequestToThaw')))}" value="" var="v">
+                                <tr class="datarow">
+                                    <td class="datacell">
+                                        <apex:commandLink style="width:120px;color:blue;" onclick="paraFunction('Thawed'); return false;">Thaw Form</apex:commandLink>
+                                    </td>
+                                    <td class="datacell">
+                                        <apex:outputLabel >
+                                            Thawing will unfreeze the form to allow editing.
+                                        </apex:outputLabel>
+                                    </td>
+                                </tr>
+                            </apex:variable>
+                            
+                            <apex:variable rendered="{!((IMCFormObj.State_of_the_Form__c == 'Submitted' || IMCFormObj.State_of_the_Form__c == 'Frozen' || IMCFormObj.State_of_the_Form__c == 'RequestToThaw' || IMCFormObj.State_of_the_Form__c == 'Thawed'))}" value="" var="v">
+                                <tr class="datarow">
+                                    <td class="datacell">
+                                        <!-- Start - Anil - Addendum , Commented link and added new funtionality -->
+                                        <!--<apex:commandLink style="width:120px;color:blue;" onclick="showSimpleDialog('{!IMCFormObj.Customer__c}'); window.scrollTo(0,0); return false;" >Create Addendum Form</apex:commandLink>-->
+                                        <apex:commandLink style="width:120px;color:blue;" action="{!createAddendumForm}">Create Addendum Form</apex:commandLink>
+                                        <!-- End - Anil - Addendum , Commented link and added new funtionality -->
+                                    </td>
+                                    <td class="datacell">
+                                        <apex:outputLabel >
+                                            Create a new addendum Form.
+                                        </apex:outputLabel>
+                                    </td>
+                                </tr>
+                            </apex:variable>
+
+                            <!--Changed the position for new UAT issue #347, 348, 354-->
+                            <apex:variable rendered="{!((IMCFormObj.State_of_the_Form__c == 'InactiveDraft' || IMCFormObj.State_of_the_Form__c == 'InactiveSubmitted' || (IMCFormObj.State_of_the_Form__c == 'InactiveThawed' && (!isPortalUser || isFMSAdmin))))}" value="" var="v">
+                                <tr class="datarow">
+                                    <td class="datacell">
+                                        <!--<apex:commandLink style="width:120px;color:blue;" action="{!makeFormActive}">Make Form Active</apex:commandLink>-->
+                                        <apex:commandLink style="width:120px;color:blue;" onclick="showDialogforActions('makeFormActive'); window.scrollTo(0,0); return false;">Make Form Active</apex:commandLink>
+                                    </td>
+                                    <td class="datacell">
+                                        <apex:outputLabel >
+                                            Make this form active again if you wish to continue working with it. The form will return to its previous state.
+                                        </apex:outputLabel>
+                                    </td>
+                                </tr>
+                            </apex:variable>
+                            
+                            <apex:variable value="" var="v">
+                                <tr class="datarow">
+                                    <td class="datacell">
+                                        <apex:commandLink style="width:120px;color:blue;" action="{!copyAsNewForm}">Copy as new form</apex:commandLink>
+                                    </td>
+                                    <td class="datacell">
+                                        <apex:outputLabel >
+                                            This feature allows you to copy the values from this existing form into a new form. The new form may be created on an updated template from the old form. It is therefore not guaranteed that 100% of the values will copy. You must still review the new form entirely before submitting.
+                                        </apex:outputLabel>
+                                    </td>
+                                </tr>
+                            </apex:variable>
+                            <tr class="datarow">
+                                <td class="datacell">                          
+                                    <apex:commandLink style="width:120px;color:blue;" action="{!chngHistory}" target="_blank">Browse change history</apex:commandLink>
+                                </td>
+                              
+                                <td class="datacell">
+                                    <apex:outputLabel >
+                                        Browse the change history for this form.
+                                    </apex:outputLabel>
+                                </td>
+                            </tr>                                                      
+                            <apex:variable rendered="{!!subscribeFlag}" value="" var="v">
+                                <tr class="datarow">
+                                    <td class="datacell">
+                                        <apex:commandLink style="width:120px;color:blue;" action="{!Subscribe}">Subscribe to this form</apex:commandLink>
+                                    </td>
+                                    <td class="datacell">
+                                        <apex:outputLabel >
+                                            Subscribe to receive email notification for all events for this specific form.
+                                        </apex:outputLabel>
+                                    </td>
+                                </tr>
+                            </apex:variable>
+                             <apex:variable rendered="{!subscribeFlag}" value="" var="v">
+                                <tr class="datarow">
+                                    <td class="datacell">
+                                        <apex:commandLink style="width:120px;color:blue;" action="{!UnSubscribe}">Unsubscribe from this form</apex:commandLink>
+                                    </td>
+                                    <td class="datacell">
+                                        <apex:outputLabel >
+                                            Remove your existing individual subscription for this form.
+                                        </apex:outputLabel>
+                                    </td>
+                                </tr>
+                            </apex:variable>
+                            <apex:variable value="" var="v" rendered="{!((IMCFormObj.State_of_the_Form__c == 'Draft' || IMCFormObj.State_of_the_Form__c == 'SubmittedForQuote' || IMCFormObj.State_of_the_Form__c == 'Submitted' || IMCFormObj.State_of_the_Form__c == 'Thawed' ))}" >
+                                <tr class="datarow">
+                                    <td class="datacell">
+                                        <apex:commandLink style="width:120px;color:blue;" action="{!SubscribeUser}">Subscribe other users to this form</apex:commandLink>
+                                    </td>
+                                    <td class="datacell">
+                                        <apex:outputLabel >
+                                            Subscribe other users to receive email notifications for all events for this specific form.
+                                        </apex:outputLabel>
+                                    </td>
+                                </tr>
+                            </apex:variable>
+                            
+                            <apex:variable rendered="{!(IMCFormObj.State_of_the_Form__c == 'Draft' || IMCFormObj.State_of_the_Form__c == 'SubmitForQuote' || IMCFormObj.State_of_the_Form__c == 'Submitted' || IMCFormObj.State_of_the_Form__c == 'Thawed') }" value="" var="v"><!--Removed InActiveThawed condition by ABhita for new UAT Issue #353-->
+                                <tr class="datarow">
+                                    <td class="datacell">
+                                        <apex:commandLink style="width:120px;color:blue;" action="{!editForm}">Edit</apex:commandLink>
+                                    </td>
+                                    <td class="datacell">
+                                        <apex:outputLabel >
+                                            Edit the form.
+                                        </apex:outputLabel>
+                                    </td>
+                                </tr>
+                            </apex:variable>
+                            
+                            <apex:variable rendered="{!(IMCFormObj.State_of_the_Form__c == 'Draft' || IMCFormObj.State_of_the_Form__c == 'SubmitForQuote' || IMCFormObj.State_of_the_Form__c == 'Submitted' || IMCFormObj.State_of_the_Form__c == 'Thawed')}" value="" var="v"><!--Removed InActiveThawed condition by ABhita for new UAT Issue #353-->
+                                <tr class="datarow">
+                                    <td class="datacell">
+                                        <apex:commandLink style="width:120px;color:blue;" action="{!updateFormDetails}">Update Form Details</apex:commandLink>
+                                    </td>
+                                    <td class="datacell">
+                                        <apex:outputLabel >
+                                            Modify the form name and description.
+                                        </apex:outputLabel>
+                                    </td>
+                                </tr>
+                            </apex:variable>
+                            
+                            <!--<apex:variable rendered="{!(((IMCFormObj.State_of_the_Form__c != 'Frozen' && IMCFormObj.State_of_the_Form__c != 'RequestToThaw' && ((IMCFormObj.State_of_the_Form__c == 'Submitted' || IMCFormObj.State_of_the_Form__c == 'InactiveSubmitted') && (!isPortalUser || isFMSAdmin))) || (IMCFormObj.State_of_the_Form__c == 'InactiveDraft' ) || (IMCFormObj.State_of_the_Form__c == 'Draft') || ((IMCFormObj.State_of_the_Form__c == 'Thawed' || IMCFormObj.State_of_the_Form__c == 'InactiveThawed') && isFMSAdmin)) && !hasChildren)}" value="" var="v">
+                                <tr class="datarow">
+                                    <td class="datacell">
+                                        <apex:commandLink style="width:120px;color:blue;" onclick="showDialogforDelete(); window.scrollTo(0,0); return false;">Delete Form</apex:commandLink>
+                                    </td>
+                                    <td class="datacell">
+                                        <apex:outputLabel >
+                                            Delete the form from the system. The form will no longer be retrievable once deleted.
+                                        </apex:outputLabel>
+                                    </td>
+                                </tr>
+                            </apex:variable>-->
+                        </table>
+                    </html>
+                </apex:outputPanel>
+            </apex:outputPanel>
+        </apex:pageBlock>
+        <br/>  
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+        <apex:outputPanel rendered="{! !popupVal}">
+            <h1>View Form Data</h1>
+        </apex:outputPanel>
+
+        <apex:pageBlock id="imcBlock" rendered="{! !popupVal}" title="Form Page 1">
+            <p style="color: black;"> <!-- Changed By Abhita for new UAT issue #94-->
+                This form is meant to request a product spin on an existing mask set.
+            </p>
+            <br/>
+
+            <apex:pageBlockSection id="parentForm" title="Parent Form Information" columns="1" collapsible="false">
+                <apex:outputField id="parentProdName" value="{!IMCFormObj.Parent_Form_Id__r.ProductName__c}" label="Product Name:"/>
+                <apex:outputField id="parentTech" value="{!IMCFormObj.Main_Form_Id__r.Technology__c}" label="Technology:"/>
+                <apex:outputField id="parentProdRev" value="{!IMCFormObj.Parent_Form_Id__r.ProductRevision__c}" label="Previous Product Revision:"/>
+                <apex:outputField id="releaseProcess" value="{!IMCFormObj.Main_Form_Id__r.ReleaseProcessFlow__c}" label="Release Process:"/>
+                <apex:pageblockSectionItem id="newProdNameSec">
+                    <apex:outputLabel value="New Product Name (only alter if changing):"/>
+                    <apex:outputPanel id="newProdNamePnl">
+                        <div class = "requiredInput">
+                            <div class = "requiredBlock"></div>
+                            <apex:OutputField value="{!IMCFormObj.ProductName__c}" id="newProdName" />
+                        </div>
+                    </apex:outputPanel>
+                </apex:pageblockSectionItem>
+                <apex:pageblockSectionItem id="imcProdRevSec">
+                    <apex:outputLabel value="New Product Revision:"/>
+                    <apex:outputPanel id="imcProdRevPnl">
+                        <div class = "requiredInput">
+                            <div class = "requiredBlock"></div>
+                            <apex:OutputField value="{!IMCFormObj.ProductRevision__c}" id="imcProdRev"/>
+                        </div>
+                    </apex:outputPanel>
+                </apex:pageblockSectionItem>
+            </apex:pageBlockSection>
+            <apex:pageblockSection title="Primary Contact Information" columns="1" id="pbs2"  collapsible="false">
+                <p style="color:black;"> Please select the primary contact from the dropdown menu. The selected contact should be the focal point for this product release.</p>
+                <apex:pageblocksectionItem >
+                    <apex:outputLabel value="Name: "/>
+                    <apex:outputField value="{!IMCFormObj.NamePrimary__c}" />
+                </apex:pageblocksectionItem>
+                <apex:pageblocksectionItem >
+                    <apex:outputLabel value="E-Mail: "/>
+                    <apex:outputField value="{!IMCFormObj.EmailPrimary__c}" />
+                </apex:pageblocksectionItem>
+                <apex:pageblockSectionItem >
+                    <apex:outputLabel value="Phone: " />
+                    <apex:outputField value="{!IMCFormObj.PhonePrimary__c}" />                         
+                    </apex:pageblockSectionItem>
+                <apex:pageblocksectionItem >
+                    <apex:outputLabel value="Country: "/>
+                    <apex:outputField value="{!IMCFormObj.CountryPrimary__c}" />
+                </apex:pageblocksectionItem>
+                <apex:pageblocksectionItem >
+                    <apex:outputLabel value="State/Province: "/>
+                    <apex:outputField value="{!IMCFormObj.StatePrimary__c}" />
+                </apex:pageblocksectionItem>
+                <apex:pageblocksectionItem >
+                    <apex:outputLabel value="Role: "/>
+                    <apex:outputField value="{!IMCFormObj.RolePrimary__c}" />
+                </apex:pageblocksectionItem>
+            </apex:pageblockSection>
+            <apex:pageblockSection title="Additional Contact(s)" columns="1" id="pbs3" collapsible="false">
+                <p style="color:black;">If you would like to add additional contacts for this product release, please select their names below.</p>
+                <apex:outputPanel id="countofAddContId">
+                    <apex:outputText > {!addContactsCount} contact(s) selected.</apex:outputText>
+                </apex:outputPanel>
+                <apex:outputPanel id="addContTab" rendered="{!(selectedAddContList.size > 0)}">
+                    <apex:pageBlockSection >
+                        <apex:pageblockSectionItem >
+                            <apex:outputLabel ></apex:outputLabel><!-- Changed by Abhita for New UAT Issue #151-->
+                            <apex:pageblockTable value="{!selectedAddContList}" var="addCont" style="width:700px">
+                                <apex:column headerValue="Contact Name" value="{!addCont.addContName}"/>
+                                <apex:column headerValue="Contact E-Mail" value="{!addCont.addContEmail}"/>
+                                <apex:column headerValue="Contact Phone" value="{!addCont.addContPhone}"/>
+                            </apex:pageblockTable>
+                        </apex:pageblockSectionItem>
+                    </apex:pageBlockSection>
+                </apex:outputPanel>
+            </apex:pageblockSection>
+            <apex:pageBlockSection id="changeSection" title="Changes" columns="1" collapsible="false">
+                <apex:pageblockSectionItem id="imcProjTapeoutSec">
+                    <apex:outputLabel value="Projected GDS submission (tapeout):"/>
+                    <apex:outputPanel id="imcProjTapeoutPnl">
+                        <div class = "requiredInput">
+                            <div class = "requiredBlock"></div>
+                            <apex:outputField value="{!IMCFormObj.IMCProjectedTapeout__c}" id="imcProjTapeout" />
+                        </div>
+                    </apex:outputPanel>
+                </apex:pageblockSectionItem>
+                <apex:pageblockSectionItem id="imcWaiverSec">
+                    <apex:outputLabel value="Will you require waivers for any DRC violations?"/>
+                    <apex:outputPanel id="imcWaiverPnl">
+                        <div class = "requiredInput">
+                            <div class = "requiredBlock"></div>
+                            <apex:outputField value="{!IMCFormObj.Waivers__c}" id="imcWaiver" />
+                        </div>
+                    </apex:outputPanel>
+                </apex:pageblockSectionItem>
+                <apex:outputPanel id="test">
+                    <apex:outputPanel id="waiverMsg" rendered="{!IMCFormObj.Waivers__c == 'Yes'}">
+                        <p style="color: brown;">Waiver requests must be submitted to the Foundry Technical Representative at least 8 business days
+                        prior to tapeout to prevent delays. You may download the waiver template and instructions through the
+                        link below.
+                        </p>
+                    </apex:outputPanel>             
+                    <apex:outputPanel id="waverlinkpnl" rendered="{!IMCFormObj.Waivers__c == 'Yes'}">
+                     <!--Ravindra - Libraries changes Starts
+                        <apex:outputLink rendered="{!IMCFormObj.Waivers__c == 'Yes'}" style="padding-left: 22%;text-decoration: underline;color:blue;" value="{!FMSdocuments['IMCFormWaiverTemplate'].FMSRefDocURL__c}" id="theLink" >Link to Waiver Template</apex:outputLink> -->
+						<apex:outputLink rendered="{!IMCFormObj.Waivers__c == 'Yes'}" style="padding-left: 22%;text-decoration: underline;color:blue;" value="{!FMSdocuments['Waiver Request Form']}" id="theLink" >Link to Waiver Template</apex:outputLink>
+                     <!--Ravindra - Libraries changes Ends-->
+					</apex:outputPanel>
+                </apex:outputPanel>
+
+                <apex:pageblockSectionItem id="IMCmaskLevelSec">
+                    <apex:outputLabel value="New mask levels to be built (impacted list):"/>
+                    <apex:outputPanel id="IMCmaskLevelPnl">
+                        <div class = "requiredInput">
+                            <div class = "requiredBlock"></div>
+                            <apex:outputField value="{!IMCFormObj.IMCMaskLevelsImpacted__c}" id="IMCmaskLevel" />
+                        </div>
+                    </apex:outputPanel>
+                </apex:pageblockSectionItem>
+                
+                <apex:pageblockSectionItem id="ListmaskReusedOthrSec" rendered="{!(soldTo!=null && contains('0000006104',soldTo))}">
+                        <apex:outputLabel value="List of masks to be reused from other designs. List specific revision number or product name. List by level and GLOBALFOUNDRIES Mask Part Number:"/><!--Changed by Abhita for new UAT Issue #406-->
+                        <apex:outputPanel id="ListmaskReusedOthrPnl" >
+                            <div class = "requiredInput">
+                                <div class = "requiredBlock"></div>
+                                <apex:outputField value="{!IMCFormObj.ListOfMasksReusedFromOther__c}" id="ListmaskReusedOthr"/>
+                           </div>
+                        </apex:outputPanel>
+                    </apex:pageblockSectionItem>
+                    <apex:pageblockSectionItem id="ListmaskReusedSec" >
+                        <apex:outputLabel value="List of masks to be reused. List specific revision number or product name. List by level:"/>
+                        <apex:outputPanel id="ListmaskReusedPnl" >
+                            <div class = "requiredInput">
+                                <div class = "requiredBlock"></div>
+                                <apex:outputField value="{!IMCFormObj.ListOfMasksReused__c}" id="ListmaskReused"/>
+                            </div>
+                        </apex:outputPanel>
+                    </apex:pageblockSectionItem>
+                
+                <!--mod start-->
+                <apex:pageblockSectionItem rendered="{!((soldTo!=null &&(contains('0000002009',soldTo)
+                                                     || contains('0000007616',soldTo)
+                                                     || contains('0000014321',soldTo)
+                                                     || contains('0000006623',soldTo)
+                                                     || contains('0000015980',soldTo)
+                                                     || contains('0000014880',soldTo)
+                                                     || contains('0000016464',soldTo)
+                                                     || contains('0000018082',soldTo)
+                                                     || contains('0000017766',soldTo)
+                                                     ))
+                                                     &&  shipCLLMainTech
+                                                     && (IMCFormObj.Main_Form_Id__r.CLL__c == 'Standard CLL (133X71LS)' 
+                                                     || IMCFormObj.Main_Form_Id__r.CLL__c == 'Non-standard CLL (requires pre-approval)') )}">
+                    <apex:outputLabel value="Identify your Shipping Label Customer Part Number for CLL:"/>
+                    <apex:outputPanel >
+                        <div class = "requiredInput">
+                            <div class = "requiredBlock"></div>
+                            <apex:outputField id="shippingCLLpnl" value="{!IMCFormObj.ShippingLabelCLL__c }"  />
+                        </div>
+                    </apex:outputPanel>
+                </apex:pageblockSectionItem>
+                <!-- mod end-->
+                
+                <apex:pageblockSectionItem id="newMarkingInfoSec" rendered="{!(IMCFormObj.Main_Form_Id__r.Packaging_Services__c == 'Yes')}">
+                    <apex:outputLabel value="New Marking information?"/>
+                    <apex:outputPanel id="newMarkingInfoPnl">
+                        <div class = "requiredInput">
+                            <div class = "requiredBlock"></div>
+                            <apex:outputField value="{!IMCFormObj.NewMarkingInfo__c}" id="newMarkingInfo" />
+                        </div>
+                    </apex:outputPanel>
+                </apex:pageblockSectionItem>
+                <apex:pageblockSectionItem id="pckgNetLstChngSec" rendered="{!(IMCFormObj.Main_Form_Id__r.Packaging_Services__c== 'Yes' && IMCFormObj.Main_Form_Id__r.TestServices__c == 'Yes')}">
+                    <apex:outputLabel value="Package Netlist change?"/>
+                    <apex:outputPanel id="pckgNetLstChngPnl">
+                        <div class = "requiredInput">
+                            <div class = "requiredBlock"></div>
+                            <apex:outputField value="{!IMCFormObj.PackageNetlistChange__c}" id="pckgNetLstChng" />
+                        </div>
+                    </apex:outputPanel>
+                </apex:pageblockSectionItem>
+                <apex:pageblockSectionItem id="podLocFunChngSec" rendered="{!(IMCFormObj.Main_Form_Id__r.Packaging_Services__c== 'Yes' && IMCFormObj.Main_Form_Id__r.TestServices__c == 'Yes')}">
+                    <apex:outputLabel value="Pad I/O location and/or function change?"/>
+                    <apex:outputPanel id="podLocFunChngPnl">
+                        <div class = "requiredInput">
+                            <div class = "requiredBlock"></div>
+                            <apex:outputField value="{!IMCFormObj.PadLocFuncChange__c}" id="podLocFunChng" />
+                        </div>
+                    </apex:outputPanel>
+                </apex:pageblockSectionItem>
+
+                <apex:actionRegion >
+                    <apex:outputPanel id="changesIMC">
+                        <apex:pageBlockSection columns="1">
+                            <apex:pageblockSectionItem id="prntChngIden">
+                                <apex:outputLabel value="Are there any changes from the parent form not identified elsewhere in this IMC form?  "  />
+                                <apex:outputPanel id="chngnotIDenti">
+                                    <div class = "requiredInput">
+                                        <div class = "requiredBlock"></div>
+                                        <apex:outputField value="{!IMCFormObj.ParentChangesIdentified__c}"/>
+                                    </div>
+                                </apex:outputPanel>
+                            </apex:pageblockSectionItem>
+                            <apex:pageblockSectionItem rendered="{!IMCFormObj.ParentChangesIdentified__c=='Yes'}">
+                                <apex:outputLabel value="Describe those changes:"/>
+                                <apex:outputPanel >
+                                    <div class = "requiredInput">
+                                        <div class = "requiredBlock"></div>
+                                        <apex:outputField value="{!IMCFormObj.IMCOtherComments__c}" id="imcOtherFld" />
+                                    </div>
+                                </apex:outputPanel>
+                            </apex:pageblockSectionItem>
+                        </apex:pageBlockSection>
+                    </apex:outputPanel>
+ <apex:outputPanel id="techfeatRemovePnl">
+                        <apex:pageBlockSection >
+                            <apex:pageblockSectionItem id="techfeatRemoveSec" rendered="{!(IMCFormObj.Main_Form_Id__r.ReleaseProcessFlow__c == 'Enhanced Flow')}"><!--Added by Abhita for T38 Catch up Release-->
+                                <apex:outputLabel value="Does the design contain any additions or removals of technology features compared to the previous revision?"/>
+                                <apex:outputPanel >
+                                    <div class = "requiredInput">
+                                        <div class = "requiredBlock"></div>
+                                        <apex:outputField id="techfeatRemoveFld" value="{!IMCFormObj.TechFeatureRemoval__c}"  />
+                                    </div>
+                                </apex:outputPanel>
+                            </apex:pageblockSectionItem>
+                        </apex:pageBlockSection>
+                    </apex:outputPanel>
+
+                    <apex:outputPanel rendered="{!(IMCFormObj.TechFeatureRemoval__c == 'Yes' 
+                            && (IMCFormObj.Main_Form_Id__r.ReleaseProcessFlow__c == 'Enhanced Flow'))}"><!--Added by Abhita for T38 Catch up Release-->
+                        <p style="color:black;">The Foundry Release Process uses a features extraction methodology to identify Design Manual supported devices at time of GDS submission. It is critical for you to define any custom or development features used in the design that are not listed in the published Design Manual, or these devices may not be manufactured. Features not listed in the Design Manual require pre-approval from GLOBALFOUNDRIES, and will require custom handling by the PE and Release Teams. Standard Release cycle times may not apply.
+                        <br/><br/>
+                        It is also critical for you to identify any technology features in the submitted GDS that should be excluded from the hardware build, or it will be assumed that all features detected in the data are required. 
+                        <br/><br/>
+                        You must also confirm that features combinations in the design(s) are compatible and allowed as described in the features section of the published Design Manual. Any incompatible features combinations require pre-approval from GLOBALFOUNDRIES and a custom setup to accommodate. Please consult with your Foundry Technical Representative if further guidance is required.
+                        <br/><br/>
+                        </p>
+                    </apex:outputPanel>
+
+                    <apex:outputPanel id="custmfeature">
+                        <apex:pageBlockSection >
+                            <apex:pageblockSectionItem id="custmfeaturesec" rendered="{!(IMCFormObj.TechFeatureRemoval__c == 'Yes' 
+                                && (IMCFormObj.Main_Form_Id__r.ReleaseProcessFlow__c == 'Enhanced Flow'))}"><!--Added by Abhita for T38 Catch up Release-->
+                                <apex:outputLabel value="Does the Design contain any custom or development features that are not part of the base or optional features listings in the published design manual"/>
+                                <apex:outputPanel >
+                                    <div class = "requiredInput">
+                                        <div class = "requiredBlock"></div>
+                                        <apex:outputField id="custmfeaturefld" value="{!IMCFormObj.Custom_Features__c }"  />
+                                    </div>
+                                </apex:outputPanel>
+                            </apex:pageblockSectionItem>
+                        </apex:pageBlockSection>
+                    </apex:outputPanel>
+
+                    <apex:outputPanel id="custmfeaturedesc">
+                        <apex:pageBlockSection >
+                            <apex:pageblockSectionItem id="custmfeaturedescsec" rendered="{!(IMCFormObj.TechFeatureRemoval__c == 'Yes' 
+                                && IMCFormObj.Custom_Features__c == 'Yes' && (IMCFormObj.Main_Form_Id__r.ReleaseProcessFlow__c == 'Enhanced Flow'))}"><!--Added by Abhita for T38 Catch up Release-->
+                                <apex:outputLabel value="Please list these non standard features:"/>
+                                <apex:outputPanel >
+                                    <div class = "requiredInput">
+                                        <div class = "requiredBlock"></div>
+                                        <apex:outputField id="custmfeaturedescfld" value="{!IMCFormObj.CustomFeaturesDesc__c }"  />
+                                    </div>
+                                </apex:outputPanel>
+                            </apex:pageblockSectionItem>
+                        </apex:pageBlockSection>
+                    </apex:outputPanel>
+
+                    <apex:outputPanel id="notMfgFeaturespnl">
+                        <apex:pageBlockSection >
+                            <apex:pageblockSectionItem id="notMfgFeaturesSec" rendered="{!(IMCFormObj.TechFeatureRemoval__c == 'Yes' 
+                                && ( IMCFormObj.Main_Form_Id__r.ReleaseProcessFlow__c == 'Enhanced Flow'))}"><!--Added by Abhita for T38 Catch up Release-->
+                                <apex:outputLabel value="Does the Design contain any features that should NOT be manufactured for this program revision?"/>
+                                <apex:outputPanel >
+                                    <div class = "requiredInput">
+                                        <div class = "requiredBlock"></div>
+                                        <apex:outputField id="notMfgFeaturesFld" value="{!IMCFormObj.NotMfgFeatures__c}" />
+                                    </div>
+                                </apex:outputPanel>
+                            </apex:pageblockSectionItem>
+                        </apex:pageBlockSection>
+                    </apex:outputPanel>
+
+                    <apex:outputPanel id="notMfgFeaturesDescPnl">
+                        <apex:pageBlockSection >
+                            <apex:pageblockSectionItem id="notMfgFeaturesDescSec" rendered="{!(IMCFormObj.TechFeatureRemoval__c == 'Yes' 
+                                && IMCFormObj.NotMfgFeatures__c == 'Yes' && (IMCFormObj.Main_Form_Id__r.ReleaseProcessFlow__c == 'Enhanced Flow'))}"><!--Added by Abhita for T38 Catch up Release-->
+                                <apex:outputLabel value="Please list all features that should be excluded from the build"/>
+                                <apex:outputPanel >
+                                    <div class = "requiredInput">
+                                        <div class = "requiredBlock"></div>
+                                        <apex:outputField id="notMfgFeaturesDescFld" value="{!IMCFormObj.NotMfgFeaturesDesc__c}" />                                        
+                                    </div>
+                                </apex:outputPanel>
+                            </apex:pageblockSectionItem>
+                        </apex:pageBlockSection>
+                    </apex:outputPanel>
+                </apex:actionRegion>
+            </apex:pageBlockSection>
+                       
+            
+            <!--==================================(Start)Prod Issue# 164===============================================-->
+            
+				<apex:pageBlockSection id="designOptionFrmParent" title="Design/Service Options from parent form" columns="1" collapsible="false">
+                <apex:outputField id="parStepPlan" value="{!parentServiceOpts.StepPlanCustomRequirement1__c }"  label="Will your orders be placed for wafer quantity, with wafer functional test as a service-only adder?:" rendered="{!AND(parentServiceOpts.StepPlanCustomRequirement1__c != '' ,parentServiceOpts.StepPlanCustomRequirement1__c != '=== Select a Value ===') }"/>
+
+                <apex:outputField id="stpplanCust" value="{!parentServiceOpts.StepPlanCustomRequirementInput1__c }"  label="Please explain how your orders will be placed:" rendered="{!parentServiceOpts.StepPlanCustomRequirement1__c == 'No'}"/>
+                
+                <apex:pageBlockSectionItem rendered="{!IMCFormObj.Main_Form_Id__r.Technology__c != '32SOI' && IMCFormObj.Main_Form_Id__r.Technology__c != 'CNV8SFi' && IMCFormObj.Main_Form_Id__r.Technology__c != 'CMOS 9RFe' && IMCFormObj.Main_Form_Id__r.Technology__c != 'CMOS 9SF' && IMCFormObj.Main_Form_Id__r.Technology__c != 'CMOS 10LP' && IMCFormObj.Main_Form_Id__r.Technology__c != 'CMOS 10LPe' && IMCFormObj.Main_Form_Id__r.Technology__c != 'CMOS 10RFe' && IMCFormObj.Main_Form_Id__r.Technology__c != 'CMOS 10SF' && IMCFormObj.Main_Form_Id__r.Technology__c != 'SOI12S0' && IMCFormObj.Main_Form_Id__r.Technology__c != 'BiMOS P6' && IMCFormObj.Main_Form_Id__r.Technology__c != 'BMSP6C9'}"><!-- Added by Abhita for new UAT Issue #351-->
+                    <apex:outputLabel value="Data Checking Options:"/>
+                    <apex:outputText value="{!dataCheckingOptsIMC}"/>
+                </apex:pageBlockSectionItem>    
+                
+                <apex:outputField rendered="{!AND(parentServiceOpts.ServiceOptions__c != null, parentServiceOpts.ServiceOptions__c != '')}" value="{!parentServiceOpts.ServiceOptions__c}" label="Service Options:" />
+                
+                <apex:outputField rendered="{!AND(parentServiceOpts.BacksideGrindThickness__c != null, parentServiceOpts.BacksideGrindThickness__c != '', checkBackside)}" value="{!parentServiceOpts.BacksideGrindThickness__c}" label="Please choose a Backside Grind Thickness:" />
+                
+                <apex:outputField rendered="{!AND(parentServiceOpts.OtherServiceFeatures__c != null, parentServiceOpts.OtherServiceFeatures__c != '', checkOther)}" value="{!parentServiceOpts.OtherServiceFeatures__c}" label="Other service features:"/>
+               
+     			<apex:outputField rendered="{!AND(parentServiceOpts.Chipedgedesign__c != null, parentServiceOpts.Chipedgedesign__c != '', checkDicing)}" value="{!parentServiceOpts.Chipedgedesign__c}" label="GLOBALFOUNDRIES sourced dicing will be supported only if the PDK-supplied crackstop is present inside your design(s) CHIPEDGE. Have you included the unmodified PDK-supplied crackstop within your design(s)?" />
+           
+    			<apex:outputField rendered="{!AND(parentServiceOpts.Deliverable__c != null, parentServiceOpts.Deliverable__c != '')}" value="{!parentServiceOpts.Deliverable__c}" label="Deliverable:" />
+                
+                <apex:outputField rendered="{!AND(parentServiceOpts.DesignSubmission__c != null, parentServiceOpts.DesignSubmission__c != '')}" value="{!parentServiceOpts.DesignSubmission__c}" label="Type of Design Submission:" />
+                
+                <apex:pageblockSectionItem id="chngServicOptSec" rendered="{!(IMCFormObj.Main_Form_Id__r.QuoteOnly__c != 'Yes')}">
+                    <apex:outputLabel value="Do you wish to change these Design/Service options?:"/>
+                    <apex:outputPanel id="chngServicOptPnl">
+                        <div class = "requiredInput">
+                            <div class = "requiredBlock"></div>
+                            <apex:outputField value="{!IMCFormObj.OverrideParentOptions__c}" id="overRideParntopt" />
+                        </div>
+                    </apex:outputPanel>
+                </apex:pageblockSectionItem>
+            </apex:pageBlockSection>
+            
+      <!--==================================(End)Prod Issue# 164===============================================-->      
+            <apex:actionRegion >
+                <apex:outputPanel id="dsgSerSec">
+                    <apex:pageBlockSection columns="1" title="Design/Service Options" collapsible="false" rendered="{!IMCFormObj.OverrideParentOptions__c == 'Yes'}">
+                        <apex:actionRegion >
+                            <apex:outputPanel >
+                                <apex:pageBlockSection >
+                                    <apex:pageblockSectionItem rendered="{!((( IMCFormObj.Main_Form_Id__r.Packaging_Services__c == 'No' 
+                                        && IMCFormObj.Main_Form_Id__r.TestServices__c == 'Yes' ) 
+                                        && (IMCFormObj.Main_Form_Id__r.Technology__c == 'IPD5PAE' 
+                                        || IMCFormObj.Main_Form_Id__r.Technology__c == 'CSOI 7RF' || IMCFormObj.Main_Form_Id__r.Technology__c == 'CSOI 7SW' || IMCFormObj.Main_Form_Id__r.Technology__c == 'CSOS 7RF' || IMCFormObj.Main_Form_Id__r.Technology__c == 'CMHV7SF'  || IMCFormObj.Main_Form_Id__r.Technology__c == 'CMOS 7RF (CMRF7SF)' || IMCFormObj.Main_Form_Id__r.Technology__c == 'CMOS 7TG (CMRF7TG)' || IMCFormObj.Main_Form_Id__r.Technology__c == 'CMOS 8RF (CMRF8SF)' || IMCFormObj.Main_Form_Id__r.Technology__c == 'BiCMOS 6WL (SiGe 6WL)' || IMCFormObj.Main_Form_Id__r.Technology__c == 'BiCMOS 5PAe (SiGe 5PAe)' || IMCFormObj.Main_Form_Id__r.Technology__c == 'CMOS 6RF (CMRF6SF)' || IMCFormObj.Main_Form_Id__r.Technology__c == 'BiCMOS 8HP (SiGe 8HP)' || IMCFormObj.Main_Form_Id__r.Technology__c == 'BiCMOS 8XP (SiGe 8XP)' || IMCFormObj.Main_Form_Id__r.Technology__c == 'BiCMOS 5PAe (1KW5PAe)' || IMCFormObj.Main_Form_Id__r.Technology__c == 'BiCMOS 7WL (SiGe 7WL)' || IMCFormObj.Main_Form_Id__r.Technology__c == 'BiCMOS 9HP (SiGe 9HP)' || IMCFormObj.Main_Form_Id__r.Technology__c == 'CM7FRAM' || IMCFormObj.Main_Form_Id__r.Technology__c == 'CMS90WG (CMOS9WG)' || IMCFormObj.Main_Form_Id__r.Technology__c == 'CMOS 9LP (CMOS 9RF)' || IMCFormObj.Main_Form_Id__r.Technology__c == 'BiCMOS 5PAX (1K5PAXE)' || IMCFormObj.Main_Form_Id__r.Technology__c == 'BiCMOS 8WL (SiGe 8WL)' || IMCFormObj.Main_Form_Id__r.Technology__c == 'BiCMOS 5PAX (SiG5PAX)' || IMCFormObj.Main_Form_Id__r.Technology__c == 'SOI7SWT' || IMCFormObj.Main_Form_Id__r.Technology__c == '45RFSOI' || IMCFormObj.Main_Form_Id__r.Technology__c == 'CSOI8SW' || IMCFormObj.Main_Form_Id__r.Technology__c == 'BiCMOS5PA4 (HRS5PA4)' || IMCFormObj.Main_Form_Id__r.Technology__c == 'BiCMOS 7PA (SiGe 7PA)') && (IMCFormObj.OverrideParentOptions__c == 'Yes' 
+                                        ||  (IMCFormObj.OverrideParentOptions__c == 'No' 
+                                        && (IMCFormObj.Parent_Form_Id__r.StepPlanCustomRequirement1__c  == 'Yes') 
+                                        && IMCFormObj.Parent_Form_Id__r.DataCheckingOptions__c == 'Full'))))}"><!-- Changed By Abhita for Catch Up Release T39 point 1 and T38-->
+                                        <apex:outputLabel value="Will your orders be placed for wafer quantity, with wafer functional test as a service-only adder?:"/>
+                                        <apex:outputPanel >
+                                            <div class = "requiredInput">
+                                                <div class = "requiredBlock"></div>
+                                                <apex:actionRegion >
+                                                    <apex:outputField value="{!IMCFormObj.StepPlanCustomRequirement1__c }"/>
+                                                </apex:actionRegion>
+                                            </div>
+                                        </apex:outputPanel>
+                                    </apex:pageblockSectionItem>
+                                </apex:pageBlockSection>
+                            </apex:outputPanel> 
+
+                            <apex:outputPanel id="stepPlanCustomReqinptpnl">
+                                <apex:pageBlockSection >
+                                    <apex:pageblockSectionItem rendered="{!(IMCFormObj.StepPlanCustomRequirement1__c  == 'No' 
+                                        &&((IMCFormObj.Main_Form_Id__r.Packaging_Services__c == 'No' && IMCFormObj.Main_Form_Id__r.TestServices__c == 'Yes' ) 
+                                        && (dispOrderPlacWafer)
+                                        && (IMCFormObj.OverrideParentOptions__c == 'Yes' 
+                                        ||  (IMCFormObj.OverrideParentOptions__c == 'No' 
+                                        && (IMCFormObj.Parent_Form_Id__r.StepPlanCustomRequirement1__c  == 'Yes') 
+                                        && IMCFormObj.Parent_Form_Id__r.DataCheckingOptions__c == 'Full')))
+                                        )}">
+                                        <!-- Changed By Abhita for Catch Up Release T39 point 1 and T38-->
+                                        <apex:outputLabel value="Please explain how your orders will be placed:"/>
+                                        <apex:outputPanel >
+                                            <div class = "requiredInput">
+                                                <div class = "requiredBlock"></div>
+                                                <apex:outputField value="{!IMCFormObj.StepPlanCustomRequirementInput1__c }" />
+                                            </div>
+                                        </apex:outputPanel>
+                                    </apex:pageblockSectionItem>
+                                </apex:pageBlockSection>
+                            </apex:outputPanel>
+
+                            <apex:outputPanel >
+                                <apex:pageBlockSection columns="1">
+                                    <apex:pageblockSectionItem rendered="{!dispDatacheckingOpts}"><!-- Changed datachecking options to Full only - 14-Nov-2016   -- Ashwin Dash,  Added parent field checks for the condition for rendering datachecking options in IMC - 28th-Dec-2016  -- Ashwin Dash-->
+                                        <apex:outputLabel value="Data Checking Options:"/>
+                                        <apex:outputPanel >
+                                            <div class = "requiredInput">
+                                                <div class = "requiredBlock"></div>
+                                                <apex:outputText value="{!dataCheckingOptsIMCOnly}"/>
+                                            </div>
+                                        </apex:outputPanel>
+                                    </apex:pageblockSectionItem>
+                                </apex:pageBlockSection>
+                            </apex:outputPanel> 
+
+                            <apex:outputPanel id="ServiceOptionpnl">
+                                <apex:pageBlockSection >
+                                    <apex:pageblocksectionItem id="srvcOpt" rendered="{!(IMCFormObj.OverrideParentOptions__c == 'Yes')}">
+                                        <apex:outputLabel value="Service Options:"/>
+                                        <apex:outputPanel >
+                                            <div class = "requiredInput">
+                                                <div class = "requiredBlock"></div>
+                                                <apex:outputField value="{!IMCFormObj.ServiceOptions__c}" />
+                                            </div>
+                                        </apex:outputPanel>
+                                    </apex:pageblocksectionItem>
+                                </apex:pageBlockSection>
+                            </apex:outputPanel>
+                            <apex:outputPanel id="bcksideGringPln">
+                                <apex:pageBlockSection >
+                                    <apex:pageblockSectionItem id="bckGrndSec" rendered="{!dispBacksideGrindThickness}">
+                                        <apex:outputLabel value="Please choose a Backside Grind Thickness:"/>
+                                        <apex:outputPanel >
+                                            <div class = "requiredInput">
+                                                <div class = "requiredBlock"></div>
+                                                <apex:outputField id="bckGrndfld" value="{!IMCFormObj.BacksideGrindThickness__c }"  />
+                                            </div>
+                                        </apex:outputPanel>
+                                    </apex:pageblockSectionItem>
+                                </apex:pageBlockSection>
+                            </apex:outputPanel>
+                            <apex:outputPanel id="IMCotherServicePnl">
+                                <apex:pageBlockSection >
+                                    <apex:pageblockSectionItem rendered="{!dispOtherServiceFeatures}">
+                                        <apex:outputLabel value="Other service features:" />
+                                        <apex:outputPanel >
+                                            <div class = "requiredInput">
+                                                <div class = "requiredBlock"></div>
+                                                <apex:outputField id="otherServiceField" value="{!IMCFormObj.OtherServiceFeatures__c}" />
+                                            </div>
+                                        </apex:outputPanel>
+                                    </apex:pageblockSectionItem>
+                                </apex:pageBlockSection>
+                            </apex:outputPanel>
+
+                            <apex:outputPanel id="Chipedgedesignpnl">
+                                <apex:pageBlockSection >
+                                    <apex:pageblockSectionItem id="Chipedgedesignsec" rendered="{!dispChipEdgeDesign}">
+                                        <apex:outputLabel value="GLOBALFOUNDRIES sourced dicing will be supported only if the PDK-supplied crackstop is present inside your design(s) CHIPEDGE. Have you included the unmodified PDK-supplied crackstop within your design(s)?"/>
+                                        <apex:outputPanel >
+                                            <div class = "requiredInput">
+                                                <div class = "requiredBlock"></div>
+                                                <apex:actionRegion >
+                                                    <apex:outputField id="Chipedgedesignfls" value="{!IMCFormObj.Chipedgedesign__c }" />
+                                                </apex:actionRegion>
+                                            </div>
+                                        </apex:outputPanel>
+                                    </apex:pageblockSectionItem>
+                                </apex:pageBlockSection>
+                            </apex:outputPanel>
+
+                            <apex:outputPanel id="chipedgeDesignErrorInnerPanel" rendered="{!IMCFormObj.Chipedgedesign__c == 'No' && dispChipEdgeDesign}">
+                                <p style="color: brown;padding-left: 22%">
+                                    You must remove your request for dicing or build a new mask set containing the PDK supplied crackstop.
+                                </p><br/>
+                            </apex:outputPanel>
+
+                            <apex:outputPanel id="deliveablepnl">
+                                <apex:pageBlockSection >
+                                    <apex:pageblockSectionItem rendered="{!(IMCFormObj.OverrideParentOptions__c == 'Yes')}" >
+                                        <apex:outputLabel value="Deliverable:" />
+                                        <apex:outputPanel >
+                                            <div class = "requiredInput">
+                                                <div class = "requiredBlock"></div>
+                                                <apex:outputField value="{!IMCFormObj.Deliverable__c}" />
+                                            </div>
+                                        </apex:outputPanel>
+                                    </apex:pageblockSectionItem>
+                                </apex:pageBlockSection>
+                            </apex:outputPanel>
+                            
+                            <apex:outputPanel id="typeOfDesignPln">
+                                <apex:pageBlockSection >
+                                    <apex:pageblockSectionItem id="typeOfSub" rendered="{!(IMCFormObj.OverrideParentOptions__c == 'Yes')}">
+                                        <apex:outputLabel value="Type of Design Submission:"/>
+                                        <apex:outputPanel >
+                                            <div class = "requiredInput">
+                                                <div class = "requiredBlock"></div>
+                                                <apex:OutputField id="pckgTypeNeed" value="{!IMCFormObj.DesignSubmission__c }"  >
+                                                </apex:OutputField>
+                                            </div>
+                                        </apex:outputPanel>
+                                    </apex:pageblockSectionItem>
+                                </apex:pageBlockSection>
+                            </apex:outputPanel>
+                        </apex:actionRegion>
+                    </apex:pageBlockSection>
+                </apex:outputPanel>
+            </apex:actionRegion>
+
+            <apex:pageBlockSection columns="1" title="Design Changes" collapsible="false" rendered="{!disDesignChangesSection}">
+                <apex:actionRegion >
+                    <apex:outputPanel id="uniqueDesignpnl">
+                        <apex:pageBlockSection >
+                            <apex:pageblockSectionItem rendered="{!disNumOfUniqDesigns}"><!--Added BY Abhita for new UAT Issue #76, 134-->  
+                                <apex:outputLabel value="Are you changing the number of unique Front-End or Back-End designs for this product?" />
+                                <apex:outputPanel id="uniqueDesignpnl">
+                                    <div class = "requiredInput">
+                                        <div class = "requiredBlock"></div>
+                                        <apex:OutputField id="uniqueDesign" value="{!IMCFormObj.NumOfUniqDesigns__c}"   />
+                                    </div>
+                                </apex:outputPanel>
+                            </apex:pageBlockSectionItem>
+                        </apex:pageBlockSection>
+                    </apex:outputPanel>
+
+                    <apex:outputPanel id="IMCInputMethodpnl">
+                        <apex:pageBlockSection columns="1">
+                            <apex:pageBlockSectionItem id="IMCInputMethodSec">
+                                <apex:outputLabel value="Select your step plan input Methodology:" />
+                                <apex:outputPanel >
+                                    <apex:actionRegion >
+                                        <div class = "requiredInput">
+                                            <div class = "requiredBlock"></div>
+                                            <apex:outputText value="{!IMCFormObj.IMCInputMethod__c}" id="IMCInputMethod" /><!--Changed by Abhita for new UAT Issue #95-->
+                                        </div>
+                                        <apex:actionStatus id="refresh" startText="Refreshing..." stopText="" />
+                                    </apex:actionRegion>
+                                </apex:outputPanel>
+                            </apex:pageBlockSectionItem>
+                        </apex:pageBlockSection>
+                    </apex:outputPanel>
+
+                    <apex:outputPanel rendered="{!IMCFormObj.IMCInputMethod__c == 'Standard Process: Inputs via Reticle Layout attachment'}">
+                       <p style="color:black;"><b>Please download the Reticle Layout Template using the link below. Populate the document with all requested information, rename to reflect the program name, then attach to this form. Contact your supporting PE if you have any questions.</b></p><!--Changed By Abhita for new UAT issue #53-->
+                       <br/>
+                        <!--Ravindra - Libraries changes Starts
+                        <apex:outputLink style="padding-left: 22%;text-decoration: underline;color:blue;" value="{!FMSdocuments['FMSMainFormReticleLayoutTemplate'].FMSRefDocURL__c}" id="theLink1" target="_blank">Link to reticle layout template</apex:outputLink> -->
+                        <apex:outputLink style="padding-left: 22%;text-decoration: underline;color:blue;" value="{!URLFOR($Page.FMS_DocumentLinkPage)}?documentPage=StepPlan" id="theLink1" target="_blank">Link to reticle layout template</apex:outputLink>
+                        <!--Ravindra - Libraries changes Ends-->
+                       <br/> <br/>
+                       <apex:outputText style="padding-left: 22%;color:black;" value="Allowable file types are (.xls,.csv,.123,.doc,.xlsx,.docx,.ods,.odt) and Max file size: 100MB" />
+                       <br/><br/>  
+                    </apex:outputPanel>
+                   
+                    <apex:outputPanel rendered="{!IMCFormObj.IMCInputMethod__c == 'Advanced Process: Inputs via XML file attachment'}">
+                       <p style="color:brown;">You have chosen the advanced method of providing step plan inputs via a single XML file. Please ensure your file meets the requirements outlined in the specification prior to submission.</p>
+                       <br/><!-- Changed By Abhita for new UAT Issue #172-->
+                       <apex:outputText style="padding-left: 22%;color:black;" value="Only .xml files are allowed and Max file size: 100MB" />
+                       <br/><br/>                  
+                    </apex:outputPanel>
+
+                    <apex:outputPanel id="ReticalLayoutPnl">
+                        <apex:pageBlockSection columns="1" rendered="{!(IMCFormObj.IMCInputMethod__c == 'Standard Process: Inputs via Reticle Layout attachment')}">
+                            <apex:pageBlockSectionItem >
+                                <apex:outputLabel id="Rtclinof" value="Reticle Layout Information:"/>
+                                <apex:outputPanel >
+                                    <div class = "requiredInput">
+                                       <div class = "requiredBlock"></div>
+                                    </div>
+                                    <!--<input type="file" id="fileRtcl" onchange="upload(this)" />-->
+                                </apex:outputPanel>
+                            </apex:pageBlockSectionItem>
+                        </apex:pageBlockSection>
+
+                        <apex:pageBlockSection columns="1" rendered="{!(IMCFormObj.IMCInputMethod__c == 'Advanced Process: Inputs via XML file attachment')}">
+                            <apex:pageBlockSectionItem >
+                                <apex:outputLabel id="RtclayXml" value="Reticle Layout XML file:"/>
+                                <apex:outputPanel >
+                                    <div class = "requiredInput">
+                                       <div class = "requiredBlock"></div>
+                                    </div>
+                                </apex:outputPanel>
+                            </apex:pageBlockSectionItem>
+                            <br/>
+                        </apex:pageBlockSection>
+
+                        <apex:pageBlockSection rendered="{!(attWrap!=null && attWrap.size!=0)}">
+                            <apex:pageBlockSectionItem dataStyle="padding-left: 19%;width: 68%;">
+                                <apex:pageBlockTable value="{!attWrap}" var="attvar" >
+                                    <apex:column headerValue="Attachment name">
+                                        <apex:outputLink id="link" value="/sfc/servlet.shepherd/version/download/{!attvar.attId}" style="color: blue;text-decoration: underline;">{!attvar.attName}</apex:outputLink>
+                                    </apex:column>
+                                    <apex:column headerValue="Size">
+                                        <apex:outputText value="{!attvar.attSize}" />
+                                    </apex:column>
+                                </apex:pageBlockTable>
+                            </apex:pageBlockSectionItem>
+                        </apex:pageBlockSection>
+                    </apex:outputPanel>
+
+                    <apex:outputPanel rendered="{!(IMCFormObj.NumOfUniqDesigns__c != '' && IMCFormObj.NumOfUniqDesigns__c != '=== Select a Value ===' && IMCFormObj.IMCInputMethod__c != '' && IMCFormObj.IMCInputMethod__c != '=== Select a Value ===')}"><!--Changed by abhita for new UAT Issue #76-->
+                        <apex:outputPanel >
+                            <apex:pageBlockSection >
+                                <apex:pageBlockSectionItem id="imcNumDsgnSec" >
+                                    <apex:outputLabel value="What is the total number of Topcells that will be submitted for this program?" />
+                                    <apex:outputPanel >
+                                        <div class = "requiredInput">
+                                            <div class = "requiredBlock"></div>
+                                            <apex:OutputField id="imcNumDsgn" value="{!IMCFormObj.IMCNumOfDesigns__c}"  />
+                                        </div>
+                                    </apex:outputPanel>
+                                </apex:pageBlockSectionItem>
+                            </apex:pageBlockSection>
+                        </apex:outputPanel>
+                        <p>
+                            Warning: The accuracy of this field is critical to the success of the automation. The total number of Topcells entered should equal the quantity of Topcells being submitted in the attached RIT addendum.
+                        </p>
+                        <apex:outputPanel >
+                            <apex:pageBlockSection >
+                                <apex:pageBlockSectionItem id="IMCNumOfFEOLDesignsSec" >
+                                    <apex:outputLabel value="Number of unique Front End of Line (precontact) designs:" />
+                                    <apex:outputPanel id="IMCNumOfFEOLDesignspnl">
+                                        <div class = "requiredInput">
+                                            <div class = "requiredBlock"></div>
+                                            <apex:OutputField id="IMCNumOfFEOLDesigns" value="{!IMCFormObj.IMCNumOfFEOLDesigns__c}" />
+                                        </div>
+                                    </apex:outputPanel>
+                                </apex:pageBlockSectionItem>
+                            </apex:pageBlockSection>
+                        </apex:outputPanel>
+                        <apex:outputPanel >
+                            <apex:pageBlockSection >
+                                <apex:pageBlockSectionItem id="IMCNumOfBEOLDesignsSec" >
+                                    <apex:outputLabel value="Number of unique Back End of Line (Metal) designs:" />
+                                    <apex:outputPanel id="IMCNumOfBEOLDesignspnl">
+                                        <div class = "requiredInput">
+                                            <div class = "requiredBlock"></div>
+                                            <apex:OutputField id="IMCNumOfBEOLDesigns" value="{!IMCFormObj.IMCNumOfBEOLDesigns__c}" />
+                                        </div>
+                                    </apex:outputPanel>
+                                </apex:pageBlockSectionItem>
+                            </apex:pageBlockSection>
+                        </apex:outputPanel>
+                    </apex:outputPanel>
+                </apex:actionRegion>
+            </apex:pageBlockSection>
+            <apex:pageBlockButtons location="bottom" rendered="{! !popupVal}">
+               <!-- <apex:commandButton onclick="launchPrintWindow('{!IMCFormObj.Id}');return false;" value="Print PDF" /> -->          
+             <apex:commandLink action="{!redirectToSearchPage}" value="Form Selection" styleClass="btn" style="text-decoration:none;padding:4px;" />
+             <apex:commandLink action="{!openPDF}" target="_blank" value="Print PDF" styleClass="btn" style="text-decoration:none;padding:4px;" id="theButton"/>
+             
+            </apex:pageBlockButtons>
+        </apex:pageBlock>        
+    </apex:form>
+</apex:page>

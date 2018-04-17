@@ -1,0 +1,43 @@
+<!--
+  Author: Surendranadh Nune
+  Company: GlobalFoundries,India
+  Project: Return Material Authorization
+  Description: This component is used to display the field history of sObject.
+  History:
+     SurendranadhNune 17122015  -   Created.
+--> 
+<apex:component controller="RMA_HistoryComponentCtrl">
+    <!-- Attribute Definition -->
+    <apex:attribute name="Object" description="Object we wish to view the history of" type="SObject" required="true" assignTo="{!myObject}" />
+    <apex:attribute name="Limit" description="Number of lines of history to display" type="Integer" required="false" assignTo="{!recordLimit}"/>
+    <apex:attribute name="print" description="Flag to indicate if printing RMA" type="boolean" required="false" assignTo="{!isPrint}" default="false"/>
+    <c:loadingPanel ></c:loadingPanel>
+    <!-- Object History Related List -->
+    <apex:pageBlock mode="maindetail">
+        <apex:actionRegion >
+            <apex:commandLink styleClass="contentActionLink" action="{!getReportUrl}" rerender="dummy" style="position:absolute;right: 1.8em;" rendered="{!NOT(isprint)}">
+                <apex:param name="maillogReport" value="RMA_with_Field_History" assignTo="{!reportDevName}"/>
+                <apex:image value="/img/s.gif" style="height:14px;" styleclass="downloadItemIcon"/>
+                <span style="font-size:1.1em;">Download RMA History</span>
+            </apex:commandLink>
+        </apex:actionRegion><br/><br/>
+        <apex:pageBlockTable id="formRelatedList" value="{!ObjectHistory}" var="History" >
+            <apex:column headerValue="Date" value="{!History.thedate}"/> 
+            <apex:column headerValue="User">
+            <apex:outputLink value="/{!History.userId}"> {!History.who} </apex:outputLink>
+            </apex:column>
+            <apex:column headerValue="Action"><apex:outputText escape="false" value="{!History.action}"/></apex:column>
+        </apex:pageBlockTable>
+        <apex:outputPanel id="panelShowMore"
+                    layout="block"
+                    styleClass="pShowMore"
+                    rendered="{!AllowShowMore && NOT(isPrint)}">
+                <apex:commandLink id="linkShowMore"
+                  action="{!showMore}" status="LoadingStatusSpinner"
+                  rerender="formRelatedList">Show more »</apex:commandLink>
+              <span> | </span>
+          <apex:outputLink id="linkGotoList"
+              value="/_ui/common/history/ui/EntityHistoryFilterPage?id={!Object}">Go to list »</apex:outputLink>
+      </apex:outputPanel>
+    </apex:pageBlock>
+</apex:component>

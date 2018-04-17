@@ -1,0 +1,168 @@
+<apex:page controller="RTATBOMController" tabstyle="RTAT_Slot__c">
+
+    <apex:includeScript value="{!URLFOR($Resource.jquery, 'js/jquery-1.8.3.min.js')}"/>
+    <apex:includeScript value="{!URLFOR($Resource.jquery, 'js/jquery-ui-1.9.2.custom.js')}"/>
+    <apex:includeScript value="{!URLFOR($Resource.jqPlugin, '/jquery.blockUI.js')}"/>
+    <apex:stylesheet value="{!URLFOR($Resource.jquery, 'css/ui-lightness/jquery-ui-1.9.2.custom.css')}"/>
+     <script type="text/javascript">    
+         function SaveFunct(){
+            console.log('in view results stuff');
+            saveData();
+        }
+         function delRow(){
+            console.log('in view results stuff');
+            deleteData();
+        }
+
+         function CopyBOMFunct(){
+            console.log('in view results stuff');
+            copyBOM();
+        }
+   </script>
+    <script>
+        $j = jQuery.noConflict();        
+        //function to block the whole page
+        function blockPage(){ 
+
+            $j.blockUI({ message: '<img src="/img/loading32.gif" /><h1> Processing Data...</h1>', 
+                css: { 
+                 border: 'none', 
+                 padding: '15px',  
+                 '-webkit-border-radius': '10px', 
+                 '-moz-border-radius': '10px', 
+                 opacity: .9
+                } 
+            }); 
+            return false;
+        }
+        
+               
+        //function to unblock the page
+        function unblockPage(){
+            $j.unblockUI();
+        }
+    </script>
+    
+ <apex:form >
+   
+
+   <apex:pageBlock title="Deliverable Form: {!strRSlot}" >
+       <apex:pageBlockSection title="Reference">
+       <table>
+           <thead>
+               <tr>
+                   <th>Part Description</th>
+                   <th>Level Code</th>
+               </tr>
+           </thead>
+           <tbody>
+           <tr>
+               <td>Final Module Asm - Mod</td>
+               <td align="center">01</td>
+           </tr>
+           <tr>
+               <td>Interim Module Asm</td>
+               <td align="center">03</td>
+           </tr>
+           <tr>
+               <td>Final Module Asm - Die</td>
+               <td align="center">08</td>
+           </tr>
+           <tr>
+               <td>TCA Chip Asm</td>
+               <td align="center">17</td>
+           </tr>
+           <tr>
+               <td>BEOL Chip Asm</td>
+               <td align="center">20</td>
+           </tr>
+           <tr>
+               <td>BEOL Master Chip Asm</td>
+               <td align="center">25</td>
+           </tr>
+           <tr>
+               <td>BEOL Wafer Asm</td>
+               <td align="center">27</td>
+           </tr>
+           <tr>
+               <td>Fab Wafer Asm</td>
+               <td align="center">28</td>
+           </tr>
+           <tr>
+               <td>Consignment Wafer Asm</td>
+               <td align="center">29</td>
+           </tr>
+           <tr>
+               <td>FEOL Chip Asm</td>
+               <td align="center">30</td>
+           </tr>
+           <tr>
+               <td>FEOL Wafer Asm</td>
+               <td align="center">31</td>
+           </tr>
+           <tr>
+               <td>Supercommon Wafer Asm</td>
+               <td align="center">33</td>
+           </tr>
+               </tbody>
+       </table>
+       </apex:pageBlockSection>
+
+       
+      <apex:pageBlockTable value="{!wrappers}" var="wrapper" id="wtable" width="80%">
+         <apex:column headerValue="SNo.">
+            <apex:outputText value="{!wrapper.ident+1}"/>
+         </apex:column>
+         <apex:column headerValue="Part Classification">
+            <apex:inputField value="{!wrapper.rtatBOM.Part_Classification__c}" />
+         </apex:column>
+
+         <apex:column headerValue="Level Code">
+            <apex:inputField value="{!wrapper.rtatBOM.Level_code__c}" />
+         </apex:column>
+
+         <apex:column headerValue="Component">
+            <apex:inputField value="{!wrapper.rtatBOM.Component__c}"/>
+         </apex:column>
+         <apex:column headerValue="Deliverable PN?">
+            <apex:inputField value="{!wrapper.rtatBOM.Deliverable_PN__c}"/>
+         </apex:column>
+                  <apex:column headerValue="Create Prefix PN?" >
+            <apex:inputField value="{!wrapper.rtatBOM.Create_Prefix_PN__c}"/>
+         </apex:column>
+
+         <apex:column headerValue="Prefix PN">
+            <apex:outputField value="{!wrapper.rtatBOM.Prefix_PN__c}"/>
+         </apex:column>
+         <apex:column headerValue="Deliverable P-Level PN">
+            <apex:inputField value="{!wrapper.rtatBOM.Deliverable_P_Level_PN__c}"/>
+         </apex:column>
+         <apex:column headerValue="Action">
+            <apex:commandButton value="Delete" action="{!delWrapper}" rerender="wtable">
+               <apex:param name="toDelIdent" value="{!wrapper.ident}" assignTo="{!toDelIdent}"/> 
+            </apex:commandButton>
+         </apex:column>
+         
+      </apex:pageBlockTable>
+  <!-- <apex:outputLabel id="msgId" rendered="{!noBOM}" value="No BOM available. Please click on Copy BOM button to copy BOM."/></apex:pageBlockTable>-->
+     <br></br>
+     <center>
+      <apex:commandButton value="Copy BOM"  onclick="CopyBOMFunct();" rerender="wtable"/>
+
+      <apex:commandButton value="Add PN" action="{!addRows}" rerender="wtable,msgId">
+         <apex:param name="addCount" value="1" assignTo="{!addCount}"/> 
+      </apex:commandButton>
+    <!--  <apex:commandButton value="Add 5 Rows" action="{!addRows}" rerender="wtable,msgId">
+         <apex:param name="addCount" value="5" assignTo="{!addCount}"/> 
+      </apex:commandButton> -->
+      <apex:commandButton value="Update" rerender="wtable" onclick="SaveFunct();"  />
+      </center>
+      <apex:actionFunction name="deleteData" action="{!delWrapper}" status="blockUI" reRender="msgId,wtable" >
+       
+      </apex:actionFunction>
+      <apex:actionFunction name="saveData" action="{!save}" status="blockUI" reRender="msgId,wtable" />
+      <apex:actionFunction name="copyBOM" action="{!addPartToRTATBOM}" status="blockUI" reRender="msgId,wtable"/>
+                          <apex:actionStatus onstart="blockPage()" onstop="unblockPage()" id="blockUI"/>
+   </apex:pageBlock>
+ </apex:form>
+</apex:page>

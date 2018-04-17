@@ -1,0 +1,323 @@
+<!-----------------------------------------------------------------------------------------------------------------------------------
+Page:          View_PT_IP_Details
+-------------------------------------------------------------------------------------------------------------------------------------
+Author:        Joydev Mondol (Cognizant - 153480)
+Created Date:  20/09/2013
+Reason:        Displays the PT/IP Details in the following sections using field sets for each section(s):
+               
+               PT Sections
+               -----------
+               1) Overview
+               2) Specification
+               3) Design Kit
+               
+               IP Sections  
+               -----------
+               1) Overview
+               2) IP Design Kit
+               3) IP Silicon Report | Design Kit & Merge Kit
+               4) IP Mearged Design Kit
+               5) Type Specific Data
+------------------------------------------------------------------------------------------------------------------------------------->
+
+<apex:page Controller="View_PT_IP_DetailsController"
+           showHeader="false"
+           sidebar="false">
+    <apex:form id="pbtform">
+        <apex:pageMessages />
+        
+        <!--PT Section--BEGINS--->
+        <apex:pageBlock mode="maindetail" 
+                        tabStyle="Account"
+                        rendered="{!IF(AND(Entity = 'PT', IsEligible = TRUE), TRUE, FALSE)}"
+                        id="pb">
+            <apex:sectionHeader title="Process Technology"
+                                subtitle="{!CurrentProcessTechnology.Name}"/>
+            <apex:pageblockSection title="Overview">
+                <apex:repeat value="{!$ObjectType.Process_Technology__c.FieldSets.PT_Overview}" var="f">               
+                      <apex:outputField value="{!CurrentProcessTechnology[f]}"/>                                                      
+                </apex:repeat>
+            </apex:pageblockSection>
+            <apex:pageblockSection title="Specification">
+                <apex:repeat value="{!$ObjectType.Process_Technology__c.FieldSets.PT_Specification}" var="f">               
+                      <apex:outputField value="{!CurrentProcessTechnology[f]}"/>                                                      
+                </apex:repeat>
+            </apex:pageblockSection>
+            <apex:pageblockSection title="Design Kit">
+                <apex:repeat value="{!$ObjectType.Process_Technology__c.FieldSets.PT_Design_Kit}" var="f">               
+                      <apex:outputField value="{!CurrentProcessTechnology[f]}"/>                                                      
+                </apex:repeat>
+            </apex:pageblockSection>
+            <apex:pageblockSection title="IPs"
+                                   columns="1"
+                                   id="relatedIPBlock"
+                                   rendered="{!$User.ContactId == NULL}">
+                <apex:pageblockTable value="{!PT_IPs}"
+                                     var="IP"
+                                     id="pbt"> <!-- {!PaginationVariable['records']} -->
+                    <apex:repeat value="{!$ObjectType.Base_IP__c.FieldSets.PT_IP_Columns}" var="f">               
+                          <apex:column >                                                              
+                              <apex:facet name="header">
+                                  <apex:commandLink action="{!fetchPTRelatedIPs}" 
+                                                    value="{!f.Label}{!IF(SortExpression==f.fieldPath,IF(SortDirection='ASC','▲','▼'),'')}" 
+                                                    reRender="relatedIPBlock">
+                                      <apex:param value="{!f.fieldPath}" 
+                                                  name="column" 
+                                                  assignTo="{!SortExpression}"/>
+                                  </apex:commandLink>                                                                         
+                              </apex:facet> 
+                              <apex:outputPanel rendered="{!IF(f='IP_Id__c',TRUE,FALSE)}">
+                                    <a href="/apex/View_PT_IP_Details?Entity=IP&Id={!IP['Id']}"
+                                       target="_blank">
+                                        {!IP[f]}
+                                    </a>
+                              </apex:outputPanel>
+                              <apex:outputField value="{!IP[f]}"
+                                                  rendered="{!IF(f='IP_Id__c',FALSE,TRUE)}"/>                                                              
+                          </apex:column>                                                    
+                    </apex:repeat>
+                </apex:pageblockTable>
+               
+                <apex:panelGrid columns="7">
+                    <apex:commandButton status="fetchStatus" 
+                                        reRender="relatedIPBlock" 
+                                        value="First" 
+                                        action="{!PaginationVariable.first}" 
+                                        disabled="{!!PaginationVariable.hasPrevious}" 
+                                        title="First Page"/>
+                    <apex:commandButton status="fetchStatus" 
+                                        reRender="relatedIPBlock" 
+                                        value="Previous" 
+                                        action="{!PaginationVariable.previous}" 
+                                        disabled="{!!PaginationVariable.hasPrevious}" 
+                                        title="Previous Page"/>
+                    <apex:commandButton status="fetchStatus" 
+                                        reRender="relatedIPBlock" 
+                                        value="Next" 
+                                        action="{!PaginationVariable.next}" 
+                                        disabled="{!!PaginationVariable.hasNext}" 
+                                        title="Next Page"/>
+                    <apex:commandButton status="fetchStatus" 
+                                        reRender="relatedIPBlock" 
+                                        value="Last" 
+                                        action="{!PaginationVariable.last}" 
+                                        disabled="{!!PaginationVariable.hasNext}" 
+                                        title="Last Page"/>
+                    
+                    <apex:outputPanel style="color:#4AA02C;font-weight:bold">
+                        <apex:actionStatus id="fetchStatus" 
+                                           startText="Fetching..." 
+                                           stopText=""/>
+                    </apex:outputPanel>
+                </apex:panelGrid>
+            </apex:pageblockSection>
+        </apex:pageBlock>
+        <!--PT Section--ENDS--->
+        
+        <!--IP Section--BEGINS--->
+        <apex:pageBlock mode="maindetail" 
+                        tabStyle="Account"
+                        rendered="{!IF(AND(Entity = 'IP', IsEligible = TRUE), TRUE, FALSE)}">
+            <apex:sectionHeader title="IP"
+                                subtitle="{!CurrentIPOverview.Name}"/>
+            <apex:pageblockSection title="Overview">
+                <apex:repeat value="{!$ObjectType.Base_IP__c.FieldSets.IP_Overview}" var="f">               
+                      <apex:outputField value="{!CurrentIPOverview[f]}"/>                                                      
+                </apex:repeat>
+            </apex:pageblockSection>
+            <!--
+            <apex:pageblockSection title="Design Kit">
+                <apex:repeat value="{!$ObjectType.IP__c.FieldSets.IP_Design_Kit}" var="f">               
+                      <apex:outputField value="{!CurrentIPDesignKit[f]}"/>                                                      
+                </apex:repeat>
+            </apex:pageblockSection>
+            -->
+            
+            <apex:pageblockSection title="Type Specific Data" 
+                                   rendered="{!IF(CurrentIPOverview.Ip_Type__c = 'LOGIC', TRUE, FALSE)}">
+                <apex:repeat value="{!$ObjectType.Base_IP__c.FieldSets.IP_Type_Specific_Data_Logic}" var="f">               
+                      <apex:outputField value="{!CurrentIPOverview[f]}"/>                                                      
+                </apex:repeat>
+            </apex:pageblockSection>
+            
+            <apex:pageblockSection title="Type Specific Data" 
+                                   rendered="{!IF(CurrentIPOverview.Ip_Type__c = 'IO', TRUE, FALSE)}">
+                <apex:repeat value="{!$ObjectType.Base_IP__c.FieldSets.IP_Type_Specific_Data_IO}" var="f">               
+                      <apex:outputField value="{!CurrentIPOverview[f]}"/>                                                      
+                </apex:repeat>
+            </apex:pageblockSection>
+            
+            <apex:pageblockSection title="Type Specific Data" 
+                                   rendered="{!IF(CurrentIPOverview.Ip_Type__c = 'MEMORY', TRUE, FALSE)}">
+                <apex:repeat value="{!$ObjectType.Base_IP__c.FieldSets.IP_Type_Specific_Data_Memory}" var="f">               
+                      <apex:outputField value="{!CurrentIPOverview[f]}"/>                                                      
+                </apex:repeat>
+            </apex:pageblockSection>
+            
+            <apex:pageblockSection title="Type Specific Data" 
+                                   rendered="{!IF(CurrentIPOverview.Ip_Type__c = 'AMS', TRUE, FALSE)}">
+                <apex:repeat value="{!$ObjectType.Base_IP__c.FieldSets.IP_Type_Specific_Data_AMS}" var="f">               
+                      <apex:outputField value="{!CurrentIPOverview[f]}"/>                                                      
+                </apex:repeat>
+            </apex:pageblockSection>
+            
+            <apex:pageblockSection title="Type Specific Data" 
+                                   rendered="{!IF(CurrentIPOverview.Ip_Type__c = 'PHYS', TRUE, FALSE)}">
+                <apex:repeat value="{!$ObjectType.Base_IP__c.FieldSets.IP_Type_Specific_Data_PHYs}" var="f">               
+                      <apex:outputField value="{!CurrentIPOverview[f]}"/>                                                      
+                </apex:repeat>
+            </apex:pageblockSection>
+            
+            <apex:pageblockSection title="Type Specific Data" 
+                                   rendered="{!IF(OR(CurrentIPOverview.Ip_Type__c = 'OTHER',
+                                                     CurrentIPOverview.Ip_Type__c = 'NVM',
+                                                     CurrentIPOverview.Ip_Type__c = 'CORE'), TRUE, FALSE)}">
+                <apex:repeat value="{!$ObjectType.Base_IP__c.FieldSets.IP_Type_Specific_Data_NVM}" var="f">               
+                      <apex:outputField value="{!CurrentIPOverview[f]}"/>                                                      
+                </apex:repeat>
+                <apex:repeat value="{!$ObjectType.Base_IP__c.FieldSets.IP_Type_Specific_Data_Core}" var="f">               
+                      <apex:outputField value="{!CurrentIPOverview[f]}"/>                                                      
+                </apex:repeat>
+            </apex:pageblockSection>
+            
+            <apex:pageblockSection title="Design Kits"
+                                   columns="1"
+                                   id="IPDesignKitBlock">
+                <apex:pageblockTable value="{!CurrentIPDesignKits}"
+                                     var="DK"
+                                     rows="1000"> <!--style="table-layout: fixed;"-->
+                    <apex:repeat value="{!$ObjectType.IP__c.FieldSets.IP_Design_Kit}" 
+                                 var="f">               
+                          <apex:column headerValue="{!f.Label}" 
+                                       style="word-break:break-all;">
+                              <!--
+                              <apex:facet name="header">
+                                  <apex:commandLink action="{!fetchIPDesignKits}" 
+                                                    value="{!f.Label}{!IF(SortExpression==f.fieldPath,IF(SortDirection='ASC','▲','▼'),'')}" 
+                                                    reRender="IPDesignKitBlock">
+                                      <apex:param value="{!f.fieldPath}" 
+                                                  name="column" 
+                                                  assignTo="{!SortExpression}"/>
+                                  </apex:commandLink> 
+                              </apex:facet>
+                              -->
+                              <apex:outputField value="{!DK[f]}"/>     
+                          </apex:column>                                                   
+                    </apex:repeat>
+                </apex:pageblockTable>
+            </apex:pageblockSection>
+            <apex:pageblockSection title="Silicon Report">
+                <apex:repeat value="{!$ObjectType.IP_Merge__c.FieldSets.IP_Silicon_Report}" var="f">               
+                      <apex:outputField value="{!CurrentIPMergedDesignKit[f]}"/>                                                      
+                </apex:repeat>
+            </apex:pageblockSection>   
+            <!--
+            <apex:pageblockSection title="Merged Design Kit">
+                <apex:repeat value="{!$ObjectType.IP_Merge__c.FieldSets.IP_Merged_Design_Kit}" var="f">               
+                      <apex:outputField value="{!CurrentIPMergedDesignKit[f]}"/>                                                      
+                </apex:repeat>
+            </apex:pageblockSection>
+            -->
+            <apex:pageblockSection title="Merged Design Kits"
+                                   columns="1"
+                                   id="IPMergedDesignKitBlock">
+                <apex:pageblockTable value="{!CurrentIPMergedDesignKits}"
+                                     var="MDK"
+                                     rows="1000">
+                    <apex:repeat value="{!$ObjectType.IP_Merge__c.FieldSets.IP_Merged_Design_Kit}" 
+                                 var="f"> 
+                          <apex:column headerValue="{!IF(f.Label != 'IP Merge Name', f.Label, 'IP Merge ID')}" >              
+                          <!-- <apex:column headerValue="{!f.Label}">
+                              <apex:facet name="header">
+                                  <apex:commandLink action="{!fetchIPMergedDesignKits}" 
+                                                    value="{!f.Label}{!IF(SortExpression==f.fieldPath,IF(SortDirection='ASC','▲','▼'),'')}" 
+                                                    reRender="IPMergedDesignKitBlock">
+                                      <apex:param value="{!f.fieldPath}" 
+                                                  name="column" 
+                                                  assignTo="{!SortExpression}"/>
+                                  </apex:commandLink>                                                                         
+                              </apex:facet>
+                              -->
+                              <apex:outputField value="{!MDK[f]}"/>     
+                          </apex:column>                                                   
+                    </apex:repeat>
+                </apex:pageblockTable>
+            </apex:pageblockSection>
+            
+            <apex:pageblockSection title="Supported Process Technologies" 
+                                   columns="1"
+                                   id="relatedPTBlock"
+                                   rendered="{!$User.ContactId == NULL}">
+                <apex:pageblockTable value="{!IP_PTs}"
+                                     var="PT"
+                                     rows="1000">
+                    <apex:repeat value="{!$ObjectType.Process_Technology__c.FieldSets.IP_PT_Columns}" var="f">               
+                          <apex:column >                                                              
+                              <apex:facet name="header">
+                                  <apex:commandLink action="{!fetchIPRelatedPTs}" 
+                                                    value="{!f.Label}{!IF(SortExpression==f.fieldPath,IF(SortDirection='ASC','▲','▼'),'')}" 
+                                                    reRender="relatedPTBlock">
+                                      <apex:param value="{!f.fieldPath}" 
+                                                  name="column" 
+                                                  assignTo="{!SortExpression}"/>
+                                  </apex:commandLink>                                                                         
+                              </apex:facet> 
+                              <apex:outputPanel rendered="{!IF(f='Name',TRUE,FALSE)}">
+                                    <a href="/apex/View_PT_IP_Details?Entity=PT&Id={!PT['Id']}"
+                                       target="_blank">
+                                        {!PT[f]}
+                                    </a>
+                                </apex:outputPanel>
+                                <apex:outputField value="{!PT[f]}"
+                                                  rendered="{!IF(f='Name',FALSE,TRUE)}"/>                                                               
+                          </apex:column>                                                  
+                    </apex:repeat>
+                </apex:pageblockTable>
+                <apex:panelGrid columns="7">
+                    <apex:commandButton status="fetchStatus" 
+                                        reRender="relatedIPBlock" 
+                                        value="First" 
+                                        action="{!PaginationVariable.first}" 
+                                        disabled="{!!PaginationVariable.hasPrevious}" 
+                                        title="First Page"/>
+                    <apex:commandButton status="fetchStatus" 
+                                        reRender="relatedIPBlock" 
+                                        value="Previous" 
+                                        action="{!PaginationVariable.previous}" 
+                                        disabled="{!!PaginationVariable.hasPrevious}" 
+                                        title="Previous Page"/>
+                    <apex:commandButton status="fetchStatus" 
+                                        reRender="relatedIPBlock" 
+                                        value="Next" 
+                                        action="{!PaginationVariable.next}" 
+                                        disabled="{!!PaginationVariable.hasNext}" 
+                                        title="Next Page"/>
+                    <apex:commandButton status="fetchStatus" 
+                                        reRender="relatedIPBlock" 
+                                        value="Last" 
+                                        action="{!PaginationVariable.last}" 
+                                        disabled="{!!PaginationVariable.hasNext}" 
+                                        title="Last Page"/>
+                    
+                    <apex:outputPanel style="color:#4AA02C;font-weight:bold">
+                        <apex:actionStatus id="fetchStatus" 
+                                           startText="Fetching..." 
+                                           stopText=""/>
+                    </apex:outputPanel>
+                </apex:panelGrid>
+            </apex:pageblockSection>
+            
+            <!-- Notes and attachement section ----- BEGINS ------>
+            <apex:pageblockSection title="Attachments" columns="1">
+				<apex:iframe src="{!nonNDAURLVal}" scrolling="true" id="theIframe" height="200px" width="100%"/>
+            </apex:pageblockSection>
+            <!-- Notes and attachement section ----- ENDS -------->
+            
+        </apex:pageBlock>
+        <!--IP Section--ENDS--->
+    </apex:form>
+    
+    <!-- Notes and attachement section ----- BEGINS ------>
+    <!--<apex:relatedList subject="{!CurrentIPOverview}" list="NotesAndAttachments"/>-->
+    <!-- Notes and attachement section ----- ENDS -------->
+</apex:page>

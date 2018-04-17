@@ -1,0 +1,175 @@
+<!--
+ Type Name: FV_VFProvisionSubPDK
+ Author: Cognizant Technology Solutions
+ Created Date: 3-sep-2014
+ Reason: case 27865
+ Change History:
+ Author: 
+ Modified Date: 
+ Reason: 
+ …….. 
+ ……..
+-->
+
+
+<apex:page standardController="Sub_PDK__c" extensions="FV_ClsProvisionSubPDKController">
+
+<style>
+  .headerRow .TableTitle {
+    background-color: #F0F8FF !important;
+    background-image: none !important; //This is needed if you want to overwrite the header background
+    color: #CC0000 !important; 
+    font-size:100% !important; 
+  }
+ </style>
+    <script type="text/javascript">
+function checkAll(cb){
+        var inputElem = document.getElementsByTagName('input');                     
+        for(var i=0; i<inputElem.length; i++){                                                   
+            inputElem[i].checked = cb.checked;               
+        }
+    }
+function checkContacts(cb,accid){
+        var inputElem = document.getElementsByTagName('input');                            
+        for(var i=0; i<inputElem.length; i++){ 
+            if(inputElem[i].parentNode.getAttribute('rowid')==accid)                                                 
+                inputElem[i].checked = cb.checked;               
+            }
+    }
+</script>    
+ 
+   <apex:form >
+        <apex:outputPanel id="messageblock">
+            <apex:pageMessages />
+        </apex:outputPanel>
+        <apex:outputPanel id="searchPanel">
+            <apex:pageblock mode="detail" title="PDK Provisioning" rendered="{!NOT(renderContacts)}"> 
+                <apex:pageblockSection title="PDK Information" columns="2" rendered="{!((isValidProfile)&&(isValidReleaseStatusForProvisioning)&& (isNotObsoletePDK))}" >
+
+                    <apex:repeat value="{!$ObjectType.Sub_PDK__c.FieldSets.Provisioning_Fields}" var="f">
+                        <apex:outputField value="{!objSubPDK[f]}"/>                     
+                    </apex:repeat>
+                 </apex:pageblockSection>
+                <apex:pageBlockSection title="Search Accounts" columns="1" collapsible="true" rendered="{!((NOT(renderContacts)) && (isValidReleaseStatusForProvisioning) && (isValidProfile) && (isNotObsoletePDK))}">
+                        <apex:outputPanel style="padding-left:30%;padding-top:10%;padding-bottom:10%;">
+                            <a href=""><img src="/img/func_icons/util/help16.png"
+                                title="{!$Label.FV2_Help_Text_Accoun_Search}"
+                                onmouseover="this.src='/img/msg_icons/info16.png'"
+                                onmouseout="this.src='/img/func_icons/util/help16.png'" />
+                            </a>
+                            <apex:inputText value="{!searchText}"/ >
+                                <apex:commandButton value="Search" action="{!searchAccount}" />
+                                
+                        </apex:outputPanel>
+               </apex:pageBlockSection>
+               
+              
+              <apex:pageBlockSection rendered="{!((renderContacts) || (NOT(isValidReleaseStatusForProvisioning)) ||(NOT(isValidProfile)) || (NOT(isNotObsoletePDK)))}">
+               <div style="text-align:center">
+               <apex:commandButton value="cancel" action="{!cancel}" />
+               </div>
+              </apex:pageBlockSection>
+              
+              
+               <apex:pageBlockTable id="tableid" var="v" value="{!searchResult}"
+                    rendered="{!renderSearchResults}">
+                    <apex:column id="columnid">
+                        <apex:facet Name="header">
+                            <apex:inputcheckbox id="headerid" onchange="checkAll(this);" />
+                        </apex:facet>
+                        <apex:inputcheckbox value="{!v.selected}">
+                        </apex:inputcheckbox>
+                    </apex:column>
+                    
+                    <apex:column headerValue="Account Name" value="{!v.acct.Name}" />
+                                         
+                   
+                    <apex:column headerValue="Site/Department"
+                        value="{!v.acct.Site_Department__c}" />
+                    <apex:column headerValue="Stage" value="{!v.acct.Stage__c}" />
+                      <apex:column headerValue="Short Name"
+                        value="{!v.acct.Short_Name__c}" />
+                    <apex:column headerValue="Parent Account Name" value="{!v.acct.Parent_Account_Name__c}" />
+                    <apex:column headerValue="Parent Account Short Name" value="{!v.acct.Parent_Account_Short_Name__c}" />
+                   
+                </apex:pageBlockTable>  
+                <br />
+                <br />
+                <apex:outputLabel value="No matching account found for provisioning."
+                    rendered="{!((!renderSearchResults) && (searchResult!=null))}" />
+                <apex:pageBlockSection rendered="{!renderSearchResults}">
+                <apex:outputPanel >
+                    <apex:commandButton value="Next" action="{!next}"
+                        reRender="searchPanel,userBlock,messageblock" />
+                    <apex:commandButton value="Cancel" action="{!cancel}" />
+                </apex:outputPanel>
+                </apex:pageBlockSection>    
+            </apex:pageblock>
+       </apex:outputPanel>
+       
+       <apex:outputPanel id="userBlock">
+       
+            <apex:pageBlock rendered="{!renderContacts}" title="PDK Provisioning" mode="detail">  
+             <apex:pageblockSection collapsible="true" title="PDK Information" columns="2" rendered="{!((isValidProfile)&&(isValidReleaseStatusForProvisioning)&& (isNotObsoletePDK))}" >
+
+                    <apex:repeat value="{!$ObjectType.Sub_PDK__c.FieldSets.Provisioning_Fields}" var="f">
+                        <apex:outputField value="{!objSubPDK[f]}"/>                     
+                    </apex:repeat>
+                 </apex:pageblockSection>
+            <apex:pageblockSection title="Provision To Contacts" columns="1">    
+            <!-- <apex:pageBlockTable var="w" value="{!wrapSelectedAccounts}"-->
+             <apex:repeat value="{!wrapSelectedAccounts}" var="w" id="provisioningTable">
+              <apex:pageBlock > 
+              
+               <apex:pageBlockSection collapsible="true" title="{!w.acct.Name}" columns="1">
+                            <apex:outputPanel rendered="{!Not(w.hasActiveContacts)}">
+                              This account has no active contact available for provisioning.
+                            </apex:outputPanel>
+                            
+                            <apex:outputPanel rendered="{!w.hasActiveContacts}">
+                                <apex:pageBlockTable var="u" value="{!w.usrs}" width="100%">
+
+                                    <apex:column width="15%">
+                                        <apex:facet Name="header">
+                                            <apex:inputcheckbox onchange="checkContacts(this,'{!w.acct.id}');" />
+                                        </apex:facet>
+                                        <div id="divid" rowid="{!w.acct.id}">
+                                            <apex:inputcheckbox value="{!u.alreadyprovisioned}" rendered="{!IF(u.alreadyprovisioned=false,True,False)}"/>
+                                        </div>
+                                    </apex:column>
+
+                                    <apex:column headerValue="Contact Name" width="30%">
+                                        <apex:outputtext value="{!u.usr.Name}">    
+                                        
+                                        </apex:outputText>
+                                   </apex:column>
+                                    <apex:column headerValue="Contact Email" width="30%">
+                                    <apex:outputText value="{!u.usr.Email}"/>     
+                                   </apex:column>
+                                   
+                                   <apex:column headerValue="Provisioned" width="50%">
+                             <apex:outputText value="{!If(u.alreadyprovisioned=false,'NO','YES')}" style="{!If(u.alreadyprovisioned=false,'Color:Red','Color:Green')}"/> <!--Cognizant added on 25/11/2013---->
+                           
+                               </apex:column>
+                               
+
+                                
+                                </apex:pageBlockTable>
+                            </apex:outputPanel>
+               </apex:pageBlockSection>            
+              </apex:pageBlock> 
+              </apex:repeat>
+             
+             </apex:pageblockSection>
+              <apex:pageblockButtons >
+              
+                    <apex:commandButton value="Provision To Contacts" action="{!provisionPDK}" />
+                    <apex:commandButton value="Cancel" action="{!cancel}" />
+                </apex:pageblockButtons>
+
+            </apex:pageBlock>
+            
+         
+       </apex:outputPanel>   
+   </apex:form>     
+</apex:page>

@@ -1,0 +1,208 @@
+<apex:page standardController="Apttus_Proposal__Proposal__c" tabStyle="Apttus_Config2__ProductConstraint__c" extensions="YieldAndCostReportCntrlr" cache="false" showHeader="false" sidebar="false" renderAs="{!IF(isPDF,'pdf','')}" contentType="{!IF(isExcel,'application/vnd.ms-excel#YieldAndCostReport.xls','')}" readOnly="true">
+    <head>
+        <style type="text/css">
+            @page{
+                size: landscape;   
+                margin: 0.25in;     
+            }
+             
+            .emptyColumnContent {
+                display: none;
+            }
+        </style>    
+    </head>
+    <table width="100%">
+        <tr>
+            <td align="center">    
+                <apex:image value="{!URLFOR($Resource.GFLogo)}" width="50%" height="50%" style="position:relative;background-repeat:repeat-x;left: 0cm; top:0cm;" rendered="{!AND(isPDF)}"/>
+            </td>        
+        </tr>   
+    </table>  
+    <apex:outputLabel value="Yield And Cost Report" style="font-weight:bold;font-size:18px"/>
+    <br/>
+    <apex:outputLabel value="{!Apttus_Proposal__Proposal__c.Name}" style="font-weight:bold;font-size:14px"/>
+    <br/> 
+    <br/>  
+    <apex:outputPanel layout="block" style="page-break-inside: avoid;">           
+        <apex:panelGrid columns="2"  style="padding-bottom:10px">
+            <apex:outputPanel layout="block" style="width:280px">
+                <apex:outputLabel value="Stage Yields (Quarterly)"/>
+            </apex:outputPanel>
+            <apex:outputLabel style="font-weight:bold" value="{!Apttus_Proposal__Proposal__c.Product_Type__c} Yield"/>
+        </apex:panelGrid>                                               
+        <apex:dataTable value="{!yieldData.yieldReportRows}" var="row" cellpadding="2px" style="width:100%;table-layout:auto;font-size:8px;">  
+            <!-- setting header for apex:column under apex:repeat will not work -->
+            <!-- workaround is to create another list of string for the headers -->
+            <!-- and define it in another apex:repeat                           -->
+            <apex:repeat value="{!row.yields}" var="value">
+                <apex:column headerValue="" style="width:100px">            
+                    <apex:outputText value="{!value}"/>                        
+                </apex:column>
+                {!value}    
+            </apex:repeat>
+            
+            <!--Define the headers here and hide the empty cells that are created -->                  
+            <apex:repeat value="{!yieldData.quarterYearHeaders}" var="h">                        
+                <apex:column styleClass="emptyColumnContent">  
+                    <apex:facet name="header">
+                        <apex:outputPanel layout="block" style="{!IF(h = 'YEAR-QTR','width:100px','width:30px')}">
+                            {!h}
+                        </apex:outputPanel>
+                    </apex:facet> 
+                </apex:column>
+            </apex:repeat>                                       
+        </apex:dataTable>
+    </apex:outputPanel>
+    <br/>
+    <apex:outputPanel layout="block" style="page-break-inside: avoid;">
+        <apex:panelGrid columns="2" style="padding-top:20px;padding-bottom:10px">
+            <apex:outputPanel layout="block" style="width:280px">
+                <apex:outputLabel value="Stage Costs (Quarterly)"/>
+            </apex:outputPanel>           
+            <apex:outputLabel style="font-weight:bold" value="{!Apttus_Proposal__Proposal__c.Product_Type__c} Cost"/>
+        </apex:panelGrid>
+        
+        <apex:dataTable value="{!costData.costReportRows}" var="row" cellpadding="2px" style="width:100%;table-layout:auto;font-size:8px;">   
+            <!-- setting header for apex:column under apex:repeat will not work -->
+            <!-- workaround is to create another list of string for the headers -->
+            <!-- and define it in another apex:repeat                           -->
+            <apex:repeat value="{!row.quarterYearCosts}" var="value">
+                <apex:column headerValue="" style="width:150px"> 
+                    <apex:outputText value="{!value}"/>                 
+                </apex:column>
+                {!value}    
+            </apex:repeat>
+            
+            <!--Define the headers here and hide the empty cells that are created -->                  
+            <apex:repeat value="{!costData.quarterYearHeaders}" var="h">                        
+                <apex:column styleClass="emptyColumnContent">  
+                    <apex:facet name="header">
+                        <apex:outputPanel layout="block" style="{!IF(h = 'YEAR-QTR','width:100px','width:30px')}">
+                            {!h}
+                        </apex:outputPanel>
+                    </apex:facet> 
+                </apex:column>
+            </apex:repeat>                                       
+        </apex:dataTable> 
+    </apex:outputPanel>        
+    <br/>
+    <apex:outputPanel layout="block" style="page-break-inside: avoid;">
+        <apex:panelGrid columns="2" style="padding-top:20px;padding-bottom:10px">
+            <apex:outputPanel layout="block" style="width:280px">
+                <apex:outputLabel value="Stage Costs (Yearly)"/>
+            </apex:outputPanel>           
+            <apex:outputLabel style="font-weight:bold" value="{!Apttus_Proposal__Proposal__c.Product_Type__c} Cost"/>
+        </apex:panelGrid>
+        <apex:dataTable value="{!costData.costReportRows}" var="row" cellpadding="2px" style="width:50%;table-layout:auto;font-size:8px;">   
+            <!-- setting header for apex:column under apex:repeat will not work -->
+            <!-- workaround is to create another list of string for the headers -->
+            <!-- and define it in another apex:repeat                           -->
+            <apex:repeat value="{!row.yearCosts}" var="value">
+                <apex:column headerValue=""  style="width:150px">                        
+                    <apex:outputText value="{!value}"/>
+                </apex:column>
+                {!value}    
+            </apex:repeat>
+            
+            <!--Define the headers here and hide the empty cells that are created -->                  
+            <apex:repeat value="{!costData.yearHeaders}" var="h">                        
+                <apex:column styleClass="emptyColumnContent">  
+                    <apex:facet name="header">
+                        <apex:outputPanel layout="block" style="{!IF(h = 'YEAR','width:100px','width:30px')}">
+                            {!h}
+                        </apex:outputPanel>
+                    </apex:facet> 
+                </apex:column>
+            </apex:repeat>                                       
+        </apex:dataTable>
+    </apex:outputPanel>
+    <br/>
+    <apex:outputPanel layout="block" style="page-break-inside: avoid;">
+        <apex:panelGrid columns="1" style="padding-top:20px;padding-bottom:10px">
+            <apex:outputPanel layout="block" style="width:280px">
+                <apex:outputLabel value="Test Time Report"/>
+            </apex:outputPanel>           
+        </apex:panelGrid>
+        <apex:panelGrid columns="2" style="padding-bottom:10px;font-size:8px;">                
+                <apex:outputLabel value="Wafer test time:"/>
+                <apex:outputLabel value="{!testTimeData.totalWaferTestTime}"/>               
+            
+                <apex:outputLabel value="Module test time:"/>
+                <apex:outputLabel value="{!testTimeData.totalModuleTestTime}"/>
+          
+                <apex:outputLabel value="Total test time:"/>
+                <apex:outputLabel value="{!testTimeData.totalTestTime}"/>                                  
+        </apex:panelGrid>            
+        <apex:dataTable value="{!testTimeData.combinedTestTimeList}" var="row" cellpadding="2px" style="width:50%;table-layout:auto;font-size:8px;">   
+            <apex:column headerValue="Components">
+                <apex:outputLabel value="{!row.testSection}"/>
+            </apex:column> 
+            <apex:repeat value="{!row.testTimes}" var="testTime">
+                <!-- setting header for apex:column under apex:repeat will not work -->
+                <!-- workaround is to create another list of string for the headers -->
+                <!-- and define it in another apex:repeat                           -->
+                
+                <apex:column headerValue="none"> 
+                    <apex:outputLabel value="{!testTime}"/>
+                </apex:column>  
+            </apex:repeat>
+            
+            <!--Define the headers here and hide the empty cells that are created -->   
+            <apex:repeat value="{!testTimeData.testPassHeader}" var="col">                    
+                <apex:column style="display: none;"> 
+                    <apex:facet name="header">
+                    <apex:outputText value="{!col}"/>
+                    </apex:facet>
+                </apex:column>  
+            </apex:repeat>             
+        </apex:dataTable>
+    </apex:outputPanel>
+    <br/><br/><br/>
+    <apex:pageBlock title="Configuration Details - {!Apttus_Proposal__Proposal__c.Name}">
+        <apex:outputPanel >              
+            <table  width="100%" align="center" cellspacing="10" class="list">
+              <tr class="dataRow">
+                <td align="right" width="15%"><outputLabel> <b>{!$ObjectType.Apttus_Proposal__Proposal__c.fields.Apttus_Proposal__Proposal_Name__c.Label}</b></outputLabel></td><td width="35%" align="left"><apex:outputField value="{!Apttus_Proposal__Proposal__c.Apttus_Proposal__Proposal_Name__c}" /></td>               
+                <td align="right" width="15%"><outputLabel> <b>{!$ObjectType.Apttus_Proposal__Proposal__c.fields.Apttus_Proposal__Account__c.Label}</b></outputLabel></td><td width="35%" align="left"><apex:outputField value="{!Apttus_Proposal__Proposal__c.Apttus_Proposal__Account__r.Name}" /></td>
+              </tr>
+              <tr class="dataRow">
+                <td align="right" width="15%"><outputLabel> <b>{!$ObjectType.Apttus_Proposal__Proposal__c.fields.Apttus_Proposal__Description__c.Label}</b></outputLabel></td><td width="35%" align="left"><apex:outputField value="{!Apttus_Proposal__Proposal__c.Apttus_Proposal__Description__c}" /></td>               
+                <td align="right" width="15%"><outputLabel> <b>{!$ObjectType.Apttus_Proposal__Proposal__c.fields.Apttus_Proposal__Opportunity__c.Label}</b></outputLabel></td><td width="35%" align="left"><apex:outputField value="{!Apttus_Proposal__Proposal__c.Apttus_Proposal__Opportunity__r.Name}" /></td>               
+              </tr>
+              <tr class="dataRow">
+                <td align="right" width="15%"><outputLabel> <b>{!$ObjectType.Apttus_Proposal__Proposal__c.fields.Process_Technology_Geometry__c.Label}</b></outputLabel></td><td width="35%" align="left"><apex:outputField value="{!Apttus_Proposal__Proposal__c.Process_Technology_Geometry__c}" /></td>
+                <td align="right" width="15%"><outputLabel> <b>{!$ObjectType.Apttus_Proposal__Proposal__c.fields.Device__c.Label}</b></outputLabel></td><td width="35%" align="left"><apex:outputField value="{!Apttus_Proposal__Proposal__c.Device__r.Name}" /></td>
+              </tr>
+              <tr class="dataRow">
+                <td align="right" width="15%"><outputLabel> <b>{!$ObjectType.Apttus_Proposal__Proposal__c.fields.Process_Technology__c.Label}</b></outputLabel></td><td width="35%" align="left"><apex:outputField value="{!Apttus_Proposal__Proposal__c.Process_Technology__c}" /></td>
+                <td align="right" width="15%"><outputLabel> <b>{!$ObjectType.Apttus_Proposal__Proposal__c.fields.Fab_Name__c.Label}</b></outputLabel></td><td width="35%" align="left"><apex:outputField value="{!Apttus_Proposal__Proposal__c.Fab_Name__c}" /></td>                 
+              </tr>
+              <tr class="dataRow">
+                <td align="right" width="15%"><outputLabel> <b>{!$ObjectType.Apttus_Proposal__Proposal__c.fields.Process_Technology_Name__c.Label}</b></outputLabel></td><td width="35%" align="left"><apex:outputField value="{!Apttus_Proposal__Proposal__c.Process_Technology_Name__c}" /></td>               
+                <td align="right" width="15%"><outputLabel> <b>{!$ObjectType.Apttus_Proposal__Proposal__c.fields.Deliverable_Part_Type__c.Label}</b></outputLabel></td><td width="35%" align="left"><apex:outputField value="{!Apttus_Proposal__Proposal__c.Deliverable_Part_Type__c}" /></td>               
+              </tr>
+              <tr class="dataRow">
+                <td align="right" width="15%"><outputLabel> <b>{!$ObjectType.Apttus_Proposal__Proposal__c.fields.PDK_Version__c.Label}</b></outputLabel></td><td width="35%" align="left"><apex:outputField value="{!Apttus_Proposal__Proposal__c.PDK_Version__c}" /></td>
+                <td align="right" width="15%"><outputLabel> <b>{!$ObjectType.Apttus_Proposal__Proposal__c.fields.Actual_Tapeout_Date_FAB_9_and_FAB_10__c.Label}</b></outputLabel></td><td width="35%" align="left"><apex:outputField value="{!Apttus_Proposal__Proposal__c.Actual_Tapeout_Date_FAB_9_and_FAB_10__c}" /></td>               
+              </tr>
+              <tr class="dataRow">
+                <td align="right" width="15%"><outputLabel> <b>{!$ObjectType.Apttus_Proposal__Proposal__c.fields.Mask_Count__c.Label}</b></outputLabel></td><td width="35%" align="left"><apex:outputField value="{!Apttus_Proposal__Proposal__c.Mask_Count__c}" /></td>
+                <td align="right" width="15%"><outputLabel> <b>{!$ObjectType.Apttus_Proposal__Proposal__c.fields.Mask_Set_Long__c.Label}</b></outputLabel></td><td width="35%" align="left"><apex:outputField value="{!Apttus_Proposal__Proposal__c.Mask_Set_Long__c}" /></td>               
+              </tr>
+              <tr class="dataRow">
+                <td align="right" width="15%"><outputLabel> <b>{!$ObjectType.Apttus_Proposal__Proposal__c.fields.APTPS_Metal_Options__c.Label}</b></outputLabel></td><td width="35%" align="left"><apex:outputField value="{!Apttus_Proposal__Proposal__c.APTPS_Metal_Options__c}" /></td>
+                <td align="right" width="15%"><outputLabel> <b>{!$ObjectType.Apttus_Proposal__Proposal__c.fields.Relgrade__c.Label}</b></outputLabel></td><td width="35%" align="left"><apex:outputField value="{!Apttus_Proposal__Proposal__c.Relgrade__c}" /></td>               
+              </tr>
+              <tr class="dataRow">
+                <td align="right" width="15%"><outputLabel> <b>{!$ObjectType.Apttus_Proposal__Proposal__c.fields.Apttus_QPConfig__ConfigurationFinalizedDate__c.Label}</b></outputLabel></td><td width="35%" align="left"><apex:outputField value="{!Apttus_Proposal__Proposal__c.Apttus_QPConfig__ConfigurationFinalizedDate__c}" /></td>
+                <td align="right" width="15%"><outputLabel> <b>{!$ObjectType.Apttus_Proposal__Proposal__c.fields.LastModifiedDate.Label}</b></outputLabel></td><td width="35%" align="left"><apex:outputField value="{!Apttus_Proposal__Proposal__c.LastModifiedDate}" /></td>               
+              </tr>
+            </table>   
+        </apex:outputPanel>
+        
+        <c:CPQ_PostFabServicesReadonlyView configurationId="{!Apttus_Proposal__Proposal__c.id}" generatePdf="false"/>
+    </apex:pageblock>                                                                 
+    <!-- Workaround for issue 000170999 in SFDC--> 
+    <apex:outputText value="{!Apttus_Proposal__Proposal__c.Product_Type__c}" rendered="false"/>    
+    <apex:outputText value="{!Apttus_Proposal__Proposal__c.Relgrade__c}" rendered="false"/>        
+</apex:page>

@@ -1,0 +1,144 @@
+<!-----------------------------------------------------------------------------------------------------------------------------------
+Page:          DeviceChecklistAdminConsole
+-------------------------------------------------------------------------------------------------------------------------------------
+Author:        Joydev Mondol (Cognizant - 153480)
+Created Date:  08/05/2014
+Reason:        This is a custom console with a panels that does/allows the following:
+               ****************************************************************************************************************
+               |  Panel 1 (Device Checklist Access)                                                                           |
+               *--------------------------------------------------------------------------------------------------------------*
+               |  1) View existing user(s) with DeviceCheckList permission set in the "Assigned User(s)" column.              |
+               |  2) Remove existing user(s) with the "Remove" link in the "Action" column.                                   |
+               |  3) Find active salesforce user(s) with the "Search User" search box.                                        |
+               |  4) Assign new User(s) with the "Assign" button.                                                             |
+               |  5) View and edit Admin access in the "Admin" column.                                                        |
+               ****************************************************************************************************************
+
+Change Log:    Created     -     JOYDEV     -     08/05/2014                
+------------------------------------------------------------------------------------------------------------------------------------->
+
+<apex:page controller="DeviceChecklistAdminConsoleController" sidebar="false" docType="html-5.0">
+    <style>
+        .panel{
+            padding:4px;
+            margin-bottom:10px;
+            border-radius:5px;
+            background-color:#DCFBDC;
+        }
+        .master-table {
+            width: 650px;
+            border-collapse: collapse;
+        }
+        .panelheader{
+            width: 100%;
+            font-size: 11px;
+            background-color: #F0F0F0;
+            border: 1px solid #D8D8D8;
+            padding: 8px;
+        }
+        .panelcontent{
+            font-size: 11px;
+            border: 1px dotted #D8D8D8;
+            padding-top:8px;
+            padding-bottom:0px;
+            padding-right:8px;
+            padding-left:8px;
+            vertical-align:top;
+        }
+        .actionstrip{
+            padding-top:0px;
+            padding-bottom:8px;
+            padding-right:6px;
+            padding-left:0px;
+        }
+    </style>
+
+    <apex:includeScript value="{!URLFOR($Resource.jQueryAutoComplete, 'js/jquery-1.6.2.min.js')}"/>
+    <apex:includeScript value="{!URLFOR($Resource.jQueryAutoComplete, 'js/jquery-ui-1.8.16.custom.min.js')}"/>
+    <apex:stylesheet value="{!URLFOR($Resource.jQueryAutoComplete, 'css/ui-lightness/jquery-ui-1.8.16.custom.css')}"/>
+    
+    <!--Small description about the page-- BEGIN -->
+     <apex:panelGrid styleClass="master-table panel" columns="1">
+        <ul>
+            <li>View existing user(s) with DeviceCheckList permission set in the <b>"Assigned User(s)"</b> column.</li>
+            <li>Remove existing user(s) with the <b>"Remove"</b> link in the <b>"Action"</b> column.</li>
+            <li>Find active internal user(s) with the <b>"Search User"</b> search box.</li>
+            <li>Assign new User(s) with the <b>"Assign"</b> button.</li>
+            <li>View and edit Admin access in the <b>"Admin"</b> column.</li>
+        </ul>
+    </apex:panelGrid>
+    <!--Small description about the page-- END -->
+    
+    <!--Panel Container table -- BEGIN -->                        
+    <table class="master-table">
+        <!--Panel Header -- BEGIN -->
+        <tr><th class="panelheader">DeviceChecklist Access</th></tr>
+        <!--Panel Header -- END -->
+        <tr>
+            <td class="panelcontent">
+                <!-- AJAX Content -- BEGIN -->
+                <apex:pageBlock id="userList" mode="maindetail">
+                    <apex:form >
+                        <!-- Search Component (With AJAX Call) -- BEGIN -->
+                        <table>
+                            <tr>
+                                <td class="actionstrip">
+                                    <c:AutoCompleteV2 allowClear="true" importJquery="true" labelField="Name" SObject="User" style="width:300px;"
+                                                      SObjectLabel="User" valueField="Id" targetField="{!TargetUser}" optFilter="{!opFilter}"
+                                                      syncManualEntry="false"/>
+                                </td>
+                                <td class="actionstrip">
+                                    <apex:commandButton action="{!AddUser}" reRender="userList" value="Assign" status="processStatus" 
+                                                        style="width:60px; height:26px;"/>
+                                </td>
+                                <td class="actionstrip">
+                                    <apex:actionStatus id="processStatus" style="align:center;">       
+                                        <apex:facet name="start">
+                                             <apex:image value="{!$Resource.BlueLoaderImage}" title="Processing..." style="width:25px; height:25px;"/>
+                                        </apex:facet>
+                                        <apex:facet name="stop"></apex:facet>
+                                    </apex:actionStatus>
+                                </td>
+                            </tr>
+                        </table>
+                        <!-- Search Component -- END -->
+                        
+                        <!-- Message Component -- BEGIN -->
+                        <apex:pagemessages ></apex:pagemessages>
+                        <!-- Message Component -- END -->
+                        
+                        <!-- User table -- BEGIN -->
+                        <apex:pageblockTable value="{!DeviceChecklistUsers}" var="dvcUsr">
+                            <!-- Action column (With AJAX Call) -- BEGIN -->
+                            <apex:column headerValue="Action" style="width:60px;">
+                                <apex:commandlink action="{!RemoveUser}" reRender="userList" value="Remove" style="color:blue;" status="processStatus">
+                                    <apex:param assignTo="{!TargetUser}" name="TargetUser" value="{!dvcUsr}"/>
+                                </apex:commandlink>
+                            </apex:column>
+                            <!-- Action column (With AJAX Call) -- END -->
+                            
+                            <!-- User column -- BEGIN -->
+                            <apex:column headerValue="Assigned User(s)">
+                                <apex:outputField value="{!DeviceChecklistUsers[dvcUsr].PerSetAsgn.AssigneeId}"/>
+                            </apex:column>
+                            <!-- User column -- END -->
+                            
+                            <!-- Admin column (With AJAX Call) -- BEGIN -->
+                            <apex:column headerValue="Admin" style="width:60px;">
+                                <apex:inputField value="{!DeviceChecklistUsers[dvcUsr].NPIEditor.NPI_Project_Template_Editable__c}">
+                                    <apex:actionSupport event="onchange" action="{!ChangeAdmin}" rerender="userList" status="processStatus">
+                                        <apex:param assignTo="{!TargetUser}" name="TargetUser" value="{!dvcUsr}"/>
+                                    </apex:actionSupport>
+                                </apex:inputField>
+                            </apex:column>
+                            <!-- Admin column (With AJAX Call) -- END -->
+                        </apex:pageblockTable>
+                        <!-- User table -- END -->
+                    </apex:form>
+                </apex:pageBlock>
+                <!-- AJAX Content -- END -->
+            </td>
+        </tr>
+    </table>
+    <!--Panel Container table -- END -->
+</apex:page>

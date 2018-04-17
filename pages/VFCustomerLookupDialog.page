@@ -1,0 +1,97 @@
+<apex:page showHeader="false" sideBar="false" standardStylesheets="false" readOnly="true" controller="ClsCustomerLookupDialog">
+<apex:stylesheet value="{!URLFOR($Resource.Swift_MRS,'css/style.css')}"/>
+<style>
+    .s-btn {
+        width:35px!important;
+    }
+</style>
+<apex:form >
+<div class="popupMainContainer">
+  <h3 class="bold-font lookupHeader">Lookup Customer</h3>
+  <div class="searchField">
+      <label class="bold-font">Customer Name: </label>
+      <apex:inputText value="{!searchString}"/>
+      <input id="searchBtn" type="submit" class="s-btn" value="Go"/>
+  </div>  
+    <div class="resultSection">
+      <h5 id="resHeader" class="bold-font">Search Results</h5>
+      <div class="clear"></div>
+      <apex:outputPanel id="resultsPanel">
+      <table class="data-table" style="width:100%">
+                        <thead>
+                            <tr>
+                                <th style="width:75%"><span>Customer Name</span></th>
+                                <th style="width:25%"><span>Customer Shortname</span></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <apex:variable var="counter" value="{!1}"/>
+                            <apex:repeat value="{!listDisplayedCustomers}" var="customer">
+                                <apex:variable var="colorClass" value="{!IF(mod(counter,2)!=0,'alt-row-bgcolor','')}"/>
+                                <tr class="{!colorClass}">
+                                    <td><a href="javascript:void(0);" class="custNme" id="{!customer.Id}">{!customer.Name}</a></td>
+                                    <td>{!customer.Short_Name__c}</td>
+                                </tr>
+                                <apex:variable var="counter" value="{!counter+ 1}"/>
+                            </apex:repeat>
+                        </tbody>
+                        <tfoot>
+                            <tr>
+                                <td colspan="3">
+                                    <div class="data-table-pagination">
+                                    <span class="float-left padding-top-5">{!startPageNum}-{!endPageNum} of {!totalRecords}</span>
+                                        <apex:outputLink value="javascript:void(0);" id="prevId" styleClass="previous" rendered="{!hasPrevious}"><span class="bold-font">Previous</span></apex:outputLink>                        
+                                        <apex:outputLink value="javascript:void(0);" styleClass="previous" rendered="{!NOT(hasPrevious)}">Previous</apex:outputLink>
+                                        <apex:outputLink value="javascript:void(0);" id="nextId" styleClass="next" rendered="{!hasNext}"><span class="bold-font">Next</span></apex:outputLink>                                      
+                                        <apex:outputLink value="javascript:void(0);" styleClass="next" rendered="{!NOT(hasNext)}">Next</apex:outputLink>
+                                    </div>
+                                </td>   
+                            </tr>
+                        </tfoot>
+                    </table>
+            </apex:outputPanel>
+    </div>
+  
+ </div>
+ <script type="text/javascript" src="{!URLFOR($Resource.Swift_MRS,'js/jquery.min.js')}"></script>
+ <script>
+ $(document).on("click",".custNme",function(){
+        try {
+            var acctId = $(this).prop('id');
+            var acctName = $(this).text();
+            var acctShortName = $(this).parent().next().text();
+            window.opener.sendSelectedAccount(acctId,acctName,acctShortName); 
+            window.close();
+        } catch(e) {
+            console.log(e.name + ' : ' + e.message);
+        }
+ });
+ $(document).on("click","#searchBtn",function(){
+     disableButton('searchBtn');
+     $('#resHeader').text('Searching...');
+     $('[id$=resultsPanel]').html("");
+     search();
+     return false;
+ });
+ $(document).on("click","[id$=prevId]",function(){
+     goPrev();
+ });
+ $(document).on("click","[id$=nextId]",function(){
+     goNext();
+ });
+ function enableButton(btnId) {
+     $('#'+btnId).prop('disabled',false);
+ }
+ function disableButton(btnId) {
+     $('#'+btnId).prop('disabled',true);
+ }
+ function finishSearch() {
+     $('#resHeader').text('Search Results');
+     enableButton('searchBtn');
+ }
+ </script>
+<apex:actionFunction name="goPrev" action="{!goPrev}" reRender="resultsPanel"/>
+<apex:actionFunction name="goNext" action="{!goNext}" reRender="resultsPanel"/>
+<apex:actionFunction name="search" action="{!searchCustomers}" reRender="resultsPanel" oncomplete="finishSearch();"/>    
+</apex:form>
+</apex:page>

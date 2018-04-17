@@ -1,0 +1,1224 @@
+<!-- 
+    Author: Vijay Vemuru
+    Description: This serves as the visualforce page for Customer Visitation app (Enhancement).
+    History: 
+        Vvemuru    02082016 - page creation.    
+        Vvemuru    07212016-  added VREG URL in Attendees tab 
+-->
+
+<apex:page standardcontroller="Visitation_Record__c" extensions="VisitationExtension"  action="{!onLoadVisitation}"  id="pg" >
+    <apex:stylesheet value="/sCSS/21.0/sprites/1297816277000/Theme3/default/gc/versioning.css" />
+    <apex:stylesheet value="{!URLFOR($Resource.Visitation, 'visitation.css')}"/>  
+    <apex:sectionheader title="{!$ObjectType.Visitation_Record__c.label} 
+    " subtitle="{!IF(ISNULL(Visitation_Record__c.Name), 'New Visitation',Visitation_Record__c.Name)}" id="sh"/>
+      
+    <apex:form id="fm">
+    
+        <apex:pageblock mode="edit" title="{!$ObjectType.Visitation_Record__c.label} Edit" id="pgblk">
+           <center> <apex:pageblockbuttons >
+     
+                           </apex:pageblockbuttons></center> 
+            <apex:outputPanel Id="GBCPanel" style="padding-left: 75%;">
+                    <apex:commandLink value="GBC Form" style="color:red;" id="GBCid" rerender="" rendered="{!AND(OR((Visitation_Record__c.Customer_Status__c== '3. Logistics Preparation'),Visitation_Record__c.Customer_Status__c=='4. Logistics Complete'),(Visitation_Record__c.Visit_Location__c=='Santa Clara'))}" onclick="OpenGBCForm();"/>
+            </apex:outputPanel> &nbsp;&nbsp;
+            <apex:commandLink value="Help Document" action="{!helpDocument}" target="_blank" />
+     &nbsp;&nbsp;<apex:commandLink value="Export to PDF" action="{!GeneratePDF}" target="_blank" />&nbsp;&nbsp;
+        <apex:commandLink value="  CLONE  " action="{!cloneRecord}" target="_blank"/>
+            <apex:pageMessages ></apex:pageMessages>
+            <!-- **********   [Record Type : Visitation Record ]   **********  -->
+            <apex:outputpanel id="mainpanel" styleClass="PageBlockSectionHeader">
+            
+             <apex:outputPanel style="padding-left: 9%;">
+             <B><font color="red"><apex:outputText value="Please complete at least tabs 1-3 for visit to GF location."/></font></B>
+             </apex:outputPanel>
+            
+                    <apex:tabpanel id="panelId" value="{!tabOpt}">
+                   
+                        <apex:tab label="1.Details"   name="Detail" id="Details" styleClass="vtabs">
+                        <apex:pageMessage summary="Start date cannot be before current date" rendered="{!StartDateErr}" severity="warning" strength="3" /> 
+                        <apex:pageMessage summary="End date cannot be before Start date" rendered="{!EndDateErr}" severity="warning" strength="3" />    
+                           
+                        <apex:outputPanel id="EditModeDetail" rendered="{!EditModeDetail}" styleClass="green">
+                            <center>    <apex:commandButton value="    Save    "   action="{!SaveButtonDetail}" />  &nbsp;&nbsp;
+                            <apex:commandbutton value="    Cancel    " action="{!Cancel}"/> </center>
+                            <apex:pageblocksection title="Information" showheader="true" columns="2" >
+                            <apex:inputfield value="{!Visitation_Record__c.Account__c}" required="true" >
+                                <apex:actionSupport event="onchange" action="{!accountChange}" reRender="territory,regionPanel"></apex:actionSupport>
+                            </apex:inputfield>
+                         
+                                
+                            <apex:inputfield styleClass="MonitorValue"  value="{!Visitation_Record__c.Visitation_Host__c}" required="true"/>
+                            <apex:pageblocksectionItem >
+                            </apex:pageblocksectionItem>
+                            
+                            <font color="red">{!$Label.Visitation_Details} </font>
+                            <apex:pageblocksectionItem >
+                            </apex:pageblocksectionItem>
+                            
+                            <apex:inputField value="{!Visitation_Record__c.Add_as_attendee_Host__c}" >
+                                <apex:actionSupport event="onchange" action="{!AddAttendee}" reRender="Attendees"/>
+                           </apex:inputfield>
+                            <apex:outputfield styleClass="MonitorValue" value="{!Visitation_Record__c.Account_Region__c}"/>
+                            <apex:outputfield styleClass="MonitorValue" id="territory" value="{!Visitation_Record__c.Territory_Head_for_Approval__c}" />
+                            <apex:pageblocksectionitem >
+                            </apex:pageblocksectionitem>
+                            <apex:pageblocksectionitem >
+                                <apex:outputlabel value="Regional Heads" rendered="{!AND(Visitation_Record__c.id != null,Visitation_Record__c.account__r.Region_Head_lk__c == NULL )}"/>
+                                <apex:outputpanel id="regionPanel" rendered="{!AND(Visitation_Record__c.id != null,Visitation_Record__c.account__r.Region_Head_lk__c == NULL )}">
+                                    <apex:actionregion >
+                                        <apex:selectList value="{!selectedRegion}" multiselect="false" size="1">
+                                            <apex:actionSupport event="onchange" action="{!assignRegionHead}" reRender="territory"></apex:actionSupport>
+                                            <apex:selectOptions value="{!regionalHeads}"/>
+                                        </apex:selectList>
+                                    </apex:actionregion>
+                                </apex:outputpanel>
+                            </apex:pageblocksectionitem>
+                            
+                            <apex:inputfield styleClass="MonitorValue" value="{!Visitation_Record__c.Visit_Name__c}" required="true"/>
+                            <apex:inputfield styleClass="MonitorValue" value="{!Visitation_Record__c.Escort__c}" required="false"/>                     
+                            <apex:pageblocksectionItem >
+                            </apex:pageblocksectionItem>
+                            <apex:inputField styleClass="UserLookUp" value="{!Visitation_Record__c.Add_as_attendee_Escort__c}">
+                            <apex:actionSupport event="onclick" action="{!AddAttendee}" reRender="Attendees"/>
+                            </apex:inputfield>
+                            <apex:pageblocksectionItem ></apex:pageblocksectionItem><font color="red"> {!$Label.Visitation_Details} </font>
+                            <apex:inputfield styleClass="MonitorValue" value="{!Visitation_Record__c.Visit_Type__c}" required="true" />
+                            <apex:inputfield styleClass="MonitorValue" value="{!Visitation_Record__c.Requestor__c}" required="false"/>
+                            <apex:pageblocksectionItem >
+                            </apex:pageblocksectionItem>
+                            <apex:inputField styleClass="UserLookUp" value="{!Visitation_Record__c.Add_as_attendee_Requestor__c}">
+                            <apex:actionSupport event="onclick" action="{!AddAttendee}" reRender="Attendees"/>                            
+                            </apex:inputfield>
+                            <apex:inputfield styleClass="MonitorValue" value="{!Visitation_Record__c.Start_Date__c}" required="true"/>                                        
+                            <apex:inputfield styleClass="MonitorValue" value="{!Visitation_Record__c.ITAR__c}" required="true" >
+                                <apex:actionSupport event="onchange" reRender="Attendees"/>
+                            </apex:inputField>
+                            <apex:inputfield styleClass="MonitorValue" value="{!Visitation_Record__c.Meeting_Time__c}" required="true"/> 
+                            <apex:inputfield styleClass="MonitorValue" value="{!Visitation_Record__c.NDA_in_Effect_from_Account__c}" required="false"/>
+                            <apex:inputfield styleClass="MonitorValue" value="{!Visitation_Record__c.End_Date__c}" required="true"/>                                        
+                            <apex:inputfield styleClass="MonitorValue" value="{!Visitation_Record__c.Customer_Status__c}" required="false"/>
+                            <apex:inputfield styleClass="MonitorValue" value="{!Visitation_Record__c.End_Time_1__c}" required="true"/> 
+                            <apex:inputfield styleClass="MonitorValue" value="{!Visitation_Record__c.Fab__c}" required="false"/>   
+                         <apex:pageblocksectionitem >
+                                    <apex:outputlabel value="{!$ObjectType.Visitation_Record__c.fields.Visit_Location__c.Label}"/>
+                                    <apex:actionregion >
+                                    <apex:inputfield styleClass="MonitorValue" value="{!Visitation_Record__c.Visit_Location__c}" required="true">
+                                        <apex:actionSupport event="onchange" action="{!LogisticAdmin}" reRender="AdminSection,GBCPanel,tourRequest" />
+                                    </apex:inputfield> 
+                                </apex:actionregion>
+                        </apex:pageblocksectionitem>                          
+                            <apex:pageblocksectionitem >
+                                        </apex:pageblocksectionitem>
+                                        <apex:pageblocksectionitem >
+                                        </apex:pageblocksectionitem>
+                            <apex:inputfield styleClass="MonitorValue" value="{!Visitation_Record__c.Meeting_Room__c}" required="false"/>
+                            <apex:outputfield value="{!Visitation_Record__c.OwnerId}"/>
+                            <apex:pageblocksectionitem >
+                            <apex:outputlabel value="{!$ObjectType.Visitation_Record__c.fields.Actual_Meeting_Room__c.Label}"/>
+                                        <apex:inputfield value="{!Visitation_Record__c.Actual_Meeting_Room__c}" rendered="{! If(AND(Visitation_Record__c.Visit_Location__c != 'Burlington',
+                                                                                                                                            Visitation_Record__c.Visit_Location__c != 'Williston',
+                                                                                                                                            Visitation_Record__c.Visit_Location__c != 'East Fishkill'),true,
+                                                                                                                                            AND(OR($Profile.Name == 'System Administrator',
+                                                                                                                                            AND(Visitation_Record__c.Logistics_Admin__c != null,Visitation_Record__c.Logistics_Admin__c == $user.id))))}">
+                                        </apex:inputfield>
+                                    </apex:pageblocksectionitem>                       
+                            
+                             <apex:pageblocksectionitem >
+                             </apex:pageblocksectionitem>
+                            <apex:inputfield styleClass="MonitorValue" value="{!Visitation_Record__c.Venue__c}" required="false"/>
+                        </apex:pageblocksection>
+                        <apex:pageblocksection title="Visitation Preparation (attach materials in the Notes & Attachments section)" showheader="true" columns="1">
+                            <apex:inputfield value="{!Visitation_Record__c.Purpose__c}" required="true"/>   
+                            <apex:inputField value="{!Visitation_Record__c.Top_level_Agenda__c}" required="true"/>
+                            <apex:pageblocksectionitem />
+                        </apex:pageblocksection>
+                            <apex:pageblocksection title="Executive Summary Details (Used for Executive Brief)" showheader="true" columns="1">
+                            <apex:pageBlockSectionItem >
+                            <apex:outputLabel value="GLOBALFOUNDRIES Objectives"/>
+                            <apex:inputtextarea value="{!Visitation_Record__c.GLOBALFOUNDRIES_Objectives__c}" Rows="3" Cols="100" style="width:1000px"/>
+                            </apex:pageBlockSectionItem>
+                            <apex:pageBlockSectionItem >
+                            <apex:outputLabel value="Customer Objectives"/>
+                            <apex:inputtextarea value="{!Visitation_Record__c.Customer_Objectives__c}" Rows="3" Cols="100" style="width:1000px"/>
+                            </apex:pageBlockSectionItem>
+                            <apex:pageBlockSectionItem >
+                            <apex:outputLabel value="Recent Activities"/>
+                            <apex:inputtextarea value="{!Visitation_Record__c.Recent_Activities__c}" Rows="3" Cols="100" style="width:1000px"/>
+                            </apex:pageBlockSectionItem>
+                            <apex:pageBlockSectionItem >
+                            <apex:outputLabel value="Customer Talking Points"/>
+                            <apex:inputtextarea value="{!Visitation_Record__c.Customer_Talking_Points__c}" Rows="3" Cols="100" style="width:1000px"/>
+                            </apex:pageBlockSectionItem>
+                        </apex:pageblocksection> 
+                           <center>
+                           <apex:commandButton value="    Save    "   action="{!SaveButtonDetail}" id="sa"/> &nbsp;&nbsp;
+                            <apex:commandbutton value="    Cancel    " action="{!Cancel}"/> </center>                         
+                        </apex:outputpanel>
+                     <apex:outputPanel id="ViewModeDetail" rendered="{!!EditModeDetail}">
+                        <center> <apex:commandButton action="{!EditButtonDetail}" value="    Edit    " /> </center>
+                       <apex:pageblocksection title="Information" showheader="true" columns="2">
+                            <apex:outputfield value="{!Visitation_Record__c.Account__c}"/>
+                            <apex:outputField value="{!Visitation_Record__c.Visitation_Host__c}" />
+                            <apex:pageblocksectionItem >
+                            </apex:pageblocksectionItem>
+                            <apex:outputField value="{!Visitation_Record__c.Add_as_attendee_Host__c}"/>
+                            <apex:outputField value="{!Visitation_Record__c.Account_Region__c}" />
+                            <apex:outputField value="{!Visitation_Record__c.Territory_Head_for_Approval__c}" />
+                            <apex:outputField value="{!Visitation_Record__c.Visit_Name__c}" />
+                            <apex:outputField value="{!Visitation_Record__c.Escort__c}" />
+                            <apex:pageblocksectionItem >
+                            </apex:pageblocksectionItem>
+                            <apex:outputField value="{!Visitation_Record__c.Add_as_attendee_Escort__c}"/>
+                                                       
+                            <apex:outputField value="{!Visitation_Record__c.Visit_Type__c}" />
+                            <apex:outputField value="{!Visitation_Record__c.Requestor__c}" />
+                            <apex:pageblocksectionItem >
+                            </apex:pageblocksectionItem>
+                            <apex:outputField value="{!Visitation_Record__c.Add_as_attendee_Requestor__c}"/>
+                            <apex:outputField value="{!Visitation_Record__c.Start_Date__c}" />
+                            <apex:outputField value="{!Visitation_Record__c.ITAR__c}" />
+                            <apex:outputField value="{!Visitation_Record__c.Meeting_Time__c}" />
+                            <apex:outputField value="{!Visitation_Record__c.NDA_in_Effect_from_Account__c}" />
+                            <apex:outputField value="{!Visitation_Record__c.End_Date__c}" />
+
+                            <apex:outputField value="{!Visitation_Record__c.Customer_Status__c}" />
+                            <apex:outputField value="{!Visitation_Record__c.End_Time_1__c}" />              
+                            <apex:outputField value="{!Visitation_Record__c.Fab__c}" />      
+                            <apex:outputField value="{!Visitation_Record__c.Visit_Location__c}" />
+                            <apex:outputField value="{!Visitation_Record__c.Meeting_Room__c}" />
+                            <apex:outputfield value="{!Visitation_Record__c.OwnerId}"/>
+                            <apex:outputField value="{!Visitation_Record__c.Actual_Meeting_Room__c}" />
+                            <apex:pageblocksectionItem >
+                            </apex:pageblocksectionItem>
+                            <apex:outputField value="{!Visitation_Record__c.Venue__c}" />                 
+                        </apex:pageblocksection>
+                        
+                        <apex:pageblocksection title="Visitation Preparation (attach materials in the Notes & Attachments section)" showheader="true" columns="1">
+                            <apex:outputField value="{!Visitation_Record__c.Purpose__c}" />
+                            <apex:outputField value="{!Visitation_Record__c.Top_level_Agenda__c}" />
+                        </apex:pageblocksection>
+                        <apex:pageblocksection title="Executive Summary Details (Used for Executive Brief)" showheader="true" columns="1">
+                            <apex:pageBlockSectionItem >
+                            <apex:outputLabel value="GLOBALFOUNDRIES Objectives"/>
+                            <apex:outputfield value="{!Visitation_Record__c.GLOBALFOUNDRIES_Objectives__c}" />
+                            </apex:pageBlockSectionItem>
+                            <apex:pageBlockSectionItem >
+                            <apex:outputLabel value="Customer Objectives"/>
+                            <apex:outputfield value="{!Visitation_Record__c.Customer_Objectives__c}"  />
+                            </apex:pageBlockSectionItem>
+                            <apex:pageBlockSectionItem >
+                            <apex:outputLabel value="Recent Activities"/>
+                            <apex:outputfield value="{!Visitation_Record__c.Recent_Activities__c}" />
+                            </apex:pageBlockSectionItem>
+                            <apex:pageBlockSectionItem >
+                            <apex:outputLabel value="Customer Talking Points"/>
+                            <apex:outputfield value="{!Visitation_Record__c.Customer_Talking_Points__c}" />
+                            </apex:pageBlockSectionItem>
+                        </apex:pageblocksection>                 
+          <center><apex:commandButton action="{!EditButtonDetail}" value="    Edit    " id="ed11"/></center> 
+                        </apex:outputPanel>
+                        </apex:tab>      
+     <apex:tab label="2.Attendees"   name="Attendees" id="Attendees" styleClass="vtabs" >            
+                            <apex:outputpanel id="attendeesPanel" rendered="{!EditModeAttendees}" styleclass="fontColor" >
+                            <center><apex:commandButton action="{!SaveAttendees}" value="    Save    "/> &nbsp;&nbsp;
+                                <apex:commandbutton value="    Cancel    " action="{!Cancel}"/> </center>
+                                <apex:pageMessages id="pagemessage"></apex:pageMessages> 
+                                 <apex:pageBlock id="Attpg2">
+                                     <apex:pageBlockSection id="redSection"  title="GLOBALFOUNDRIES Executives" columns="1" >             
+                                          <apex:outputPanel styleClass="float:centre">  
+                                             <apex:commandButton value="Add" reRender="executives" action="{!addExcutivetoMap}"/>
+                                             <apex:pageMessages id="executiveMessage"/>
+                                         </apex:outputPanel>
+                                         <apex:pageblocktable value="{!mapAttendees}" var="executive" id="executives">                          
+                                             <apex:column headerValue="Remove"><apex:commandbutton action="{!removeExecutivefromMap}" value="X" rerender="executives"><apex:param assignTo="{!removeKey}" name="removeKey"
+                                                  value="{!executive}"/></apex:commandbutton></apex:column>                               
+                                             <apex:column headerValue="Executive" id="Executive">
+                                                 <apex:selectlist value="{!mapAttendees[executive].Attendee__c}" size="1">
+                                                     <apex:selectoptions value="{!execNames}" />
+                                                     <apex:actionsupport event="onchange" rerender="Executive,executiveMessage" action="{!checkExecutives}"/>
+                                                 </apex:selectList>
+                                             </apex:column>
+                                             <apex:column headerValue="Add As Attendee">
+                                                 <apex:inputfield value="{!mapAttendees[executive].Add_Executive_Attendee__c}">
+                                                    <apex:actionsupport event="onchange" action="{!addExecutive}" rerender="attendeesPanel"/>
+                                                 </apex:inputfield>
+                                             </apex:column>
+                                             <apex:column headerValue="Request Status">
+                                                 <apex:inputField value="{!mapAttendees[executive].Request_Status__c}"/>
+                                             </apex:column>    
+                                                                         
+                                         </apex:pageBlockTable>
+                                     </apex:pageBlockSection>  
+                                     <apex:pageBlockSection title="GLOBALFOUNDRIES Attendees"  columns="1">
+                                        <apex:pageMessage summary="Please check Duplicate Attendees" severity="error" rendered="{!globalErr}" strength="3" />
+                                         <apex:outputPanel styleClass="float:centre">
+                                             <apex:commandButton value="Add" reRender="gfAtendees" action="{!addGFtoMap}"/>
+                                         </apex:outputPanel>
+                                         <apex:pageBlockTable value="{!mapGFAttendees}" var="gfAttendee" id="gfAtendees">                        
+                                             <apex:column headerValue="Remove"><apex:commandbutton action="{!removeGFAttendeefromMap}" value="X"  rerender="gfAtendees"><apex:param assignTo="{!removeKey}" name="removeKey"
+                                                  value="{!gfAttendee}"/></apex:commandbutton></apex:column>               
+                                             <apex:column headerValue="Name">
+                                                     <apex:inputField value="{!mapGFAttendees[gfAttendee].Attendee__c}">
+                                                 </apex:inputField>
+                                             </apex:column>
+           
+                                             <apex:column headerValue="Travel Required?">
+                                                 <apex:inputField value="{!mapGFAttendees[gfAttendee].Travel_Required__c}"/>
+                                                <!--<apex:inputField value="{!mapGFAttendees[gfAttendee].Account__c}" style="display: none;"/>-->
+                                             </apex:column>                                                  
+                                             <apex:column headerValue="Travel From">
+                                                 <apex:inputField value="{!mapGFAttendees[gfAttendee].Travel_from_location__c}"/>
+                                             </apex:column>              
+                                             <apex:column headerValue="Travel Type">
+                                                 <apex:inputField value="{!mapGFAttendees[gfAttendee].Travel_Type__c}"/>
+                                             </apex:column>             
+                                         </apex:pageBlockTable>                                   
+                                     </apex:pageBlockSection>
+                                     <apex:pageBlockSection title="Customer Attendees"  columns="1" id="CustomerAttendees" >
+                                        <apex:pageMessage summary="Please check Duplicate Customer Attendees" severity="error" rendered="{!customerErr}" strength="3" />
+                                         <apex:outputPanel styleClass="float:centre">
+                                             <apex:commandButton value="Add" reRender="customerAtendees" action="{!addCAtoMap}"/>
+                                             <apex:commandButton value="Export" action="{!Export}" rendered="{! AND(If(AND(Visitation_Record__c.Visit_Location__c != 'Burlington',
+                                                                                                                                            Visitation_Record__c.Visit_Location__c != 'Williston',
+                                                                                                                                            Visitation_Record__c.Visit_Location__c != 'East Fishkill'),true,
+                                                                                                                                            AND(OR($Profile.Name == 'System Administrator',
+                                                                                                                                            AND(Visitation_Record__c.Logistics_Admin__c != null,Visitation_Record__c.Logistics_Admin__c == $user.id)))),ExportVisible)}"/>
+                                            <font color="red">Hosts must utilize the &nbsp;<b><apex:commandLink value="VREG Application" action="{!VREGApplication}" target="_blank" style="color:red !important;"/>&nbsp;</b> to register customer visit guests per GLOBALFOUNDRIES security requirements</font>                                      
+                                         
+                                         </apex:outputPanel>
+                                         <apex:pageBlockTable value="{!mapCustomerAttendees}" var="customerAttendee" id="customerAtendees">                                           
+                                             <apex:column headerValue="Remove"><apex:commandbutton action="{!removecustomerAttendeefromMap}" value="X" rerender="customerAtendees"><apex:param assignTo="{!removeKey}" name="removeKey"
+                                                  value="{!customerAttendee}"/></apex:commandbutton></apex:column>                                  
+                                             <apex:column headerValue="Name">
+                                                     <apex:inputField value="{!mapCustomerAttendees[customerAttendee].Attendee__c}">
+                                                     <apex:inputField value="{!mapCustomerAttendees[customerAttendee].Account__c}" style="display: none;"/>
+                                                 </apex:inputField>
+                                             </apex:column>                                           
+                                             <apex:column headerValue="Title">
+                                                 <apex:inputField value="{!mapCustomerAttendees[customerAttendee].Title__c}"/>
+                                             </apex:column>                                                                             
+                                              <apex:column headerValue="Nationality">
+                                                 <apex:inputField value="{!mapCustomerAttendees[customerAttendee].Nationality__c}"/>
+                                             </apex:column>                                                                             
+                                            
+                                             <apex:column headerValue="WiFi Details">
+                                                 <apex:inputField value="{!mapCustomerAttendees[customerAttendee].WiFi_Details__c}" style="width:90%;" rendered="{! If(AND(Visitation_Record__c.Visit_Location__c != 'Burlington',Visitation_Record__c.Visit_Location__c != 'Williston',Visitation_Record__c.Visit_Location__c != 'East Fishkill'),true,
+                           AND(OR($Profile.Name == 'System Administrator',AND(Visitation_Record__c.Logistics_Admin__c != null,Visitation_Record__c.Logistics_Admin__c == $user.id))))}"/>
+                                                 <apex:outputField value="{!mapCustomerAttendees[customerAttendee].WiFi_Details__c}" style="width:90%;" rendered="{! Not(If(AND(Visitation_Record__c.Visit_Location__c != 'Burlington',Visitation_Record__c.Visit_Location__c != 'Williston',Visitation_Record__c.Visit_Location__c != 'East Fishkill'),true,
+                           AND(OR($Profile.Name == 'System Administrator',AND(Visitation_Record__c.Logistics_Admin__c != null,Visitation_Record__c.Logistics_Admin__c == $user.id)))))}"/>
+                                                 
+                                             </apex:column>       
+                                            
+                                       </apex:pageBlockTable>                
+                                       <apex:pageblocksection title="Add Customer Attendee" columns="1" id="PBSContactCreation">
+                                         <apex:pagemessages id="ContactMessage"/>
+                                         <div>
+                                         <b>
+                                         If Attendee is not found in the contact field, please enter Contact information in below fields and click Save Contact.    
+                                         </b>
+                                         </div>
+                                        </apex:pageblocksection>
+                                        <apex:pageblocksection columns="2" id="PBSContactCreationLabel">
+                                        <apex:pageblocksectionitem >
+                                             <apex:outputlabel >
+                                                 Attendee First Name <font size="3" color="red">*</font> :
+                                             </apex:outputlabel>
+                                             <apex:inputfield value="{!ContactInstance.FirstName}"/>
+                                         </apex:pageblocksectionitem>
+                                         <apex:pageblocksectionitem >
+                                             <apex:outputlabel >
+                                                 Attendee Last Name <font size="3" color="red">*</font> :
+                                             </apex:outputlabel>
+                                             <apex:inputtext value="{!ContactInstance.LastName}"/>
+                                         </apex:pageblocksectionitem>
+                                         <apex:pageblocksectionitem >
+                                             <apex:outputlabel value="Attendee Phone Number :"/>
+                                             <apex:inputfield value="{!ContactInstance.Phone}"/>
+                                         </apex:pageblocksectionitem>
+                                         <apex:pageblocksectionitem >
+                                             <apex:outputlabel >
+                                                 Attendee Email <font size="3" color="red">*</font> :
+                                             </apex:outputlabel>
+                                             <apex:inputfield value="{!ContactInstance.Email}"/>
+                                         </apex:pageblocksectionitem>
+                                         <apex:outputPanel style="float:centre">
+                                         <apex:commandbutton value="Save Contact" action="{!createContact}"  rerender="CustomerAttendees,ContactMessage"/>
+                                         </apex:outputPanel>
+                                         <apex:outputPanel style="padding-left: 75%;">
+                                <font color="red"><apex:outputText value="* is the Required Field"/></font>
+                                </apex:outputPanel>   
+                                     </apex:pageblocksection>
+                                     </apex:pageBlockSection>
+                                     <apex:pageBlockSection title="Non Customer Attendees" columns="1">
+                                         <apex:outputPanel styleClass="float:centre">
+                                             <apex:commandButton value="Add" reRender="partnerAtendees" action="{!addPAtoMap}"/>
+                                         </apex:outputPanel>
+                                         <apex:pageBlockTable value="{!mapPartnerAttendees}" var="partnerAttendee" id="partnerAtendees">                                          
+                                             <apex:column headerValue="Remove"><apex:commandbutton action="{!removePartnerAttendeefromMap}" value="X" rerender="partnerAtendees"><apex:param assignTo="{!removeKey}" name="removeKey"
+                                                  value="{!partnerAttendee}"/></apex:commandbutton></apex:column>
+                                             <apex:column headerValue="Name">                                         
+                                                 <apex:inputField value="{!mapPartnerAttendees[partnerAttendee].Name}"/>
+                                             </apex:column>                                            
+                                             <apex:column headerValue="Title">
+                                                 <apex:inputField value="{!mapPartnerAttendees[partnerAttendee].Title__c}"/>
+                                             </apex:column>                           
+                                             <apex:column headerValue="Email">
+                                                 <apex:inputField value="{!mapPartnerAttendees[partnerAttendee].Email__c}"/>
+                                             </apex:column>                                                                     
+                                             <apex:column headerValue="WiFi Details">
+                                                 <apex:inputField value="{!mapPartnerAttendees[partnerAttendee].WiFi_Details__c}" style="width:90%;"/>
+                                             </apex:column>                                           
+                                         </apex:pageBlockTable>
+                                          <apex:outputPanel styleClass="buttonsPanel">
+                                        <center><apex:commandButton action="{!saveAttendees}" value="    Save    "/> &nbsp;&nbsp;
+                                                <apex:commandbutton value="    Cancel    " action="{!Cancel}"/> </center>
+                                     </apex:outputPanel>
+                                     </apex:pageBlockSection>
+                                 </apex:pageBlock>
+                            </apex:outputpanel>                          
+                            <apex:outputpanel id="attendeesOutputPanel" rendered="{!!EditModeAttendees}">
+                         <center>
+                         
+                            <apex:commandButton action="{!editButtonAttendees}" value="    Edit   "></apex:commandButton>&nbsp;&nbsp;&nbsp;
+                            <div style="text-align: right;">
+                                <apex:commandLink value="VREG Application Workspace US" action="{!Link_to_GUI_US}" target="_blank"/>&nbsp;&nbsp;&nbsp;                                      
+                                 <apex:commandLink value="Europe" action="{!Link_to_GUI_Europe}" target="_blank"/>&nbsp;&nbsp;&nbsp; 
+                                 <apex:commandLink value="Singapore" action="{!Link_to_GUI_Singapore}" target="_blank"/>&nbsp;&nbsp;&nbsp;              
+                            </div>
+                         </center>
+                         
+                              <apex:pageMessages id="pagemessage1">
+                                </apex:pageMessages> 
+                                 <apex:pageBlock >
+                                     <apex:pageBlockSection id="redSection"  title="GLOBALFOUNDRIES Executives" columns="1">   
+                                         <apex:pageblocktable value="{!mapAttendeesSet}" var="executive" id="executives">                                        
+                                             <apex:column headerValue="Executive" >
+                                                 <apex:outputField value="{!mapAttendees[executive].Attendee__c}"/>
+                                             </apex:column>
+                                             <apex:column headerValue="Request Status">
+                                                 <apex:outputfield value="{!mapAttendees[executive].Request_Status__c}"/>
+                                             </apex:column>
+                                             <apex:column headerValue="Email Notification" id="notification">
+                                                 <apex:commandLink value="Send Notification" action="{!sendNotification}" rerender="attendeesPanel" rendered="{! Visitation_Record__c.End_Date__c >= today()}">
+                                                    <apex:param value="{!mapAttendees[executive].Attendee__c}" name="notificationId" assignTo="{!notificationId}"/>
+                                                 </apex:commandLink> 
+                                             </apex:column>
+                                         </apex:pageBlockTable>
+                                     </apex:pageBlockSection>
+                                     <apex:pageBlockSection title="GLOBALFOUNDRIES Attendees"  columns="1">
+                                         <apex:pageBlockTable value="{!mapGFAttendeesSet}" var="gfAttendee" id="gfAtendees">
+                                             <apex:column headervalue="Name">
+                                                     <apex:outputfield value="{!mapGFAttendees[gfAttendee].Attendee__c}" />
+                                             </apex:column>                                                         
+                                             <apex:column headerValue="Travel Required?" >
+                                                 <apex:outputfield value="{!mapGFAttendees[gfAttendee].Travel_Required__c}" />
+                                             </apex:column>
+                                             <apex:column headerValue="Travel From" >
+                                                 <apex:outputfield value="{!mapGFAttendees[gfAttendee].Travel_from_location__c}" />
+                                             </apex:column>
+                                             <apex:column headerValue="Travel Type" >
+                                                 <apex:outputfield value="{!mapGFAttendees[gfAttendee].Travel_Type__c}" />
+                                             </apex:column>                                           
+                                         </apex:pageBlockTable>                                      
+                                     </apex:pageBlockSection>
+                                     <apex:pageBlockSection title="Customer Attendees"  columns="1" id="CustomerAttendees" >
+                                         <apex:outputPanel styleClass="float:centre">
+                                            <apex:commandButton value="Export" action="{!Export}" rendered="{! AND(If(AND(Visitation_Record__c.Visit_Location__c != 'Burlington',
+                                                                                                                                            Visitation_Record__c.Visit_Location__c != 'Williston',
+                                                                                                                                            Visitation_Record__c.Visit_Location__c != 'East Fishkill'),true,
+                                                                                                                                            AND(OR($Profile.Name == 'System Administrator',
+                                                                                                                                            AND(Visitation_Record__c.Logistics_Admin__c != null,Visitation_Record__c.Logistics_Admin__c == $user.id)))),ExportVisible)}"/>
+                                            <font color="red">Hosts must utilize the &nbsp;<b><apex:commandLink value="VREG Application" action="{!VREGApplication}" target="_blank" style="color:red !important;"/>&nbsp;</b> to register customer visit guests per GLOBALFOUNDRIES security requirements</font>                                      
+                                         </apex:outputPanel>
+                                         <apex:pageBlockTable value="{!mapCustomerAttendeesSet}" var="customerAttendee" id="customerAtendees" >                                         
+                                             <apex:column headerValue="Name" >
+                                                     <apex:outputfield value="{!mapCustomerAttendees[customerAttendee].Attendee__c}" > 
+                                                 </apex:outputfield>
+                                             </apex:column>
+                                             <apex:column headerValue="Title">
+                                                 <apex:outputfield value="{!mapCustomerAttendees[customerAttendee].Title__c}"/>
+                                             </apex:column>
+                                             <apex:column headerValue="Nationality">
+                                                 <apex:outputField value="{!mapCustomerAttendees[customerAttendee].Nationality__c}"/>
+                                             </apex:column>
+                                             <apex:column headerValue="WiFi Details">
+                                                 <apex:outputfield value="{!mapCustomerAttendees[customerAttendee].WiFi_Details__c}" style="width:90%;"/>
+                                             </apex:column>
+                                       </apex:pageBlockTable>
+                                       <apex:pageblocksection title="Add Customer Attendee" columns="1" id="PBSContactCreation">
+                                         <div>
+                                         <b>
+                                         If Attendee is not found in the contact field, please enter Contact information in below fields and click Save Contact.    
+                                         </b>
+                                         </div>
+                                        </apex:pageblocksection>
+                                        <apex:pageblocksection columns="2" id="PBSContactCreationLabel">
+                                        <apex:pageblocksectionitem >
+                                            
+                                             <apex:outputlabel >
+                                                 Attendee First Name <font size="3" color="red">*</font> :
+                                             </apex:outputlabel>
+                                             <apex:outputfield value="{!ContactInstance.FirstName}"/>
+                                         </apex:pageblocksectionitem>
+                                         <apex:pageblocksectionitem >
+                                             <apex:outputlabel >
+                                                 Attendee Last Name <font size="3" color="red">*</font> :
+                                             </apex:outputlabel>
+                                             <apex:outputtext value="{!ContactInstance.LastName}"/>
+                                         </apex:pageblocksectionitem>
+                                         <apex:pageblocksectionitem >
+                                             <apex:outputlabel value="Attendee Phone Number :"/>
+                                             <apex:outputfield value="{!ContactInstance.Phone}"/>
+                                         </apex:pageblocksectionitem>
+                                         <apex:pageblocksectionitem >
+                                             <apex:outputlabel >
+                                                 Attendee Email <font size="3" color="red">*</font> :
+                                             </apex:outputlabel>
+                                             <apex:outputfield value="{!ContactInstance.Email}"/>
+                                         </apex:pageblocksectionitem>
+                                     </apex:pageblocksection>
+                                     </apex:pageBlockSection>
+                                     <apex:pageBlockSection title="Non Customer Attendees" columns="1">
+                                         <apex:pageBlockTable value="{!mapPartnerAttendees}" var="partnerAttendee" id="partnerAtendees">
+                                             <apex:column headerValue="Name">
+                                                 <apex:outputfield value="{!mapPartnerAttendees[partnerAttendee].Name}"/>
+                                             </apex:column>
+                                             <apex:column headerValue="Title">
+                                                 <apex:outputfield value="{!mapPartnerAttendees[partnerAttendee].Title__c}"/>
+                                             </apex:column>
+                                             <apex:column headerValue="Email">
+                                                 <apex:outputfield value="{!mapPartnerAttendees[partnerAttendee].Email__c}"/>
+                                             </apex:column>
+                                             <apex:column headerValue="WiFi Details">
+                                                 <apex:outputfield value="{!mapPartnerAttendees[partnerAttendee].WiFi_Details__c}" style="width:90%;"/>
+                                             </apex:column>
+                                         </apex:pageBlockTable>
+                                     </apex:pageBlockSection>
+                                 </apex:pageBlock>
+                                 <apex:outputPanel styleClass="buttonsPanel">
+                                         <center><apex:commandButton action="{!editButtonAttendees}" value="    Edit    " id="ed1"></apex:commandButton></center>
+                                     </apex:outputPanel>
+                            </apex:outputpanel>                           
+                            </apex:tab>                       
+                        <apex:tab label="3.Logistics" name="Logistics" id="Logistics" styleClass="vtabs" rendered="{!Visitation_Record__c.Visit_Type__c != 'Visit to Customer'}" > 
+                            <apex:outputPanel id="EditModeLogisctic" rendered="{!EditModeLogistic}" >
+                                <center><apex:commandButton action="{!SaveButton}" value="    Save    "/> &nbsp;&nbsp;
+                                <apex:commandbutton value="    Cancel    " action="{!Cancel}"/> </center>
+                            <apex:pageBlock >
+                                <apex:pageBlockTable value="{!Visitation_Record__c}" var="vis" id="StatusBox">
+                                <apex:column headerValue="Wifi Information">
+                                        <apex:image url="{!URLFOR($Resource.Visitation,'GreyButtonCVA.png')}" width="20" height="20" rendered="{!if(vis.WIFI_Information__c,False,True)}"/>
+                                        <apex:image url="{!URLFOR($Resource.Visitation,'GreenButtonCVA.png')}" width="20" height="20" rendered="{!if(vis.Wifi_Information_Completed__c && vis.WIFI_Information__c ,True,False)}"/>  
+                                        <apex:image url="{!URLFOR($Resource.Visitation,'RedButtonCVA.png')}" width="20" height="20" rendered="{!if(!(vis.Wifi_Information_Completed__c) && vis.WIFI_Information__c,True,False)}"/>                       
+                                    </apex:column>
+                                     <apex:column headerValue="Meeting Room">
+                                        <apex:image url="{!URLFOR($Resource.Visitation,'GreyButtonCVA.png')}" width="20" height="20" rendered="{!AND(NOT(vis.Meeting_Room_Confirmed__c),NOT(vis.Meeting_Room_Requested__c))}"/>
+                                        <apex:image url="{!URLFOR($Resource.Visitation,'GreenButtonCVA.png')}" width="20" height="20" rendered="{!AND(vis.Meeting_Room_Confirmed__c,vis.Meeting_Room_Requested__c) }"/>  
+                                        <apex:image url="{!URLFOR($Resource.Visitation,'RedButtonCVA.png')}" width="20" height="20" rendered="{!AND(NOT(vis.Meeting_Room_Confirmed__c),vis.Meeting_Room_Requested__c)}"/>                       
+                                    </apex:column>
+                                    <apex:column headerValue="Meals">
+                                       <apex:image url="{!URLFOR($Resource.Visitation,'GreyButtonCVA.png')}" width="20" height="20" rendered="{!if(vis.Meal_Required__c,False,True)}"/>
+                                       <apex:image url="{!URLFOR($Resource.Visitation,'GreenButtonCVA.png')}" width="20" height="20" rendered="{!if(vis.Meal_Information_Completed__c && vis.Meal_Required__c,True,False)}"/>
+                                       <apex:image url="{!URLFOR($Resource.Visitation,'RedButtonCVA.png')}" width="20" height="20" rendered="{!if(!(vis.Meal_Information_Completed__c) && vis.Meal_Required__c,True,False)}"/>
+                                    </apex:column>
+                                     <apex:column headerValue="Tours">
+                                       <apex:image url="{!URLFOR($Resource.Visitation,'GreyButtonCVA.png')}" width="20" height="20" rendered="{!if((NOT(vis.Tour_Information__c)),True,False)}"/>
+                                       <apex:image url="{!URLFOR($Resource.Visitation,'GreenButtonCVA.png')}" width="20" height="20" rendered="{!if(vis.Tour_Information__c && vis.Tour_Information_Completed__c,True,False)}"/>
+                                       <apex:image url="{!URLFOR($Resource.Visitation,'RedButtonCVA.png')}" width="20" height="20" rendered="{!if(!(vis.Tour_Information_Completed__c) && vis.Tour_Information__c,True,False)}"/>
+                                    </apex:column>
+                                    <apex:column headerValue="Dinner Reservation">
+                                        <apex:image url="{!URLFOR($Resource.Visitation,'GreyButtonCVA.png')}" width="20" height="20" rendered="{!if(vis.Dinner_Reservations__c,False,True)}"/>
+                                        <apex:image url="{!URLFOR($Resource.Visitation,'GreenButtonCVA.png')}" width="20" height="20" rendered="{!if(vis.Dinner_Information_Completed__c && vis.Dinner_Reservations__c,True,False)}"/>
+                                        <apex:image url="{!URLFOR($Resource.Visitation,'RedButtonCVA.png')}" width="20" height="20" rendered="{!if(!(vis.Dinner_Information_Completed__c) && vis.Dinner_Reservations__c ,True,False)}"/>
+                                    </apex:column>                                    
+                                </apex:pageBlockTable>                         
+                            </apex:pageBlock>                           
+                            <apex:pageBlock >
+                                <apex:pageblocksection columns="2">
+                                    <apex:pageblocksectionitem >
+                                        <apex:outputText value="Logistics Admin:" rendered="{!AND(Visitation_Record__c.Visit_Location__c != 'Burlington',
+                                                                                                                                            Visitation_Record__c.Visit_Location__c != 'Williston',
+                                                                                                                                            Visitation_Record__c.Visit_Location__c != 'East Fishkill')}"/>
+                                        <apex:outputPanel id="AdminSection">
+                                                    <apex:inputField styleClass="MonitorValue" value="{!Visitation_Record__c.Logistics_Admin__c}" rendered="{!AND(Visitation_Record__c.Visit_Location__c != 'Burlington',
+                                                                                                                                            Visitation_Record__c.Visit_Location__c != 'Williston',
+                                                                                                                                            Visitation_Record__c.Visit_Location__c != 'East Fishkill')}"/>
+                                        </apex:outputPanel>      
+                                    </apex:pageblocksectionitem> 
+                                    <apex:pageblocksectionitem >
+                                            <apex:outputlabel value="Logistic requirements (details):"/>
+                                            <apex:inputField value="{!Visitation_Record__c.Logistic_requirements_details_new__c}"/>
+                                    </apex:pageblocksectionitem>  
+                                   
+                                           
+                                    
+                                        <apex:pageblocksectionitem >
+                                            <apex:outputlabel value="Wifi Required"/>
+                                             <apex:actionregion >
+                                                 <apex:inputfield value="{!Visitation_Record__c.WIFI_Information__c}">
+                                                    <apex:actionSupport event="onclick" reRender="StatusBox"/>
+                                                 </apex:inputfield>
+                                             </apex:actionregion>
+                                              
+                                        </apex:pageblocksectionitem>
+                                        
+                                        <apex:pageblocksectionitem >
+                                            <apex:outputlabel value="Wifi Information Completed"/>
+                                            <apex:actionregion >
+                                                <apex:inputfield value="{!Visitation_Record__c.Wifi_Information_Completed__c}" rendered="{! If(AND(Visitation_Record__c.Visit_Location__c != 'Burlington',
+                                                                                                                                            Visitation_Record__c.Visit_Location__c != 'Williston',
+                                                                                                                                            Visitation_Record__c.Visit_Location__c != 'East Fishkill'),true,
+                                                                                                                                            AND(OR($Profile.Name == 'System Administrator',
+                                                                                                                                            AND(Visitation_Record__c.Logistics_Admin__c != null,Visitation_Record__c.Logistics_Admin__c == $user.id))))}">
+                                                    <apex:actionSupport event="onclick" reRender="StatusBox"/>
+                                                </apex:inputfield>
+                                             </apex:actionregion>
+                                        </apex:pageblocksectionitem>
+                                        <apex:pageblocksectionitem >
+                                             <apex:outputlabel value="Meeting Room Requested"/>
+                                             <apex:actionregion >
+                                                 <apex:inputfield value="{!Visitation_Record__c.Meeting_Room_Requested__c}" rendered="{! If(AND(Visitation_Record__c.Visit_Location__c != 'Burlington',
+                                                                                                                                            Visitation_Record__c.Visit_Location__c != 'Williston',
+                                                                                                                                            Visitation_Record__c.Visit_Location__c != 'East Fishkill'),true,
+                                                                                                                                            AND(OR($Profile.Name == 'System Administrator',
+                                                                                                                                            AND(Visitation_Record__c.Logistics_Admin__c != null,Visitation_Record__c.Logistics_Admin__c == $user.id))))}">
+                                                    <apex:actionSupport event="onclick" reRender="StatusBox"/>
+                                                </apex:inputfield>
+                                             </apex:actionregion>
+                                        </apex:pageblocksectionitem>
+                                        <apex:pageblocksectionitem >
+                                             <apex:outputlabel value="Meeting Room Confirmed"/>
+                                             <apex:actionregion >
+                                                 <apex:inputfield value="{!Visitation_Record__c.Meeting_Room_Confirmed__c}" rendered="{! If(AND(Visitation_Record__c.Visit_Location__c != 'Burlington',
+                                                                                                                                            Visitation_Record__c.Visit_Location__c != 'Williston',
+                                                                                                                                            Visitation_Record__c.Visit_Location__c != 'East Fishkill'),true,
+                                                                                                                                            AND(OR($Profile.Name == 'System Administrator',
+                                                                                                                                            AND(Visitation_Record__c.Logistics_Admin__c != null,Visitation_Record__c.Logistics_Admin__c == $user.id))))}">
+                                                    <apex:actionSupport event="onclick" reRender="StatusBox"/>
+                                                </apex:inputfield>
+                                             </apex:actionregion>
+                                        </apex:pageblocksectionitem>
+                                   </apex:pageblocksection> 
+                                </apex:pageblock>    
+                                <apex:pageblock id="MealTable"> 
+                                <apex:pageblocksection id="mealsection">
+                                <apex:pageMessage summary="If the Visit is more than 5 days please clone the record" severity="info" strength="3" rendered="{!DateDifference}"/>
+                                
+                                <apex:pageblocksectionitem id="mealrequireItem">
+                                    <apex:outputlabel value="{!$ObjectType.Visitation_Record__c.fields.Meal_Required__c.Label}"/>
+                                    <apex:inputCheckbox id="mealrequired" styleClass="MonitorValue" value="{!Visitation_Record__c.Meal_Required__c}">
+                                        <apex:actionSupport event="onclick" reRender="MealTable,StatusBox"/>
+                                    </apex:inputCheckbox>
+                                </apex:pageblocksectionitem>                     
+                                
+                                <apex:pageblocksectionitem >
+                                            <apex:outputlabel value="Meal Planning completed" />
+                                            <apex:actionregion >
+                                                 <apex:inputCheckbox styleClass="MonitorValue" value="{!Visitation_Record__c.Meal_Information_Completed__c}" rendered="{! If(AND(Visitation_Record__c.Visit_Location__c != 'Burlington',
+                                                                                                                                                Visitation_Record__c.Visit_Location__c != 'Williston',
+                                                                                                                                                Visitation_Record__c.Visit_Location__c != 'East Fishkill'),true,
+                                                                                                                                                AND(OR($Profile.Name == 'System Administrator',
+                                                                                                                                                AND(Visitation_Record__c.Logistics_Admin__c != null,Visitation_Record__c.Logistics_Admin__c == $user.id))))}">
+                                                        <apex:actionSupport event="onclick" reRender="StatusBox"/>
+                                                    </apex:inputCheckbox>
+                                                </apex:actionregion>
+                                        </apex:pageblocksectionitem>
+                                
+                                </apex:pageblocksection>
+                               <!-- In our table we are displaying the visitation fields in table format -->
+                                <apex:variable value="{!1}" var="x"/>
+                                <table width="100%">
+                                    <thead width="100%">
+                                      <tr>
+                                         <th width="20%">Meals</th>
+                                         <th width="20%">Delivery Time</th>
+                                         <th width="20%">No of People</th>
+                                         <th width="20%">Special Diet</th>
+                                         <th width="20%">Multi-day Details</th>
+                                      </tr>
+                                     </thead>
+                                    <tbody>
+                                        <apex:repeat value="{!logisticList}" var="log">
+                                            <tr>
+                                                <td colspan="5">
+                                                    Day {!x}
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td>
+                                                    <apex:inputfield styleclass="mealclass" value="{!log.Breakfast__c}"  >
+                                                        <apex:actionSupport event="onclick" reRender="StatusBox,MealTable" action="{!updateMealRequired}"/>
+                                                    </apex:inputfield>
+                                                        &nbsp;&nbsp;Breakfast 
+                                                    <apex:variable value="{!x+1}" var="x"/>
+                                                </td>
+                                                <td>
+                                                    <apex:inputfield value="{!log.Delivery_Time__c}"/>
+                                                </td>
+                                                <td>
+                                                    <apex:inputfield value="{!log.No_of_meals_BF__c}"/>
+                                                </td>
+                                                <td>
+                                                    <apex:inputfield value="{!log.Special_Diet_BreakFast__c}"/>
+                                                </td>
+                                                <td>
+                                                    <apex:inputfield value="{!log.Details_BF__c}"/>
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td>
+                                                    <apex:inputfield styleclass="mealclass" value="{!log.AM_Beverage__c}" >
+                                                        <apex:actionSupport event="onclick" reRender="StatusBox,MealTable" action="{!updateMealRequired}"/>
+                                                    </apex:inputfield> &nbsp;&nbsp;AM Beverage
+                                                </td>
+                                                <td>
+                                                    <apex:inputfield value="{!log.Delivery_Time_for_AM__c}"/>
+                                                </td>
+                                                <td>
+                                                    <apex:inputfield value="{!log.No_of_meals_for_AM__c}"/>
+                                                </td>
+                                                <td>
+                                                    <apex:inputfield value="{!log.Special_Diet_AM__c}"/>
+                                                </td>
+                                                <td>
+                                                    <apex:inputfield value="{!log.Details_for_AM__c}"/>
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td>
+                                                    <apex:inputfield styleclass="mealclass" value="{!log.Lunch__c}" > 
+                                                        <apex:actionSupport event="onclick" reRender="StatusBox,MealTable" action="{!updateMealRequired}"/>
+                                                    </apex:inputfield>
+                                                    &nbsp;&nbsp;Lunch 
+                                                </td>
+                                                <td>
+                                                    <apex:inputfield value="{!log.Delivery_Time_for_Lunch__c}"/>
+                                                </td>
+                                                <td>
+                                                    <apex:inputfield value="{!log.No_of_meals_for_Lunch__c}"/>
+                                                </td>
+                                                <td>
+                                                    <apex:inputfield value="{!log.Special_Diet_for_Lunch__c}"/>
+                                                </td>
+                                                <td>
+                                                    <apex:inputfield value="{!log.Details_for_Lunch__c}"/>
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td>
+                                                    <apex:inputfield styleclass="mealclass" value="{!log.PM_Beverage__c}" > 
+                                                        <apex:actionSupport event="onclick" reRender="StatusBox,MealTable" action="{!updateMealRequired}"/>
+                                                    </apex:inputfield>
+                                                    &nbsp;&nbsp;PM Beverage
+                                                </td>
+                                                <td>
+                                                    <apex:inputfield value="{!log.Delivery_Time_for_PM__c}"/>
+                                                </td>
+                                                <td>
+                                                    <apex:inputfield value="{!log.No_of_meals_for_PM__c}"/>
+                                                </td>
+                                                <td>
+                                                    <apex:inputfield value="{!log.Special_Diet_for_PM__c}"/>
+                                                </td>
+                                                <td>
+                                                    <apex:inputfield value="{!log.Details_for_PM__c}"/>
+                                                </td>
+                                            </tr>
+                                        </apex:repeat>
+                                    </tbody>
+                                </table>
+                                    <BR/><BR/>
+                                    
+                                    <apex:pageblocksection columns="2">
+                                        <apex:pageblocksectionitem >
+                                            <apex:outputlabel value="Comments and Multi-day Details"/>
+                                            <apex:inputField styleClass="MonitorValue" value="{!Visitation_Record__c.Special_Diet_new__c}"/>
+                                        </apex:pageblocksectionitem>
+                                        
+                                    </apex:pageblocksection>
+                                                                                  
+                            </apex:pageBlock>
+                            <apex:pageBlock >
+                                <apex:pageBlockSection columns="2"> 
+                                    <apex:pageblocksectionitem >
+                                        <apex:outputlabel value="{!$ObjectType.Visitation_Record__c.fields.Tour_Information__c.Label}"/>
+                                        <apex:actionregion >
+                                            <apex:inputfield value="{!Visitation_Record__c.Tour_Information__c}">
+                                                 <apex:actionSupport event="onclick" reRender="StatusBox"/>
+                                            </apex:inputfield>
+                                        </apex:actionregion>
+                                    </apex:pageblocksectionitem>
+                                    <apex:pageblocksectionitem >
+                                        <apex:outputlabel value="{!$ObjectType.Visitation_Record__c.fields.Tour_Information_Completed__c.Label}"/>
+                                        <apex:actionregion >
+                                        <apex:inputfield value="{!Visitation_Record__c.Tour_Information_Completed__c}" rendered="{! If(AND(Visitation_Record__c.Visit_Location__c != 'Burlington',
+                                                                                                                                            Visitation_Record__c.Visit_Location__c != 'Williston',
+                                                                                                                                            Visitation_Record__c.Visit_Location__c != 'East Fishkill'),true,
+                                                                                                                                            AND(OR($Profile.Name == 'System Administrator',
+                                                                                                                                            AND(Visitation_Record__c.Logistics_Admin__c != null,Visitation_Record__c.Logistics_Admin__c == $user.id))))}">
+                                             <apex:actionSupport event="onclick" reRender="StatusBox"/>
+                                        </apex:inputfield>
+                                        </apex:actionregion>
+                                    </apex:pageblocksectionitem>
+                                    <apex:pageblocksectionitem helpText="{!$ObjectType.Visitation_Record__c.Fields.Fab_Tour_Requested__c.inlineHelpText}">
+                                        <apex:outputlabel value="{!$ObjectType.Visitation_Record__c.fields.Fab_Tour_Requested__c.Label}"/>
+                                        <apex:actionregion > 
+                                            <apex:inputfield styleClass="MonitorValue" value="{!Visitation_Record__c.Fab_Tour_Requested__c}" required="false">
+                                                    <apex:actionSupport event="onchange"  reRender="tourRequest" /> 
+                                            </apex:inputfield>
+                                        </apex:actionregion>
+                                    </apex:pageblocksectionitem>
+                                    
+                                     <apex:pageblocksectionitem id="tourType" helpText="{!$ObjectType.Visitation_Record__c.Fields.Fab_Tour_Type__c.inlineHelpText}">
+                                            
+                                                <apex:outputlabel value="{!$ObjectType.Visitation_Record__c.fields.Fab_Tour_Type__c.Label}" />
+                                                <apex:inputfield styleClass="MonitorValue" value="{!Visitation_Record__c.Fab_Tour_Type__c}"  required="false"  />
+                                            
+                                        </apex:pageblocksectionitem>
+                                        
+                                        <apex:pageblocksectionitem >
+                                            <apex:outputlabel value="{!$ObjectType.Visitation_Record__c.fields.Reason_for_Fab_Tour__c.Label}" />
+                                            <apex:inputfield value="{!Visitation_Record__c.Reason_for_Fab_Tour__c}" required="false"/>
+                                        </apex:pageblocksectionitem>
+                                        <apex:pageblocksectionitem >
+                                            <apex:outputpanel id="tourRequest">
+                                                <apex:commandbutton value="BTV TOUR REQUEST FORM" title="Requestor must fill out BTV tour request" rerender="" onclick="openTourRequest();" rendered="{!AND(Visitation_Record__c.Fab_Tour_Requested__c == 'Yes',Visitation_Record__c.Visit_Location__c == 'Burlington')}"/>
+                                            </apex:outputpanel>
+                                        </apex:pageblocksectionitem>
+                                        </apex:pageBlockSection> 
+                                      </apex:pageBlock>                                                  
+                                      <apex:pageBlock >
+                                      <apex:pageBlockSection columns="2"> 
+                                      <apex:pageblocksectionitem >    
+                                            <apex:outputlabel value="{!$ObjectType.Visitation_Record__c.fields.Dinner_Reservations__c.Label}" />
+                                            <apex:actionregion >
+                                                <apex:inputCheckbox value="{!Visitation_Record__c.Dinner_Reservations__c}">   
+                                                    <apex:actionSupport event="onclick" reRender="StatusBox"/>
+                                                </apex:inputCheckbox>          
+                                            </apex:actionregion>       
+                                    </apex:pageblocksectionitem>
+                                    <apex:pageblocksectionitem >   
+                                    <apex:outputlabel value="Dinner Reservation Completed" />
+                                    <apex:actionregion >
+                                        <apex:inputCheckbox styleClass="MonitorValue" value="{!Visitation_Record__c.Dinner_Information_Completed__c}" rendered="{! If(AND(Visitation_Record__c.Visit_Location__c != 'Burlington',
+                                                                                                                                    Visitation_Record__c.Visit_Location__c != 'Williston',
+                                                                                                                                    Visitation_Record__c.Visit_Location__c != 'East Fishkill'),true,
+                                                                                                                                    AND(OR($Profile.Name == 'System Administrator',
+                                                                                                                                    AND(Visitation_Record__c.Logistics_Admin__c != null,Visitation_Record__c.Logistics_Admin__c == $user.id))))}">
+                                            <apex:actionSupport event="onclick" reRender="StatusBox"/>
+                                        </apex:inputCheckbox>         
+                                    </apex:actionregion>              
+                               </apex:pageblocksectionitem> 
+                               <apex:pageblocksectionitem >    
+                                    <apex:outputlabel value="Dinner Time:"/>
+                                   <apex:inputField styleClass="MonitorValue" value="{!Visitation_Record__c.Dinner_Time_new__c}"/>
+                               </apex:pageblocksectionitem> 
+                                    <apex:pageblocksectionitem >
+                                            <apex:outputlabel value="Restaurant Preferences:"/>
+                                            <apex:inputField styleClass="MonitorValue" value="{!Visitation_Record__c.Restaurant__c}" rendered="{!Visitation_Record__c.Visit_Location__c == 'Burlington'}"/>
+                                       </apex:pageblocksectionitem>                                                            
+                               <apex:pageblocksectionitem >
+                                         <apex:outputText value="Comment about meal requirement:"/>
+                                         <apex:inputField styleClass="MonitorValue" value="{!Visitation_Record__c.Comment_Dinner_new__c}"/>                         
+                                    </apex:pageblocksectionitem>                             
+                               <apex:pageblocksectionitem >  
+                                    <apex:outputlabel value="No of People:"/>
+                                    <apex:inputField styleClass="MonitorValue" value="{!Visitation_Record__c.No_of_People_Dinner__c}"/>                       
+                               </apex:pageblocksectionitem>
+                                                     
+                               <apex:pageblocksectionitem >
+                               </apex:pageblocksectionitem>                            
+                                </apex:pageBlockSection> 
+                            </apex:pageBlock>                                                  
+                             <center><apex:commandButton action="{!SaveButton}" value="    Save    "/> &nbsp;&nbsp;
+                                <apex:commandbutton value="    Cancel    " action="{!Cancel}"/> </center>                                                                
+                    </apex:outputPanel>        
+                    <apex:outputPanel id="ViewModeLogistic" rendered="{!!EditModeLogistic}">
+                         <center><apex:commandButton action="{!EditButton}" value="    Edit    " /></center>    
+                            <apex:pageBlock >
+                                <apex:pageBlockTable value="{!Visitation_Record__c}" var="vis" id="StatusBox">
+                                <apex:column headerValue="Wifi Information">
+                                        <apex:image url="{!URLFOR($Resource.Visitation,'GreyButtonCVA.png')}" width="20" height="20" rendered="{!if(vis.WIFI_Information__c,False,True)}"/>
+                                        <apex:image url="{!URLFOR($Resource.Visitation,'GreenButtonCVA.png')}" width="20" height="20" rendered="{!if(vis.Wifi_Information_Completed__c && vis.WIFI_Information__c ,True,False)}"/>  
+                                        <apex:image url="{!URLFOR($Resource.Visitation,'RedButtonCVA.png')}" width="20" height="20" rendered="{!if(!(vis.Wifi_Information_Completed__c) && vis.WIFI_Information__c,True,False)}"/>                       
+                                    </apex:column>
+                                     <apex:column headerValue="Meeting Room">
+                                        <apex:image url="{!URLFOR($Resource.Visitation,'GreyButtonCVA.png')}" width="20" height="20" rendered="{!AND(NOT(vis.Meeting_Room_Confirmed__c),NOT(vis.Meeting_Room_Requested__c))}"/>
+                                        <apex:image url="{!URLFOR($Resource.Visitation,'GreenButtonCVA.png')}" width="20" height="20" rendered="{!AND(vis.Meeting_Room_Confirmed__c,vis.Meeting_Room_Requested__c) }"/>  
+                                        <apex:image url="{!URLFOR($Resource.Visitation,'RedButtonCVA.png')}" width="20" height="20" rendered="{!AND(NOT(vis.Meeting_Room_Confirmed__c),vis.Meeting_Room_Requested__c)}"/>                       
+                                    </apex:column>
+                                    <apex:column headerValue="Meals">
+                                       <apex:image url="{!URLFOR($Resource.Visitation,'GreyButtonCVA.png')}" width="20" height="20" rendered="{!if(vis.Meal_Required__c,False,True)}"/>
+                                       <apex:image url="{!URLFOR($Resource.Visitation,'GreenButtonCVA.png')}" width="20" height="20" rendered="{!if(vis.Meal_Information_Completed__c && vis.Meal_Required__c,True,False)}"/>
+                                       <apex:image url="{!URLFOR($Resource.Visitation,'RedButtonCVA.png')}" width="20" height="20" rendered="{!if(!(vis.Meal_Information_Completed__c) && vis.Meal_Required__c,True,False)}"/>
+                                    </apex:column>
+                                     <apex:column headerValue="Tours">
+                                       <apex:image url="{!URLFOR($Resource.Visitation,'GreyButtonCVA.png')}" width="20" height="20" rendered="{!if((NOT(vis.Tour_Information__c)),True,False)}"/>
+                                       <apex:image url="{!URLFOR($Resource.Visitation,'GreenButtonCVA.png')}" width="20" height="20" rendered="{!if(vis.Tour_Information__c && vis.Tour_Information_Completed__c,True,False)}"/>
+                                       <apex:image url="{!URLFOR($Resource.Visitation,'RedButtonCVA.png')}" width="20" height="20" rendered="{!if(!(vis.Tour_Information_Completed__c) && vis.Tour_Information__c,True,False)}"/>
+                                    </apex:column>
+                                    <apex:column headerValue="Dinner Reservation">
+                                        <apex:image url="{!URLFOR($Resource.Visitation,'GreyButtonCVA.png')}" width="20" height="20" rendered="{!if(vis.Dinner_Reservations__c,False,True)}"/>
+                                        <apex:image url="{!URLFOR($Resource.Visitation,'GreenButtonCVA.png')}" width="20" height="20" rendered="{!if(vis.Dinner_Information_Completed__c && vis.Dinner_Reservations__c,True,False)}"/>
+                                        <apex:image url="{!URLFOR($Resource.Visitation,'RedButtonCVA.png')}" width="20" height="20" rendered="{!if(!(vis.Dinner_Information_Completed__c) && vis.Dinner_Reservations__c ,True,False)}"/>
+                                    </apex:column>                                    
+                                </apex:pageBlockTable>                         
+                            </apex:pageBlock>                           
+                            <apex:pageBlock >
+                                <apex:pageblocksection columns="2">
+                                    <apex:pageblocksectionitem >
+                                        <apex:outputText value="Logistics Admin:" rendered="{!AND(Visitation_Record__c.Visit_Location__c != 'Burlington',
+                                                                                                                                            Visitation_Record__c.Visit_Location__c != 'Williston',
+                                                                                                                                            Visitation_Record__c.Visit_Location__c != 'East Fishkill')}"/>
+                                       <apex:outputField styleClass="MonitorValue" value="{!Visitation_Record__c.Logistics_Admin__c}" rendered="{!AND(Visitation_Record__c.Visit_Location__c != 'Burlington',
+                                                                                                                                            Visitation_Record__c.Visit_Location__c != 'Williston',
+                                                                                                                                            Visitation_Record__c.Visit_Location__c != 'East Fishkill')}"/>
+                                    </apex:pageblocksectionitem>                         
+                                    <apex:pageblocksectionitem >
+                                            <apex:outputlabel value="Logistic requirements (details):"/>
+                                            <apex:outputField value="{!Visitation_Record__c.Logistic_requirements_details_new__c}"/>
+                                    </apex:pageblocksectionitem>                       
+                                        <apex:pageblocksectionitem >
+                                            <apex:outputlabel value="Wifi Required"/>
+                                            <apex:outputfield value="{!Visitation_Record__c.WIFI_Information__c}"/>
+                                        </apex:pageblocksectionitem>
+                                        <apex:pageblocksectionitem >
+                                            <apex:outputlabel value="Wifi Information Completed"/>
+                                            <apex:outputfield value="{!Visitation_Record__c.Wifi_Information_Completed__c}"/> 
+                                        </apex:pageblocksectionitem>
+                                        <apex:pageblocksectionitem >
+                                             <apex:outputlabel value="Meeting Room Requested"/>
+                                            <apex:outputfield value="{!Visitation_Record__c.Meeting_Room_Requested__c}" />
+                                        </apex:pageblocksectionitem>
+                                        <apex:pageblocksectionitem >
+                                             <apex:outputlabel value="Meeting Room Confirmed"/>
+                                                 <apex:outputfield value="{!Visitation_Record__c.Meeting_Room_Confirmed__c}" />
+                                        </apex:pageblocksectionitem>
+                                            
+                                </apex:pageblocksection> 
+                                </apex:pageblock>    
+                                <apex:pageblock > 
+                                <apex:pageblocksection >
+                                <apex:pageblocksectionitem >
+                                    <apex:outputlabel value="{!$ObjectType.Visitation_Record__c.fields.Meal_Required__c.Label}"/>
+                                    <apex:outputfield styleClass="MonitorValue" value="{!Visitation_Record__c.Meal_Required__c}"/>
+                                </apex:pageblocksectionitem>    
+                                <apex:pageblocksectionitem >
+                                            <apex:outputlabel value="Meal Planning completed" />
+                                            <apex:outputfield styleClass="MonitorValue" value="{!Visitation_Record__c.Meal_Information_Completed__c}"/>
+                                </apex:pageblocksectionitem>
+                                
+                                </apex:pageblocksection>
+                               <!-- In our table we are displaying the visitation fields in table format -->
+                                <apex:variable value="{!1}" var="x"/>
+                                <table width="100%">
+                                    <thead width="100%">
+                                      <tr>
+                                         <th width="20%">Meals</th>
+                                         <th width="20%">Delivery Time</th>
+                                         <th width="20%">No of People</th>
+                                         <th width="20%">Special Diet</th>
+                                         <th width="20%">Multi-day Details</th>
+                                      </tr>
+                                     </thead>
+                                    <tbody>
+                                        <apex:repeat value="{!logisticList}" var="log">
+                                            <tr>
+                                                <td colspan="5">
+                                                    Day {!x}
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td>
+                                                    <apex:outputfield value="{!log.Breakfast__c}"/>&nbsp;&nbsp;Breakfast 
+                                                    <apex:variable value="{!x+1}" var="x"/>
+                                                </td>
+                                                <td>
+                                                    <apex:outputfield value="{!log.Delivery_Time__c}"/>
+                                                </td>
+                                                <td>
+                                                    <apex:outputfield value="{!log.No_of_meals_BF__c}"/>
+                                                </td>
+                                                <td>
+                                                    <apex:outputfield value="{!log.Special_Diet_BreakFast__c}"/>
+                                                </td>
+                                                <td>
+                                                    <apex:outputfield value="{!log.Details_BF__c}"/>
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td>
+                                                    <apex:outputfield value="{!log.AM_Beverage__c}"/> &nbsp;&nbsp;AM Beverage
+                                                </td>
+                                                <td>
+                                                    <apex:outputfield value="{!log.Delivery_Time_for_AM__c}"/>
+                                                </td>
+                                                <td>
+                                                    <apex:outputfield value="{!log.No_of_meals_for_AM__c}"/>
+                                                </td>
+                                                <td>
+                                                    <apex:outputfield value="{!log.Special_Diet_AM__c}"/>
+                                                </td>
+                                                <td>
+                                                    <apex:outputfield value="{!log.Details_for_AM__c}"/>
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td>
+                                                    <apex:outputfield value="{!log.Lunch__c}"/> &nbsp;&nbsp;Lunch 
+                                                </td>
+                                                <td>
+                                                    <apex:outputfield value="{!log.Delivery_Time_for_Lunch__c}"/>
+                                                </td>
+                                                <td>
+                                                    <apex:outputfield value="{!log.No_of_meals_for_Lunch__c}"/>
+                                                </td>
+                                                <td>
+                                                    <apex:outputfield value="{!log.Special_Diet_for_Lunch__c}"/>
+                                                </td>
+                                                <td>
+                                                    <apex:outputfield value="{!log.Details_for_Lunch__c}"/>
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td>
+                                                    <apex:outputfield value="{!log.PM_Beverage__c}"/> &nbsp;&nbsp;PM Beverage
+                                                </td>
+                                                <td>
+                                                    <apex:outputfield value="{!log.Delivery_Time_for_PM__c}"/>
+                                                </td>
+                                                <td>
+                                                    <apex:outputfield value="{!log.No_of_meals_for_PM__c}"/>
+                                                </td>
+                                                <td>
+                                                    <apex:outputfield value="{!log.Special_Diet_for_PM__c}"/>
+                                                </td>
+                                                <td>
+                                                    <apex:outputfield value="{!log.Details_for_PM__c}"/>
+                                                </td>
+                                            </tr>
+                                        </apex:repeat>
+                                    </tbody>
+                                </table>
+                                    <BR/><BR/>
+                                    
+                                    <apex:pageblocksection columns="2">
+                                        <apex:pageblocksectionitem >
+                                            <apex:outputlabel value="Comments and Multi-day Details"/>
+                                            <apex:outputField styleClass="MonitorValue" value="{!Visitation_Record__c.Special_Diet_new__c}"/>
+                                        </apex:pageblocksectionitem>
+                                        
+                                    </apex:pageblocksection>
+                                                                                  
+                            </apex:pageBlock>
+                            <apex:pageBlock >
+                                <apex:pageBlockSection columns="2"> 
+                                    <apex:pageblocksectionitem >
+                                        <apex:outputlabel value="{!$ObjectType.Visitation_Record__c.fields.Tour_Information__c.Label}"/>
+                                        <apex:outputfield value="{!Visitation_Record__c.Tour_Information__c}"/>
+                                    </apex:pageblocksectionitem>
+                                    <apex:pageblocksectionitem >
+                                        <apex:outputlabel value="{!$ObjectType.Visitation_Record__c.fields.Tour_Information_Completed__c.Label}"/>
+                                        <apex:outputfield value="{!Visitation_Record__c.Tour_Information_Completed__c}"/>
+                                    </apex:pageblocksectionitem>
+                                    <apex:pageblocksectionitem helpText="{!$ObjectType.Visitation_Record__c.Fields.Fab_Tour_Requested__c.inlineHelpText}">
+                                        <apex:outputlabel value="{!$ObjectType.Visitation_Record__c.fields.Fab_Tour_Requested__c.Label}"/>
+                                        <apex:outputfield styleClass="MonitorValue" value="{!Visitation_Record__c.Fab_Tour_Requested__c}" />
+                                    </apex:pageblocksectionitem>
+                                    
+                                     <apex:pageblocksectionitem id="tourType" helpText="{!$ObjectType.Visitation_Record__c.Fields.Fab_Tour_Type__c.inlineHelpText}">
+                                     
+                                               <apex:outputlabel value="{!$ObjectType.Visitation_Record__c.fields.Fab_Tour_Type__c.Label}" />
+                                               <apex:outputfield styleClass="MonitorValue" value="{!Visitation_Record__c.Fab_Tour_Type__c}"    />
+                                        </apex:pageblocksectionitem>
+                                        
+                                        <apex:pageblocksectionitem >
+                                            <apex:outputlabel value="{!$ObjectType.Visitation_Record__c.fields.Reason_for_Fab_Tour__c.Label}" />
+                                            <apex:outputfield value="{!Visitation_Record__c.Reason_for_Fab_Tour__c}" />
+                                        </apex:pageblocksectionitem>
+                                        
+                                        </apex:pageBlockSection> 
+                                      </apex:pageBlock>   
+                                                                                     
+                                      <apex:pageBlock >
+                                      <apex:pageBlockSection columns="2"> 
+                                      <apex:pageblocksectionitem >    
+                                            <apex:outputlabel value="{!$ObjectType.Visitation_Record__c.fields.Dinner_Reservations__c.Label}" />
+                                            <apex:outputfield value="{!Visitation_Record__c.Dinner_Reservations__c}"/> 
+                                    </apex:pageblocksectionitem>
+                                    <apex:pageblocksectionitem >   
+                                    <apex:outputlabel value="Dinner Reservation Completed" />
+                                    <apex:outputfield styleClass="MonitorValue" value="{!Visitation_Record__c.Dinner_Information_Completed__c}"/>
+                               </apex:pageblocksectionitem> 
+                               <apex:pageblocksectionitem >    
+                                    <apex:outputlabel value="Dinner Time:"/>
+                                   <apex:outputField styleClass="MonitorValue" value="{!Visitation_Record__c.Dinner_Time_new__c}"/>
+                               </apex:pageblocksectionitem>
+                                    <apex:pageblocksectionitem >
+                                            <apex:outputlabel value="Restaurant Preferences:"/>
+                                            <apex:outputField styleClass="MonitorValue" value="{!Visitation_Record__c.Restaurant__c}" rendered="{!Visitation_Record__c.Visit_Location__c == 'Burlington'}"/>
+                                       </apex:pageblocksectionitem>  
+                                       <apex:pageblocksectionitem >
+                                         <apex:outputText value="Comment about meal requirement:"/>
+                                         <apex:outputfield styleClass="MonitorValue" value="{!Visitation_Record__c.Comment_Dinner_new__c}"/>                         
+                                    </apex:pageblocksectionitem>                                                                                         
+                               <apex:pageblocksectionitem >  
+                                    <apex:outputlabel value="No of People:"/>
+                                    <apex:outputField styleClass="MonitorValue" value="{!Visitation_Record__c.No_of_People_Dinner__c}"/>                       
+                               </apex:pageblocksectionitem>                                                
+                               <apex:pageblocksectionitem >
+                               </apex:pageblocksectionitem>                            
+                                </apex:pageBlockSection> 
+                            </apex:pageBlock>                            
+                           <center><apex:commandButton action="{!EditButton}" value="    Edit    " /></center>
+                             </apex:outputPanel>
+                        </apex:tab>
+                        <apex:tab label="4.Product Line" name="Misc" id="Misc" styleClass="vtabs" rendered="{!Visitation_Record__c.Visit_Type__c != 'Visit to Customer'}">
+                        <apex:outputPanel id="EditModeMisc" rendered="{!EditModeMisc}">
+                            <center><apex:commandButton action="{!SaveButtonMisc}" value="    Save    "/> &nbsp;&nbsp;
+                                <apex:commandbutton value="    Cancel    " action="{!Cancel}"/> </center>
+                                   <apex:pageblocksection title="Product Line manager Support" showheader="true" columns="2">                                
+                                        <apex:inputField styleClass="MonitorValue" value="{!Visitation_Record__c.Product_Line_Manager_Support_Request__c}"/>                               
+                                        <apex:inputField styleClass="MonitorValue" value="{!Visitation_Record__c.Product_Line_Manager_Assigned__c}"/>                                 
+                                        <apex:inputField styleClass="MonitorValue" value="{!Visitation_Record__c.Product_Line_Manager_Support_Category__c}"/>  
+                                        <apex:pageBlockSectionItem >
+                                        <apex:outputLabel value="Comments to Product Line Manager"/>
+                                        <apex:inputtextarea value="{!Visitation_Record__c.Comments_to_Product_Line_Manager__c}" Rows="3" Cols="100" style="width:300px"/>
+                                        </apex:pageBlockSectionItem> 
+                                        <apex:pageBlockSectionItem >
+                                        <apex:outputLabel value="Comments (Quality/SCP)"/>
+                                        <apex:inputtextarea value="{!Visitation_Record__c.Comments_Quality_SCP__c}" Rows="3" Cols="100" style="width:300px"/>
+                                        </apex:pageBlockSectionItem>                                 
+                                        </apex:pageblocksection>
+                                   <center><apex:commandButton action="{!SaveButtonMisc}" value="    Save    "/> &nbsp;&nbsp;
+                                <apex:commandbutton value="    Cancel    " action="{!Cancel}"/> </center>
+                        </apex:outputPanel>
+                        <apex:outputPanel id="ViewModeMisc" rendered="{!!EditModeMisc}">
+                            <center><apex:commandButton action="{!EditButtonMisc}" value="    Edit    " /></center>
+                                    <apex:pageblocksection title="Product Line manager Support" showheader="true" columns="2">                                
+                                        <apex:outputField value="{!Visitation_Record__c.Product_Line_Manager_Support_Request__c}"/>                               
+                                        <apex:outputField value="{!Visitation_Record__c.Product_Line_Manager_Assigned__c}"/>                                 
+                                        <apex:outputField value="{!Visitation_Record__c.Product_Line_Manager_Support_Category__c}"/>                                 
+                                        <apex:outputField value="{!Visitation_Record__c.Comments_to_Product_Line_Manager__c}"/>
+                                        <apex:outputField value="{!Visitation_Record__c.Comments_Quality_SCP__c}"/>
+                                   </apex:pageblocksection>
+                                   <center><apex:commandButton action="{!EditButtonMisc}" value="    Edit    " /></center>
+                        </apex:outputPanel>
+                        </apex:tab>                        
+                        <apex:tab label="5.Audit" name="Quality" id="Quality" styleClass="vtabs" rendered="{!Visitation_Record__c.Visit_Type__c != 'Visit to Customer'}">
+                            <apex:pageMessages id="taskMessage"></apex:pageMessages>
+                            <apex:outputPanel id="EditModeQlty" rendered="{!EditModeQlty}">
+                                <apex:outputPanel styleClass="buttonsPanel">
+                                    <center>
+                                        <apex:commandButton action="{!SaveButtonQlty}" value="    Save    " styleClass="saveButton" /> &nbsp;&nbsp;
+                                        <apex:commandbutton value="    Cancel    " action="{!Cancel}"/> 
+                                     </center>                                       
+                                </apex:outputPanel>
+                                <apex:pageblocksection title="Information" showheader="true" columns="1"  >  
+                                 &nbsp;&nbsp;&nbsp;&nbsp;
+                                    <apex:inputField styleClass="MonitorValue" value="{!Visitation_Record__c.Audit_Results__c}" required="false"/>     
+                                    &nbsp;&nbsp;&nbsp;&nbsp;   
+                                    <apex:inputfield styleClass="MonitorValue" value="{!Visitation_Record__c.Primary_Quality_User__c}" required="false"/>  
+                                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  
+                                    <apex:inputfield styleClass="MonitorValue" value="{!Visitation_Record__c.Backup_Quality_User__c}" required="false"/>  
+                                    &nbsp;&nbsp;&nbsp;&nbsp;   
+                                    <apex:inputtextarea styleClass="MonitorValue" value="{!Visitation_Record__c.Quality_Preparation__c}" rows="10" richText="true" cols="5"/>      
+                                </apex:pageblocksection>                               
+                                <apex:outputPanel styleClass="buttonsPanel">
+                                    <center>
+                                        <apex:commandButton action="{!SaveButtonQlty}" value="    Save    " styleClass="saveButton" /> &nbsp;&nbsp;
+                                        <apex:commandbutton value="    Cancel    " action="{!Cancel}"/>
+                                        </center>
+                                </apex:outputPanel>
+                            </apex:outputPanel>
+                            <apex:outputPanel id="ViewModeQlty" rendered="{!!EditModeQlty}">
+                                <center>
+                                <apex:outputPanel id="buttons1">
+                                    <apex:commandButton value="  Save Task  " action="{!saveTask}" rendered="{!showTask}" />
+                                    <apex:commandButton value="  Cancel Task " action="{!cancelTask}" rendered="{!showTask}" immediate="true"/>
+                                     <apex:commandbutton value="Add Task" action="{!addTask}" rendered="{!!showTask}" rerender="newTask, buttons1, buttons, taskMessage"/>
+                                    <apex:commandButton action="{!editButtonQuality}" value="    Edit    " />
+                                </apex:outputPanel>
+                                </center>                               
+                                <apex:pageblocksection title="Information" showheader="true" columns="1">      
+                                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <apex:outputfield styleClass="MonitorValue" value="{!Visitation_Record__c.Audit_Results__c}"/>
+                                    &nbsp;&nbsp;&nbsp;&nbsp;    <apex:outputfield styleClass="MonitorValue" value="{!Visitation_Record__c.Primary_Quality_User__c}" />  
+                                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <apex:outputfield styleClass="MonitorValue" value="{!Visitation_Record__c.Backup_Quality_User__c}" />  
+                                    &nbsp;&nbsp;&nbsp;&nbsp;   <apex:outputfield styleClass="MonitorValue" value="{!Visitation_Record__c.Quality_Preparation__c}"/>
+                                </apex:pageblocksection>                               
+                                <apex:outputPanel id="newTask">
+                                <apex:outputPanel rendered="{!showTask}" >
+                                    <apex:pageblocksection title="Add task to Quality Users" showheader="true" columns="2" >
+                                <apex:outputPanel style="padding-center: 0%;">
+                                <font color="red"><apex:outputText value="Task can be only created if the Quality users are selected"/></font>
+                                </apex:outputPanel>
+                                        <apex:outputfield value="{!newTask.Whatid}"/> 
+                                        <apex:inputfield value="{!newTask.subject}" required="true"/>
+                                        <apex:inputfield value="{!newTask.ActivityDate}"/>
+                                        <apex:inputfield value="{!newTask.status}"/>
+                                        <apex:inputfield value="{!newTask.priority}"/>
+                                    </apex:pageblocksection>
+                                </apex:outputPanel>
+                                </apex:outputPanel>
+                                <center>
+                                <apex:outputPanel id="buttons">
+                                    <apex:commandButton value="  Save Task  " action="{!saveTask}" rendered="{!showTask}" />
+                                    <apex:commandButton value="  Cancel Task " action="{!cancelTask}" rendered="{!showTask}" immediate="true"/>
+                                     <apex:commandbutton value="Add Task" action="{!AddTask}" rendered="{!!showTask}" rerender="newTask,buttons,buttons1"/>
+                                    <apex:commandButton action="{!editButtonQuality}" value="    Edit    " />
+                                </apex:outputPanel>
+                                </center>
+                            </apex:outputPanel>
+                        </apex:tab>
+                      <apex:tab label="6.Chatter" name="Chatter" id="Chatter" rendered="{!chatterFlag}" >
+                        <chatter:feedWithFollowers id="chatterFeed"  entityId="{!$CurrentPage.parameters.id}" showHeader="true" />
+                        </apex:tab>
+                        <apex:tab label="7.History"   name="History" id="History" styleClass="vtabs">
+                                <apex:pageblocktable value="{!StageHistory}" var="history">
+                                    <apex:column value="{!history.createddate}"/>
+                                    <apex:column value="{!history.field}"/>
+                                    <apex:column value="{!history.oldValue}"/>
+                                    <apex:column value="{!history.newvalue}"/>
+                                    <apex:column value="{!history.CreatedBy.Username}" />
+                                </apex:pageblocktable>
+                        </apex:tab>
+                    </apex:tabpanel>
+            </apex:outputpanel>
+       </apex:pageblock>
+    </apex:form>     
+    <apex:outputPanel rendered="{!OR(AND((OR(tabOpt == '', tabOpt == 'Detail')),!editModeDetail),AND((tabOpt == 'Misc'),!editModeMisc),AND((tabOpt == 'Quality'),!editModeQlty),AND((tabOpt == 'Logistics'),!editModeLogistic),AND((tabOpt == 'Attendees'),!editModeAttendees))}">
+        <apex:relatedList list="OpenActivities" />
+        <apex:relatedList list="ActivityHistories" />
+        <apex:relatedList list="ProcessSteps"/>
+        <apex:relatedList list="CombinedAttachments" />
+        <apex:relatedList list="Global_Briefing_Center__r" />
+        <apex:relatedList list="CVA_Survey__r"/>
+    </apex:outputPanel>   
+    <apex:includeScript value="{!URLFOR($Resource.jquery, 'js/jquery-1.8.3.min.js')}"/>
+    <apex:includeScript value="{!URLFOR($Resource.Visitation, 'visitation.js')}"/>
+    <script>
+        function OpenGBCForm(){
+            var url = "{!$Label.Visitation_GBC}";
+            var visitName = '{!Visitation_Record__c.Name}';
+            var visitid = '{!Visitation_Record__c.id}';
+            var newUrl = url.replace(/visitationname/g,visitName);
+                url = newUrl.replace(/visitationid/g,visitid);
+               window.open(url);
+        }
+        function openTourRequest() {
+            var url = "{!$Label.Tour_request}";
+            window.open(url);
+        }
+        
+        function updateMealRequired(){
+            var mealEle = document.getElementsByClassName("mealclass");
+            var atleastOneChecked = false;
+            for(var i=0;i<mealEle.length;i++){
+                if(mealEle[i].checked){
+                    atleastOneChecked = true;
+                }
+            }
+            document.getElementById("pg:fm:pgblk:MealTable:mealsection:mealrequireItem:mealrequired").checked = atleastOneChecked;
+        }
+    </script>
+</apex:page>

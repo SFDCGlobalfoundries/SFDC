@@ -1,0 +1,423 @@
+<!--
+* Company       :   Cognizant Technologies PTE Ltd.
+* Description   :   Custom View to perform the search on RMA records based on different filters.
+* History       :   
+
+        Initials        Date          Description
+-----------------------------------------------------------------------------------------
+        Nikhil Jain    16-Oct-15      Created the Visualforce Page
+-->
+
+<apex:page readOnly="true" controller="RMA_SearchController" showheader="{!Not(isFoundryView)}" showChat="false" cache="true" sidebar="false" tabStyle="RMA__c" id="rmaSearch">
+    <apex:form id="TheForm">
+        <!-- ******************************************************* -->
+        <!-- Search Criteria               -->
+        <!-- <apex:pagemessages id="msg" /> -->
+        <apex:pageBlock mode="mainDetails" title="RMA Search" id="pageblock1" >
+        	<apex:pageMessages id="pgmsgs"/>
+            <div class="search-block">
+            
+                <div class="rowText">
+                    <table width="100%" style="border-collapse: collapse;">
+                        <tr > 
+                        	<apex:variable var="foo" value="foo" rendered="{!NOT(IsFoundryview)}">
+	                            <td style="width: 9%; align:left;"> 
+	                                <span>Customer Name</span>
+	                            </td>
+	                            <td style="width: 25%; align:left;">
+	                                <div style="display: inline-table" class="col-md-6">
+	                                    <apex:inputText value="{!CustomerName}" />
+	                                </div>
+	                            </td>
+	                        </apex:variable>
+                            <td style="width: 9%; align:left;"> 
+                                <span>RMA Number</span>
+                            </td>
+                            <td style="width: 25%; align:left;">
+                                <div style="display: inline-table" class="col-md-6">
+                                    <apex:inputText value="{!SearchRMANumber}" />
+                                </div>
+                            </td>
+                            <apex:variable var="foo" value="foo" rendered="{!NOT(IsFoundryview)}">
+	                            <td style="width: 10%; align:left;"> 
+	                                <span>RMA Category</span>
+	                            </td>
+	                            <td style="width: 25%; align:left;">
+	                                <div style="display: inline-table" class="col-md-6">
+	                                    <apex:selectList value="{!RMAcategory}" multiselect="false" size="1" >
+	                                        <apex:selectOptions value="{!RMAcategoryList}"/>
+	                                    </apex:selectList>
+	                                </div>
+	                            </td>
+                          </apex:variable>  
+                        </tr>
+                        <tr>
+                            <td style="width: 10%; align:left;"> 
+                                <span>Fab</span>
+                            </td>
+                            <td style="width: 25%; align:left;">
+                                <div style="display: inline-table" class="col-md-4">
+                                    <apex:selectList value="{!fabName}" multiselect="false" size="1" >
+                                        <apex:selectOptions value="{!FabNameList}"/>
+                                    </apex:selectList>
+                                </div>
+                            </td>
+                            <apex:variable var="foo" value="foo" rendered="{!NOT(IsFoundryview)}">
+	                            <td style="width: 10%; align:left;"> 
+	                                <span>Region</span>
+	                            </td>
+	                            <td style="width: 25%; align:left;">
+	                                <div style="display: inline-table" class="col-md-6">
+	                                    <apex:selectList value="{!region}" multiselect="false" size="1" >
+	                                        <apex:selectOptions value="{!regionList}"/>
+	                                    </apex:selectList>
+	                                </div>
+	                            </td>
+	                         </apex:variable>
+                            <td style="width: 10%; align:left;"> 
+                                <span>{!IF(isFoundryView, 'RMA', 'Workflow')} Stage</span>
+                            </td>
+                            <td style="width: 25%; align:left;">
+                                <div style="display: inline-table" class="col-md-6">
+                                    <apex:selectList value="{!stage}" multiselect="false" size="1" id="stage">
+                                        <apex:selectOptions value="{!StageList}"/>
+                                    </apex:selectList>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr >
+                            <td style="width: 10%; align:left;"> 
+                                <span>Created Date(mm/dd/yyyy)</span>
+                            </td>
+                            <td style="width: 25%; align:left;">
+                                <div style="display: inline-table" class="col-md-4">
+                                    <apex:inputText id="createdDateFrom" html-placeholder="From" value="{!cdDateFromStr}"/>
+                                </div>
+                                 <div style="display: inline-table" class="col-md-4">
+                                    <apex:inputText id="createdDateTo" html-placeholder="To" value="{!cdDateToStr}"/>
+                                </div>
+                            </td>
+                            <apex:variable var="foo" value="foo" rendered="false">
+	                            <td style="width: 10%; align:left;"> 
+	                                <span>Last Modified Date</span>
+	                            </td>
+	                            <td style="width: 25%; align:left;">
+	                                <div style="display: inline-table" class="col-md-4">
+	                                    <apex:selectList value="{!lastModifiedDate}" multiselect="false" size="1" >
+	                                        <apex:selectOptions value="{!datesFilter}"/>
+	                                    </apex:selectList>
+	                                </div>
+	                            </td>
+                            </apex:variable>
+                            <apex:variable var="foo" value="foo" rendered="{!NOT(IsFoundryview)}">
+	                            <td style="width: 9%; align:left;"> 
+	                                <span>RMA Owner</span>
+	                            </td>
+	                            <td style="width: 25%; align:left;">
+	                                <div style="display: inline-table" class="col-md-6">
+	                                    <apex:inputText value="{!owner}" />
+	                                </div>
+	                            </td>
+	                        </apex:variable>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+            <!-- ******************************************************* -->
+            <!-- Search buttons       -->
+            <div class="process-block">
+                <apex:actionStatus id="ProcessButtonStatus">
+                    <apex:facet name="stop">
+                        <apex:outputPanel >
+                            <apex:commandButton styleClass="search-block-button" value="Search" action="{!SearchCase}" rerender="TablePanel,pgmsgs" status="TableUpdateStatus"/>
+                            <apex:commandButton styleClass="process-block-button" id="btnExcel" value="Export to Excel" action="{!ExporttoExcel}" rerender="exportpanel,pgmsgs"/>
+                            <apex:commandButton styleClass="process-block-button" value="Clear All" action="{!ClearAll}" rerender="TheForm,TablePanel,pgmsgs" status="ProcessButtonStatus"/>
+                        </apex:outputPanel>
+                    </apex:facet>
+                    <apex:facet name="start">
+                        <apex:outputPanel >
+                            <apex:commandButton styleClass="process-block-button" value="Processing..." disabled="true" />
+                            <apex:commandButton styleClass="process-block-button" value="Processing..." disabled="true" />
+                            <apex:commandButton styleClass="process-block-button" value="Processing..." disabled="true" />
+                            <apex:commandButton styleClass="process-block-button" value="Processing..." disabled="true" />
+                        </apex:outputPanel>
+                    </apex:facet>
+                </apex:actionStatus>
+            </div>
+        </apex:pageBlock>
+        <!-- ******************************************************* -->
+        <!-- search results table      -->
+        <apex:pageBlock id="TablePanel" title="Total Number of RMA Requests: {!totalRecords}" >
+            <div>
+                <span class="page-buttonNext" style="float: left; margin-bottom: 5px;">
+                    <apex:commandButton value="<< Previous"  rerender="TablePanel" action="{!Previous}" disabled="{!!hasprevious}" status="TableUpdateStatus"/>
+                    <apex:commandButton value="Next >>"  rerender="TablePanel" action="{!Next}" disabled="{!!hasnext}" status="TableUpdateStatus"/>
+                </span>
+                <!-- alphabet selection -->
+                <span style="float: right; margin: 5px 5px 5px 5px;">
+                    <apex:repeat value="{!AlphaList}" var="a">
+                        <apex:commandLink value="{!a}" action="{!SearchCase}" rerender="TablePanel"
+                            styleClass="alpha-link{!if(AlphaFilter=a,' alpha-select','')}" status="TableUpdateStatus">
+                            <apex:param name="AlphaFilter" value="{!a}" assignTo="{!AlphaFilter}" />
+                        </apex:commandLink>
+                    </apex:repeat>
+                </span>
+            </div>
+            <div style="clear: both;"></div>
+            <apex:actionStatus id="TableUpdateStatus">
+                <apex:inputHidden value="{!AlphaFilter}" id="hiddenField" />
+                <!-- ******************************************************* -->
+                <!-- loading message -->
+                <apex:facet name="start">
+                    <apex:outputPanel layout="block" styleClass="message infoM4">
+                        <apex:panelGrid columns="2" styleClass="messageTable" columnClasses="messageCell" style="padding:0px;margin:0px;">
+                            <apex:panelGroup >
+                                <img class="loading-icon" src="/s.gif" />
+                            </apex:panelGroup>
+                            <apex:panelGroup >
+                                <div class="messageText">Please wait...</div>
+                            </apex:panelGroup>
+                        </apex:panelGrid>
+                    </apex:outputPanel>
+                </apex:facet>
+                <!-- ******************************************************* -->
+                <!-- RMA table -->
+                <apex:facet name="stop">
+                    <apex:pageBlockTable value="{!listRMAPage}" var="a" id="TablePanel1" style="padding-top: 15px;" >
+                    	<!-- <apex:column headerValue="View" rendered="{!CONTAINS($CurrentPage.URL, 'globalfoundryview')}">
+                        	<apex:outputLink target="_blank" onclick="openVFinNewWindow('{!$Page.RMA_Print}', '{!a.id}');">View</apex:outputLink>
+                        </apex:column>-->
+                        <apex:column >
+                            <apex:facet name="header">
+                                <apex:commandLink action="{!SortToggle}" rerender="TablePanel" status="TableUpdateStatus">
+                                    <apex:param name="SortField" value="Name" assignTo="{!SortField}" />
+                                    <apex:outputText value="{!$ObjectType.RMA__c.Fields.Name.Label}{!IF(SortField=='Name',IF(SortDirection='asc','▲','▼'),'')}" />
+                                </apex:commandLink>
+                            </apex:facet>
+                            <apex:outputLink value="/{!a.Id}" target="_blank" rendered="{!NOT(isFoundryView)}">{!a.SearchRMANumber}</apex:outputlink>
+                            <apex:outputLink target="_self" onclick="openVFinNewWindow('{!$Page.RMA_CommunityView}', '{!a.id}');" rendered="{!isFoundryView}">{!a.SearchRMANumber}</apex:outputLink>
+                        </apex:column>
+                        <apex:column rendered="{!NOT(isFoundryView)}">
+                            <apex:facet name="header">
+                                <apex:commandLink action="{!SortToggle}" rerender="TablePanel" status="TableUpdateStatus">
+                                    <apex:param name="SortField" value="Customer__r.Name" assignTo="{!SortField}" />
+                                    <apex:outputText value="{!$ObjectType.RMA__c.Fields.Customer__c.Label}{!IF(SortField=='Customer__r.Name',IF(SortDirection='asc','▲','▼'),'')}" />
+                                </apex:commandLink>
+                            </apex:facet>
+                            <apex:outputLink value="/{!a.Id}" target="_blank">{!a.CustomerName}</apex:outputlink>
+                        </apex:column>
+                        <apex:column >
+                            <apex:facet name="header">
+                                <apex:commandLink action="{!SortToggle}" rerender="TablePanel" status="TableUpdateStatus">
+                                    <apex:param name="SortField" value="Fab__c" assignTo="{!SortField}" />
+                                    <apex:outputText value="{!$ObjectType.RMA__c.Fields.Fab__c.Label}{!IF(SortField=='Fab__c',IF(SortDirection='asc','▲','▼'),'')}" />
+                                </apex:commandLink>
+                            </apex:facet>
+                            <label>{!a.FabName}</label>
+                        </apex:column>
+                        <apex:column rendered="{!NOT(isFoundryView)}">
+                            <apex:facet name="header">
+                                <apex:commandLink action="{!SortToggle}" rerender="TablePanel" status="TableUpdateStatus">
+                                    <apex:param name="SortField" value="Region__c" assignTo="{!SortField}" />
+                                    <apex:outputText value="{!$ObjectType.RMA__c.Fields.Region__c.Label}{!IF(SortField=='Region__c',IF(SortDirection='asc','▲','▼'),'')}" />
+                                </apex:commandLink>
+                            </apex:facet>
+                            <label>{!a.Region}</label>
+                        </apex:column>
+                        <apex:column rendered="{!NOT(isFoundryView)}">
+                            <apex:facet name="header">
+                                <apex:commandLink action="{!SortToggle}" rerender="TablePanel" status="TableUpdateStatus">
+                                    <apex:param name="SortField" value="RMA_Category__c" assignTo="{!SortField}"/>
+                                    <apex:outputText value="{!$ObjectType.RMA__c.Fields.RMA_Category__c.Label}{!IF(SortField=='RMA_Category__c',IF(SortDirection='asc','▲','▼'),'')}" />
+                                </apex:commandLink>
+                            </apex:facet>
+                            <apex:outputLink value="/{!a.Id}" target="_blank" rendered="{!NOT(isFoundryView)}">{!a.RMAcategory}</apex:outputlink>
+                            <apex:outputText value="{!a.RMAcategory}" rendered="{!isFoundryView}"/>
+                        </apex:column>
+                        <apex:column style="width:100px" rendered="{!NOT(isFoundryView)}">
+                            <apex:facet name="header">
+                                <apex:commandLink action="{!SortToggle}" rerender="TablePanel" status="TableUpdateStatus">
+                                    <apex:param name="SortField" value="Status__c" assignTo="{!SortField}" />
+                                    <apex:outputText value="{!$ObjectType.RMA__c.Fields.Status__c.Label}{!IF(SortField=='Status__c',IF(SortDirection='asc','▲','▼'),'')}" />
+                                </apex:commandLink>
+                            </apex:facet>
+                            <label>{!a.Status}</label>
+                        </apex:column>
+                        <apex:column style="width:20%">
+                            <apex:facet name="header">
+                                <apex:commandLink action="{!SortToggle}" rerender="TablePanel" status="TableUpdateStatus">
+                                    <apex:param name="SortField" value="Workflow_Stage__c" assignTo="{!SortField}" />
+                                    <apex:outputText value="{!$ObjectType.RMA__c.Fields.Workflow_Stage__c.Label}{!IF(SortField=='Workflow_Stage__c',IF(SortDirection='asc','▲','▼'),'')}" 
+                                    				 rendered="{!NOT(isFoundryView)}"/>
+									<apex:outputText value="RMA Stage{!IF(SortField=='Workflow_Stage__c',IF(SortDirection='asc','▲','▼'),'')}" 
+                                    				 rendered="{!isFoundryView}"/>                                    				 
+                                </apex:commandLink>
+                            </apex:facet>
+                            <label>{!a.stage}</label>
+                        </apex:column>
+                        <apex:column rendered="{!IsFoundryView}">
+                            <apex:facet name="header">
+                                <apex:commandLink action="{!SortToggle}" rerender="TablePanel" status="TableUpdateStatus">
+                                    <apex:param name="SortField" value="Total_Wafers_Final__c" assignTo="{!SortField}" />
+                                    <apex:outputText value="Quantity{!IF(SortField=='Total_Wafers_Final__c',IF(SortDirection='asc','▲','▼'),'')}" />
+                                </apex:commandLink>
+                            </apex:facet>
+                            <label>{!a.Total_Wafers_Final}</label>
+                        </apex:column>
+                        <apex:column rendered="{!IsFoundryView}">
+                            <apex:facet name="header">
+                                <apex:commandLink action="{!SortToggle}" rerender="TablePanel" status="TableUpdateStatus">
+                                    <apex:param name="SortField" value="Grand_Total_Final__c" assignTo="{!SortField}" />
+                                    <apex:outputText value="Amount{!IF(SortField=='Grand_Total_Final__c',IF(SortDirection='asc','▲','▼'),'')}" />
+                                </apex:commandLink>
+                            </apex:facet>
+                            <label>{!a.Grand_Total_Final}</label>
+                        </apex:column>
+                        <apex:column rendered="{!IsFoundryView}">
+                            <apex:facet name="header">
+                                <apex:commandLink action="{!SortToggle}" rerender="TablePanel" status="TableUpdateStatus">
+                                    <apex:param name="SortField" value="CN_DN_Number__c" assignTo="{!SortField}" />
+                                    <apex:outputText value="CN / DN#{!IF(SortField=='CN_DN_Number__c',IF(SortDirection='asc','▲','▼'),'')}" />
+                                </apex:commandLink>
+                            </apex:facet>
+                            <label>{!a.CN_DN_Number}</label>
+                        </apex:column>
+                        <apex:column >
+                            <apex:facet name="header">
+                                <apex:commandLink action="{!SortToggle}" rerender="TablePanel" status="TableUpdateStatus">
+                                    <apex:param name="SortField" value="createdDate" assignTo="{!SortField}" />
+                                    <apex:outputText value="Created Date{!IF(SortField=='createdDate',IF(SortDirection='asc','▲','▼'),'')}" />
+                                </apex:commandLink>
+                            </apex:facet>
+                            <label><c:RMA_UserLocaleDateTimeFormatter date_Timevalue="{!a.createdDate}"/></label>
+                        </apex:column>
+                        <apex:column >
+                            <apex:facet name="header">
+                                <apex:commandLink action="{!SortToggle}" rerender="TablePanel" status="TableUpdateStatus">
+                                    <apex:param name="SortField" value="Owner.Name" assignTo="{!SortField}" />
+                                    <apex:outputText value="Owner{!IF(SortField=='Owner.Name',IF(SortDirection='asc','▲','▼'),'')}" />
+                                </apex:commandLink>
+                            </apex:facet>
+                            <label>{!a.OwnerName}</label>
+                        </apex:column>
+                    </apex:pageBlockTable>
+                </apex:facet>
+            </apex:actionStatus>
+            <div style="margin-top: 5px;">
+                <apex:outputText value="Number of Records per Page: " />
+                <apex:selectList value="{!RecPerPage}" size="1">
+                    <apex:selectOptions value="{!RecPerPageOption}" />
+                    <apex:actionSupport event="onchange" action="{!resetPagination}" reRender="TablePanel" status="TableUpdateStatus"  />
+                </apex:selectList>
+            </div>
+            <apex:outputpanel id="exportpanel">
+            	<apex:iframe height="0px" width="px" id="export" src="{!exportUrl}" rendered="{!NOT(ISBLANK(exportUrl))}"/>
+            </apex:outputpanel>
+        </apex:pageBlock>
+    </apex:form>
+    <c:JqueryLibrary />
+    <style type="text/css">
+        .loading-icon {
+        background-image: url(/img/loading.gif);
+        width: 16px;
+        height: 16px;
+        } 
+        a.alpha-link {
+        font-weight: normal;
+        font-size: 91%;
+        padding: 0 4px;
+        color: #015BA7 !important;
+        } 
+        a.alpha-link+a.alpha-link {
+        border-left: 1px solid #CFCECE;
+        }
+        a.alpha-link:hover {
+        background-color: #e0f5fc !important;
+        } 
+        a.alpha-select {
+        font-weight: bold;
+        text-decoration: none;
+        background-color: #C6E1FF;
+        color: #000000 !important;
+        }
+        .casetable {
+        height: 200px;
+        overflow-y: scroll;
+        }
+        .search-block {
+        text-align: left;
+        }
+        .search-block input {
+        margin: 0px 0px 2px 0px;
+        }
+        .search-block-button {
+        min-width: 110px;
+        }
+        .search-block span{
+        font-weight: bold;
+        }
+        .rowText {
+        padding-bottom: 20px;
+        }
+        .rowPicklist1 {
+        padding-bottom: 20px;
+        }
+        .process-block {
+        text-align: center;
+        margin-top: 2px;
+        } 
+        .process-block input {
+        margin: 0px 5px;
+        }
+        .process-block-button {
+        min-width: 100px;
+        }
+        .page-buttons input {
+        min-width: 100px;
+        }
+        .page-buttonNext input {
+        min-width: 70px;
+        }
+        div.ui-datepicker{
+ 			font-size:10px;
+		}
+    </style>
+    <script>   
+    
+    	$(document).ready(function(){
+    		generateDateRangePicker('createdDateFrom', 'createdDateTo');
+    		//generateDateRangePicker('createdDateTo', 'createdDateFrom');
+    	});
+  		
+  		
+  		function generateDateRangePicker(srcPicker, destPicker){
+  			$('[id$="'+srcPicker+'"]').datepicker({
+		      defaultDate: "+1w",
+		      changeMonth: true,
+			  changeYear:true,
+		      numberOfMonths: 1,
+			  yearRange:"-10:+00",
+			  autoSize: true,
+			  maxDate:'0',
+		      onClose: function( selectedDate ) {
+		        $('[id$="' + destPicker + '"]').datepicker( "option", "minDate", selectedDate );
+		      }
+		    });
+		    $('[id$="'+destPicker+'"]').datepicker({
+		      defaultDate: "+1w",
+		      changeMonth: true,
+			  changeYear:true,
+		      numberOfMonths: 1,
+			  yearRange:"-10:+00",
+			  autoSize: true,
+			  maxDate:'0',
+		      onClose: function( selectedDate ) {
+		        $('[id$="' + srcPicker + '"]').datepicker( "option", "maxDate", selectedDate );
+		      }
+		    });
+  		}
+        function openVFinNewWindow(page,param){ 
+            window.open(page+'?id='+param,'_blank', 'toolbar=no, scrollbars=yes, resizable=yes, top=500, left=500, width=800, height=800');
+        }
+    </script>
+</apex:page>

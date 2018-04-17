@@ -1,0 +1,1054 @@
+<apex:page standardController="MRS__c" extensions="MRSHoldResumeExtn" showHeader="false" sideBar="false" standardStylesheets="false"> <!-- id="pageId"> -->
+  <!--<apex:pageMessages id="pageMsgId1"/>-->
+   <apex:form id="HiddenValues">
+        <apex:inputHidden value="{!mstNameAfterSave}" id="HiddenselectedMST"/>
+        <apex:inputHidden value="{!customerSelected}" id="HiddenselectedCust"/>     
+                  
+   </apex:form>
+   <apex:stylesheet value="{!URLFOR($Resource.Swift_MRS_Hold_Test,'css/jquery.scombobox.min.css')}"/>
+   <apex:stylesheet value="{!URLFOR($Resource.Swift_MRS_Hold_Test,'css/jquery.multiselect.css')}"/>
+   <apex:stylesheet value="{!URLFOR($Resource.Swift_MRS_Hold_Test,'css/style.css')}"/>
+   <apex:stylesheet value="{!URLFOR($Resource.SWIFT_MRS_Changed,'css/style_LayerSummary.css')}"/>
+   <apex:stylesheet value="{!URLFOR($Resource.SWIFT_MRS_Changed,'css/jquery-ui.css')}"/>
+   <!--[if IE]>
+  <link rel="stylesheet" type="text/css" href="{!URLFOR($Resource.Swift_MRS_Hold_Test, 'css/iestyle.css')}" />
+<![endif]-->
+   <style>
+      div#MRSdropdown.scombobox{width :613px;}
+      div#MRSdropdown .scombobox-display{background-position: 99%;}
+      div#MRSdropdown .scombobox-list{width : 582px;max-height:181px;}
+      div#MSTdropdown.scombobox{width : 234px;}
+      div#MSTdropdown .scombobox-list{width : 222px;max-height:181px;}
+   </style>
+   <apex:form id="frm">
+                  
+       <apex:inputHidden value="{!ValueCatcher}" id="HiddenselectedLayers"/> 
+      <!--Wrapper Div Starts-->
+      <div id="wrapper">
+         <!--Container Div Starts-->
+         <!-- <div id="container" class="use-sidebar"> -->
+         <!--Left Side Navigation Menu-->
+         <!--End of Left Side Navigation Menu-->
+         <!-- Start of Right side content-->
+         <!-- <div id="content"> -->
+         <!--Breadcrumb Starts-->
+         
+        <apex:outputPanel rendered="{!NOT(internalView)}"> 
+         <div class="breadcrumb" id="breadcrumbDiv">
+            <label><a href="javascript:void(0);" onclick="openMyDevices();"><u>My Devices</u></a></label> &gt;
+            Tapeout &gt;
+            MRS &gt;
+            Hold/Resume Layer
+         </div>
+        </apex:outputPanel>
+
+        <apex:outputPanel rendered="{!internalView}">
+         <div class="breadcrumb" id="breadcrumbDiv">
+            MRS &gt;
+            Hold/Resume Layer
+         </div>
+        </apex:outputPanel>
+  
+         <!--Breadcrumb Ends-->
+       
+         <div id="holdResumeLayer" class="right-panel-section">
+            <!-- Start DRT Right side Header-->
+            <h3>Hold / Resume Layer</h3>
+            <!-- End Right side Header-->                 
+            <div class="quicklinks">
+               <a href="javascript:OpenExcelOrPdf('PDF');"><img src="{!URLFOR($Resource.Swift_MRS_Hold_Test,'images/expToCsv.png')}" width="24" height="24" alt="Export to CSV" title="Export to CSV"/></a>
+               <a href="javascript:OpenExcelOrPdf('excel');"><img src="{!URLFOR($Resource.Swift_MRS_Hold_Test,'images/excel-icon.png')}" width="23" height="23" alt="Export to Excel" title="Export to Excel"/></a>          
+               <a href="{!$Label.SWIFT_Support_Link}" target="_blank"><img src="{!URLFOR($Resource.Swift_MRS_Hold_Test,'images/help-icon.png')}" width="23" height="23" alt="Help"  title="Help"/></a>
+            </div>
+            <!-- --------------- First Row Starts --------------- -->
+            <div id="firstRowContentDiv" class="right-section-row right-section-row-borderbottom">
+               <apex:outputPanel id="MRSDropdownWrapper">
+                  <dl>
+                     <dt class="bold-font min-width-cust-name">Customer Name:</dt>
+                     <dd class="pading-left">
+                        <apex:outputLabel rendered="{!NOT(showLabel)}">
+                           <!--<select id="MRSdropdown" class="dropdown-size-big" onchange="getmstList(this);">
+                              <apex:repeat value="{!lstCustomer}" var="acc">
+                                 <option value="{!acc.Id}">{!acc.Name} {!'('+acc.Short_Name__c+')'}</option>
+                              </apex:repeat>
+                           </select>--> 
+                           <div class="dropdown-size" id="divMSTTxtbox">  
+                             <label class="custNameLbl lookupLbl" id="customerLabel"></label>   
+                                <a href="" class="lookupCustName"><img src="{!URLFOR($Resource.SWIFT_MRS_Changed,'images/icon/lookup.png')}" class="lookupImg" width="17" height="17" alt="lookup"/></a>
+                           </div>
+                        </apex:outputLabel>
+                        
+
+                        <input type='hidden' id='AccDetection' value='{!selectedCustomerId}'/>
+                        <apex:outputLabel rendered="{!showLabel}" value="{!selectedCustomerName}"/>
+                     </dd>
+                  </dl>
+                  <dl class="tcell-height-25">
+                     <dt class="bold-font min-width-cust-name">Mask Set Title:</dt>
+                     <dd class="pading-left">
+                        <apex:outputLabel id="mstId" rendered="{!NOT(showLabelMST)}">
+                           <!--<select id="MSTdropdown" class="dropdown-size" onchange="getLayerStatus(this);">
+                              <apex:repeat var="mst" value="{!lstMSTOptions}">
+                                 <option value="{!mst.value}">{!mst.label}</option>
+                              </apex:repeat>
+                           </select>-->
+                           <div class="dropdown-size" id="divMSTTxtbox2">
+                              <label class="mstLbl lookupLbl" id="mstLabel"></label>   
+                                  <a href="" class="lookupMST"><img src="{!URLFOR($Resource.SWIFT_MRS_Changed,'images/icon/lookup.png')}" class="lookupImg" width="17" height="17" alt="lookup"/></a>
+                           </div>
+                        </apex:outputLabel>
+                        <apex:outputLabel rendered="{!showLabelMST}" value="{!mstNameAfterSave}"/>
+                     </dd>
+                  </dl>
+                  <div class="clear"></div>
+               </apex:outputPanel>
+
+            </div>
+            <!----------------- First Row Ends ----------------->
+            
+            <!--Filters goes here................. -->
+            <div class="right-section-panel border-bottom" id="filterId">
+               <div id="filters" class="right-section-row-filter-border" title="filterContent">               
+                  <a href="javascript:void(0)" id="filter_anchor" name="filterContent" class="filters_slideDown">Filters</a>
+               </div>
+               <div id="filterContent">
+                  <dl class="margin-top-5">
+                     <dt class="bold-font">Layer Status</dt>
+                     <dd class="pading-left">
+                        <apex:outputpanel id="layerStatusId">
+                            <select id="layersummarydropdown" class="layerStatus-drpdwn-size multiSelect" multiple="multiple" onchange="getLayerValues(this);">
+                                  <apex:repeat value="{!lstLayerStatusOptions}" var="layerVal">
+                                          <!-- <apex:variable var="sel" value="{!IF(layerVal.value==ValueCatcher,true,false)}"/> -->
+                                           <apex:variable var="sel" value="{!IF(CONTAINS(ValueCatcher,layerVal.value),true,false)}"/>  
+                                                           
+                                          <apex:repeat var="l" value="{!lstSizeOne}" rendered="{!sel}">
+                                              <option value="{!layerVal.value}" selected="selected">{!layerVal.label}</option>
+                                          </apex:repeat>
+                                          
+                                          <apex:repeat var="l" value="{!lstSizeOne}" rendered="{!NOT(sel)}">
+                                              <option value="{!layerVal.value}">{!layerVal.label}</option>
+                                          </apex:repeat>
+                                          
+                                          <!--<option value="{!layerVal.value}">{!layerVal.label}</option> -->
+                                  </apex:repeat>
+                            </select>                        
+                          <!-- <select id="drtdropdown2" class="dropdown-size-big-normal" onchange="getDeviceId(this);"> -->
+                              <!--
+                              <apex:selectList value="{!selectedLayerStatus}" styleClass="dropdown-size-big-normal" size="1" id="drtdropdown2" onchange="getDeviceId(this);">
+                                 <apex:selectOptions value="{!lstLayerStatusOptions}"/>
+                              </apex:selectList>
+                              -->
+                          <!-- </select> -->
+                        </apex:outputpanel>
+                     </dd>
+                  </dl>
+                  <dl>
+                     <dt class="bold-font">Device ID</dt>
+                     <dd class="pading-left">
+                        <apex:outputpanel id="deviceId">
+                         <!--  <select id="drtdropdown4" class="dropdown-size-big-normal" onchange="getTechDevice(this);"> -->
+                              <apex:selectList value="{!selectedDeviceId}" styleClass="dropdown-size-big-normal" size="1" id="drtdropdown4" onchange="getTechDevice(this);">
+                                 <apex:selectOptions value="{!lstDeviceIdOptions}"/>
+                              </apex:selectList>
+                          <!-- </select> -->
+                        </apex:outputpanel>
+                     </dd>
+                  </dl>
+                  <dl>
+                     <dt class="line-height-15 bold-font">Tech Geo</dt>
+                     <dd class="float-left">
+                        <apex:outputpanel id="techGeoId">
+                          <!-- <select id="drtdropdown5" class="dropdown-size-big-normal"> -->
+                              <apex:selectList value="{!selectedTechGeo}" styleClass="dropdown-size-big-normal" size="1" id="drtdropdown5">
+                                 <apex:selectOptions value="{!lstTechGeoOptions}"/>
+                              </apex:selectList>
+                          <!-- </select> -->
+                        </apex:outputpanel>
+                     </dd>
+                     <dd class="pading-left float-left"><input type="button" id="apply" value="Apply" class="no-margin" onclick="retrieveTable()"/></dd>
+                     <dd class="pading-left float-left"><input type="button" id="clear" value="Clear" class="no-margin" onclick ="clearesult()" /></dd>
+                  </dl>
+               </div>
+               <div class="clear"></div>
+               
+            </div>
+            <!--Filters ends here...................-->
+            
+            <!-- --------------- Second Row Starts --------------- -->
+            <div id="secondRowContentDiv" class="right-section-row no-padding-top">
+            
+              <apex:outputpanel id="msgs">
+              
+              <apex:outputPanel id="pageMsgPanel" style="float:left;" rendered="{!IF((!layerChipSummarTbl && selectedmst!=null && selectedmst!=''),true,false) && noRecords}"> 
+               <!--<apex:pageMessages id="pageMsgIdNoRecord" rendered="{!IF((!layerChipSummarTbl && selectedmst!=null && selectedmst!=''),true,false)}" />-->
+               <div id="pageMsgIdNoRecord" class="error-container margin-top-10" style="color:#000000">No records to display</div>
+              </apex:outputPanel>
+           
+              
+             <apex:outputPanel id="controllPageMsgId1" style="float:left;" > 
+               <apex:pageMessages id="pageMsgId1" rendered="{!layerChipSummarTbl}"  />
+              </apex:outputPanel>
+              
+               <apex:outputPanel id="pageMsgRecordExceeded" rendered="{!isSizeExceeded}" >
+                 <div id="recordExceeded" class="error-container margin-top-10" style="color:#000000">{!$Label.MRS_SIZE_EXCEEDED_ERROR}</div>
+               </apex:outputPanel>
+               
+               
+ 
+               
+               <apex:outputText style="color: red; margin-top: 5px; margin-bottom: 1px;"  value="{!pendingResumeChipMsg}" /> <!-- swgp-920 -->
+              
+            </apex:outputPanel>
+            
+            <!-- 
+            <div style="color: red; margin-top: 5px; margin-bottom: 1px;">
+                
+            </div> -->
+            
+              <div class="advance-datagrid no-padding" id="startingTable">
+                
+                 <!---  Hold Resume Butttons Section Starts   --->
+                           
+                  <apex:outputpanel id="displayButtonId">
+                                
+                     <apex:outputPanel rendered="{!isHoldActive}">
+                     
+                        <!-- <apex:outputpanel id="displayButtonId-n" rendered="{!NOT(displaybuttons)}"> -->
+                        <apex:outputPanel rendered="{!enableHoldButton}">
+                           <input type="button" id="hold_review" value="Hold"  class="margin-top-10 tcell-width-58 margin-right-30" onclick="makeIsHoldTrue()"/>
+                        </apex:outputpanel>
+                        
+                        <!-- </apex:outputpanel> -->
+                        
+                        <apex:outputPanel rendered="{!isHoldActive}" >
+                           <apex:outputPanel rendered="{!NOT(enableHoldButton)}">
+                              <input type="button" id="hold_review_button-n1" value="Hold" class="margin-top-10 tcell-width-58 margin-right-30" data-hold="true" disabled="disabled" onclick="makeIsHoldTrue()"/>
+                           </apex:outputpanel>
+                        </apex:outputpanel>
+                        
+                     </apex:outputpanel>
+                     
+                     
+                     
+                     <apex:outputpanel rendered="{!isResumeActive}">
+                     
+                       <apex:outputPanel rendered="{!enableHoldButton}">
+                        <input type="button" id="btnResume" value="Resume" class="margin-top-10 tcell-width-78" onclick="makeIsHoldFalse()"/>
+                       </apex:outputpanel> 
+                        
+                        <apex:outputpanel rendered="{!isResumeActive}">
+                         <apex:outputPanel rendered="{!NOT(enableHoldButton)}">
+                          <input type="button" id="btnResume" value="Resume" class="margin-top-10 tcell-width-78" disabled="disabled" onclick="makeIsHoldFalse()"/>
+                         </apex:outputpanel>
+                        </apex:outputpanel>
+                               
+                     </apex:outputpanel>
+                     
+                     
+                  </apex:outputpanel>
+                  
+                  <!---  Hold Resume Butttons Section Ends   --->                  
+
+                  <br/>
+                  <!--  LayerChipSummarTbl Starts -->
+                  <apex:outputPanel id="chipLayerId">
+                     <apex:outputPanel rendered="{!layerChipSummarTbl}">
+                     
+                        <table class="data-table" id="review-customer-table">
+                           <thead>
+                              <tr class="tcell-height-48">
+                                 <th class="tcell_width_25">No.</th>
+                                 <th class="tcell-width-114"><span class="span-wordwrap tcell-width-114">Mask Layer<br/> (ROM Code)</span></th>
+                                 <th class="tcell_width_75"><span class="span-wordwrap float-none">Layer Status</span></th>
+                              </tr>
+                           </thead>
+                           <tbody>
+                              <apex:repeat value="{!mrsWrapperList}" var="objWrapper">
+                                 <apex:outputLabel rendered="{!NOT(objWrapper.color)}">
+                                    <tr class="alt-row-bgcolor tcell-height-30">
+                                       <td class="text-align-centre">{!objWrapper.count}</td>
+                                       <td>
+                                          <apex:outputLink value="/apex/VFMRSResumeHoldLayerChip?customerId={!selectedCustomerId}&MSTID={!selectedMST}&MRSLAYERID={!objWrapper.mrs.id}&MaskLayerName={!objWrapper.MaskLayerName}" title="{!objWrapper.mrs.Name}">{!objWrapper.MaskLayerName}</apex:outputLink>
+                                       </td>
+                                       <td class="text-align-centre">{!objWrapper.mrs.Layer_Status__c}</td>
+                                       
+                                    </tr>
+                                 </apex:outputLabel>
+                                 <apex:outputLabel rendered="{!objWrapper.color}">
+                                    <tr class="tcell-height-30">
+                                       <td class="text-align-centre">{!objWrapper.count}</td>
+                                       <td>
+                                          <apex:outputLink value="/apex/VFMRSResumeHoldLayerChip?customerId={!selectedCustomerId}&MSTID={!selectedMST}&MRSLAYERID={!objWrapper.mrs.id}&MaskLayerName={!objWrapper.MaskLayerName}" title="{!objWrapper.mrs.Name}">{!objWrapper.MaskLayerName}</apex:outputLink>
+                                       </td>
+                                       <td class="text-align-centre">{!objWrapper.mrs.Layer_Status__c}</td>
+                                    </tr>
+                                 </apex:outputLabel>
+                              </apex:repeat>
+                           </tbody>
+                        </table>
+                        
+                     </apex:outputPanel>
+                  </apex:outputPanel>
+                  <!--  LayerChipSummarTbl Starts -->
+             
+               </div>
+            </div>
+            <!-- --------------- Second Row Ends ----------------->
+            <!--- Error Message Section Starts -->
+            <input type='hidden' id='btnDetection'/>
+            
+          
+            <!--- Error Message Section Ends -->
+            <!-------------- Perform Hold Section Starts ------------>
+            <apex:outputPanel id="performholdId">
+               <apex:outputPanel rendered="{!performHold}">
+               
+                  <div class="perform_table review-customer-table padding-left-14" id="perform-table-ready">
+                     <div>
+                       <!--------------------- MaskLayerTableId Starts -------------> 
+                        <apex:outputPanel id="MaskLayerTableId" styleClass="no-padding">
+                           <table class="data-table approve-button-1" id="review-customer-table-1">
+                              <thead>
+                                 <tr>
+                                    <th class="tcell_width_25 fixedHeaderChecked">No.</th>
+                                    <th class="tcell-width-114 fixedHeaderChecked"><span class="span-wordwrap tcell-width-114">Mask Layer <br/> (ROM Code)</span></th>
+                                    <th class="tcell-width-102 hasCheckbox ie-line-height22">
+                                       <span class="tcell-width-20">
+                                          <apex:inputCheckbox id="chkbox0" styleClass="checkAllCheckbox"/>
+                                       </span>
+                                       <span class="span-wordwrap tcell-width-74">Layer Status</span>
+                                    </th>
+                                 </tr>
+                              </thead>
+                              <tbody>
+                                 <apex:repeat value="{!mrsWrapperList}" var="objWrapper" >
+                                    <apex:outputLabel rendered="{!NOT(objWrapper.color)}">
+                                       <tr class="alt-row-bgcolor tcell-height-30">
+                                          <td class="text-align-centre">{!objWrapper.count}</td>
+                                          <td>
+                                             <apex:outputLink value="/apex/VFMRSResumeHoldLayerChip?customerId={!selectedCustomerId}&MSTID={!selectedMST}&MRSLAYERID={!objWrapper.mrs.id}&MaskLayerName={!objWrapper.MaskLayerName}" title="{!objWrapper.mrs.Name}" id="link1">{!objWrapper.MaskLayerName}</apex:outputLink>
+                                          </td>
+                                          <td class="text-align-centre">
+                                             <apex:inputCheckbox value="{!objWrapper.isChecked}" styleClass="checkAllCheckbox[]"/>
+                                             <span>{!objWrapper.mrs.Layer_Status__c}</span>
+                                             <input type='hidden' class='HiddenId' value='{!objWrapper.mrs.id}'/>
+                                          </td>
+                                          
+                                       </tr>
+                                    </apex:outputLabel>
+                                    <apex:outputLabel rendered="{!objWrapper.color}">
+                                       <tr class="tcell-height-30">
+                                          <td class="text-align-centre">{!objWrapper.count}</td>
+                                          <td>
+                                             <apex:outputLink value="/apex/VFMRSResumeHoldLayerChip?customerId={!selectedCustomerId}&MSTID={!selectedMST}&MRSLAYERID={!objWrapper.mrs.id}&MaskLayerName={!objWrapper.MaskLayerName}" title="{!objWrapper.mrs.Name}" id="link2">{!objWrapper.MaskLayerName}</apex:outputLink>
+                                          </td>
+                                          <td class="text-align-centre">
+                                             <apex:inputCheckbox value="{!objWrapper.isChecked}" styleClass="checkAllCheckbox[]"/>
+                                             <span>{!objWrapper.mrs.Layer_Status__c}</span>
+                                             <input type='hidden' class='HiddenId' value='{!objWrapper.mrs.id}'/>
+                                          </td>
+                                          
+                                       </tr>
+                                    </apex:outputLabel>
+                                 </apex:repeat>
+                              </tbody>
+                           </table>
+                        </apex:outputPanel>
+                        <!--------------------- MaskLayerTableId Ends ------------->
+                        <div class="clear"></div>
+                        
+                        <input type="button" value="Proceed"  class="approve-button-style-1" id="approve-button-2"  data-hold="true" onclick = "displayProceedTable();"/>
+                        <!--<apex:commandButton value="Proceed" onclick="updateLayerStatus()" styleClass="approve-button-style review-customer-table-1" id="approve-button-1"/>-->
+                        <input type="button" value="Discard" class="approve-button-style margin-left-30" id="disapprove-button-1" onclick="discard();"/>
+                        
+                        <div class="button-spacer"></div>
+                        <!--<div id="approved-table-data" ></div> -->
+                        <!-- ----------------Proceed section starts here-------------- --> 
+                        <div id="approved-table-data">
+                           <apex:outputpanel id="proceedData" styleClass="no-padding">
+                           
+                              <apex:outputpanel rendered="{!enableProceedTable}" styleClass="no-padding">
+                              
+                                 <div id="controllPageMsgId">
+                                    <font color="red">
+                                       <apex:pageMessages id="pageMsgId"/>
+                                    </font>
+                                 </div>
+                                 
+                                 <div class="error-container margin-top-10" id="HoldSelectId">
+                                 <apex:outputpanel rendered="{!isHold}" styleClass="bold-font no-padding" >
+                                 {!$Label.SWIFT_Confirm_Hold_Selection}
+                                  </apex:outputPanel>
+                                   <apex:outputpanel rendered="{!!isHold}" styleClass="bold-font no-padding">
+                                 {!$Label.SWIFT_Confirm_Resume_Selection}
+                                  </apex:outputPanel>
+                                 </div>
+                                 
+                                 <div class="clear">
+                                 </div>
+                                 
+                                 <table class="data-table approve-button-1 hideCheckboxTh" id="review-customer-table-1-approved">
+                                    <thead>
+                                       <tr>
+                                          <th class="tcell_width_25 fixedHeaderChecked">No.</th>
+                                          <th class="tcell-width-114 fixedHeaderChecked">
+                                             <span class="span-wordwrap tcell-width-114">Mask Layer <br/>(ROM Code)</span>
+                                          </th>
+                                          <th class="tcell-width-91 fixedHeaderChecked">                             
+                                             <span class="span-wordwrap tcell-width-91">Layer Status</span>
+                                          </th>
+                                       </tr>
+                                    </thead>
+                                    <tbody>
+                                       <apex:repeat value="{!wrapperlst}" var="objWrapper" >
+                                          <apex:outputLabel rendered="{!NOT(objWrapper.color)}">
+                                             <tr class="alt-row-bgcolor tcell-height-30">
+                                                <td class="text-align-centre">{!objWrapper.count}</td>
+                                                <td>
+                                                   <apex:outputLink value="/apex/VFMRSResumeHoldLayerChip?customerId={!selectedCustomerId}&MSTID={!selectedMST}&MRSLAYERID={!objWrapper.mrs.id}&MaskLayerName={!objWrapper.MaskLayerName}" title="{!objWrapper.mrs.Name}" id="link1">{!objWrapper.MaskLayerName}</apex:outputLink>
+                                                </td>
+                                                <td class="text-align-centre">
+                                                   {!objWrapper.mrs.Layer_Status__c}
+                                                </td>
+                                             </tr>
+                                          </apex:outputLabel>
+                                          <apex:outputLabel rendered="{!objWrapper.color}">
+                                             <tr class="tcell-height-30">
+                                                <td class="text-align-centre">{!objWrapper.count}</td>
+                                                <td>
+                                                   <apex:outputLink value="/apex/VFMRSResumeHoldLayerChip?customerId={!selectedCustomerId}&MSTID={!selectedMST}&MRSLAYERID={!objWrapper.mrs.id}&MaskLayerName={!objWrapper.MaskLayerName}" title="{!objWrapper.mrs.Name}" id="link2">{!objWrapper.MaskLayerName}</apex:outputLink>
+                                                </td>
+                                                <td class="text-align-centre">
+                                                   {!objWrapper.mrs.Layer_Status__c}
+                                                </td>
+                                             </tr>
+                                          </apex:outputLabel>
+                                       </apex:repeat>
+                                    </tbody>
+                                 </table>
+                                 
+                                 <div class="textarea-holder margin-top-9">
+                                    <dl id="secondcreatedrt"></dl>
+                                    <dt class="full-width no-margin-top">
+                                       <span class="no-padding commentDisapproveReason" id="commentId"><strong>{!$Label.SWIFT_Release_Comment}</strong></span>
+                                       <span class="red-font no-padding display-none">*</span>
+                                    </dt>
+                                    <div class="clear"></div>
+                                    <dd class="full-width">
+                                       <textarea id="descriprionArea"></textarea>
+                                    </dd>
+                                    <div class="clear"></div>
+                                    <apex:outputPanel rendered="{!isHold && isReleased}">
+                                    <dt class="comment-note error-container margin-top-5 red-font auto-width" id="NoteId">{!$Label.SWIFT_Hold_Resume_Confirmation}</dt>
+                                    </apex:outputPanel>
+                                    <div class="clear"></div>
+                                 </div>
+                                 
+                                 <div class="clear"></div>
+                                 
+                                 <input type="button" value="Proceed"  class="approve-button-style review-customer-table-1" id="approve-button-1-n"  data-hold="true" onclick = "getlayerUpdateOnProceed();"/>
+                                 <input type="button" value="Discard" class="approve-button-style margin-left-30" id="disapprove-button-1-n" onclick="nextdiscard();"/>
+                                 
+                                 <div class="button-spacer"></div>
+                                 
+                                 <div id="approved-table-data" ></div>
+                                 <div id="successMsg" class="padding-top-5 error-container successful-message-color">
+                                 </div>
+                                 
+                              </apex:outputpanel>
+                           </apex:outputpanel>
+                           
+                        </div>
+                        <!-- ----------------Proceed section Ends here-------------- -->   
+                     </div>
+                  </div>
+                  
+               </apex:outputPanel>
+            </apex:outputPanel>
+                      <!-------------- Perform Hold Section Ends ------------>
+               
+            <!-- </div>-->  
+            <!--End of content-->
+            <div class="clear"></div>
+            <!-- </div>-->
+            <!--End of container div-->     
+         </div>
+      </div>
+      <!--End of Wrapper div-->
+      <!--<apex:inputHidden id="selectedCustomerId" value="{!selectedCustomerId}"/>
+         <apex:inputHidden id="selectedmstId" value="{!selectedMST}"/> 
+       <apex:inputHidden id="selectedMSTName" value="{!selectedMSTName}"/>--> 
+      <apex:inputHidden id="selectedCustomerNameId"  value="{!customerNameAfterSave}"/>
+      <apex:inputHidden id="selectedMSTNameId"  value="{!mstNameAfterSave}"/>   
+      <apex:inputhidden id="isFilterApplied" value="{!isFilterApplied}"/>
+      <apex:inputhidden id="isChecking" value="{!isChecking}"/>
+      <apex:inputhidden id="commentIsNull" value="{!commentIsNull}"/>
+      <apex:inputhidden id="commentsId" value="{!comments}"/>
+      <apex:inputhidden id="MRSlayerIds" value="{!MRSLAYERID}"/>
+      <apex:inputhidden id="isHold" value="{!isHold}"/>
+      <apex:inputHidden id="filterIdToRender" value="{!errorMessage}"/>
+      <apex:inputHidden id="flgForChipHoldId" value="{!holdChipFlg}"/>
+      <apex:inputHidden value="{!onlyRMG}" id="RMG"/>
+      <apex:inputHidden value="{!LayerIdString}" id="LayerIdString"/>
+      <apex:inputHidden value="{!lookupMSTURL}" id="lookupMSTURL"/>
+      
+      <apex:actionFunction name="getMaskSetTitle" action="{!getMaskSetTitle}" rerender="lookupMSTURL,selectedCustomerNameId,displayButtonId,chipLayerId,layerStatusId,deviceId,techGeoId,HiddenselectedLayers,,msgs,controllPageMsgId1,pageMsgPanel,pageMsgRecordExceeded,RMG" oncomplete="fillURL();SwiftGen.includeCustomCombo('MSTdropdown');hideLoader();makeMultipleDrpDwn();displayFirstTable();">
+         <apex:param name="MST" value="" assignTo="{!selectedCustomerId}" />
+      </apex:actionFunction>
+      <apex:actionFunction name="getMSTLayer" action="{!getMSTLayer}" reRender="selectedMSTNameId,chipLayerId,layerStatusId,deviceId,techGeoId,displayButtonId,pageMsgPanel,HiddenselectedLayers,controllPageMsgId1,msgs,pageMsgIdNoRecord,pageMsgRecordExceeded,RMG" oncomplete="SwiftGen.rowHover();enableHoldButton();callIncreaseIframe();hideLoader();makeMultipleDrpDwn();displayFirstTable();">
+         <apex:param name="MSTlayer" value="" assignTo="{!selectedMSTName}" />
+      </apex:actionFunction>
+      <!-- <apex:actionFunction name="getMSTdeviceId" action="{!getMSTdeviceId}" reRender="deviceId,techGeoId">
+         <apex:param name="MSTDevice" value="" assignTo="{!selectedLayerStatus}" /> 
+      </apex:actionFunction> -->
+      <apex:actionFunction name="getMSTtechGeo" action="{!getMSTtechGeo}" reRender=""/>
+      <apex:actionFunction name="getMRSTblData" action="{!getMRSTblData}" reRender="chipLayerId,msgs,PageMsgIdForNoRecord,layerStatusId,displayButtonId,RMG,pageMsgPanel,pageMsgRecordExceeded" oncomplete="callIncreaseIframe();hideLoader();makeMultipleDrpDwn();">
+         <apex:param name="MSTDevice" value="" assignTo="{!selectedLayerStatus}" />
+         <apex:param name="MSTTeschGeo" value="" assignTo="{!selectedDeviceId}" />
+         <apex:param name="MST1" value="" assignTo="{!selectedTechGeo}" />
+      </apex:actionFunction>
+      <apex:actionFunction name="sendHoldWarning" action="{!sendHoldWarning}" rerender="pageId">
+         <apex:param name="par1" value="" assignTo="{!warningAlert}" />
+      </apex:actionFunction>
+      <apex:actionFunction name="sendMrsLayerId" action="{!sendMrsLayerId}" rerender="pageId">
+         <apex:param name="par2" value="" assignTo="{!mrsLayerIdArray}" />
+      </apex:actionFunction>
+      <!--<apex:actionFunction name="sendMrsLayerIdForStatusUpdate" action="{!sendMrsLayerIdForStatusUpdate}" rerender="pageId">
+         <apex:param name="par3" value="" assignTo="{!mrsLayerIdArrayForStatusUpdate}" />
+         </apex:actionFunction> -->
+      <apex:actionFunction name="acfn_exportToCSV"  action="{!exportToCSV}"/>
+      <apex:actionFunction name="acfn_exportToPDF"  action="{!exportToPDF}"/>
+      <apex:actionFunction name="acfn_refreshTable"  action="{!refreshTable}" reRender="MRSDropdownWrapper,performholdId,MaskLayerTableId,RMG,msgs,pageMsgRecordExceeded" oncomplete="showCheckboxHoldLayer();SwiftGen.rowHover();callIncreaseIframe();hideLoader();"/>
+      <apex:actionFunction name="displayProceedData"  action="{!displayProceedData}" reRender="proceedData,msgs,controllPageMsgId1,LayerIdString,pageMsgRecordExceeded" oncomplete="callIncreaseIframe();SwiftGen.rowHover();"/>
+      <apex:actionFunction name="clearFilters"  action="{!clearFilters}" reRender="chipLayerId,layerStatusId,deviceId,techGeoId,displayButtonId,RMG,HiddenselectedLayers,msgs,pageMsgPanel,pageMsgRecordExceeded" oncomplete="callIncreaseIframe();SwiftGen.rowHover();enableHoldButton();callIncreaseIframe();hideLoader();displayFirstTable();makeMultipleDrpDwn();"/>
+      <apex:actionFunction name="layerStatusUpdateOnProceed"  action="{!layerStatusUpdateOnProceed}" reRender="MRSDropdownWrapper,chipLayerId,displayButtonId,filterId,layerStatusId,deviceId,techGeoId,RMG,HiddenselectedLayers,msgs,pageMsgRecordExceeded" oncomplete="setLabels();generateCombobox();callIncreaseIframe();displayFirstTable();makeMultipleDrpDwn();"/>
+      <apex:actionFunction name="IsCommentBlank"  action="{!IsCommentBlank}" reRender="pageMsgId"/>
+      <apex:actionFunction name="isCheckBoxTrue"  action="{!isCheckBoxTrue}" reRender="controllPageMsgId1,pageMsgId1,controllPageMsgId11,pageMsgId11" oncomplete="SwiftGen.rowHover();"/>
+      <apex:actionFunction name="displayErrorMsg"  action="{!displayErrorMsg}" reRender="chipLayerId,pageMsgIdNoRecord"/>
+      <apex:actionFunction name="acfn_discard"  action="{!acfn_discard}" reRender="performholdId,MaskLayerTableId"  oncomplete="callIncreaseIframe();displayFirstProceedTable();SwiftGen.rowHover();showCheckboxHoldLayer();hideLoader();"/>
+      <apex:actionFunction name="acfn_discardfirst" action="{!acfn_discardfirst}" reRender="MRSDropdownWrapper,msgs,pageMsgRecordExceeded,pageMsgPanel,pageMsgIdNoRecord,chipLayerId,displayButtonId,RMG,controllPageMsgId1,pageMsgId1" oncomplete="setLabels();generateCombobox();callIncreaseIframe();hideLoader();"/>
+      <apex:actionFunction name="acfn_rerenderdropdown" reRender="HiddenValues"/> 
+        
+   </apex:form>
+   <script type="text/javascript" src="{!URLFOR($Resource.Swift_MRS_Hold_Test,'js/jquery.min.js')}"></script>
+   <script type="text/javascript" src="{!URLFOR($Resource.SWIFT_MRS_Changed,'js/jquery.loader.min.js')}"></script>
+   <script>
+   
+     var lookupCustomerURL = "{!lookupCustomerURL}";
+     var lookupMSTURL = "{!lookupMSTURL}"; 
+      jQuery(document).ready(function()
+       {     
+        $('#customerLabel').text(jQuery('[id$=selectedCustomerNameId]').val());
+        $('#mstLabel').text(jQuery('[id$=selectedMSTNameId]').val()); 
+        $(document).on("click",".lookupCustName",function(){
+            openWindowPointer=window.open(lookupCustomerURL,"_blank", "titlebar=no,toolbar=no,location=no,status=no,menubar=no,scrollbars=yes,resizable=no,width=600,height=450,top=100, left=300");
+        });
+    
+        $(document).on("click",".lookupMST",function(){
+          lookupMSTURL = jQuery('[id$=lookupMSTURL]').val();
+            
+            openWindowPointer=window.open(lookupMSTURL,"_blank", "titlebar=no,toolbar=no,location=no,status=no,menubar=no,scrollbars=yes,resizable=no,width=600,height=450,top=100, left=300");
+        });
+       });
+       
+       function sendSelectedAccount(accId,accName,accSName){
+       
+        showLoader('gf-bigcircle');
+           jQuery( "#review-customer-table" ).removeClass( "display-none");
+           jQuery( "#filterId" ).removeClass( "display-none" );
+           jQuery('#startingTable').removeClass('display-none');
+           jQuery('#perform-table-ready').addClass('display-none');
+       jQuery( "#controllPageMsgId" ).addClass( "display-none" );
+       jQuery( "#approve-button-2" ).addClass( "display-none" );
+       jQuery( "#disapprove-button-1" ).addClass( "display-none");
+       jQuery( "#approve-button-1-n" ).addClass( "display-none" );
+       jQuery( "#disapprove-button-1-n" ).addClass( "display-none");
+       jQuery( "#review-customer-table-1" ).addClass( "display-none");
+       jQuery( "#review-customer-table-1-approved" ).addClass( "display-none");
+       jQuery( "#descriprionArea" ).addClass( "display-none");
+       jQuery( "#HoldSelectId" ).addClass( "display-none");
+       jQuery( "#commentId" ).addClass( "display-none");
+       jQuery( "#NoteId" ).addClass( "display-none");
+       jQuery( "#controllPageMsgId1" ).addClass( "display-none" );
+       
+        //alert(accId+'('+accName+'|'+accSName+')');
+        //showLoader('gf-bigcircle');
+        //$('[id$=hiddenCustomerId]').val(accId);
+        $('#customerLabel').text(accName+' ('+accSName+')');
+        $('#mstLabel').text('');
+        getMaskSetTitle(accId);
+        //retrieveMRSForCustomer();
+    } 
+    
+    function sendSelectedMST(mstId,mstName) {
+        showLoader('gf-bigcircle');
+                   jQuery( "#review-customer-table" ).removeClass( "display-none");
+           jQuery('#startingTable').removeClass('display-none');
+           jQuery('#perform-table-ready').addClass('display-none');
+           jQuery( "#filterId" ).removeClass( "display-none" );
+           
+           jQuery( "#controllPageMsgId" ).addClass( "display-none" );
+           jQuery( "#approve-button-2" ).addClass( "display-none" );
+           jQuery( "#disapprove-button-1" ).addClass( "display-none");
+           jQuery( "#approve-button-1-n" ).addClass( "display-none" );
+           jQuery( "#disapprove-button-1-n" ).addClass( "display-none");
+           jQuery( "#review-customer-table-1" ).addClass( "display-none");
+           jQuery( "#review-customer-table-1-approved" ).addClass( "display-none");
+           jQuery( "#descriprionArea" ).addClass( "display-none");
+           jQuery( "#HoldSelectId" ).addClass( "display-none");
+           jQuery( "#commentId" ).addClass( "display-none");
+           jQuery( "#NoteId" ).addClass( "display-none");
+           jQuery( "#controllPageMsgId1" ).addClass( "display-none" );
+       
+        $('#mstLabel').text(mstName);
+         //alert(mstId);
+         getMSTLayer(mstId);
+        //retrieveMRSForMSt();
+    }
+    
+      function fillURL(){
+       lookupMSTURL = jQuery('[id$=lookupMSTURL]').val();
+       //alert(lookupMSTURL);
+      }
+       
+      $(function() {
+        $( document ).tooltip();
+     });
+      
+      function setLabels(){
+        $('#customerLabel').text(jQuery('[id$=selectedCustomerNameId]').val());
+        $('#mstLabel').text(jQuery('[id$=selectedMSTNameId]').val());
+      }
+      
+      function generateCombobox() {
+        
+        var accId = jQuery('[id$=selectedCustomerNameId]').val();
+        var mst = jQuery('[id$=selectedMSTNameId]').val(); 
+        SwiftGen.includeCustomCombo("MRSdropdown");
+        SwiftGen.includeCustomCombo("MSTdropdown"); 
+        jQuery('#MRSdropdown').find('input.scombobox-display').prop("value",accId);
+        jQuery('#MRSdropdown').find('input.scombobox-value:hidden').prop("value",accId);
+        jQuery('#MSTdropdown').find('input.scombobox-display').prop("value",mst);
+        jQuery('#MSTdropdown').find('input.scombobox-value:hidden').prop("value",mst);
+      }   
+      function displayFirstTable()
+      {
+      //alert('hi');
+      jQuery( "#controllPageMsgId" ).addClass( "display-none" );
+      jQuery('#startingTable').removeClass('display-none');  
+      }
+      
+      function controllChecking()
+      {
+      //alert('hi');
+      }
+        function showLoader(e) {
+            jQuery.loader({className: e,content: ""});
+        }
+                        
+        function hideLoader() {
+            jQuery.loader("close");
+        }
+       function makeIsHoldTrue()
+       {    showLoader('gf-bigcircle');
+            document.getElementById("{!$Component.frm:isHold}").value = 'true';
+            jQuery('#btnDetection').val("holdBtn");
+            renderHoldData();
+       }
+        function makeIsHoldFalse()
+       {    showLoader('gf-bigcircle');
+            document.getElementById("{!$Component.frm:isHold}").value = 'false';
+            jQuery('#btnDetection').val("resumeBtn");
+            renderHoldData();
+       }
+      function getlayerUpdateOnProceed()
+      {
+       var comment = jQuery('#descriprionArea').val();
+       
+       if(comment.length == 0){
+       document.getElementById("{!$Component.frm:commentIsNull}").value = 'commentIsNull';
+       IsCommentBlank();
+       }
+       
+       else{
+       jQuery( "#review-customer-table" ).removeClass( "display-none");
+       jQuery( "#filterId" ).removeClass( "display-none" );
+       jQuery( "#controllPageMsgId" ).addClass( "display-none" );
+       jQuery( "#approve-button-2" ).addClass( "display-none" );
+       jQuery( "#disapprove-button-1" ).addClass( "display-none");
+       jQuery( "#approve-button-1-n" ).addClass( "display-none" );
+       jQuery( "#disapprove-button-1-n" ).addClass( "display-none");
+       jQuery( "#review-customer-table-1-approved" ).addClass( "display-none");
+       jQuery( "#descriprionArea" ).addClass( "display-none");
+       jQuery( "#HoldSelectId" ).addClass( "display-none");
+       jQuery( "#commentId" ).addClass( "display-none");
+       jQuery( "#NoteId" ).addClass( "display-none");
+       
+       var comments = jQuery('#descriprionArea').val();
+       document.getElementById("{!$Component.frm:commentsId}").value = comments;
+       
+       var  MRSLAYERID = new Array();
+       
+       jQuery("#review-customer-table-1-approved tbody tr").each(function(){
+               if(!jQuery(this).hasClass("display-none")) {
+                   var idValue=jQuery(this).find("td").eq(1).find("a").attr("href");
+                   MRSLAYERID.push(getParameterByName('MRSLAYERID',idValue));   
+               }
+               document.getElementById("{!$Component.frm:MRSlayerIds}").value = MRSLAYERID;        
+           });
+           
+      if($("#btnDetection").val()=="holdBtn"){
+       //alert('inside hold');
+       document.getElementById("{!$Component.frm:isHold}").value = 'true';
+       layerStatusUpdateOnProceed();
+       }
+       
+       else if($("#btnDetection").val()=="resumeBtn"){
+       //alert('inside resume');
+       document.getElementById("{!$Component.frm:isHold}").value = 'false';
+       //alert('hi');
+       layerStatusUpdateOnProceed();
+       }
+           
+      }
+     }
+      
+      function displayProceedTable()
+      {  
+          
+          var checkBoxChkd = false;
+               jQuery("table[id*='review-customer-table'] tr").each(function(){
+               if((jQuery(this).find("td").eq(2).find("input[type='checkbox']").is(":checked"))) {
+                  document.getElementById("{!$Component.frm:isChecking}").value = 'false';
+                  checkBoxChkd = true;
+                  //break;      
+               }
+               });
+               
+               if(checkBoxChkd){
+               var checkFlag=false;
+               jQuery("table[id*='review-customer-table'] tr").each(function(){
+                   if(jQuery(this).find("td").eq(2).text().trim()=="Released") {
+                       if(jQuery(this).find("td").eq(2).find("input[type='checkbox']").is(":checked")) {
+                           checkFlag=true;
+                       }
+                   }
+               });
+               if(checkFlag){
+                    var arrLayerStatus1 = [];
+                    jQuery("table[id*='review-customer-table-1'] tr").each(function(){
+                         if(jQuery(this).find("td").eq(2).find("input[type='checkbox']").is(":checked")&& jQuery(this).find("td").eq(2).text().trim()== "Released" ) {
+                             arrLayerStatus1.push(jQuery(this).find("td").eq(1).find("a").html());
+                         }
+                         
+                    });
+                    var strLayerStatus1 = null;
+                    if(arrLayerStatus1 != null && arrLayerStatus1.length > 0){
+                       strLayerStatus1 = arrLayerStatus1.join();                       
+                    }
+                    var finalString = 'Please note ';
+                    finalString += strLayerStatus1;
+                    finalString += ' had been released for mask write. The "Hold" action will halt the mask making process.';
+                    customAlertHold(finalString , "holdLayer",jQuery(this));
+               } else {
+                   jQuery( "#review-customer-table-1" ).addClass( "display-none" );
+                   jQuery( "#review-customer-table" ).addClass( "display-none");
+                   jQuery( "#approve-button-2" ).addClass( "display-none" );
+                   jQuery( "#disapprove-button-1" ).addClass( "display-none");
+                   //jQuery( "#controllPageMsgId1" ).addClass( "display-none" );
+                   var arrLayerStatus = [];
+                    jQuery("table[id*='review-customer-table-1'] tr").each(function(){
+                         if((jQuery(this).find("td").eq(2).find("input[type='checkbox']").is(":checked"))) {
+                             arrLayerStatus.push(jQuery(this).find("td").eq(2).find("input:hidden[class*='HiddenId']").val());
+                         }
+                    });
+                    var strLayerStatus = null;
+                    if(arrLayerStatus != null && arrLayerStatus.length > 0){
+                       strLayerStatus = arrLayerStatus.join(); 
+                       jQuery("input:hidden[id*='LayerIdString']").val(strLayerStatus); 
+                       
+                    }
+                   displayProceedData();
+               }
+           }
+           else{
+               
+               //jQuery( "#controllPageMsgId1" ).removeClass( "display-none" );
+               isCheckBoxTrue();
+           }
+           
+      } 
+      
+      function renderHoldData()
+      {
+          acfn_refreshTable();
+          jQuery('.border-bottom').addClass('display-none');
+          jQuery('#perform-table-ready').removeClass('display-none');
+          jQuery('.advance-datagrid').addClass('display-none');
+          jQuery('input:button[id*="perform_review"]').addClass('display-none');
+      }
+      
+       function rerenderdropdown(){
+           acfn_rerenderdropdown();
+       }
+       
+       function assignLayerValues(){
+           getMSTdeviceId();
+       }
+       
+       function OpenExcelOrPdf(exportTo)
+            {
+            if(exportTo=='excel')
+               {    
+                 acfn_exportToCSV();
+               }else
+               {
+                   acfn_exportToPDF();
+               }
+            } 
+            
+       function getmstList(element)
+       {   
+           showLoader('gf-bigcircle');
+           jQuery( "#review-customer-table" ).removeClass( "display-none");
+           jQuery( "#filterId" ).removeClass( "display-none" );
+           jQuery('#startingTable').removeClass('display-none');
+           jQuery('#perform-table-ready').addClass('display-none');
+       jQuery( "#controllPageMsgId" ).addClass( "display-none" );
+       jQuery( "#approve-button-2" ).addClass( "display-none" );
+       jQuery( "#disapprove-button-1" ).addClass( "display-none");
+       jQuery( "#approve-button-1-n" ).addClass( "display-none" );
+       jQuery( "#disapprove-button-1-n" ).addClass( "display-none");
+       jQuery( "#review-customer-table-1" ).addClass( "display-none");
+       jQuery( "#review-customer-table-1-approved" ).addClass( "display-none");
+       jQuery( "#descriprionArea" ).addClass( "display-none");
+       jQuery( "#HoldSelectId" ).addClass( "display-none");
+       jQuery( "#commentId" ).addClass( "display-none");
+       jQuery( "#NoteId" ).addClass( "display-none");
+       jQuery( "#controllPageMsgId1" ).addClass( "display-none" );
+       
+           //var acctId = jQuery(element).find('input:hidden').val());
+           //document.getElementById("{!$Component.frm:selectedCustomerId}").value = element.value;
+           var custId = jQuery('#MRSdropdown').find('input:hidden').val();
+           //alert(custId);
+           jQuery("#{!$Component.frm:selectedCustomerId}").attr('value',custId);
+           getMaskSetTitle(custId);
+           //jQuery( "#startingTable" ).removeClass( "display-none" );
+       }
+       
+       function getLayerStatus(element)
+       {   
+           showLoader('gf-bigcircle');
+           jQuery( "#review-customer-table" ).removeClass( "display-none");
+           jQuery('#startingTable').removeClass('display-none');
+           jQuery('#perform-table-ready').addClass('display-none');
+           jQuery( "#filterId" ).removeClass( "display-none" );
+           
+           jQuery( "#controllPageMsgId" ).addClass( "display-none" );
+           jQuery( "#approve-button-2" ).addClass( "display-none" );
+           jQuery( "#disapprove-button-1" ).addClass( "display-none");
+           jQuery( "#approve-button-1-n" ).addClass( "display-none" );
+           jQuery( "#disapprove-button-1-n" ).addClass( "display-none");
+           jQuery( "#review-customer-table-1" ).addClass( "display-none");
+           jQuery( "#review-customer-table-1-approved" ).addClass( "display-none");
+           jQuery( "#descriprionArea" ).addClass( "display-none");
+           jQuery( "#HoldSelectId" ).addClass( "display-none");
+           jQuery( "#commentId" ).addClass( "display-none");
+           jQuery( "#NoteId" ).addClass( "display-none");
+           jQuery( "#controllPageMsgId1" ).addClass( "display-none" );
+           
+           //document.getElementById("{!$Component.frm:selectedmstname}").value = element.value;
+           //jQuery( "#pgMsg" ).removeClass( "display-none" );
+           var mstId = element.value;
+           jQuery("#{!$Component.frm:selectedmstId}").attr('value',mstId);
+           getMSTLayer(mstId);
+       }
+       
+       function getDeviceId(element)
+       {
+           var layerStatusName;
+           layerStatusName = document.getElementById("{!$Component.frm:drtdropdown2}").value ;
+           //alert(layerStatusName);
+           var mstId = jQuery('#MSTdropdown').find('input:hidden').val();
+           jQuery("#{!$Component.frm:selectedmstId}").attr('value',mstId);
+           getMSTdeviceId(layerStatusName);
+       }
+       
+       function getTechGeo(element)
+       {
+           var mstId = jQuery('#MSTdropdown').find('input:hidden').val();
+           jQuery("#{!$Component.frm:selectedmstId}").attr('value',mstId);
+           getMSTtechGeo();
+       }
+       
+           //Function to clear the filter on clicking clear button
+       function clearFilter()
+      {   
+        // showLoader('gf-bigcircle');
+      
+         document.getElementById("{!$Component.frm:deviceId_1}").value = '';
+         document.getElementById("{!$Component.frm:techGeoId_1}").value = '';
+         clearFilters();
+      }   
+       
+           //Function to update MRS Layer Association on clicking the button Proceed
+       function updateLayerStatus(){
+           //alert(listWrapper);
+           var mrsLyrAssoc = new Array();
+           var listWrapper = '{!mrsWrapperList}';
+           var mrsLayerIdArray = new Array();
+           <apex:repeat value="{!mrsWrapperList}" var="wrpperList">
+                 mrsLyrAssoc.push('{!wrpperList.mrs.id}');        
+           </apex:repeat>
+           if(mrsLyrAssoc.length >0){
+               sendMrsLayerIdForStatusUpdate(mrsLayerIdArray.toString());
+           }
+       }
+       function getMRSlayerIdToUpdate(){
+            var mrsLayerId = document.getElementById("link1").value;
+            //alert(mrsLayerId);
+       }
+       function proceedLayerUpdate()
+       {
+           //alert('Hi');
+       }
+       function retrieveTable()
+         {  
+             showLoader('gf-bigcircle');
+             var layerStatusName;
+             var deviceIdName;
+             var techGeoName;
+             //layerStatusName = document.getElementById("{!$Component.frm:drtdropdown2}").value;
+             var str_array= $("#layersummarydropdown").val();
+           // alert($("#layersummarydropdown").val());
+             if(str_array==null)str_array="";
+             else {
+                for(var i = 0; i < str_array.length; i++) {
+                   str_array[i] = str_array[i].replace(/^\s*/, "").replace(/\s*$/, "");
+                }
+             }
+             //alert(str_array);
+             document.getElementById("{!$Component.frm:HiddenselectedLayers}").value = str_array;
+             //acfn_rerenderdropdown();
+             layerStatusName = str_array;  
+             //alert(layerStatusName);           
+             deviceIdName = document.getElementById("{!$Component.frm:drtdropdown4}").value;
+             techGeoName = document.getElementById("{!$Component.frm:drtdropdown5}").value;
+             document.getElementById("{!$Component.frm:isFilterApplied}").value = 'true';
+            // } 
+             getMRSTblData(layerStatusName,deviceIdName,techGeoName);
+         }
+         
+         
+         function renderFilter()
+         {
+         var errorMessage =document.getElementById("{!$Component.frm:filterIdToRender}").value ;
+                if(errorMessage=='true')
+             {
+             jQuery('.right-section-panel').addClass('display-none');
+                      }else
+             {
+             jQuery('.right-section-panel').removeClass('display-none');
+                          }
+         }
+      
+      
+      function enableHoldButton(){
+       //var isEnabled = '{!enableHoldButton}';
+       var isEnabled=true;
+       (isEnabled)?jQuery('#hold_review_button').attr("disabled"):"";
+       //alert(isEnabled);
+       //document.getElementById("perform_review_button").disabled= {!NOT(enableHoldButton)};
+      }
+      function discard(){
+       //acfn_discard();
+       showLoader('gf-bigcircle');
+       jQuery( "#review-customer-table" ).removeClass( "display-none");
+       jQuery('#startingTable').removeClass('display-none');
+       jQuery('#perform-table-ready').addClass('display-none');
+       jQuery( "#filterId" ).removeClass( "display-none" );
+       jQuery('#pageId:frm:chkbox0').prop('checked', false);
+       jQuery('#pageId:frm:pageMsgPanel').addClass("display-none");
+       jQuery('#pageId:frm:pageMsgPanel:pageMsgIdNoRecord').addClass("display-none");
+       
+        acfn_discardfirst();
+      }
+      function getLayerValues(idx){
+          //alert($("#layersummarydropdown").val());
+          document.getElementById("{!$Component.frm:HiddenselectedLayers}").value = $("#layersummarydropdown").val();
+          //acfn_rerenderdropdown();
+      }
+      function openMyDevices() {
+        try {
+            parent.refreshPage();
+        }catch(e) {
+            window.location.reload($label.SWIFT_COMMUNITY_URL+'MyDevices');
+        }
+      }
+      function nextdiscard(){
+       showLoader('gf-bigcircle');
+       jQuery('#pageId:frm:chkbox0').prop('checked', false);
+       acfn_discard();
+       }
+       
+      function displayFirstProceedTable(){
+       jQuery('#perform-table-ready').removeClass('display-none');
+       jQuery( "#approve-button-2" ).removeClass( "display-none");
+       jQuery( "#disapprove-button-1" ).removeClass( "display-none");
+       jQuery( "#controllPageMsgId" ).addClass( "display-none" );
+       jQuery( "#approve-button-1-n" ).addClass( "display-none" );
+       jQuery( "#disapprove-button-1-n" ).addClass( "display-none");
+       jQuery( "#review-customer-table-1-approved" ).addClass( "display-none");
+       jQuery( "#descriprionArea" ).addClass( "display-none");
+       jQuery( "#HoldSelectId" ).addClass( "display-none");
+       jQuery( "#commentId" ).addClass( "display-none");
+       jQuery( "#NoteId" ).addClass( "display-none");
+     }
+       
+        /*increase Iframe starts*/
+        function callIncreaseIframe() {
+            try{
+                parent.iframeLoaded();
+                //alert("done");
+            }catch(err){}
+        }
+        /*increase Iframe ends*/
+       //window.onload=callIncreaseIframe();
+       function makeMultipleDrpDwn() {
+       //alert(document.getElementById("{!$Component.HiddenValues:HiddenselectedLayers}").value);
+       
+    if($("#filterContent").is(":visible") && $("#layersummarydropdown").length>0){
+        $("#layersummarydropdown").multiselect({
+            selectedList:10,
+            header:false,
+            minWidth:140,
+            height:'auto',
+            noneSelectedText:'-Select-'
+        });
+    }
+    callIncreaseIframe();
+    
+   
+} 
+
+  function clearesult(){
+    showLoader('gf-bigcircle');
+    jQuery('[id$=drtdropdown4]').attr("value","");
+    jQuery('[id$=drtdropdown5]').attr("value","");
+    jQuery( "#review-customer-table-1-approved" ).addClass( "display-none");
+    clearFilters();
+  }
+  
+  window.onload=callIncreaseIframe();
+   </script>
+   
+   <script type="text/javascript" src="{!URLFOR($Resource.Swift_MRS_Hold_Test,'js/leftmenu.js')}"></script>
+   <script type="text/javascript" src="{!URLFOR($Resource.Swift_MRS_Hold_Test,'js/jquery.scombobox.min.js')}"></script>
+   <script type="text/javascript" src="{!URLFOR($Resource.Swift_MRS_Hold_Test,'js/advancedDataGrid.js')}"></script>
+   <script type="text/javascript" src="{!URLFOR($Resource.Swift_MRS_Hold_Test,'js/jquery-ui.min.js')}"></script>
+    <script type="text/javascript" src="{!URLFOR($Resource.Swift_MRS_Hold_Test,'js/jquery.multiselect.js')}"></script>
+   <script type="text/javascript" src="{!URLFOR($Resource.Swift_MRS_Hold_Test,'js/common-script.js')}"></script>
+   <script type="text/javascript" src="{!URLFOR($Resource.Swift_MRS_Hold_Test,'js/sort.js')}"></script>
+   
+
+</apex:page>

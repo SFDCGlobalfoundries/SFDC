@@ -1,0 +1,168 @@
+<!-- 
+    Author: Anil Kumar Reddy L
+    Company: GLOBALFOUNDRIES
+    Project: FMS 2.0
+    Description: Page used to Print the DDR Form.
+    Change History: 
+    Date               Name                    Comments
+    -->
+<apex:page standardController="Form_Management_System__c" extensions="FMSDDRFormPage_Ext" applyBodyTag="false" renderAs="PDF"  applyHtmlTag="false" showHeader="false" sidebar="false">
+    <html>
+        <head>
+            <style>  
+                .bPageBlock .requiredInput .requiredBlock{background-color: #F6FBF6;}  
+                .requiredInput .requiredBlock::before { display: block; content: "*"; font-size: 1.5em; font-weight: bold; color: #c00; margin-left: -12px; margin-top: -3px; }  
+                p{
+                color:brown;
+                }
+                td{
+                padding-top: 10px;
+                }
+            </style>
+        </head>
+        <body>
+            <apex:form id="fmsForm">
+                <table width="100%" style="border: 1px solid black;">
+                    <tr>
+                        <td>
+                            <c:FMSNameDesc ></c:FMSNameDesc>
+                        </td>
+                    </tr>
+                </table>
+                <br/>
+                <apex:outputLabel style="font-weight:bold;font-size:18pt;"> View Form Data</apex:outputLabel>
+                <br/> 
+                <apex:pageBlock title="Form Page1" id="pb1">
+                    <apex:outputLabel style="font-weight:bold;font-size:16pt;"> Foundry Design Data Return Form </apex:outputLabel>
+                    <br/>
+                    <div style="padding-top: 2%;" />
+                    <apex:outputlabel value="Use this form to request either Post Cheese/Fill or Merged Reticle data (for the program that this addendum is associated with). GLOBALFOUNDRIES will return the design data (if available) in GDS format via the GLOBALFOUNDRIES Dropbox of the original submitter. Contact your Foundry Technical Representative if you have any questions/issues" >
+                    </apex:outputlabel><!--Changed by Abhita for new UAT Issue #380-->
+                    <div style="padding-top: 1%;" />
+                    <table width="100%" style="border: 1px solid black;" >
+                        <tr>
+                            <td colspan="2">
+                                <apex:outputLabel style="font-weight:bold;font-size:16pt;text-decoration: underline;"> Product Information </apex:outputLabel>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td width="40%">
+                                <apex:outputlabel value="Product Name:" style="font-weight:bold;"></apex:outputlabel>
+                            </td>
+                            <td>
+                                <apex:outputField value="{!formObj.Parent_Form_Id__r.RITProductName__c}" />
+                            </td>
+                        </tr>
+                    </table>
+                    <br/>
+                    <table width="100%" style="border: 1px solid black;" >
+                        <tr>
+                            <td colspan="2">
+                                <apex:outputLabel style="font-weight:bold;font-size:16pt;text-decoration: underline;"> Data Return Request </apex:outputLabel>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td colspan="2">
+                                <p style="color:black;margin-left:100px;">
+                                    Please download and review the Design Data Return Training Package (link below)
+                                </p>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td colspan="2">
+                                <apex:outputLink style="margin-left:220px;color:blue;" value="{!FMSdocuments['ReleaseAutomationTraining']}" id="theLink">Link To Design Data Return Training Package</apex:outputLink>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td width="40%">
+                                <apex:outputlabel value="What type of data would you like returned?:" style="font-weight:bold;"><b style="color: #c00;">* &nbsp;&nbsp;&nbsp;</b></apex:outputlabel>
+                            </td>
+                            <td>
+                                <apex:outputField value="{!formObj.TypeOfData__c}" />
+                            </td>
+                        </tr>
+                        <apex:variable rendered="{!dispReturnReason}" value="" var="v">
+                            <tr>
+                                <td colspan="2">
+                                    <apex:outputLabel style="color:#b32d00;"> Post Design Services (Cheese and Fill) data has already been requested via the parent RIT form. If this redundant request is not necessary, please deselect that option above. If you still need this additional data return, you may proceed, but please provide the reason below. </apex:outputLabel>
+                                </td>
+                            </tr>
+                        </apex:variable>
+
+                        <apex:variable rendered="{!dispReturnReason}" value="" var="v">
+                            <tr>
+                                <td width="40%">
+                                    <apex:outputlabel value="Why are you requesting an additional return of the Post Design Service (Cheese and Fill) data?" style="font-weight:bold;"><b style="color: #c00;">* &nbsp;&nbsp;&nbsp;</b></apex:outputlabel>
+                                </td>
+                                <td>
+                                    <apex:outputField value="{!formObj.ReturnReason__c}" />
+                                </td>
+                            </tr>
+                        </apex:variable>
+
+                        <apex:variable rendered="{!dispPostDesign}" value="" var="v">
+                            <tr>
+                                <td width="40%">
+                                    <apex:outputlabel value="For your &quot;Post Design Service&quot; request, do you need a subset of the submitted GDS?" style="font-weight:bold;" escape="false"><b style="color: #c00;">* &nbsp;&nbsp;&nbsp;</b></apex:outputlabel><!--Added By Abhita for Issue 502-->
+                                </td>
+                                <td>
+                                    <apex:outputField value="{!formObj.IsPostDesign__c}" />
+                                </td>
+                            </tr>
+                        </apex:variable>
+                        <tr style="display: {!IF((typeOfdataFlag),'table-row','none')} ;">
+                            <td width="40%">
+                                <apex:outputlabel value="Please define the subset using the Lower Left and Upper Right Corners:" style="font-weight:bold;"></apex:outputlabel>
+                            </td>
+                        </tr>
+                        <tr style="display: {!IF((typeOfdataFlag),'table-row','none')} ;">
+                            <td width="40%">
+                                <apex:outputlabel value="Lower Left Corner:" style="font-weight:bold;"></apex:outputlabel>
+                            </td>
+                        </tr>
+                        <tr style="display: {!IF((typeOfdataFlag),'table-row','none')} ;">
+                            <td width="40%">
+                                <apex:outputlabel value="X coordinate LL Corner (um):" style="font-weight:bold;"><b style="color: #c00;">* &nbsp;&nbsp;&nbsp;</b></apex:outputlabel>
+                            </td>
+                            <td>
+                                <apex:outputField value="{!formObj.DDRLeftXCoordinate__c}" />
+                            </td>
+                        </tr>
+                        <tr style="display: {!IF((typeOfdataFlag),'table-row','none')} ;">
+                            <td width="40%">
+                                <apex:outputlabel value="Y coordinate LL Corner (um):" style="font-weight:bold;"><b style="color: #c00;">* &nbsp;&nbsp;&nbsp;</b></apex:outputlabel>
+                            </td>
+                            <td>
+                                <apex:outputField value="{!formObj.DDRLeftYCoordinate__c}" />
+                            </td>
+                        </tr>
+                        
+                        <tr style="display: {!IF((typeOfdataFlag),'table-row','none')} ;">
+                            <td width="40%">
+                                <apex:outputlabel value="Upper Right Corner:" style="font-weight:bold;"></apex:outputlabel>
+                            </td>
+                        </tr>
+                        
+                        <tr style="display: {!IF((typeOfdataFlag),'table-row','none')} ;">
+                            <td width="40%">
+                                <apex:outputlabel value="X coordinate UR Corner (um):" style="font-weight:bold;"><b style="color: #c00;">* &nbsp;&nbsp;&nbsp;</b></apex:outputlabel>
+                            </td>
+                            <td>
+                                <apex:outputField value="{!formObj.DDRRightXCoordinate__c}" />
+                            </td>
+                        </tr>
+                        <tr style="display: {!IF((typeOfdataFlag),'table-row','none')} ;">
+                            <td width="40%">
+                                <apex:outputlabel value="Y coordinate UR Corner (um):" style="font-weight:bold;"><b style="color: #c00;">* &nbsp;&nbsp;&nbsp;</b></apex:outputlabel>
+                            </td>
+                            <td>
+                                <apex:outputField value="{!formObj.DDRRightYCoordinate__c}" />
+                            </td>
+                        </tr>
+                    </table>
+                    <br/>
+                </apex:pageBlock>
+            </apex:form>
+        </body>
+    </html>
+</apex:page>

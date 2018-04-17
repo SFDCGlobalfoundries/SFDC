@@ -1,0 +1,115 @@
+<!--
+*   Author: KOKA GOPI
+*   Description:  Page used to show list of ERP_Device_SPDBOM__c data.
+    Logic Executed : 
+    1) Sync Bttton         :  Used to update psa,psc fields from ERP_Device__c object
+    2) Default Button      :  Used to update default values for psa,psc fields.
+    3) Export all to excel :  Used to export all data visible in list from ReviewPSCPSAInventoryExport page.
+*   History: 
+*   GOPI KOKA 3/28/2017    - VF Page created    
+-->
+<apex:page controller="ERPDeviceSPMBOM" sidebar="false" showHeader="false" title="Review PSA PSC">
+  <apex:form id="frm">
+        <apex:includeScript value="{!$Resource.pscpsaJquery}"/>
+        <script>
+        $(document).ready(function(){
+            $("#rple").click(function(){
+                if($('input[type=checkbox]:checked').length == 0){
+                    alert ( "ERROR! Please select at least one record" );
+                    return false;
+                }else{
+                    var cfm = confirm("{!syncAlert}");
+                    
+                    if(cfm){
+                        replacedefault('replace');
+                        return false;
+                    }else{
+                        return false;
+                    }
+                }
+            });
+            $("#dflt").click(function(){
+                if($('input[type=checkbox]:checked').length == 0){
+                    alert ( "ERROR! Please select at least one record" );
+                    return false;
+                }else{
+                    var cfm = confirm("{!defaultAlert}");
+                    if(cfm){
+                        replacedefault('default');
+                        return false;
+                    }else{
+                        return false;
+                    }
+                }
+            });
+            $("#checkAll").change(function () {
+                $("input:checkbox").prop('checked', $(this).prop("checked"));
+            });
+        });
+        </script>
+        <style>
+            .flex-container {
+                overflow: auto;
+            }
+        </style>
+        <apex:actionFunction name="refreshPageSize" action="{!refreshPageSize}" status="actStatusId" reRender="frm"/>
+        <apex:actionFunction name="replacedefault" action="{!logicExecution}" reRender="frm" status="actStatusId">
+            <apex:param name="myParam" value=""/>
+        </apex:actionFunction>
+        <apex:pageBlock id="pbId" title="Review PSC PSA">
+            <apex:actionstatus id="actStatusId">
+                <apex:facet name="start">
+                    <div class="waitingSearchDiv" id="el_loading" style="background-color: #DCD6D6; height: 100%;opacity:0.65;width:100%;">
+                        <div class="waitingHolder" style="top: 74.2px; width: 91px;">
+                            <img class="waitingImage" src="/img/loading.gif" title="Please Wait..." />
+                            <span class="waitingDescription">Processing...</span>
+                        </div>
+                    </div>
+                </apex:facet>
+            </apex:actionstatus>
+            <div class="flex-container"> 
+                <apex:pageBlockSection collapsible="false" columns="1" >
+                    <b>ERP DEVICE   : </b>{!deviceName}<br/><br/>
+                    <b>Part Number : </b>{!parentPartName}<br/>
+                    
+                    <apex:pageBlockTable value="{!PSAPSCJuntionObject}" var="ppjc" id="pbt">
+                        <apex:column rendered="{!$Permission.ERPDeviceSPMBOM_VF}">
+                             <apex:facet name="header"> 
+                                 <input type="checkbox" id="checkAll"/>
+                             </apex:facet>
+                            <apex:inputCheckbox value="{!ppjc.chkVar}"/>
+                        </apex:column>
+                        <apex:repeat value="{!$ObjectType.ERP_Device_SPDBOM__c.FieldSets.PSAPSC}" var="f">
+                            <apex:column value="{!ppjc.ppjo[f]}"/>
+                        </apex:repeat>
+                    </apex:pageBlockTable>
+                </apex:pageBlockSection>
+            </div>
+            <apex:pageBlockButtons location="bottom">
+                <button title="Cancel" class="btn" onclick="document.location = '/{!ERPid}'; return false;">Cancel</button>
+                
+                <apex:selectList value="{!size}" multiselect="false" size="1" onchange="refreshPageSize();">
+                    <apex:selectOptions value="{!paginationSizeOptions}"/>
+                </apex:selectList>
+                
+                <apex:outputPanel rendered="{!$Permission.ERPDeviceSPMBOM_VF}">
+                    <apex:commandButton value="Export all to Excel" action="/apex/ERPDeviceSPMBOMExcel" /> 
+                    <button title="Replace values as apc = psc and apa = psa" class="btn" id="rple">Sync</button>
+                    <button title="Defaulvalues updated for psa and psc" class="btn" id="dflt">Default</button>
+                </apex:outputPanel>
+                
+                <apex:commandButton status="actStatusId" reRender="frm" value="First" action="{!setCon.first}" disabled="{!!setCon.hasPrevious}" title="First Page"/> 
+                
+                <apex:commandButton status="actStatusId" reRender="frm" value="Previous" action="{!setCon.previous}" disabled="{!!setCon.hasPrevious}" title="Previous Page"/> 
+                
+                <apex:commandButton status="actStatusId" reRender="frm" value="Next" action="{!setCon.next}" disabled="{!!setCon.hasNext}" title="Next Page"/> 
+                
+                <apex:commandButton status="actStatusId" reRender="frm" value="Last" action="{!setCon.last}" disabled="{!!setCon.hasNext}" title="Last Page"/> 
+                
+                <apex:outputText >{!(setCon.pageNumber * size)+1-size}-{!IF((setCon.pageNumber * size)>noOfRecords, noOfRecords,
+                    (setCon.pageNumber * size))} of {!noOfRecords}
+                </apex:outputText> 
+            </apex:pageBlockButtons>
+        </apex:pageBlock>
+    </apex:form> 
+</apex:page>

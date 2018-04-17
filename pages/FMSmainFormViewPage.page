@@ -1,0 +1,2413 @@
+<!-- PageName : "FMSmainFormViewPage"
+    Author: Ashwin Dash
+    Project: FMS 2.0 - GLOBALFOUNDRIES     
+    Description: 
+    Change History: 
+    Date               Name                    Comments
+    20/10/2016       Ashwin Dash            Gave access to FMS Admins for all buttons
+    09/02/2017       Anirban Roy            Added Metallization Option.
+    14/02/2017       Anirban Roy            Added redirect button to FMS Search page
+    25/05/2017       Abhita Bansal          Added the condition for new UAT Issue #180, 182
+    29/05/2017       Abhita Bansal          Changed by Abhita for New UAT Issue #151
+    05/06/2017       Abhita Bansal          Changed by ABhita for new UAT Issue #209, 237
+    -->
+<apex:page standardController="Form_Management_System__c" extensions="FMSmainFormEditController" action="{!init}" showHeader="true" sidebar="true">
+<!--<apex:page showHeader="{!!isPortalUser}" sidebar="{!!isPortalUser}"/> -->    
+    <apex:includeScript value="{!URLFOR($Resource.jquery, 'js/jquery-1.8.3.min.js')}"/>
+    <apex:includeScript value="{!URLFOR($Resource.jquery, 'js/jquery-ui-1.9.2.custom.js')}"/>
+    <apex:includeScript value="{!URLFOR($Resource.jqPlugin, '/jquery.blockUI.js')}"/>
+    <apex:stylesheet value="{!URLFOR($Resource.jquery, 'css/ui-lightness/jquery-ui-1.9.2.custom.css')}"/>
+    <style type="text/css">
+        body div{
+        font-family: Arial !important;
+        }
+    </style>
+    <style>  
+        .bPageBlock .requiredInput .requiredBlock{background-color: #F6FBF6;}  
+        .requiredInput .requiredBlock::before { display: block; content: "*"; font-size: 1.5em; font-weight: bold; color: #c00; margin-left: -12px; margin-top: -3px; }  
+        p{
+            color:brown;
+        }
+        .popup {
+            background-color: white;
+            border-width: 2px;
+            border-style: solid;
+            z-index: 9999;
+            left: 31%;
+            padding:10px;
+            position: absolute;
+            width: 500px;
+            margin-left: -250px;
+            top:40px;
+            width:1000px;  
+            height:550px;     
+        }
+        .popup1{
+            background-color: white;
+            border-width: 2px;
+            border-style: solid;
+            z-index: 9999;
+            left: 41%;
+            padding:10px;
+            position: absolute;
+            width: 500px;
+            margin-left: -250px;
+            top:40px;
+            width:500px;  
+            height:350px;     
+        }
+        .popupBg {
+            background-color:black;
+            filter: alpha(opacity = 20);
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            z-index: 9998;
+        }
+        .closeButton {
+            float: right;
+        }
+        .message1 {
+            display:none;
+        }.message2 {
+            display:none;
+        }
+        .error1 {
+            display:none;
+        }
+        a{
+            text-decoration: none;
+        }
+     }
+    </style>
+    <style>
+        tr.dataRow {
+        background-color:white;
+        }
+        tr.dataRow:hover {
+        background-color: #e3f3ff;
+        };
+    </style>
+    <script>
+        function launchPrintWindow(formObjId){
+            window.open("/apex/FMSmainFormViewPrintPDF?id="+formObjId);
+        }
+        
+    /*function showDialogforActions(actionName){
+                if(actionName == 'Freeze'){
+                    var sd = new SimpleDialog("Test"+Dialogs.getNextId(), true);    
+                    sd.setTitle("Warning");   
+                    sd.createDialog(); 
+                    sd.setWidth(400);               
+                    window.parent.sd = sd;   
+                    var ex = sd.setContentInnerHTML("<img src='/img/msg_icons/warning24.png'/> <b>Warning!</b> <br/><br/>Are you sure you want to complete this form action? <br/> <br/> Freezing signifies that the form content is accurate and may be utilized by GLOBALFOUNDIRES in preparation for a tapeout. Once frozen, you will no longer be able to edit this form without intervention from your Foundry Technical Representative. <br/><br/><p align='center'><button class='btn' onclick='freezeFormActionFunction(); window.parent.sd.hide(); return true;'>Continue</button>&nbsp; &nbsp; &nbsp; &nbsp; <button class='btn' onclick='window.parent.sd.hide(); return false;'>Cancel</button></p>"); 
+                    sd.show();   
+                    return ex;
+                }
+                //Anil: Add for other actions similar way as above. 
+            }*/
+        function showDialogforActions(actionName){
+            
+                var sd = new SimpleDialog("Test"+Dialogs.getNextId(), true);    
+                sd.setTitle("Warning");   
+                sd.createDialog(); 
+                sd.setWidth(400);               
+                window.parent.sd = sd;
+            if(actionName == 'Freeze'){
+                var ex = sd.setContentInnerHTML("<img src='/img/msg_icons/warning24.png'/> <b>Warning!</b> <br/><br/>Are you sure you want to complete this form action? <br/> <br/> Freezing signifies that the form content is accurate and may be utilized by GLOBALFOUNDRIES in preparation for a tapeout. Once frozen, you will no longer be able to edit this form without intervention from your Foundry Technical Representative. <br/><br/><p align='center'><button class='btn' onclick='freezeFormActionFunction(); window.parent.sd.hide(); return true;'>Continue</button>&nbsp; &nbsp; &nbsp; &nbsp; <button class='btn' onclick='window.parent.sd.hide(); return false;'>Cancel</button></p>"); 
+                sd.show();   
+                return ex;
+            }//Changed the spelling for new UAT Issue #323
+            else if(actionName == 'Submit'){
+                /*Start - Anil Kumar Reddy L  - Modified the message*/
+                var ex = sd.setContentInnerHTML("<img src='/img/msg_icons/warning24.png'/> <b>Warning!</b> <br/><br/>Are you sure you want to complete this form action? <br/> <br/> Submitting this form signifies that you are preparing to collaborate with the Foundry. While in this state, you may continue to edit the form. <br/><br/><p align='center'><button class='btn' onclick='submitFormActionFuntion(); window.parent.sd.hide(); return true;'>Continue</button>&nbsp; &nbsp; &nbsp; &nbsp; <button class='btn' onclick='window.parent.sd.hide(); return false;'>Cancel</button></p>"); 
+                /*End - Anil Kumar Reddy L  - Modified the message*/
+                sd.show();   
+                return ex;
+            }
+            else if(actionName == 'makeFromInActive'){
+                
+                var ex = sd.setContentInnerHTML("<img src='/img/msg_icons/warning24.png'/> <b>Warning!</b> <br/><br/>Are you sure you want to complete this form action? <br/> <br/> Making this form inactive signifies that you wish to retain it in FMS, but do not plan to continue working with it. <br/><br/><p align='center'><button class='btn' onclick='makeFormInActiveActionFuntion(); window.parent.sd.hide(); return true;'>Continue</button>&nbsp; &nbsp; &nbsp; &nbsp; <button class='btn' onclick='window.parent.sd.hide(); return false;'>Cancel</button></p>"); 
+                sd.show();   
+                return ex;
+            }
+            
+            else if(actionName == 'makeFormActive'){
+                /*Start - Anil Kumar Reddy L  - Modified the message*/
+                var ex = sd.setContentInnerHTML("<img src='/img/msg_icons/warning24.png'/> <b>Warning!</b> <br/><br/>Are you sure you want to complete this form action? <br/> <br/> Make this form active again if you wish to continue working with it. The form will return to its previous state.<br/><br/><p align='center'><button class='btn' onclick='makeFormActiveActionFuntion(); window.parent.sd.hide(); return true;'>Continue</button>&nbsp; &nbsp; &nbsp; &nbsp; <button class='btn' onclick='window.parent.sd.hide(); return false;'>Cancel</button></p>"); 
+                /*End - Anil Kumar Reddy L  - Modified the message*/
+                sd.show();   
+                return ex;
+            }
+             
+        }
+                
+        /*function showSimpleDialog(custName){    
+           var sd = new SimpleDialog("Test"+Dialogs.getNextId(), true);    
+           sd.setTitle("New Addendum Form Creation");   
+           sd.createDialog();   
+           sd.setWidth(530); 
+           window.parent.sd = sd;  
+           var str = "<h1><u><center>New Addendum Form Creation</center></u></h1> <br/><span>Please verify you are placing your addendum in the correct place, then select an addendum type below in order to proceed.<br/><br/> The addendum form being created will be associated with the customer "+custName+".<br/><br/></span><div><label><b>Select new addendum form type:</b>&nbsp;<b style=\"color:#c00;\">*&nbsp;&nbsp;&nbsp;</b></label><select id=\"createAddOpt\" onchange=\"showMessageRIT(this);\"><option value=\" \">== Select Form Type ==</option><option value=\"IMC\">Incremental Mask Change Form (IMC)</option><option value=\"RIT\">Design Data Submission Form (RIT)</option></select><span class=\"error1\"><p style=\"margin-left: 195px;\">* This is a required field.</p></span></div><br/><span class=\"message1\"><p>IMPORTANT: Please ensure that you are attaching this RIT addendum to the correct parent form to avoid delays in design data processing. The form hierarchy above must display a direct connection from this RIT to the parent form (Main or IMC) applicable to this tapeout. If you are unsure of the correct placement, please consult your Foundry Technical Representative. <br/><br/>To change your addendum placement, click \"Cancel\", navigate to the desired parent form, and select \"Create an addendum\". To proceed with your current placement, enter a form name, an optional description, and click \"Continue\".</p></span><span class=\"message2\"><p>Please review the form hierarchy above and ensure you are adding your addendum form to the correct parent. Placing an Incremental Mask Change (IMC) form in the wrong place could lead to the wrong masks being used for your product or delays in your release. To change where you are placing your addendum, click \"Cancel\", navigate to your desired parent form, and select to add an addendum. To proceed, enter a form name, an optional description, and click \"Continue\". If you are unsure, please consult your Foundry Technical Representative.</p></span><br/><p align='center'><br /><button class='btn' onclick='pickselectedVal(); return true;'>Continue</button>&nbsp; &nbsp; &nbsp; &nbsp; <button class='btn' onclick='window.parent.sd.hide(); return false;'>Cancel</button> </p>";
+           var ex = sd.setContentInnerHTML(str); 
+           sd.show();              
+           return ex;
+        }  
+        function pickselectedVal(){
+            var e = document.getElementById("createAddOpt");
+            var str = e.options[e.selectedIndex].value;
+            console.log('Value selected - '+str);
+            if(str==' '){
+                $j('.error1').show();
+            }else{
+                $j('.error1').hide();
+                createAddendumFunction(str);
+            }
+        }*/
+        //Start Bug489-Anil Kumar Reddy - Modified delete popup
+        function showDialogforDelete(){
+            var sd = new SimpleDialog("Test"+Dialogs.getNextId(), true);    
+            sd.setTitle("Warning");   
+            sd.createDialog(); 
+            sd.setWidth(400);               
+            window.parent.sd = sd;
+            var ex = sd.setContentInnerHTML("<img src='/img/msg_icons/warning24.png'/> <b>Warning!</b> <br/><br/>Are you sure you want to delete this form? <br/><br/> <b>The form will no longer be retrievable once deleted.</b> <br/><br/> Note: The form delete operation may take 1-2 minutes to complete. Please do not perform any other operations during this time. We appreciate your patience. <br/><br/><p align='center'><button class='btn' onclick='DeleteFormActionFunction(); window.parent.sd.hide(); return true;'>Confirm</button>&nbsp; &nbsp; &nbsp; &nbsp; <button class='btn' onclick='window.parent.sd.hide(); return false;'>Cancel</button></p>"); 
+                sd.show();   
+                return ex;
+        }
+       //End Bug489-Anil Kumar Reddy - Modified delete popup
+    
+    </script>
+    <script>
+        /*function showMessageRIT(selObj){
+            $j = jQuery.noConflict();
+            var str = selObj.value;
+            if(str == 'RIT'){               
+                $j('.message1').show();
+                $j('.message2').hide();
+            }else if(str == 'IMC'){               
+                $j('.message1').hide();
+                $j('.message2').show();
+            }else{
+                $j('.message1').hide();
+                $j('.message2').hide();
+            }
+        }*/
+    </script>
+    <script>
+        $j = jQuery.noConflict(); 
+        //function to block the whole page
+        function blockPage(){ 
+            $j.blockUI({ message: '<img src="/img/loading32.gif" /><h1> Refreshing...</h1>', 
+                css: { 
+                 border: 'none', 
+                 padding: '15px',  
+                 '-webkit-border-radius': '10px', 
+                 '-moz-border-radius': '10px', 
+                 opacity: .9
+                } 
+            }); 
+            return false;
+        }
+        
+               
+        //function to unblock the page
+        function unblockPage(){
+            $j.unblockUI();
+        }
+        
+        //Anil - Addendum - Commented code
+        /*
+        function showAddendumDialog(custName){ 
+           addendumparaFunction('CreateAddendum');
+        }*/
+    </script>
+       
+    <apex:form id="fmsForm">
+        <apex:pagemessages id="errorMsg" /><!--Changed by Abhita for new UAT Issue #324-->
+    
+        <c:FMSNameDesc ></c:FMSNameDesc>
+        <c:FMSHierarchy formId="{!fId}"></c:FMSHierarchy>
+        
+        <apex:actionFunction name="paraFunction" action="{!showPopup}" reRender="fmsForm" status="blockUI">
+            <apex:param id="aname1" name="stateVal" value="" />
+        </apex:actionFunction>       
+        <apex:actionFunction name="createAddendumFunction" action="{!continueCheck}" reRender="fmsForm" status="blockUI">
+            <apex:param id="addenId" name="addenType" value="" />
+        </apex:actionFunction>
+        <apex:actionFunction name="freezeFormActionFunction" action="{!freezeForm}" status="blockUI">       
+        </apex:actionFunction>
+        <apex:actionFunction name="submitFormActionFuntion" action="{!submitForm}" status="blockUI">       
+        </apex:actionFunction>
+        <apex:actionFunction name="makeFormInActiveActionFuntion" action="{!makeFormInactive}" status="blockUI" reRender="errorMsg">
+        </apex:actionFunction>
+        <apex:actionFunction name="makeFormActiveActionFuntion" action="{!makeFormActive}" status="blockUI"/>
+        <!--Start Bug489-Anil Kumar Reddy - Modified delete popup--> 
+        <apex:actionFunction name="DeleteFormActionFunction" action="{!deleteForm}" status="blockUI">       
+        </apex:actionFunction>
+        <!--End Bug489-Anil Kumar Reddy - Modified delete popup--> 
+        <apex:actionStatus onstart="blockPage()" onstop="unblockPage()" id="blockUI"/>
+
+        <apex:pageBlock title="FMS 'Form State' Change" rendered="{!popupVal}">
+            <apex:pageblockSection columns="1">
+                <apex:pageBlockSectionItem >
+                    <apex:outputLabel value="Current Form State: "/>
+                    <apex:outputField value="{!formObj.State_of_the_Form__c}"/>
+                </apex:pageblockSectionItem>
+                <apex:pageBlockSectionItem >
+                    <apex:outputLabel value="Changing to Form State: "/>
+                    <apex:outputText value="{!requestMsg}"/>
+                </apex:pageblockSectionItem>
+                <apex:outputPanel rendered="{!requestMsg == 'RequestToThaw'}">
+                    <p style="color:black;margin-left: 10px">Please Note: Request for GLOBALFOUNDRIES to thaw (unfreeze) the form to allow editing. GLOBALFOUNDRIES will evaluate and allow editing only if possible, depending on the overall status of your release.</p>
+                </apex:outputPanel>
+                <apex:outputPanel rendered="{!requestMsg == 'Thawed'}">
+                    <p style="color:black;margin-left: 10px">Please Note: Thawing will unfreeze the form to allow editing.</p>
+                </apex:outputPanel>
+                <apex:pageblockSection columns="1">
+                    <apex:outputLabel value="Please provide a brief description explaining the reason for this action:" style="font-weight:bold;"><!--Added by Abhita for new UAT Issue #325-->
+                        <span style="display: inline; font-size: 1.5em; font-weight: bold; color: #c00; position: relative;">&nbsp;*</span>
+                    </apex:outputLabel>       
+                </apex:pageblocksection>
+                <apex:outputPanel >
+                    <apex:inputTextarea value="{!stateChangeComments}" style="height:150px; width:600px;" html-maxlength="500"/>
+                </apex:outputPanel>
+            </apex:pageblockSection>
+            &nbsp;&nbsp;&nbsp;&nbsp;
+            <apex:commandButton value="Continue" action="{!continueCheck}" rerender="fmsForm, errorMsg" oncomplete="window.scrollTo(0,0);" status="blockUI"/>
+            &nbsp;&nbsp;&nbsp;
+            <apex:commandButton value="Cancel" action="{!closePopup}" immediate="true" rerender="fmsForm" status="blockUI"/>        
+        </apex:pageBlock>
+        
+        <apex:pageBlock title="Possible form Actions" rendered="{! !popupVal}">
+            <!--<apex:outputPanel id="popup">
+                <apex:outputPanel id="popInnerOutputPnl" styleClass="popupBg" layout="block" rendered="{!popupVal}">
+                    <apex:outputPanel id="popInnerOutputPn2" styleClass="popup" layout="block" rendered="{!popupVal}">
+                        <apex:pagemessages id="errorMsg1" />
+                        <apex:commandButton value="X" title="Close the popup" action="{!closePopup}" immediate="true" styleClass="closeButton" rerender="popup"/>
+                        <c:FMSNameDesc formID="{!formId}"></c:FMSNameDesc>
+                        <h1><u>FMS "Form State" Change</u></h1>
+                        <apex:pageblockSection columns="1">
+                            <apex:pageBlockSectionItem >
+                                <apex:outputLabel value="Current Form State: "/>
+                                <apex:outputField value="{!formObj.State_of_the_Form__c}"/>
+                            </apex:pageblockSectionItem>
+                            <apex:pageBlockSectionItem >
+                                <apex:outputLabel value="Changing to Form State: "/>
+                                <apex:outputText value="{!requestMsg}"/>
+                            </apex:pageblockSectionItem>
+                            <p style="color:black;">Please Note: Request for GLOBALFOUNDRIES to thaw (unfreeze) the form to allow editing. GLOBALFOUNDRIES will evaluate and allow editing only if possible, depending on the overall status of your release.</p>
+                            <apex:pageblockSection columns="2">
+                                <apex:outputLabel value="Please provide brief description explaining the reason for this action:" style="font-style:bold;"/>
+                                <apex:outputPanel >
+                                    <div class="requiredInput" style="margin-left:-108px;">
+                                        <div class = "requiredBlock"></div>
+                                    </div>
+                                </apex:outputPanel>
+                            </apex:pageblocksection>
+                            <apex:outputPanel >
+                                <apex:inputTextarea value="{!stateChangeComments}" style="height:150px; width:600px;"/>
+                            </apex:outputPanel>
+                        </apex:pageblockSection>
+                        &nbsp;&nbsp;&nbsp;&nbsp;
+                        <apex:commandButton value="Continue" action="{!continueCheck}" rerender="popup" oncomplete="window.scrollTo(0,0);"/>
+                        &nbsp;&nbsp;&nbsp;
+                        <apex:commandButton value="Cancel" action="{!closePopup}" immediate="true" rerender="popup"/>
+                    </apex:outputPanel>
+                </apex:outputPanel>
+            </apex:outputPanel>
+            <!--<apex:outputPanel id="createAddPanel">
+                <apex:outputPanel id="createAddPanel1" styleClass="popupBg" layout="block" rendered="{!popupCreateAdd}">
+                    <apex:outputPanel id="createAddPanel2" styleClass="popup1" layout="block" rendered="{!popupCreateAdd}">
+                        <apex:pagemessages id="errorMsg2"/>
+                        <apex:commandButton value="X" title="Close the popup" action="{!closePopup}" immediate="true" styleClass="closeButton" rerender="createAddPanel"/>
+                        <h1><u>New Addendum Form Creation</u></h1>
+                        <br/>
+                        <!--<c:FMSHierarchy formId="{!formId}"></c:FMSHierarchy><br/><br/>-->
+                        <!--<apex:pageblockSection columns="1">
+                            <p>Please verify you are placing your addendum in the correct place, then select an addendum type below in order to proceed. The addendum form being created will be associated with the customer  </p>
+                            <br/>               
+                            <apex:pageblockSectionItem >
+                                <apex:outputLabel value="Select new addendum form type:"/>
+                                <apex:outputPanel >
+                                    <div class = "requiredInput">
+                                        <div class = "requiredBlock"></div>
+                                        <apex:selectList id="selectAddendumId" value="{!selCreateAddendum}" multiselect="false" size="1" >
+                                            <apex:selectOptions value="{!SelectAddendumValues}"/>
+                                        </apex:selectList>
+                                    </div>
+                                </apex:outputPanel>
+                            </apex:pageblockSectionItem>
+                        </apex:pageblockSection>
+                        <br/><br/>
+                        &nbsp;&nbsp;&nbsp;&nbsp;
+                        <apex:commandButton value="Continue" action="{!continueCheck}" rerender="createAddPanel" oncomplete="window.scrollTo(0,0);"/>
+                        &nbsp;&nbsp;&nbsp;
+                        <apex:commandButton value="Cancel" action="{!closePopup}" immediate="true" rerender="createAddPanel"/>
+                    </apex:outputPanel>
+                </apex:outputPanel>
+            </apex:outputPanel>-->
+            <apex:outputLabel style="font-style:italic;font-size:10pt;color:black;"> 
+                The selected form may have one or more action paths available to you based on your granted permissions and the current state of the form. Select the
+                desired action to trigger that action, or select the Back to form select button to return to the form selection page
+            </apex:outputLabel>
+            <br/> <br/>
+            <apex:outputPanel >
+                <apex:pageblockSection columns="1">
+                    <apex:outputField value="{!formObj.State_of_the_Form__c}" Label="Current Form State:"/>
+                    <apex:outputField value="{!formObj.Mandatory_State_Change_Comments__c}" label="Reason For State Change:" rendered="{!(formObj.State_of_the_Form__c == 'RequestToThaw' || formObj.State_of_the_Form__c == 'Thawed') && (formObj.Mandatory_State_Change_Comments__c != null || formObj.Mandatory_State_Change_Comments__c != '')}"/>
+                </apex:pageblockSection>
+                <br/>
+                <apex:outputPanel >
+                    <html>
+                        <table class="list" style="width:1030px">
+                            <tr class="headerRow" align="center">
+                                <td style="font-size: 8pt;width:200px">Action</td>
+                                <td style="font-size: 8pt;">Description</td>
+                            </tr>
+                            <apex:variable rendered="{!(formObj.QuoteOnly__c != 'Yes' && (formObj.State_of_the_Form__c != 'InactiveDraft' && formObj.State_of_the_Form__c != 'SubmittedForQuote' && formObj.State_of_the_Form__c != 'InactiveSubmittedForQuote' && formObj.State_of_the_Form__c != 'InactiveSubmitted' && formObj.State_of_the_Form__c != 'InactiveThawed' && formObj.State_of_the_Form__c != 'Frozen'))}" value="" var="v"><!--Giving access to FMS Admin for all the Buttons -- Ashwin Dash-->
+                                <tr class="datarow">
+                                    <td class="datacell">
+                                        <!--<apex:commandLink style="width:120px;color:blue;" action="{!freezeForm}" onclick="if(!confirm('Warning: Are you sure...')){return false;}">Freeze Form</apex:commandLink>-->
+                                        <apex:commandLink style="width:120px;color:blue;" onclick="showDialogforActions('Freeze'); window.scrollTo(0,0); return false;">Freeze Form</apex:commandLink>
+                                    </td>
+                                    <td class="datacell">
+                                        <apex:outputLabel >
+                                            Freezing signifies that the form content is accurate and may be utilized by GLOBALFOUNDRIES in preparation for a tapeout.<br/> Once frozen, you will no longer be able to edit this form without intervention from your Foundry Technical Representative.
+                                        </apex:outputLabel>
+                                    </td>
+                                </tr>
+                            </apex:variable>
+                            <apex:variable rendered="{!((formObj.State_of_the_Form__c == 'Draft' || formObj.State_of_the_Form__c == 'Submitted' || (formObj.State_of_the_Form__c == 'Thawed' && (!isPortalUser || isFMSAdmin)) || formObj.State_of_the_Form__c == 'SubmittedForQuote'))}" value="" var="v"><!--Giving access to FMS Admin for all the Buttons -- Ashwin Dash-->
+                                <tr class="datarow">
+                                    <td class="datacell">
+                                        <!--<apex:commandLink style="width:120px;color:blue;" action="{!makeFormInactive}" >Make Form Inactive</apex:commandLink>-->
+                                        <apex:commandLink style="width:120px;color:blue;" onclick="showDialogforActions('makeFromInActive'); window.scrollTo(0,0); return false;">Make Form Inactive</apex:commandLink>
+                                    </td>
+                                    <td class="datacell">
+                                        <apex:outputLabel >
+                                            Making this form inactive signifies that you wish to retain it in FMS, but do not plan to continue working with it.
+                                        </apex:outputLabel>
+                                    </td>
+                                </tr>
+                            </apex:variable>  
+                            <apex:variable rendered="{!(formObj.QuoteOnly__c != 'Yes' && (formObj.State_of_the_Form__c == 'Draft' || formObj.State_of_the_Form__c == 'SubmittedForQuote'))}" value="" var="v"><!--Giving access to FMS Admin for all the Buttons -- Ashwin Dash-->
+                                <tr class="datarow">
+                                    <td class="datacell">
+                                        <!--<apex:commandLink style="width:120px;color:blue;" action="{!submitForm}" onclick="if(!confirm('Warning: Are you sure...')){return false;}">Submit Form</apex:commandLink>-->
+                                        <apex:commandLink style="width:120px;color:blue;" onclick="showDialogforActions('Submit'); window.scrollTo(0,0); return false;">Submit Form</apex:commandLink>
+                                    </td>
+                                    <td class="datacell">
+                                        <apex:outputLabel >
+                                            Submitting this form signifies that you are preparing to collaborate with the Foundry. While in this state, you may continue to edit the form.
+                                        </apex:outputLabel>
+                                    </td>
+                                </tr>
+                            </apex:variable>
+                            <apex:variable rendered="{!(formObj.QuoteOnly__c == 'Yes' && formObj.State_of_the_Form__c == 'Draft' && isTFACompany)}" value="" var="v">
+                                <tr class="datarow"><!--Giving access to FMS Admin for all the Buttons -- Ashwin Dash-->
+                                    <td class="datacell">
+                                        <apex:commandLink style="width:120px;color:blue;" action="{!submitForQuote}">Submit for Quote</apex:commandLink>
+                                    </td>
+                                    <td class="datacell">
+                                        <apex:outputLabel >
+                                            Submitting this “quote only” Business Form signifies that you are ready for GLOBALFOUNDRIES to review and respond with a quote. <br/> After Business Form submission, the “quote” question may be changed to “No” to allow the Technical Form to be completed
+                                        </apex:outputLabel>
+                                    </td>
+                                </tr>
+                            </apex:variable>
+                            <apex:variable rendered="{!formObj.State_of_the_Form__c == 'Frozen'}" value="" var="v"><!--Giving access to FMS Admin for all the Buttons -- Ashwin Dash-->
+                                <tr class="datarow">
+                                    <td class="datacell">
+                                        <apex:commandLink style="width:120px;color:blue;" onclick="paraFunction('RequestToThaw'); window.scrollTo(0,0); return false;">Request to Thaw Form for editing</apex:commandLink>
+                                    </td>
+                                    <td class="datacell">
+                                        <apex:outputLabel >
+                                            Request for GLOBALFOUNDRIES to thaw (unfreeze) the form to allow editing.  GLOBALFOUNDRIES will evaluate and allow editing only if possible, depending on the overall status of your release.
+                                        </apex:outputLabel>
+                                    </td>
+                                </tr>
+                            </apex:variable>
+                            <apex:variable rendered="{!((!isPortalUser || isFMSAdmin) && (formObj.State_of_the_Form__c == 'Frozen' || formObj.State_of_the_Form__c == 'RequestToThaw'))}" value="" var="v"><!--Giving access to FMS Admin for all the Buttons -- Ashwin Dash-->
+                                <tr class="datarow">
+                                    <td class="datacell">
+                                        <apex:commandLink style="width:120px;color:blue;" onclick="paraFunction('Thawed'); window.scrollTo(0,0); return false;">Thaw Form</apex:commandLink>
+                                    </td>
+                                    <td class="datacell">
+                                        <apex:outputLabel >
+                                            Thawing will unfreeze the form to allow editing.
+                                        </apex:outputLabel>
+                                    </td>
+                                </tr>
+                            </apex:variable>     
+                            <apex:variable rendered="{!(formObj.State_of_the_Form__c == 'Submitted' || formObj.State_of_the_Form__c == 'Frozen' || formObj.State_of_the_Form__c == 'RequestToThaw' || formObj.State_of_the_Form__c == 'Thawed')}" value="" var="v"><!--Giving access to FMS Admin(isFMSAdmin) for all the Buttons -- Ashwin Dash-->
+                                <tr class="datarow">
+                                    <td class="datacell">
+                                        <!--<apex:commandLink style="width:120px;color:blue;" onclick="paraFunction('CreateAddendum'); window.scrollTo(0,0); return false;" >Create Addendum Form</apex:commandLink>-->
+                                        <!--Start - Anil Kumar Reddy L- 1/3/2017 - Creating addendum indcation Pre -->
+                                        <!--<apex:commandLink style="width:120px;color:blue;" onclick="showAddendumDialog('{!formObj.Customer__c}'); window.scrollTo(0,0); return false;" >Create Addendum Form</apex:commandLink>-->
+                                        <!-- Modified BY Abhita-->
+                                        <apex:commandLink style="width:120px;color:blue;" action="{!createAddendumForm}">Create Addendum Form</apex:commandLink>
+                                        <!--END-->
+                                        <!--End - Anil Kumar Reddy L- 1/3/2017 - Creating addendum indcation Pre -->
+                                    </td>
+                                    <td class="datacell">
+                                        <apex:outputLabel >
+                                            Create a new addendum form.
+                                        </apex:outputLabel>
+                                    </td>
+                                </tr>
+                            </apex:variable>
+                            <apex:variable rendered="{!(formObj.State_of_the_Form__c == 'InactiveDraft' || formObj.State_of_the_Form__c == 'InactiveSubmitted' || formObj.State_of_the_Form__c == 'InactiveSubmittedForQuote' ||
+                            (formObj.State_of_the_Form__c == 'InactiveThawed' && (!isPortalUser || isFMSAdmin)))}" value="" var="v"><!--Giving access to FMS Admin for all the Buttons -- Ashwin Dash-->
+                                <tr class="datarow">
+                                    <td class="datacell">
+                                        <!--<apex:commandLink style="width:120px;color:blue;" action="{!makeFormActive}">Make Form Active</apex:commandLink>-->
+                                        <apex:commandLink style="width:120px;color:blue;" onclick="showDialogforActions('makeFormActive'); window.scrollTo(0,0); return false;">Make Form Active</apex:commandLink>
+                                    </td>
+                                    <td class="datacell">
+                                        <apex:outputLabel >
+                                            Make this form active again if you wish to continue working with it. The form will return to its previous state.
+                                        </apex:outputLabel>
+                                    </td>
+                                </tr>
+                            </apex:variable> 
+                            <apex:variable value="" var="v">
+                                <tr class="datarow">
+                                    <td class="datacell">
+                                        <apex:commandLink style="width:120px;color:blue;" action="{!copyAsNewForm}">Copy as new form</apex:commandLink>
+                                    </td>
+                                    <td class="datacell">
+                                        <apex:outputLabel >
+                                            This feature allows you to copy the values from this existing form into a new form. The new form may be created on an updated template from the old form. It is therefore not guaranteed that 100% of the values will copy. You must still review the new form entirely before submitting.
+                                        </apex:outputLabel>
+                                    </td>
+                                </tr>
+                            </apex:variable>
+                            
+                            
+                              <tr class="datarow">
+          <td class="datacell">                          
+          <apex:commandLink style="width:120px;color:blue;" action="{!chngHistory}" target="_blank">Browse change history</apex:commandLink>
+          </td>
+          
+          <td class="datacell">
+          <apex:outputLabel >
+          Browse the change history for this form.
+          </apex:outputLabel>
+          </td>
+          </tr>
+                            <apex:variable rendered="{!!subscribeFlag}" value="" var="v">
+                                <tr class="datarow">
+                                    <td class="datacell">
+                                        <apex:commandLink style="width:120px;color:blue;" action="{!Subscribe}">Subscribe to this Form</apex:commandLink>
+                                    </td>
+                                    <td class="datacell">
+                                        <apex:outputLabel >
+                                            Subscribe to receive email notification for all events for this specific form.
+                                        </apex:outputLabel>
+                                    </td>
+                                </tr>
+                            </apex:variable>
+                            <apex:variable rendered="{!subscribeFlag}" value="" var="v">
+                                <tr class="datarow">
+                                    <td class="datacell">
+                                        <apex:commandLink style="width:120px;color:blue;" action="{!UnSubscribe}">Unsubscribe from this form</apex:commandLink>
+                                    </td>
+                                    <td class="datacell">
+                                        <apex:outputLabel >
+                                            Remove your existing individual subscription for this form.
+                                        </apex:outputLabel>
+                                    </td>
+                                </tr>
+                            </apex:variable>
+                            <apex:variable value="" var="v" rendered="{!((formObj.State_of_the_Form__c == 'Draft' || formObj.State_of_the_Form__c == 'SubmittedForQuote' || formObj.State_of_the_Form__c == 'Submitted' || formObj.State_of_the_Form__c == 'Thawed' ))}">
+                                <tr class="datarow">
+                                    <td class="datacell">
+                                        <apex:commandLink style="width:120px;color:blue;" action="{!SubscribeUser}">Subscribe other users to this form</apex:commandLink>
+                                    </td>
+                                    <td class="datacell">
+                                        <apex:outputLabel >
+                                            Subscribe other users to receive email notifications for all events for this specific form.
+                                        </apex:outputLabel>
+                                    </td>
+                                </tr>
+                            </apex:variable>
+                            <apex:variable rendered="{!((formObj.State_of_the_Form__c == 'Draft' || formObj.State_of_the_Form__c == 'SubmittedForQuote' || formObj.State_of_the_Form__c == 'Submitted' || formObj.State_of_the_Form__c == 'Thawed' ))}" value="" var="v"><!--Giving access to FMS Admin(isFMSAdmin) for all the Buttons -- Ashwin Dash-->
+                                <tr class="datarow">
+                                    <td class="datacell">
+                                        <apex:commandLink style="width:120px;color:blue;" action="{!editForm}">Edit</apex:commandLink>
+                                    </td>
+                                    <td class="datacell">
+                                        <apex:outputLabel >
+                                            Edit the form.
+                                        </apex:outputLabel>
+                                    </td>
+                                </tr>
+                            </apex:variable>
+                            <apex:variable rendered="{!((formObj.State_of_the_Form__c == 'Draft' || formObj.State_of_the_Form__c == 'SubmittedForQuote' || formObj.State_of_the_Form__c == 'Submitted' || formObj.State_of_the_Form__c == 'Thawed'))}" value="" var="v"><!--Giving access to FMS Admin(isFMSAdmin) for all the Buttons -- Ashwin Dash-->
+                                <tr class="datarow">
+                                    <td class="datacell">
+                                        <apex:commandLink style="width:120px;color:blue;" action="{!updateFormDetails}">Update Form Details</apex:commandLink>
+                                    </td>
+                                    <td class="datacell">
+                                        <apex:outputLabel >
+                                            Modify the form name and description.
+                                        </apex:outputLabel>
+                                    </td>
+                                </tr>
+                            </apex:variable>
+                            <!--<apex:variable rendered="{!(((formObj.State_of_the_Form__c != 'Frozen' && formObj.State_of_the_Form__c != 'RequestToThaw' && ((formObj.State_of_the_Form__c == 'Submitted' || formObj.State_of_the_Form__c == 'InactiveSubmitted') && (!isPortalUser || isFMSAdmin))) || (formObj.State_of_the_Form__c == 'InactiveDraft') || (formObj.State_of_the_Form__c == 'Draft') || ((formObj.State_of_the_Form__c == 'Thawed' || formObj.State_of_the_Form__c == 'InactiveThawed') && isFMSAdmin) || (formObj.State_of_the_Form__c == 'SubmittedForQuote' && (!isPortalUser || isFMSAdmin)) || (formObj.State_of_the_Form__c == 'InactiveSubmittedForQuote' && (!isPortalUser || isFMSAdmin))) && !hasChildren)}" value="" var="v">
+                                <tr class="datarow">
+                                    <td class="datacell">                                        
+                                        <apex:commandLink style="width:120px;color:blue;" onclick="showDialogforDelete(); window.scrollTo(0,0); return false;">Delete Form</apex:commandLink>
+                                    </td>
+                                    <td class="datacell">
+                                        <apex:outputLabel >
+                                            Delete the form from the system. The form will no longer be retrievable once deleted.
+                                        </apex:outputLabel>
+                                    </td>
+                                </tr>
+                            </apex:variable>-->                     
+                        </table>
+                    </html>
+                </apex:outputPanel>
+            </apex:outputPanel>
+        </apex:pageBlock>
+        <br/>  
+
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+        <apex:outputPanel rendered="{! !popupVal}">
+            <h1>View Form Data</h1>
+        </apex:outputPanel>
+
+        <apex:pageBlock title="Form Page 1" id="pb1" rendered="{! !popupVal}">
+            <apex:pageblockSection title="General Information" columns="1" id="pbs1" collapsible="false">
+                <apex:pageblocksectionItem >
+                    <apex:outputlabel value="Product Name:"/>
+                    <apex:outputPanel >
+                        <div class = "requiredInput">
+                            <div class = "requiredBlock"></div>
+                            <apex:outputField value="{!formObj.ProductName__c}" />
+                        </div>
+                    </apex:outputPanel>
+                </apex:pageblocksectionItem>
+                
+                <apex:pageblocksectionItem >
+                    <apex:outputlabel value="Product Revision:"/>
+                    <apex:outputPanel >
+                        <div class = "requiredInput">
+                            <div class = "requiredBlock"></div>
+                            <apex:outputField value="{!formObj.ProductRevision__c}" />
+                        </div>
+                    </apex:outputPanel>
+                </apex:pageblocksectionItem>
+                
+                <p style="color:black;">Please note that the product name and revision you enter here will be used to identify your part on official notices and labels, such as for shipments and invoices.</p>
+                <br/>        
+                <apex:outputField label="Product Application:" value="{!formObj.ProductApplication__c}" />
+                <apex:pageblockSectionItem id="pbsi1">
+                    <apex:outputLabel value="Have you read and do you understand the Foundry Release Requirements?"/>
+                    <apex:outputPanel id="hasReleGuide">
+                        <div class = "requiredInput">
+                            <div class = "requiredBlock"></div>
+                            <apex:outputField value="{!formObj.HasReleaseGuidelines__c}"/>
+                        </div>
+                    </apex:outputPanel>
+                </apex:pageblockSectionItem>
+                <apex:outputpanel rendered="{!formObj.HasReleaseGuidelines__c == 'No'}">
+                    <p>Please download and review the document from the link below. If you still require assistance, please contact your Foundry Technical Representative. </p>
+                </apex:outputpanel>
+              
+               <!--Ravindra - Changes Starts for displaying files from Libraries--> 
+               <apex:outputlink id="releaseReqLink" value="{!FMSdocuments['Release Requirements']}" style="margin-left:320px;color:blue;" target="_blank">Link to Release Requirements</apex:outputlink>
+               <!--Ravindra - Libraries changes Ends--> 
+               
+                <apex:pageblocksectionItem >
+                    <apex:outputLabel value="Is this product subject to the International Traffic in Arms Regulations (ITAR)?"/>
+                    <apex:outputPanel >
+                        <div class = "requiredInput">
+                            <div class = "requiredBlock"></div>
+                            <apex:outputField value="{!formObj.ItarData__c}" />
+                        </div>
+                    </apex:outputPanel>
+                </apex:pageblocksectionItem>
+                
+                <apex:pageblockSectionItem >
+                    <apex:outputLabel value="Is this Hazardous Use (HU):"/>
+                    <apex:outputPanel >
+                        <div class = "requiredInput">
+                            <div class = "requiredBlock"></div>
+                            <apex:outputField value="{!formObj.HazardousUse__c}" />
+                        </div>
+                    </apex:outputPanel>
+                </apex:pageblockSectionItem>
+                
+                <apex:pageblockSectionItem rendered="{!isTFACompany}">
+                    <apex:outputLabel value="Asset Protection Code:"/>
+                    <apex:outputPanel >   
+                        <div class = "requiredInput">
+                            <div class = "requiredBlock"></div>
+                            <apex:outputField value="{!formObj.AssetProtectionCode__c}" />
+                        </div>
+                    </apex:outputPanel>
+                </apex:pageblockSectionItem> 
+        
+                <apex:pageblockSectionItem rendered="{!isTFACompany}">
+                    <apex:outputLabel value="Is this product to be used in conjunction with a medical device?:"/>
+                    <apex:outputPanel >   
+                        <div class = "requiredInput">
+                            <div class = "requiredBlock"></div>
+                            <apex:outputField value="{!formObj.MedicalDevice__c}" />
+                        </div>
+                    </apex:outputPanel>
+                </apex:pageblockSectionItem> 
+        
+                <apex:pageblockSectionItem rendered="{!isTFACompany}">
+                    <apex:outputLabel value="Is this product to be used in conjunction with a nuclear application?:"/>
+                    <apex:outputPanel >   
+                        <div class = "requiredInput">
+                            <div class = "requiredBlock"></div>
+                            <apex:outputField value="{!formObj.NuclearDevice__c}" />
+                        </div>
+                    </apex:outputPanel>
+                </apex:pageblockSectionItem> 
+                
+                <apex:pageblockSectionItem rendered="{!isTFACompany}">
+                    <apex:outputLabel value="Is this form for quote purposes only?:"/>
+                    <apex:outputPanel >   
+                        <div class = "requiredInput">
+                            <div class = "requiredBlock"></div>
+                            <apex:outputField value="{!formObj.QuoteOnly__c}" />
+                        </div>
+                    </apex:outputPanel>
+                </apex:pageblockSectionItem> 
+            </apex:pageblockSection>
+            <apex:pageblockSection title="Primary Contact Information" columns="1" id="pbs2"  collapsible="false">
+                <p style="color:black;">Please select the primary contact from the dropdown menu. The selected contact should be the focal point for this product release.</p>
+                <apex:pageblocksectionItem >
+                    <apex:outputLabel value="Name: "/>
+                    <apex:outputField value="{!formObj.NamePrimary__c}" />
+                </apex:pageblocksectionItem>
+                <apex:pageblocksectionItem >
+                    <apex:outputLabel value="E-Mail: "/>
+                    <apex:outputField value="{!formObj.EmailPrimary__c}" />
+                </apex:pageblocksectionItem>
+                <apex:pageblocksectionItem >
+                    <apex:outputLabel value="Phone: "/>
+                    <apex:outputField value="{!formObj.PhonePrimary__c}" />
+                </apex:pageblocksectionItem>
+                <apex:pageblocksectionItem >
+                    <apex:outputLabel value="Country: "/>
+                    <apex:outputField value="{!formObj.CountryPrimary__c}" />
+                </apex:pageblocksectionItem>
+                <apex:pageblocksectionItem >
+                    <apex:outputLabel value="State/Province: "/>
+                    <apex:outputField value="{!formObj.StatePrimary__c}" />
+                </apex:pageblocksectionItem>
+                <apex:pageblocksectionItem >
+                    <apex:outputLabel value="Role: "/>
+                    <apex:outputField value="{!formObj.RolePrimary__c}" />
+                </apex:pageblocksectionItem>
+            </apex:pageblockSection>
+            <apex:pageblockSection title="Additional Contact(s)" columns="1" id="pbs3" collapsible="false">
+                <p style="color:black;">If you would like to add additional contacts for this product release, please select their names below.</p>
+                <apex:outputPanel id="countofAddContId">
+                    <apex:outputText > {!addContactsCountView} contact(s) selected.</apex:outputText>
+                </apex:outputPanel>
+                <apex:outputPanel id="addContTab" rendered="{!(selectedAddContList.size > 0)}">
+                    <apex:pageBlockSection >
+                        <apex:pageblockSectionItem >
+                            <apex:outputLabel ></apex:outputLabel><!-- Changed by Abhita for New UAT Issue #151-->
+                            <apex:pageblockTable value="{!selectedAddContList}" var="addCont" style="width:700px">
+                                <apex:column headerValue="Contact Name" value="{!addCont.addContName}"/>
+                                <apex:column headerValue="Contact E-Mail" value="{!addCont.addContEmail}"/>
+                                <apex:column headerValue="Contact Phone" value="{!addCont.addContPhone}"/>
+                            </apex:pageblockTable>
+                        </apex:pageblockSectionItem>
+                    </apex:pageBlockSection>
+                </apex:outputPanel>
+            </apex:pageblockSection>
+            <apex:pageBlockSection title="Form Specifications" columns="1" id="pbs4" collapsible="false">
+                <apex:pageblockSectionItem id="pbsfSPec">
+                    <apex:outputLabel value="Foundry Technology: "/>
+                    <apex:outputPanel id="relProcPanel">
+                        <div class = "requiredInput">
+                            <div class = "requiredBlock"></div>
+                            <apex:outputField value="{!formObj.Technology__c}" />
+                        </div>
+                    </apex:outputPanel>
+                </apex:pageblockSectionItem>
+                <apex:pageblockSectionItem >
+                    <apex:outputLabel value="Release Process: "/>
+                    <apex:outputPanel id="relProcPanel">
+                        <div class = "requiredInput">
+                            <div class = "requiredBlock"></div>
+                            <apex:outputField value="{!formObj.ReleaseProcessFlow__c}" />
+                        </div>
+                    </apex:outputPanel>
+                </apex:pageblockSectionItem>
+                <apex:pageblockSectionItem >
+                    <apex:outputLabel value="Test Services: "/>
+                    <apex:outputPanel >
+                        <div class = "requiredInput">
+                            <div class = "requiredBlock"></div>
+                            <apex:outputField value="{!formObj.TestServices__c}" />
+                        </div>
+                    </apex:outputPanel>
+                </apex:pageblockSectionItem>
+                <apex:pageblockSectionItem id="packagingSection">
+                    <apex:outputLabel value="Packaging Services: "/>
+                    <apex:outputPanel >
+                        <div class = "requiredInput">
+                            <div class = "requiredBlock"></div>
+                            <apex:outputField value="{!formObj.Packaging_Services__c}" />
+                        </div>
+                    </apex:outputPanel>
+                </apex:pageblockSectionItem>
+                <apex:pageblockSectionItem rendered="{!formObj.TestServices__c == 'Yes'}">
+                    <apex:outputLabel value="What test levels do you desire?"/>
+                    <apex:outputPanel >
+                        <div class = "requiredInput">
+                            <div class = "requiredBlock"></div>
+                            <apex:outputField value="{!formObj.TestLevels__c}" />
+                        </div>
+                    </apex:outputPanel>
+                </apex:pageblockSectionItem>
+                <apex:pageblockSectionItem >
+                    <apex:outputLabel value="Chip Interconnect: "/>
+                    <apex:outputPanel >
+                        <div class = "requiredInput">
+                            <div class = "requiredBlock"></div>
+                            <apex:outputField value="{!formObj.Chip_Interconnect__c}" />
+                        </div>
+                    </apex:outputPanel>
+                </apex:pageblockSectionItem>
+                <apex:pageblockSectionItem rendered="{!dispIntConBumpServ}">
+                    <apex:outputLabel value="Is the Interconnect Bumping being sourced by GLOBALFOUNDRIES?"/>
+                    <apex:outputPanel >
+                        <div class = "requiredInput">
+                            <div class = "requiredBlock"></div>
+                            <apex:outputField value="{!formObj.IntConBumpSource__c}" />
+                        </div>
+                    </apex:outputPanel>
+                </apex:pageblockSectionItem>
+                <apex:pageblockSectionItem rendered="{!dispChipEdgeWLCP}">
+                    <apex:outputLabel value="GLOBALFOUNDRIES sourced WLCSP will be supported only if the PDK-supplied crackstop (Enhanced Crackstop) is present inside your design’s CHIPEDGE. Have you included the unmodified PDK-supplied crackstop within your design(s)?"/>
+                    <apex:outputPanel >
+                        <div class = "requiredInput">
+                            <div class = "requiredBlock"></div>
+                            <apex:outputField value="{!formObj.ChipEdgeWLCSP__c}" />
+                        </div>
+                    </apex:outputPanel>
+                </apex:pageblockSectionItem>
+                <apex:outputPanel id="dispChipEdgeWLCPErrorMsg" >
+                    <apex:outputPanel id="dispChipEdgeWLCPPanel" rendered="{!formObj.ChipEdgeWLCSP__c == 'No' && dispChipEdgeWLCP}">
+                        <p>
+                            Before freezing this form, you must either a) remove your request for GLOBALFOUNDRIES sourced WLCSP or b) update your chip design to include the unmodified PDK-supplied crackstop structure (using the Chipguardring pcell) and then change your answer above to "Yes".
+                        </p><!--Changed By Abhita as Part of T33-->
+                    </apex:outputPanel>
+                </apex:outputPanel>
+            </apex:pageblockSection>
+        </apex:pageBlock>
+        
+        <apex:pageBlock title="Form Page {!Page2TFA}" rendered="{! (Page2TFA != 0 && !popupVal)}" id="pb2TFA">
+            <apex:pageblockSection title="Details Required for Quote" columns="1" >                     
+                <apex:pageblocksectionItem rendered="{!dispWireBondSplit}">
+                    <apex:outputlabel value="Will there be a wirebond split?"/>                             
+                    <apex:outputPanel >
+                        <div class = "requiredInput">
+                            <div class = "requiredBlock"></div>
+                            <apex:outputField value="{!formObj.WireBondSplit__c}" />
+                        </div>
+                    </apex:outputPanel>
+                </apex:pageblocksectionItem>   
+                
+                <apex:pageblocksectionItem rendered="{!dispWireBondSplitTAT}">
+                    <apex:outputlabel value="What Turnaround time do you need for the wirebond split?"/>                                
+                    <apex:outputPanel >
+                        <div class = "requiredInput">
+                            <div class = "requiredBlock"></div>
+                            <apex:outputField value="{!formObj.WireBondSplitTAT__c}" />
+                        </div>
+                    </apex:outputPanel>
+                </apex:pageblocksectionItem>   
+                
+                <apex:pageblocksectionItem rendered="{!dispWireBondSplitTAT}">
+                    <apex:outputlabel value="What are your wafer requirements for wirebond wafers?"/>                       
+                    <apex:outputPanel >
+                        <div class = "requiredInput">
+                            <div class = "requiredBlock"></div>
+                            <apex:outputField value="{!formObj.WireBondWaferReq__c}" />
+                        </div>
+                    </apex:outputPanel>
+                </apex:pageblocksectionItem> 
+                
+                <apex:pageblocksectionItem rendered="{!dispWireBondSplit}">
+                    <apex:outputlabel value="Will there be a C4 split?"/>
+                    <apex:outputPanel >
+                        <div class = "requiredInput">
+                            <div class = "requiredBlock"></div>
+                            <apex:outputField value="{!formObj.C4Split__c}" />
+                        </div>
+                    </apex:outputPanel>
+                </apex:pageblocksectionItem>      
+                
+                <apex:pageblocksectionItem rendered="{!dispC4SplitTAT}">
+                    <apex:outputlabel value="What Turnaround time do you need for the C4 split?"/>
+                    <apex:outputPanel >
+                        <div class = "requiredInput">
+                            <div class = "requiredBlock"></div>
+                            <apex:outputField value="{!formObj.C4SplitTAT__c}" />
+                        </div>
+                    </apex:outputPanel>
+                </apex:pageblocksectionItem>   
+                
+                <apex:pageblocksectionItem rendered="{!dispC4SplitTAT}">
+                    <apex:outputlabel value="What are your wafer requirements for C4 wafers?"/>
+                    <apex:outputPanel >
+                        <div class = "requiredInput">
+                            <div class = "requiredBlock"></div>
+                            <apex:outputField value="{!formObj.C4WaferReq__c}" />
+                        </div>
+                    </apex:outputPanel>
+                </apex:pageblocksectionItem>   
+                
+                <apex:pageblocksectionItem rendered="{!dispWireBondSplit}">
+                    <apex:outputlabel value="Will there be any other splits?"/>
+                    <apex:outputPanel >
+                        <div class = "requiredInput">
+                            <div class = "requiredBlock"></div>
+                            <apex:outputField value="{!formObj.OtherSplits__c}" />
+                        </div>
+                    </apex:outputPanel>
+                </apex:pageblocksectionItem>      
+                
+                <apex:pageblocksectionItem rendered="{!dispOtherSplitDepts}">
+                    <apex:outputlabel value="Please explain splits and their requirements:"/>
+                    <apex:outputPanel >
+                        <div class = "requiredInput">
+                            <div class = "requiredBlock"></div>
+                            <apex:outputField value="{!formObj.OtherSplitDets__c}" />
+                        </div>
+                    </apex:outputPanel>
+                </apex:pageblocksectionItem>   
+        
+                <apex:pageblocksectionItem rendered="{!dispITARCategory}">
+                    <apex:outputlabel value="ITAR Category:"/>
+                    <apex:outputPanel >
+                        <div class = "requiredInput">
+                            <div class = "requiredBlock"></div>
+                            <apex:outputField value="{!formObj.ItarCategory__c}" />
+                        </div>
+                    </apex:outputPanel>
+                </apex:pageblocksectionItem>   
+                
+                <apex:pageblocksectionItem rendered="{!dispClientResponseDt}">
+                    <apex:outputlabel value="Client Requested Quote Response Date:"/>
+                    <apex:outputPanel >
+                        <div class = "requiredInput">
+                            <div class = "requiredBlock"></div>
+                            <apex:outputField value="{!formObj.ClientResponseDt__c}" />
+                        </div>
+                    </apex:outputPanel>
+                </apex:pageblocksectionItem>   
+                
+                <apex:pageblocksectionItem rendered="{!dispNeedBizComment}">
+                    <apex:outputlabel value="Do you need to add any additional information that has not been captured elsewhere in this business/quote section of the form?"/>
+                    <apex:outputPanel >
+                        <div>
+                            <apex:outputField value="{!formObj.NeedBizComment__c}"/>
+                        </div>
+                    </apex:outputPanel>
+                </apex:pageblocksectionItem>    
+                
+                <apex:pageblocksectionItem rendered="{!(formObj.NeedBizComment__c == 'Yes') && dispNeedBizComment}">
+                    <apex:outputlabel value="List additional information here:"/>
+                    <apex:outputPanel >
+                        <div class = "requiredInput">
+                            <div class = "requiredBlock"></div>
+                            <apex:outputField value="{!formObj.BusinessComments__c}" />
+                        </div>
+                    </apex:outputPanel>
+                </apex:pageblocksectionItem>      
+            </apex:pageblockSection>
+        </apex:pageBlock>
+        
+        <apex:pageBlock title="Form Page {!Page2}" rendered="{! ((Page2 ==2 || Page2 == 3) && !popupVal)}" id="pb3TFA" >
+            <apex:pageBlockSection title="Product/Service Requested" columns="1" id="pbs5" collapsible="false">
+                <span style="color:black;">The following technology feature and service questions will be used to define the production Process of Record for your product. 
+                    If you desire different characteristics for your prototype hardware please specify in the additional comments section at the end.
+                </span>
+                <apex:outputField label="Foundry Technology: " value="{!formObj.Technology__c}"/>
+                <apex:pageBlockSectionItem rendered="{!(formObj.QuoteOnly__c != 'Yes')}">
+                    <apex:outputLabel value="Projected GDS submission (tapeout):"/>
+                    <apex:outputPanel >
+                        <div class = "requiredInput">
+                            <div class = "requiredBlock"></div>
+                            <apex:outputField value="{!formObj.ProjectedTapeout__c}"/>
+                        </div>
+                    </apex:outputPanel>
+                </apex:pageBlockSectionItem>
+                
+                <apex:pageBlockSectionItem rendered="{!dispsourcingLocation}">
+                    <apex:outputLabel value="Select your preferred sourcing location: "/>
+                    <apex:outputPanel >
+                        <div class = "requiredInput">
+                            <div class = "requiredBlock"></div>
+                            <apex:outputField value="{!formObj.SourcingLocation__c}" />
+                        </div>
+                    </apex:outputPanel>
+                </apex:pageBlockSectionItem>
+                
+                <apex:outputPanel rendered="{!dispsourcingLocation}">
+                        <p>GLOBALFOUNDRIES and your company must determine the preferred sourcing location <b>in advance of design release</b>, based upon the specific circumstances for each product.</p>
+                        <br/>              
+                </apex:outputPanel> 
+                
+                <apex:pageBlockSectionItem rendered="{!formObj.Technology__c == 'CNV8SFi'}">
+                    <apex:outputLabel value="What format will the design be delivered in?"/>
+                    <apex:outputPanel >
+                        <div class = "requiredInput">
+                            <div class = "requiredBlock"></div>
+                            <apex:outputField value="{!formObj.DesignDelivered__c}"/>
+                        </div>
+                    </apex:outputPanel>
+                </apex:pageBlockSectionItem>
+                <apex:pageBlockSectionItem >
+                    <apex:outputLabel value="Will you require waivers for any DRC violations?"/>
+                    <apex:outputPanel >
+                        <div class = "requiredInput">
+                            <div class = "requiredBlock"></div>
+                            <apex:outputField value="{!formObj.Waivers__c}"/>
+                        </div>
+                    </apex:outputPanel>
+                </apex:pageBlockSectionItem>
+                <apex:outputPanel id="waiverInnerPanel" rendered="{!formObj.Waivers__c == 'Yes'}">
+                    <p> Waiver requests must be submitted to the Foundry Technical Representative at least 8 business days prior to tapeout to prevent delays. You may download the waiver template and instructions through the link below.</p>
+                    
+                    <!--Ravindra - Libraries changes Starts
+                     <apex:outputlink id="releaseReqLink" value="{!FMSdocuments['FMSMainFormWaiverTemplate'].FMSRefDocURL__c}" style="margin-left:370px; text-decoration:underline;color:blue;">Link to Waiver Template</apex:outputlink>     <br/>  <br/> -->
+                     <apex:outputlink id="releaseReqLink" value="{!FMSdocuments['Waiver Request Form']}" style="margin-left:370px; text-decoration:underline;color:blue;">Link to Waiver Template</apex:outputlink>     <br/>  <br/> 
+                    <!--Ravindra - Libraries changes Ends-->
+                     </apex:outputPanel>
+                
+                <!--Added by Anirban on 09/02/2017 for Metallization Option----->
+                <apex:pageBlockSectionItem rendered="{!formObj.MetallizationOpts__c!=null && formObj.MetallizationOpts__c!='Other'}">
+                    <apex:pageBlockTable value="{!metalizationOption}" var="m" rendered="{!metalizationOption.size>0}">
+                        <apex:column >
+                            <apex:facet name="header">Metallization Option (Description)</apex:facet>
+                            {!m.metalizationOption}
+                        </apex:column>
+                        <apex:column >
+                            <apex:facet name="header">Total Wiring Levels</apex:facet>
+                            {!m.totWiringLevel}
+                        </apex:column>
+                        <apex:column >
+                            <apex:facet name="header">Last Wiring Level</apex:facet>
+                            {!m.lastWiringLevels}
+                        </apex:column>
+                        <apex:column >
+                            <apex:facet name="header">Feature Part Number(s)</apex:facet>
+                            {!m.featurePartNumbers}
+                        </apex:column>    
+                    </apex:pageBlockTable>
+                </apex:pageBlockSectionItem>
+                <apex:pageBlockSectionItem rendered="{!formObj.MetallizationOpts__c=='Other'}">
+                    <apex:outputLabel value="Metallization Option (Description):"/>
+                    <apex:outputPanel >
+                        <div class = "requiredInput">
+                            <div class = "requiredBlock"></div>
+                            <apex:outputField value="{!formObj.MetallizationOpts__c}"/>
+                        </div>
+                    </apex:outputPanel>
+                </apex:pageBlockSectionItem>
+                <apex:pageBlockSectionItem rendered="{!formObj.MetallizationOpts__c=='Other'}">
+                    <apex:outputLabel value="Other:"/>
+                    <apex:outputPanel >
+                        <div class = "requiredInput">
+                            <div class = "requiredBlock"></div>
+                            <apex:outputField value="{!formObj.OtherMetallization__c}"/>
+                        </div>
+                    </apex:outputPanel>
+                </apex:pageBlockSectionItem>
+                <!------------------------------------>
+                  
+                <apex:pageBlockSectionItem rendered="{!dispLastMetalUsed}">
+                    <apex:outputLabel value="Last Metal Used:"/>
+                    <apex:outputPanel id="lastMetalId">
+                        <div class = "requiredInput">
+                            <div class = "requiredBlock"></div>
+                            <apex:outputField value="{!formObj.LastMetalUsed__c}"/><!--Changed the coce for UAT Issue #162 point 4-->
+                            <!--<apex:outputText value="{!lastMetalUsedListView}"/>-->
+                        </div>
+                    </apex:outputPanel>
+                </apex:pageBlockSectionItem>
+                <apex:pageBlockSectionItem rendered="{!dispNumMetalLayers}">
+                    <apex:outputLabel value="Total Number of Metal Layers:"/>
+                    <apex:outputPanel id="numMetLay">
+                        <div class = "requiredInput">
+                            <div class = "requiredBlock"></div>
+                            <apex:outputField value="{!formObj.NumMetalLayers__c}"/><!--Changed the coce for UAT Issue #162 point 4-->
+                            <!--<apex:outputText value="{!NumMetalLayersListView}"/>-->
+                        </div>
+                    </apex:outputPanel>
+                </apex:pageBlockSectionItem>
+                
+                <apex:pageBlockSectionItem rendered="{!formObj.QuoteOnly__c != 'Yes' && (formObj.Technology__c == 'BiCMOS 8WL (SiGe 8WL)' || formObj.Technology__c == 'CSOI8SW')}">
+                    <apex:outputLabel value="Wiring Options:"/>
+                    <apex:outputPanel >
+                        <div class = "requiredInput">
+                            <div class = "requiredBlock"></div>
+                            <apex:outputField value="{!formObj.Wiringoptions__c}"/>
+                        </div>
+                    </apex:outputPanel>
+                </apex:pageBlockSectionItem>
+                
+                <apex:pageBlockSectionItem rendered="{!formObj.Technology__c == 'BiCMOS 8HP (SiGe 8HP)'}">
+                    <apex:outputLabel value="Enhanced Cu Wiring:"/>
+                    <apex:outputPanel >
+                        <div class = "requiredInput">
+                            <div class = "requiredBlock"></div>
+                            <apex:outputField value="{!formObj.EnhancedWiring__c}"/>
+                        </div>
+                    </apex:outputPanel>
+                </apex:pageBlockSectionItem>
+                
+                <apex:pageBlockSectionItem rendered="{!dispNumThickLevels}">
+                    <apex:outputLabel value="Number of Thick Cu Levels:"/>
+                    <apex:outputPanel >
+                        <div class = "requiredInput">
+                            <div class = "requiredBlock"></div>
+                            <apex:outputField value="{!formObj.NumThickCuLevels__c}"/>
+                        </div>
+                    </apex:outputPanel>
+                </apex:pageBlockSectionItem>
+                
+                <apex:pageBlockSectionItem rendered="{!dispPassivation}">
+                    <apex:outputLabel value="Passivation:"/>
+                    <apex:outputPanel >
+                        <div class = "requiredInput">
+                            <div class = "requiredBlock"></div>
+                            <apex:outputField value="{!formObj.Passivation__c}"/>
+                        </div>
+                    </apex:outputPanel>
+                </apex:pageBlockSectionItem>  
+                
+                <apex:pageBlockSectionItem rendered="{!formObj.QuoteOnly__c != 'Yes' && formObj.Chip_Interconnect__c == 'Wirebond' &&   
+                        (((formObj.Technology__c == 'BiCMOS 5PAe (SiGe 5PAe)' || formObj.Technology__c == 'BiCMOS 5PAe (1KW5PAe)' || 
+                        formObj.Technology__c == 'BiCMOS 5PAX (1K5PAXE)' || formObj.Technology__c == 'BiCMOS 5PAX (SiG5PAX)' || formObj.Technology__c == 'IPD5PAE') && formObj.Passivation__c == 'DV (LV drawn) (29L5231)') || 
+                        ((formObj.Technology__c == 'BiCMOS 8HP (SiGe 8HP)' || formObj.Technology__c == 'BiCMOS 8XP (SiGe 8XP)') && formObj.Passivation__c == 'DV (29L5231)')  || (formObj.Technology__c == 'BiCMOS5PA4 (HRS5PA4)' && formObj.Passivation__c == 'DV (LV drawn) (29L5231)'))}">
+                    <apex:outputLabel value="Through-Silicon Via:"/>
+                    <apex:outputPanel >
+                        <div class = "requiredInput">
+                            <div class = "requiredBlock"></div>
+                            <apex:outputField value="{!formObj.Passivation1__c}"/>
+                        </div>
+                    </apex:outputPanel>
+                </apex:pageBlockSectionItem>
+                
+                <apex:pageBlockSectionItem rendered="{!(formObj.QuoteOnly__c != 'Yes' && formObj.Technology__c == 'CSOI 7RF' && dispFinalPassivation  
+                                                         && formObj.Packaging_Services__c == 'No' && ((formObj.LastMetalUsed__c == 'LD (LD, VV, EZ, E2, E1, FT, MT) (45Y0368)') 
+                                                         || ((formObj.LastMetalUsed__c == 'AM (Analog Last Metal) (AM, FT, MT) (70P5485)' 
+                                                         || formObj.LastMetalUsed__c == 'MA (Dual Last Metal) (MA, ZF, E2, E1, FT, MT) (70P5487)') 
+                                                         && formObj.Passivation__c == 'LV (01L6998)' && formObj.Chip_Interconnect__c == 'C4 flip chip')))}"> <!--Changed By ABhita #DEF 497,499,500,501-->
+                    <apex:outputLabel value="Do you require final passivation films in the front side scribe region?"/>
+                    <apex:outputPanel >
+                        <div class = "requiredInput">
+                            <div class = "requiredBlock"></div>
+                            <apex:outputField value="{!formObj.FinalPassivation__c}"/>
+                        </div>
+                    </apex:outputPanel>
+                </apex:pageBlockSectionItem>
+                <apex:pageBlockSectionItem rendered="{!(formObj.QuoteOnly__c != 'Yes' && formObj.Technology__c == 'CSOI 7RF' && dispLineFront 
+                                                        && formObj.Packaging_Services__c == 'No' 
+                                                        && ((formObj.LastMetalUsed__c == 'AM (Analog Last Metal) (AM, FT, MT) (70P5485)' 
+                                                        || formObj.LastMetalUsed__c == 'MA (Dual Last Metal) (MA, ZF, E2, E1, FT, MT) (70P5487)') 
+                                                        && formObj.Passivation__c == 'SZ - No Polyimide (LV drawn) (84Y6986)' 
+                                                        && formObj.Chip_Interconnect__c == 'C4 flip chip') 
+                                                        || (formObj.LastMetalUsed__c == 'LD (LD, VV, EZ, E2, E1, FT, MT) (45Y0368)' 
+                                                        && formObj.Passivation__c == 'FV - Polyimide only (LV drawn) (84Y8379)' 
+                                                        && formObj.FinalPassivation__c == 'Yes; 4X FV SHIFT (84Y8783)') 
+                                                        || ((formObj.LastMetalUsed__c == 'AM (Analog Last Metal) (AM, FT, MT) (70P5485)' 
+                                                        || formObj.LastMetalUsed__c == 'MA (Dual Last Metal) (MA, ZF, E2, E1, FT, MT) (70P5487)') 
+                                                        && formObj.Passivation__c == 'LV (01L6998)' && formObj.Chip_Interconnect__c == 'C4 flip chip' 
+                                                        && formObj.FinalPassivation__c == 'Yes; 4X LV SHIFT (84Y8784)'))}"> <!-- Changed By ABhita #DEF 497,499,500,501, 181 -->
+                    <apex:outputLabel value="Do you require 2 line front side scribe?"/>
+                    <apex:outputPanel >
+                        <div class = "requiredInput">
+                            <div class = "requiredBlock"></div>
+                            <apex:outputField value="{!formObj.LineFront__c}"/>
+                        </div>
+                    </apex:outputPanel>
+                </apex:pageBlockSectionItem>
+            </apex:pageblockSection>
+            <!-- Commented as per Edit page -->
+            <!--<apex:pageBlockSection title="Technology Features" columns="1" id="pbs6" collapsible="false">
+                <apex:outputLabel style="font-style:italic;font-size:10pt;"> 
+                   <p style="color:black;"> The following technology feature selections are all optional in this technology. Core technology features
+                    are always included. Please reference the design manual for definition on the feature combination rules.
+                    This form does not allow invalid combinations.  </p>                          
+                </apex:outputLabel>
+                <apex:commandButton value="Configurator" action="{!techFeaturePage}"/>
+            </apex:pageblockSection>-->
+            <!-- Below has been renamed to Release Process by Shiva in edit page Do we need to change in view page also ? and do we need to add descriptions -->
+            <apex:pageBlockSection title="Technology Features" columns="1" rendered="{! (formObj.ReleaseProcessFlow__c == 'Original Flow' && !popupVal && configData.size!=0 && isTechVisible)}" collapsible="false"> 
+                           
+                <apex:pageBlockTable value="{!configData}" var="cData" rendered="{!IF(configData.size != 0,true,false)}">                   
+                    <apex:column headerValue="Configurator ID">
+                        <apex:outputText value="{!cData.Name}"/>
+                        <!-- <apex:outputLink target="_blank" value="/apex/Apttus_QPConfig__ProposalConfiguration?id={!cData.id}&flow=GFFlow">{!cData.Name}</apex:outputLink> -->
+                    </apex:column>
+                    <apex:column headerValue="Configurator Name">
+                        <apex:outputText value="{!cData.Apttus_Proposal__Proposal_Name__c}"/>
+                    </apex:column>                    
+                    <apex:column headerValue="Opportunity">
+                        <apex:outputText value="{!cData.Apttus_Proposal__Opportunity__r.Name}"/>
+                    </apex:column>  
+                    <apex:column headerValue="Account">
+                        <apex:outputText value="{!cData.Apttus_Proposal__Account__r.Name}"/>
+                    </apex:column>
+                    <apex:column headerValue="Fab Name">
+                        <apex:outputText value="{!cData.Fab_Name__c}"/>
+                    </apex:column>
+                    <!--<apex:column headerValue="Created Date">
+                        <apex:outputText value="{!cData.CreatedDate}"/>
+                    </apex:column>    -->
+                                  
+                </apex:pageBlockTable>  
+                        
+                <apex:outputPanel rendered="{!isTechnologyConfigured}" title="{!bundleProduct.Name} Cart Selections">
+                    <h1>{!bundleProduct.Name} Cart Selections</h1> <br/><br/>
+                    <apex:repeat value="{!mapTabPOGs}" var="tabId">
+                    <h2>{!mapTabPOGs[tabId].Apttus_Config2__OptionGroupId__r.Apttus_Config2__Label__c}</h2> <br/>
+                      <table class="list " border="0" cellpadding="0" cellspacing="0"> 
+                        <tr class="headerRow">
+                            <th class="headerRow">Feature Group</th>
+                            <th class="headerRow">Feature Description</th>
+                            <th class="headerRow">Part Number</th>
+                            <th class="headerRow">Additional Masks</th>
+                        </tr>
+                        <apex:repeat value="{!sectionsByTab[tabId]}" var="section">
+                            <apex:repeat value="{!optionsBy_POG_Ids[section.Id]}" var="optionProd">
+                              <tr class="dataRow">
+                                <td class="dataCell">{!section.Apttus_Config2__OptionGroupId__r.Apttus_Config2__Label__c}</td>
+                                <td class="dataCell">{!optionProd.Apttus_Config2__ComponentProductId__r.Name}</td>
+                                <td class="dataCell">{!optionProd.Apttus_Config2__ComponentProductId__r.Description}</td>
+                                <td class="dataCell">{!optionProd.Apttus_Config2__ComponentProductId__r.Mask_Sets__c}</td>
+                              </tr>
+                            </apex:repeat>
+                        </apex:repeat>
+                      </table> <br/> 
+                    </apex:repeat>   
+                </apex:outputPanel>
+            </apex:pageBlockSection>
+            <apex:pageBlockSection title="{!IF(formObj.ReleaseProcessFlow__c == 'Original Flow', 'Technology Feature Exceptions', 'Release Process')}" columns="1" id="pbs7" collapsible="false" rendered="{!formobj.Technology__c != 'BiMOS P6' && formobj.Technology__c != 'BMSP6C9'}"> <!--Changed By Abhita for new UAT Issue #405-->
+                <apex:outputPanel rendered="{!formObj.ReleaseProcessFlow__c != 'Original Flow'}">
+                <span style="color:black;">
+                 The Foundry Release Process uses a features extraction methodology to identify Design Manual supported devices at time of GDS
+                 submission. It is critical for you to define any custom or development features used in the design that are not listed in the published Design Manual,
+                 or these devices may not be manufactured. Features not listed in the Design Manual require pre-approval from GLOBALFOUNDRIES, 
+                 and will require custom handling by the PE and Release Teams. Standard Release cycle times may not apply. 
+                 </span><br/><br/>
+                 <span style="color:black;">
+                 It is also critical for you to identify any technology features in the submitted GDS that should be excluded from the hardware build, or it will be assumed that all features detected in the data are required. 
+                 </span><br/><br/>
+                 <span style="color:black;">
+                 You must also confirm that features combinations in the design(s) are compatible and allowed as described in the features section of the published Design Manual.
+                 Any incompatible features combinations require pre-approval from GLOBALFOUNDRIES and a custom setup to accommodate. Please consult with your Foundry Technical Representative if further guidance is required.
+                </span><br/><br/> 
+                </apex:outputPanel>
+                <apex:pageBlockSectionItem >
+                    <apex:outputLabel value="Does the Design contain any custom or development features that are not part of the base or optional features listings in the published design manual?"/>
+                    <apex:outputPanel >
+                        <div class = "requiredInput">
+                            <div class = "requiredBlock"></div>
+                            <apex:outputField value="{!formObj.Custom_Features__c}"/>
+                        </div>
+                    </apex:outputPanel>
+                </apex:pageBlockSectionItem>
+                <apex:pageBlockSectionItem rendered="{!formObj.Custom_Features__c == 'Yes'}">
+                    <apex:outputLabel value="Please list these non standard features:"/>
+                    <apex:outputPanel >
+                        <div class = "requiredInput">
+                            <div class = "requiredBlock"></div>
+                            <apex:outputField value="{!formObj.CustomFeaturesDesc__c}" id="custFeatDescId"/>
+                        </div>
+                    </apex:outputPanel>
+                </apex:pageBlockSectionItem>
+                <apex:pageBlockSectionItem >
+                    <apex:outputLabel value="Does the Design contain any features that should NOT be manufactured for this program revision?"/>
+                    <apex:outputPanel >
+                        <div class = "requiredInput">
+                            <div class = "requiredBlock"></div>
+                            <apex:outputField value="{!formObj.NotMfgFeatures__c}"/>
+                        </div>
+                    </apex:outputPanel>
+                </apex:pageBlockSectionItem>
+                <apex:pageBlockSectionItem rendered="{!formObj.NotMfgFeatures__c == 'Yes'}">
+                    <apex:outputLabel value="Please list all features that should be excluded from the build:"/>
+                    <apex:outputPanel >
+                        <div class = "requiredInput">
+                            <div class = "requiredBlock"></div>
+                            <apex:outputField value="{!formObj.NotMfgFeaturesDesc__c}" id="custFeatDescId"/>
+                        </div>
+                    </apex:outputPanel>
+                </apex:pageBlockSectionItem>
+            </apex:pageblockSection>
+            <apex:pageBlockSection title="Design/Service Options" columns="1" id="pbs8" collapsible="false">
+                <apex:pageBlockSectionItem rendered="{!dispStepPlanCustReq}">
+                    <apex:outputLabel value="Will your orders be placed for wafer quantity, with wafer functional test as a service-only adder?:"/>
+                    <apex:outputPanel >
+                        <div class = "requiredInput">
+                            <div class = "requiredBlock"></div>
+                            <apex:outputField value="{!formObj.StepPlanCustomRequirement1__c}"/>
+                        </div>    
+                    </apex:outputPanel>
+                </apex:pageBlockSectionItem>
+                <!--Added the below field (exact location not yet confirmed) for Defect - BUG-CMOS 6RF (CMRF6SF)  - 26-Oct-2016       -- Ashwin Dash -->               
+                <apex:pageBlockSectionItem rendered="{!dispStepPlanCustReq && formObj.StepPlanCustomRequirement1__c == 'No'}">
+                    <apex:outputLabel value="Please explain how your orders will be placed:"/>
+                    <apex:outputPanel >   
+                        <div class = "requiredInput">
+                            <div class = "requiredBlock"></div>                     
+                            <apex:outputField value="{!formObj.StepPlanCustomRequirementInput1__c}"/>   
+                        </div>   
+                    </apex:outputPanel>  
+                </apex:pageBlockSectionItem>
+                <apex:pageBlockSectionItem rendered="{!dispDataCheckingOpts}">
+                    <apex:outputLabel value="Data Checking Options:"/>
+                    <apex:outputPanel >
+                        <div class = "requiredInput">
+                            <div class = "requiredBlock"></div>
+                            <!--<apex:outputField value="{!formObj.DataCheckingOptions__c}"/>-->
+                            <!--Changes for Datachecking Options - 10th-Nov-2016     -- Ashwin Dash -->
+                            <apex:outputText value="{!DataCheckingOptsList}"/>
+                        </div>
+                    </apex:outputPanel>
+                </apex:pageBlockSectionItem>
+                <apex:pageBlockSectionItem rendered="{!formObj.QuoteOnly__c != 'Yes'}" id="selServiceID">
+                    <apex:outputLabel value="Service Options:"/>
+                    <apex:outputPanel >
+                        <div class = "requiredInput">
+                            <div class = "requiredBlock"></div>
+                            <apex:outputField value="{!formObj.ServiceOptions__c}"/>
+                        </div>
+                    </apex:outputPanel>
+                </apex:pageBlockSectionItem>
+                <apex:pageBlockSectionItem rendered="{!dispBacksideGrindThickness}">
+                    <apex:outputLabel value="Please choose a Backside Grind Thickness:"/>
+                    <apex:outputPanel >
+                        <div class = "requiredInput">
+                            <div class = "requiredBlock"></div>
+                            <apex:outputField value="{!formObj.BacksideGrindThickness__c}"/>
+                        </div>
+                    </apex:outputPanel>
+                </apex:pageBlockSectionItem>
+                <apex:pageBlockSectionItem rendered="{!dispOtherServiceFeatures}">
+                    <apex:outputLabel value="Other service features:"/>
+                    <apex:outputPanel >
+                        <div class = "requiredInput">
+                            <div class = "requiredBlock"></div>
+                            <apex:outputField value="{!formObj.OtherServiceFeatures__c}"/>
+                        </div>
+                    </apex:outputPanel>
+                </apex:pageBlockSectionItem>
+                <apex:pageBlockSectionItem rendered="{!dispChipEdgeDesign}">
+                    <apex:outputLabel value="GLOBALFOUNDRIES sourced dicing will be supported only if the PDK-supplied crackstop is present inside your design(s) CHIPEDGE. Have you included the unmodified PDK-supplied crackstop within your design(s)?"/>
+                    <apex:outputPanel >
+                        <div class = "requiredInput">
+                            <div class = "requiredBlock"></div>
+                            <apex:outputField value="{!formObj.Chipedgedesign__c}" />
+                        </div>
+                    </apex:outputPanel>
+                </apex:pageBlockSectionItem>
+                
+                <apex:outputPanel id="chipedgeDesignErrorMsg" >
+                    <apex:outputPanel id="chipedgeDesignErrorInnerPanel" rendered="{!formObj.Chipedgedesign__c == 'No' && dispChipEdgeDesign}">
+                        <p>
+                         Before freezing this form, you must either a) remove your request for dicing or b) update your chip design to include the unmodified PDK-supplied crackstop structure (using the Chipguardring pcell) and then change your answer above to "Yes."
+                        </p>
+                    </apex:outputPanel>
+                </apex:outputPanel>
+                
+                <apex:pageBlockSectionItem rendered="{!dispCll}">
+                    <apex:outputLabel value="Select Custom Lot Labeling (CLL) and Laser Scribe Requirements: "/>
+                    <apex:outputPanel >
+                        <div class = "requiredInput">
+                            <div class = "requiredBlock"></div>
+                            <apex:outputField value="{!formObj.CLL__c}" />
+                        </div>
+                    </apex:outputPanel>
+                </apex:pageBlockSectionItem>
+                <apex:pageBlockSectionItem rendered="{!dispNonStandardCll}">
+                    <apex:outputLabel value="Describe your Non-standard CLL Laser Scribe Area Requirements: "/>
+                    <apex:outputPanel >
+                        <div class = "requiredInput">
+                            <div class = "requiredBlock"></div>
+                            <apex:outputField value="{!formObj.NonstandardCLL__c}" />
+                        </div>
+                    </apex:outputPanel>
+                </apex:pageBlockSectionItem>
+                <apex:pageBlockSectionItem rendered="{!dispShippingLabelCLL}">
+                    <apex:outputLabel value="Identify your Shipping Label Customer Part Number for CLL: "/>
+                    <apex:outputPanel >
+                        <div class = "requiredInput">
+                            <div class = "requiredBlock"></div>
+                            <apex:outputField value="{!formObj.ShippingLabelCLL__c}" />
+                        </div>
+                    </apex:outputPanel>
+                </apex:pageBlockSectionItem>
+                
+                <apex:pageBlockSectionItem rendered="{!formObj.QuoteOnly__c != 'Yes'}" id="deliverableId">
+                    <apex:outputLabel value="Deliverable:"/>
+                    <apex:outputPanel >
+                        <div class = "requiredInput">
+                            <div class = "requiredBlock"></div>
+                            <apex:outputField value="{!formObj.Deliverable__c}"/>
+                        </div>
+                    </apex:outputPanel>
+                </apex:pageBlockSectionItem>
+                <apex:pageBlockSectionItem rendered="{!formObj.QuoteOnly__c != 'Yes'}">
+                    <apex:outputLabel value="Type Of Design Submission:"/>
+                    <apex:outputPanel >
+                        <div class = "requiredInput">
+                            <div class = "requiredBlock"></div>
+                            <apex:outputField value="{!formObj.DesignSubmission__c}"/>
+                        </div>
+                    </apex:outputPanel>
+                </apex:pageBlockSectionItem>
+                                
+                <apex:pageBlockSectionItem rendered="{!formObj.DesignSubmission__c != 'Multi-Design Reticle (>1 Topcell)'}">
+                    <apex:outputLabel value="Are you expecting more than one deliverable (splits) from this single GDS?"/>
+                    <apex:outputPanel >
+                        <div class = "requiredInput">
+                            <div class = "requiredBlock"></div>
+                            <apex:outputField value="{!formObj.DeliverableSplit__c}"/>
+                        </div>
+                    </apex:outputPanel>
+                </apex:pageBlockSectionItem>
+                <apex:pageBlockSectionItem rendered="{!formObj.QuoteOnly__c != 'Yes'}">
+                    <apex:outputLabel value="Does this design data submission contain any premerged design(s)?"/>
+                    <apex:outputPanel >
+                        <div class = "requiredInput">
+                            <div class = "requiredBlock"></div>
+                            <apex:outputField value="{!formObj.Premerge__c}" />
+                        </div>
+                    </apex:outputPanel>
+                </apex:pageBlockSectionItem>
+            </apex:pageblockSection>
+        </apex:pageBlock>
+        
+        <apex:pageBlock title="Form Page {!Page3}" rendered="{! ((Page3 == 3 || Page3 == 4) && !popupVal)}" id="pb3" >
+            <apex:pageBlockSection title="Chip Description" columns="1" id="pbs9" collapsible="false">
+                <apex:outputPanel rendered="{!(formObj.ReleaseProcessFlow__c == 'Original Flow' && formObj.DesignSubmission__c != 'Multi-Design Reticle (>1 Topcell)')}"><!--Changed by ABhita for new UAT Issue #209-->
+                    <p style="color:black;">
+                    Final Chip Size is due 8 business days prior to tapeout. Please ensure the accuracy of the Final Chip Size prior to "Freezing" this FMS Main Form to avoid delays.
+                    </p> 
+                </apex:outputPanel><!--Added the message for new UAT issue #188-->
+            
+                <!--ECCN Section --  To be added by Abhita -->
+                <!-- Commented as per FMS_16 - Start-->
+                <!--
+                <apex:outputPanel rendered="{! (isTFACompany && (formObj.DesignSubmission__c == 'Multi-Design Reticle (>1 Topcell)' 
+                                                || formObj.DesignSubmission__c == 'Multi-Chiplet Design (one GDS, single Topcell)'))}">
+                    <p style="color:black;">
+                    Please download the ECCN Template from ICC technical library(link below), populate with codes for each project, and attach in this section of the main 
+                    questionnaire accordingly. Contact your supporting FAEif you have any questions.
+                    </p>   
+                    <br/>
+                
+                   <!--Ravindra - Libraries changes Starts
+                        <apex:outputLink value="{!FMSdocuments['FMSMainFormECCNTemplate'].FMSRefDocURL__c}" style="color:blue;margin-left:370px; text-decoration:underline;">
+                        <apex:outputLink value="{!FMSdocuments['ECCN Template']}" style="color:blue;margin-left:370px; text-decoration:underline;"> 
+                         Link to ECCN template
+                    <!--Ravindra - Libraries changes Ends        
+                    </apex:outputLink>
+                    <br/> <br/>
+                    
+                    <apex:outputText style="padding-left: 22%;color:black;" value="Allowable file types are (.xls,.csv,.123,.doc,.xlsx,.docx,.ods,.odt) and Max file size: 100MB" />
+                    <br/><br/>
+                    
+                    <apex:outputPanel id="uploadECCNFile">
+                        <apex:pageblockSection >
+                            <apex:pageBlockSectionItem > 
+                                <apex:outputLabel value="ECCN Layout Information:" style="padding-left: 19%;"/>
+                                <apex:outputPanel >   
+                                   <div class = "requiredInput">
+                                        <div class = "requiredBlock"></div> 
+                                   </div>
+                               </apex:outputPanel>                                                                                                 
+                            </apex:pageBlockSectionItem>    
+                        </apex:pageblockSection>                    
+
+                        <apex:pageBlockSection rendered="{!(attWrapECCN!=null && attWrapECCN.size!=0)}">
+                            <apex:pageBlockSectionItem dataStyle="padding-left: 19%;width: 68%;">
+                                <apex:pageBlockTable value="{!attWrapECCN}" var="attvarE" >
+                                    <apex:column headerValue="Attachment name">
+                                        <apex:outputLink id="link" value="/sfc/servlet.shepherd/version/download/{!attvarE.attId}" style="color: blue;text-decoration: underline;">{!attvarE.attName}</apex:outputLink>
+                                    </apex:column>
+                                    <apex:column headerValue="Size">
+                                        <apex:outputText value="{!attvarE.attSize}" />
+                                    </apex:column>
+                                </apex:pageBlockTable>                        
+                            </apex:pageBlockSectionItem>                
+                        </apex:pageBlockSection>
+                    </apex:outputPanel>   
+                </apex:outputPanel>
+                <!-- Commented as per FMS_16 - Start-->
+                <!--ECCN Section --  To be added by Abhita -->
+                
+                <apex:pageBlockSectionItem rendered="{!formObj.DesignSubmission__c == 'Multi-Design Reticle (>1 Topcell)'}">
+                    <apex:outputLabel value="What is the total number of Topcells that will be submitted for this program?"/>
+                    <apex:outputPanel >
+                        <div class = "requiredInput">
+                            <div class = "requiredBlock"></div>
+                            <apex:outputField value="{!formObj.NumOfDesigns__c}"/>
+                        </div>
+                    </apex:outputPanel>
+                </apex:pageBlockSectionItem>
+                <apex:outputPanel rendered="{!formObj.DesignSubmission__c == 'Multi-Design Reticle (>1 Topcell)'}">
+                    <p> Warning: The accuracy of this field is critical to the success of the automation. The total number of Topcells entered should equal the quantity of Topcells being submitted in the attached RIT addendum.</p>
+                </apex:outputPanel>
+                <apex:pageBlockSectionItem rendered="{!formObj.DesignSubmission__c == 'Multi-Design Reticle (>1 Topcell)'}">
+                    <apex:outputLabel value="Number of unique Front End of Line (precontact) designs:"/>
+                    <apex:outputPanel >
+                        <div class = "requiredInput">
+                            <div class = "requiredBlock"></div>
+                            <apex:outputField value="{!formObj.NumOfFEOLDesigns__c}"/>
+                        </div>
+                    </apex:outputPanel>
+                </apex:pageBlockSectionItem>
+                <apex:pageBlockSectionItem rendered="{!formObj.DesignSubmission__c == 'Multi-Design Reticle (>1 Topcell)'}">
+                    <apex:outputLabel value="Number of unique Back End of Line (Metal) designs:"/>
+                    <apex:outputPanel >
+                        <div class = "requiredInput">
+                            <div class = "requiredBlock"></div>
+                            <apex:outputField value="{!formObj.NumOfBEOLDesigns__c}"/>
+                        </div>
+                    </apex:outputPanel>
+                </apex:pageBlockSectionItem>
+                <apex:pageBlockSectionItem rendered="{!formObj.DesignSubmission__c != 'Multi-Design Reticle (>1 Topcell)' && (!(formObj.ReleaseProcessFlow__c == 'Enhanced Flow' && formObj.QuoteOnly__c != 'No')) && (!(formObj.ReleaseProcessFlow__c == 'Enhanced Flow' && isTFACompany))}">
+                    <apex:outputLabel value="Final Chip Size x (mm):"/>
+                    <apex:outputPanel >   
+                        <div class = "requiredInput">
+                            <div class = "requiredBlock"></div> 
+                            <apex:outputField value="{!formObj.DieXSize__c}"/> 
+                        </div>    
+                    </apex:outputPanel>  
+                </apex:pageBlockSectionItem>
+                
+                <apex:pageBlockSectionItem rendered="{!formObj.DesignSubmission__c != 'Multi-Design Reticle (>1 Topcell)' && (!(formObj.ReleaseProcessFlow__c == 'Enhanced Flow' && formObj.QuoteOnly__c != 'No')) && (!(formObj.ReleaseProcessFlow__c == 'Enhanced Flow' && isTFACompany))}">
+                    <apex:outputLabel value="Final Chip Size y (mm):"/>
+                    <apex:outputPanel >   
+                        <div class = "requiredInput">
+                            <div class = "requiredBlock"></div>
+                            <apex:outputField value="{!formObj.DieYSize__c}"/> 
+                        </div>    
+                    </apex:outputPanel>  
+                </apex:pageBlockSectionItem>
+                
+                <apex:outputPanel rendered="{!(formObj.DesignSubmission__c != 'Multi-Design Reticle (>1 Topcell)' && (formobj.Technology__c == 'BiMOS P6' || formobj.Technology__c == 'BMSP6C9'))}">
+                    <p>Please ensure that these chip sizes do not include the Intersil scribe. Step Plans must be built with chip sizes that do not include the scribe. Incorrectly reported chip sizes will result in delays to RTM.</p>
+                </apex:outputPanel><!--Added by Abhita for new UAT Issue #237-->
+
+                <apex:pageBlockSectionItem rendered="{!dispChamferedCorner}">
+                    <apex:outputLabel value="Chamfered Corners?"/>
+                    <apex:outputPanel >
+                        <apex:outputField value="{!formObj.ChamferedCorner__c}"/>
+                    </apex:outputPanel>
+                </apex:pageBlockSectionItem>
+                        
+                <apex:pageBlockSectionItem rendered="{!formObj.Packaging_Services__c == 'Yes' && formObj.Technology__c != '--None--'}">
+                    <apex:outputLabel value="Max Chip Power:"/>
+                    <apex:outputPanel >
+                        <div class = "requiredInput">
+                            <div class = "requiredBlock"></div>
+                            <apex:outputField value="{!formObj.MaxChipPower__c}"/>
+                        </div>
+                    </apex:outputPanel>
+                </apex:pageBlockSectionItem>                
+                
+                <apex:pageBlockSectionItem rendered="{!dispCircuitType}">
+                    <apex:outputLabel value="Circuit Type:"/>
+                    <apex:outputPanel >   
+                        <div class = "requiredInput">
+                            <div class = "requiredBlock"></div>   
+                            <apex:outputField value="{!formObj.CircuitType__c}"/>
+                        </div>  
+                    </apex:outputPanel>  
+                </apex:pageBlockSectionItem>
+                                    
+                <apex:pageBlockSectionItem rendered="{!dispWireBondPadPitch}">
+                    <apex:outputLabel value="Wirebond Pad Pitch (microns):"/>
+                    <apex:outputPanel >
+                        <div class = "requiredInput">
+                            <div class = "requiredBlock"></div>
+                            <apex:outputField value="{!formObj.WireBondPadPitch__c}"/>
+                        </div>
+                    </apex:outputPanel>
+                </apex:pageBlockSectionItem>               
+                
+                <apex:pageBlockSectionItem rendered="{!formObj.Chip_Interconnect__c == 'C4 flip chip' || formObj.Chip_Interconnect__c == 'Copper Pillar' || formObj.Chip_Interconnect__c == 'WLCSP-RDL' || formObj.Chip_Interconnect__c == 'WLCSP-BoP'}">
+                    <apex:outputLabel value="Pad/Bump Pitch:"/>
+                    <apex:outputPanel >
+                        <div class = "requiredInput">
+                            <div class = "requiredBlock"></div>
+                            <!--<apex:outputField value="{!formObj.C4PadLayout__c}"/>-->
+                            <apex:outputText value="{!formObj.C4PadLayout__c}"/><!--Changed by Abhita for new UAT issue #36-->
+                        </div>
+                    </apex:outputPanel>
+                </apex:pageBlockSectionItem>
+                <apex:pageBlockSectionItem rendered="{!dispOtherC4PadLayout}">
+                    <apex:outputLabel value="Other (microns):"/>
+                    <apex:outputPanel >
+                        <div class = "requiredInput">
+                            <div class = "requiredBlock"></div>
+                            <apex:outputField value="{!formObj.OtherC4PadLayout__c}"/>                          
+                        </div>
+                    </apex:outputPanel>
+                </apex:pageBlockSectionItem>
+                <apex:pageBlockSectionItem rendered="{!(formObj.C4PadLayout__c == 'Other') && (formObj.Chip_Interconnect__c == 'C4 flip chip' || formObj.Chip_Interconnect__c == 'Copper Pillar' || formObj.Chip_Interconnect__c == 'WLCSP-RDL' || formObj.Chip_Interconnect__c == 'WLCSP-BoP')}">
+                    <apex:outputLabel value="Pad/Bump Pitch used for DRC?"/>
+                    <apex:outputPanel >
+                        <div class = "requiredInput">
+                            <div class = "requiredBlock"></div>
+                            <apex:outputField value="{!formObj.C4PadLayoutForDRC__c}"/>
+                            <!--<apex:outputText value="{!C4PadLayoutForDRCListView}"/>-->
+                        </div>
+                    </apex:outputPanel>
+                </apex:pageBlockSectionItem>
+                <apex:pageBlockSectionItem rendered="{!dispNumC4Pads}">
+                    <apex:outputLabel value="Total number of active and dummy pads:"/>
+                    <apex:outputPanel >
+                        <div class = "requiredInput">
+                            <div class = "requiredBlock"></div>
+                            <apex:outputField value="{!formObj.NumC4Pads__c}"/>
+                        </div>
+                    </apex:outputPanel>
+                </apex:pageBlockSectionItem>
+                <apex:pageBlockSectionItem rendered="{!dispC4SolderMaterial}">
+                    <apex:outputLabel value="C4 Solder Material:"/>
+                    <apex:outputPanel >
+                        <div class = "requiredInput">
+                            <div class = "requiredBlock"></div>
+                            <apex:outputField value="{!formObj.C4SolderMaterial__c}"/>
+                        </div>
+                    </apex:outputPanel>
+                </apex:pageBlockSectionItem>
+                <apex:pageBlockSectionItem rendered="{!dispC4LaminatePackage}">
+                    <apex:outputLabel value="Will you be using a laminate package?:"/>
+                    <apex:outputPanel >
+                        <div class = "requiredInput">
+                            <div class = "requiredBlock"></div>
+                            <apex:outputField value="{!formObj.C4LaminatePkg__c}"/>
+                        </div>
+                    </apex:outputPanel>
+                </apex:pageBlockSectionItem>
+                <apex:pageBlockSectionItem rendered="{!dispWirebondLayout}">
+                    <apex:outputLabel value="Wirebond Layout:"/>
+                    <apex:outputPanel >
+                        <div class = "requiredInput">
+                            <div class = "requiredBlock"></div>
+                            <apex:outputField value="{!formObj.WireBondLayout__c}"/>
+                        </div>
+                    </apex:outputPanel>
+                </apex:pageBlockSectionItem>
+                <apex:pageBlockSectionItem rendered="{!dispWirebondPad}">
+                    <apex:outputLabel value="Total number of active and dummy Wirebond pads?:"/>
+                    <apex:outputPanel >
+                        <div class = "requiredInput">
+                            <div class = "requiredBlock"></div>
+                            <apex:outputField value="{!formObj.WireBondPad__c}"/>
+                        </div>
+                    </apex:outputPanel>
+                </apex:pageBlockSectionItem>
+            </apex:pageblockSection>
+                      
+            <!--START Step Plan Design Section --  To be modified by Abhita -->
+            <apex:pageBlockSection title="Step Plan Design" columns="1" rendered="{!dispStepPlanSection}" collapsible="false">
+            <apex:outputPanel rendered="{!displayNotAvailableMsg}"> <!-- Added By Abhita for WebRDTS Integration-->
+            <p>Step Plan Design information is currently unavailable. If this message is displaying during a weekly planned maintenance window (Sunday 6PM-midnight EST), please return to the form at a later time. If this message is displaying at a time other than the planned maintenance window, please contact your Foundry Technical Representative for assistance.</p>   
+            <br/>
+            </apex:outputPanel>
+            <apex:outputPanel rendered="{! !displayNotAvailableMsg}">
+            <p style="color:black;">For terminology definition or assistance with answering the following questions, please review the Step Plan Education Package (link below). Contact your Foundry Technical Representative if you need additional assistance. </p>   
+            <br/>
+                <apex:actionRegion >
+                    <apex:outputPanel >
+                        <apex:pageBlockSection >
+                            <apex:pageBlockSectionItem >                
+                                <apex:outputLabel value="Have you read and do you understand the Step Plan Education Package?"/>
+                                <apex:outputPanel >   
+                                    <div class = "requiredInput">
+                                        <div class = "requiredBlock"></div>                     
+                                        <apex:outputField value="{!formObj.StepPlanEducation__c}"/>                                                           
+                                    </div> 
+                                </apex:outputPanel>  
+                            </apex:pageBlockSectionItem>
+                        </apex:pageBlockSection>
+                    </apex:outputPanel>
+                    
+                    <apex:outputPanel id="inputMessage">
+                       <apex:outputPanel rendered="{!formObj.StepPlanEducation__c == 'No'}">
+                           <p>You have selected "No", that you have not read or do not understand the Step Plan Education Package. Please review the document at the link below. If you need further clarification, please contact your Foundry Technical Representative. </p>
+                           <br/>
+                       </apex:outputPanel>
+                    </apex:outputPanel> 
+                    
+                    <apex:outputPanel >
+                        <!--Ravindra - Libraries changes Starts
+                            <apex:outputLink style="padding-left: 22%;text-decoration: underline;color:blue;" value="{!FMSdocuments['FMSMainFormStepPlanEducationPackage'].FMSRefDocURL__c}" id="theLink" target="_blank">Link to Step Plan Education Package</apex:outputLink>-->
+                            <apex:outputLink style="padding-left: 22%;text-decoration: underline;color:blue;" value="{!URLFOR($Page.FMS_DocumentLinkPage)}?documentPage=StepPlan" id="theLink" target="_blank">Link to Step Plan Education Package</apex:outputLink>
+                    <!--Ravindra - Libraries changes Ends -->
+                        <br/> <br/>
+                    </apex:outputPanel>                 
+                    
+                    <apex:outputPanel >
+                        <apex:pageblocksection >
+                            <apex:pageBlockSectionItem rendered="{!dispInputMethod}" >
+                                <apex:outputLabel value="Select your step plan input Methodology:"/>
+                                <apex:outputPanel >   
+                                    <div class = "requiredInput">
+                                        <div class = "requiredBlock"></div>                     
+                                        <apex:outputField value="{!formObj.InputMethod__c}"/>
+                                    </div> 
+                                </apex:outputPanel>  
+                            </apex:pageBlockSectionItem> 
+                        </apex:pageblocksection>
+                    </apex:outputPanel>   
+    
+                    <apex:outputPanel id="reticleMessage">
+                       <apex:outputPanel rendered="{!formObj.InputMethod__c == 'Standard Process: Inputs via Step Plan Design FMS questions and Reticle Layout attachment'}">
+                           <p style="color:black;"><b>Please download the Reticle Layout Template using the link below. Populate the document with all requested information, rename to reflect the program name, then attach to this form. Contact your supporting PE if you have any questions.</b></p><!--Changed By Abhita for new UAT Issue #52 and #53-->
+                           <br/>
+                           <!--Ravindra - Libraries changes Starts
+                            <apex:outputLink style="padding-left: 22%;text-decoration: underline;color:blue;" value="{!FMSdocuments['FMSMainFormReticleLayoutTemplate'].FMSRefDocURL__c}" id="theLink1" target="_blank"> -->
+                            <apex:outputLink style="padding-left: 22%;text-decoration: underline;color:blue;" value="{!URLFOR($Page.FMS_DocumentLinkPage)}?documentPage=StepPlan" id="theLink1" target="_blank">Link to reticle layout template</apex:outputLink>
+                           <!--Ravindra - Libraries changes Ends-->
+                           <br/> <br/>
+                           <apex:outputText style="padding-left: 22%;color:black;" value="Allowable file types are (.xls,.csv,.123,.doc,.xlsx,.docx,.ods,.odt) and Max file size: 100MB" />
+                           <br/><br/>  
+                       </apex:outputPanel>
+                       
+                       <apex:outputPanel rendered="{!formObj.InputMethod__c == 'Advanced Process: Inputs via XML file attachment.'}">
+                           <p>You have chosen the advanced method of providing step plan inputs via a single XML file. Please ensure your file meets the requirements outlined in the specification prior to submission.</p>
+                           <br/>
+                           <apex:outputText style="padding-left: 22%;color:black;" value="Only .xml files are allowed and Max file size: 100MB" />
+                           <br/><br/>                  
+                       </apex:outputPanel>
+                    </apex:outputPanel>            
+                
+                    <apex:outputPanel id="uploadFile">            
+                        <apex:pageBlockSection rendered="{!formObj.InputMethod__c == 'Advanced Process: Inputs via XML file attachment.'}" > 
+                            <apex:pageBlockSectionItem > 
+                                <apex:outputLabel value="Reticle Layout XML file:" style="padding-left: 19%;"/>
+                                <apex:outputPanel >   
+                                   <div class = "requiredInput">
+                                       <div class = "requiredBlock"></div>            
+                                   </div>
+                               </apex:outputPanel>                                                                                                 
+                            </apex:pageBlockSectionItem>                      
+                        </apex:pageBlockSection>
+       
+                        <apex:pageBlockSection rendered="{!formObj.InputMethod__c == 'Standard Process: Inputs via Step Plan Design FMS questions and Reticle Layout attachment'}" > 
+                            <apex:pageBlockSectionItem > 
+                                     <apex:outputLabel value="Reticle Layout Information:" style="padding-left: 19%;"/>
+                                     <apex:outputPanel >   
+                                        <div class = "requiredInput">
+                                            <div class = "requiredBlock"></div>            
+                                        </div> 
+                                    </apex:outputPanel>                                                                                                 
+                            </apex:pageBlockSectionItem>      
+                        </apex:pageBlockSection>
+                    
+                       <apex:pageBlockSection rendered="{!(attWrap!=null && attWrap.size!=0)  
+                                            && (formObj.InputMethod__c == 'Standard Process: Inputs via Step Plan Design FMS questions and Reticle Layout attachment' 
+                                            || formObj.InputMethod__c == 'Advanced Process: Inputs via XML file attachment.')}">
+                           <apex:pageBlockSectionItem dataStyle="padding-left: 19%;width: 68%;">
+                               <apex:pageBlockTable value="{!attWrap}" var="attvar" >
+                                   <apex:column headerValue="Attachment name">
+                                       <apex:outputLink id="link" value="/sfc/servlet.shepherd/version/download/{!attvar.attId}" style="color: blue;text-decoration: underline;">{!attvar.attName}</apex:outputLink>
+                                   </apex:column>
+                                   <apex:column headerValue="Size">
+                                       <apex:outputText value="{!attvar.attSize}" />
+                                   </apex:column>
+                               </apex:pageBlockTable>                        
+                           </apex:pageBlockSectionItem>                   
+                       </apex:pageBlockSection>               
+                   </apex:outputPanel>
+                 
+                    <apex:outputPanel id="ChipRotate"> 
+                        <apex:pageBlockSection rendered="{!(formObj.DesignSubmission__c != 'Multi-Design Reticle (>1 Topcell)' && formobj.Technology__c != '32SOI' && formObj.InputMethod__c != 'Advanced Process: Inputs via XML file attachment.')}"> <!-- Changed By Abhita for new UAT issue #238-->
+                            <apex:pageBlockSectionItem >
+                                <apex:outputLabel escape="false" value="Select chip design rotation. Rotation value selected is counter-clockwise with chip origin (0,0) in lower left corner. <BR/> <BR/>
+                                                         Note: The Step Plan inputs for this technology are wafer notch RIGHT. The images depict the wafer notch DOWN which corresponds to 
+                                                         the view displayed in the published Step Plan."/>
+                                <apex:outputPanel >   
+                                    <div class = "requiredInput">
+                                        <div class = "requiredBlock"></div>                     
+                                        <apex:outputField value="{!formObj.StepPlanChipRotation__c}"/>                    
+                                    </div> 
+                                </apex:outputPanel>  
+                             </apex:pageBlockSectionItem>
+                             <apex:outputPanel id="chipImage" style="padding-right: 500px;">
+                                 <apex:pageBlockSectionItem >
+                                    <apex:image url="{!URLFOR($Resource.FMS_SP_Images, '/FMS_SP_Images/0_degree_rotation.png')}" width="100" height="100" style="margin-left: -230px"
+                                        rendered="{!formObj.StepPlanChipRotation__c == '0˚ Design rotation'}"/>
+                                 </apex:pageBlockSectionItem>
+                                 <apex:pageBlockSectionItem >
+                                    <apex:image url="{!URLFOR($Resource.FMS_SP_Images, '/FMS_SP_Images/90_degree_rotation.png')}" width="100" height="100" style="margin-left: -230px"
+                                        rendered="{!formObj.StepPlanChipRotation__c == '90˚ Design rotation'}"/>
+                                 </apex:pageBlockSectionItem>
+                                 <apex:pageBlockSectionItem >
+                                    <apex:image url="{!URLFOR($Resource.FMS_SP_Images, '/FMS_SP_Images/180_degree_rotation.png')}" width="100" height="100" style="margin-left: -230px"
+                                        rendered="{!formObj.StepPlanChipRotation__c == '180˚ Design rotation'}"/>
+                                 </apex:pageBlockSectionItem>
+                                 <apex:pageBlockSectionItem >
+                                    <apex:image url="{!URLFOR($Resource.FMS_SP_Images, '/FMS_SP_Images/270_degree_rotation.png')}" width="100" height="100" style="margin-left: -230px"
+                                        rendered="{!formObj.StepPlanChipRotation__c == '270˚ Design rotation'}"/>
+                                 </apex:pageBlockSectionItem>
+                             </apex:outputPanel>
+                        </apex:pageBlockSection>
+                    </apex:outputPanel>
+                    
+                    <apex:outputPanel >
+                        <apex:pageBlockSection rendered="{!dispCrackOptions}">
+                            <apex:pageBlockSectionItem >
+                                <apex:outputLabel value="Select your Crackstop methodology:"/>
+                                <apex:outputPanel >   
+                                    <div class = "requiredInput">
+                                        <div class = "requiredBlock"></div>                     
+                                        <apex:outputField value="{!formObj.CrackstopOptions__c}"/>                    
+                                    </div> 
+                                </apex:outputPanel>  
+                             </apex:pageBlockSectionItem>
+                        </apex:pageBlockSection> 
+                    </apex:outputPanel>
+    
+                    <!--Changed by Abhita for new UAT Issues #46-->
+                    <apex:outputPanel >
+                        <apex:outputPanel rendered="{!dispChannelType}">
+                            <p style="color:black;">This technology supports either Standard or Steal Primary Die (SPD) Dicing Channels. In some cases (typically dies sizes &lt;2mm per side), higher chips-per-wafer (CPW) may be achieved using SPD. Prior to submitting and freezing this form, you must ensure that your dicing vendor is able to dice your 
+                            requested channel widths. </p>   
+                            <br/>
+                        </apex:outputPanel>
+                        <apex:outputPanel rendered="{!dispDicingPref}">
+                            <p style="color:black;">This technology supports Standard Dicing Channels. Prior to submitting and freezing this form, you must ensure that your dicing vendor is able to dice your requested channel widths.</p>
+                            <br/>
+                        </apex:outputPanel>            
+                    </apex:outputPanel>  
+                    <br/>  
+                    <br/>
+                    
+                    <apex:outputPanel >
+                        <apex:pageBlockSection rendered="{!dispChannelType}">
+                            <apex:pageBlockSectionItem >
+                                <apex:outputLabel value="Select your Dicing Channel type:"/>
+                                <apex:outputPanel >   
+                                    <div class = "requiredInput">
+                                        <div class = "requiredBlock"></div>                     
+                                        <apex:outputField value="{!formObj.Channel_Type__c}"/>                 
+                                    </div> 
+                                </apex:outputPanel>  
+                             </apex:pageBlockSectionItem>
+                        </apex:pageBlockSection>
+                    </apex:outputPanel>
+                
+                    <apex:outputPanel >
+                        <apex:pageBlockSection rendered="{!dispDicingPref}">
+                            <apex:pageBlockSectionItem >
+                                <apex:outputLabel value="Select your Dicing Channel preference:"/>
+                                <apex:outputPanel >   
+                                    <div class = "requiredInput">
+                                        <div class = "requiredBlock"></div>                     
+                                        <apex:outputField value="{!formObj.ChannelStdOnly__c}"/>                                                          
+                                    </div> 
+                                </apex:outputPanel>  
+                             </apex:pageBlockSectionItem>
+                        </apex:pageBlockSection>
+                     </apex:outputPanel>
+    
+                    <apex:pageBlockSection rendered="{!(formObj.Packaging_Services__c == 'No' && contDicing)}"><!-- Added the condition for new UAT Issue #180, 182, 208-->
+                        <apex:pageBlockSectionItem >
+                            <apex:image url="{!URLFOR($Resource.FMS_SP_Images, '/FMS_SP_Images/Design_notch_3.png')}" width="130" height="130" style="margin-left: -10px"
+                                rendered="{!formObj.DesignNotch__c == '3'}"/>
+                        </apex:pageBlockSectionItem>
+                        <apex:pageBlockSectionItem >
+                            <apex:image url="{!URLFOR($Resource.FMS_SP_Images, '/FMS_SP_Images/Design_notch_6.png')}" width="130" height="130" style="margin-left: -530px"
+                                rendered="{!formObj.DesignNotch__c == '6'}"/>
+                        </apex:pageBlockSectionItem>
+                    </apex:pageBlockSection>
+                
+                    <apex:outputPanel id="diceMessage">
+                        <apex:outputPanel rendered="{!((formObj.Channel_Type__c != null && formObj.Channel_Type__c != '' && (formObj.Channel_Type__c == 'Standard channels; Custom minimum width' || contains(formObj.Channel_Type__c,'Standard channels; Minimum width allowed'))) || (formObj.ChannelStdOnly__c != null && formObj.ChannelStdOnly__c != '' && (formObj.ChannelStdOnly__c == 'Custom minimum width' || contains(formObj.ChannelStdOnly__c,'Minimum width allowed'))))}">
+                            <p>These requested widths may be increased in order to accommodate required kerf content. Please ensure that you confirm the final widths are acceptable 
+                                during your Preliminary Step Plan review.</p> <!--Changed by Abhita for new UAT issue #51 -->
+                            <br/>
+                        </apex:outputPanel>
+                        <apex:outputPanel rendered="{!((formObj.ChannelStdOnly__c == 'Fixed custom width' && formObj.ChannelStdOnly__c != null && formObj.ChannelStdOnly__c != '')
+                        || (formObj.Channel_Type__c == 'Standard channels; Fixed custom width' && formObj.Channel_Type__c != null && formObj.Channel_Type__c != '')) }">
+                            <p>Note: If required GLOBALFOUNDRIES kerf content cannot fit within the requested dicing channel widths, then the Step Plan request will be rejected
+                              and new FMS inputs will be required.</p>
+                            <br/>
+                        </apex:outputPanel>            
+                    </apex:outputPanel>
+                
+                    <apex:outputPanel id="XParameter">
+                        <apex:pageBlockSection rendered="{!((formObj.DesignSubmission__c != '' && formObj.DesignSubmission__c != null && formObj.Packaging_Services__c == 'No' && contDicing) && (formObj.Channel_Type__c != 'Compare Standard and SPD channels for optimal CPW' || dispDicingPref))}">
+                            <apex:pageBlockSectionItem >
+                                <apex:outputLabel value="Specify your preferred Dicing Channel width X (um):"/>
+                                <apex:outputPanel >   
+                                    <div class = "requiredInput">
+                                        <div class = "requiredBlock"></div>                     
+                                        <apex:outputField value="{!formObj.VerticalX__c}"/>
+                                    </div>
+                                </apex:outputPanel>  
+                            </apex:pageBlockSectionItem>
+                        </apex:pageBlockSection>
+                    </apex:outputPanel>
+                
+                    <apex:outputPanel id="YParameter">
+                        <apex:pageBlockSection rendered="{!((formObj.DesignSubmission__c != '' && formObj.DesignSubmission__c != null && formObj.Packaging_Services__c == 'No' && contDicing) && (formObj.Channel_Type__c != 'Compare Standard and SPD channels for optimal CPW' || dispDicingPref))}">
+                            <apex:pageBlockSectionItem >
+                                <apex:outputLabel value="Specify your preferred Dicing Channel width Y (um):"/>
+                                <apex:outputPanel >   
+                                    <div class = "requiredInput">
+                                        <div class = "requiredBlock"></div>                     
+                                        <apex:outputField value="{!formObj.HorizontalY__c}"/>
+                                    </div>
+                                </apex:outputPanel>  
+                             </apex:pageBlockSectionItem>
+                        </apex:pageBlockSection> 
+                    </apex:outputPanel>
+                    
+                    <apex:outputPanel id="XYChannel">
+                        <apex:pageBlockSection rendered="{!(formObj.Packaging_Services__c == 'No' && contDicing
+                                             && formObj.Channel_Type__c == 'Compare Standard and SPD channels for optimal CPW' && formObj.Channel_Type__c != null && formObj.Channel_Type__c != '')}">
+                            <apex:pageBlockSectionItem >
+                                <apex:outputLabel value="Specify the Dicing Channel widths (X,Y) to be used for the comparison:"/>
+                                <apex:outputPanel >   
+                                    <div class = "requiredInput">
+                                        <div class = "requiredBlock"></div>                     
+                                        <apex:outputField value="{!formObj.CompareChannels__c}"/>                                      
+                                    </div>
+                                </apex:outputPanel>  
+                             </apex:pageBlockSectionItem>
+                        </apex:pageBlockSection>
+                    </apex:outputPanel> 
+                
+                    <apex:outputPanel >
+                        <apex:pageBlockSection rendered="{!(formObj.Packaging_Services__c == 'No' && contDicing)}">
+                            <apex:pageBlockSectionItem >
+                                <apex:outputLabel value="Is Enhanced Edge Field Stepping required for improved chips-per-wafer?"/>
+                                <apex:outputPanel >   
+                                    <div class = "requiredInput">
+                                        <div class = "requiredBlock"></div>                     
+                                        <apex:outputField value="{!formObj.StepPlanEdgeField__c}"/>
+                                    </div>
+                                </apex:outputPanel>  
+                             </apex:pageBlockSectionItem>
+                        </apex:pageBlockSection>
+                    </apex:outputPanel>
+                    
+                    <apex:outputPanel >
+                        <apex:pageBlockSection rendered="{!dispDicingMarks}">
+                            <apex:pageBlockSectionItem >
+                                <apex:outputLabel value="Do you require dice marks placed in the GLOBALFOUNDRIES-placed DICING CHANNELS?"/>
+                                <apex:outputPanel >   
+                                    <div class = "requiredInput">
+                                        <div class = "requiredBlock"></div>                     
+                                        <apex:outputField value="{!formObj.DiceMarks__c}"/>
+                                    </div>
+                                </apex:outputPanel>  
+                             </apex:pageBlockSectionItem>
+                        </apex:pageBlockSection>
+                    </apex:outputPanel>
+                    
+                    <apex:outputPanel >
+                        <apex:pageblockSection >
+                            <apex:pageBlockSectionItem >
+                                <apex:outputLabel value="Do you have any custom step plan requirements not outlined above?"/>
+                                <apex:outputPanel >   
+                                    <div class = "requiredInput">
+                                        <div class = "requiredBlock"></div>                     
+                                        <apex:outputField value="{!formObj.StepPlanCustomRequirement__c}"/>                      
+                                    </div> 
+                                </apex:outputPanel>  
+                             </apex:pageBlockSectionItem>
+                         </apex:pageblockSection>
+                     </apex:outputPanel>
+                 
+                    <apex:outputPanel id="reqInput" >
+                            <apex:pageblockSection rendered="{!formObj.StepPlanCustomRequirement__c == 'Yes'}">
+                                <apex:pageBlockSectionItem >
+                                    <apex:outputLabel value="List custom requirements here:"/>
+                                    <apex:outputPanel >   
+                                    <div class = "requiredInput">
+                                        <div class = "requiredBlock"></div>                     
+                                        <apex:outputField value="{!formObj.StepPlanCustomRequirementInput__c}"/> 
+                                    </div> 
+                                     </apex:outputPanel>   
+                                </apex:pageBlockSectionItem>
+                            </apex:pageblockSection>
+                    </apex:outputPanel>
+                    
+                    <!--Changed by Abhita for New UAT Issue #72 and #73 -->
+                    <apex:outputPanel rendered="{!contDicing && formObj.Packaging_Services__c == 'No'}">
+                        <p style="color:black;">All Wafer Step Plans require customer review and acceptance. This review and acceptance will be completed through a separate Step Plan 
+                                                addendum attached to this Main form. (This addendum will be generated upon your successful design data submission.) 
+                                                FMS will subsequently notify the reviewer(s) once the published Step Plan is ready for review. Please ensure that you have clearly 
+                                                communicated any/all layout requirements in the form fields above in order that the resulting Step Plan will meet your specifications. 
+                                                Please note that delayed reviews and approvals will impact Release cycle times. 
+                        </p>   
+                        <br/>
+                        <p style="color:black;">Select the names of the Step Plan reviewer(s) to receive the FMS Step Plan notifications. Please note that a single user is ultimately 
+                                                required to approve (or reject) the Preliminary Step Plan(s) within the addendum and submit the Step Plan addendum in order for the 
+                                                Release Process to continue.
+                        </p>
+                        <br/>
+                        <apex:outputPanel > 
+                            <apex:outputPanel > 
+                            <apex:outputLabel value="Step Plan Reviewers:" style="font-weight: bold"/> 
+                            <div class = "requiredInput">
+                                <div class = "requiredBlock" style="margin-top:-13px; margin-left: 140px"></div>                     
+                            </div> 
+                            </apex:outputPanel> 
+                        </apex:outputPanel>
+                        <br/>
+                        <apex:outputPanel >
+                            <apex:actionRegion > 
+                                <apex:outputPanel id="addContTab" >
+                                    <apex:pageBlockSection >
+                                    <apex:pageblockSectionItem >
+                                        <apex:outputLabel ></apex:outputLabel><!--Changed by Abhita for New UAT Issue #151, 217-->
+                                        <apex:pageblockTable value="{!addStepPlanList}" var="addCont" style="width:700px">
+                                            <apex:column headerValue="Step Plan Reviewer's Name" value="{!addCont.addContName}"/>
+                                            <apex:column headerValue="Step Plan Reviewer's Email" value="{!addCont.addContEmail}"/>
+                                        </apex:pageblockTable>
+                                    </apex:pageblockSectionItem>
+                                    </apex:pageBlockSection>
+                                </apex:outputPanel>
+                            </apex:actionRegion> 
+                        </apex:outputPanel>
+                    </apex:outputPanel>
+                </apex:actionRegion>
+            </apex:outputPanel>
+            </apex:pageBlockSection>  
+            <!--END Step Plan Design Section --  To be modified by Abhita -->
+            
+            <apex:pageBlockSection title="Pin Layout" columns="1" id="pbs11" collapsible="false" rendered="{!formObj.Packaging_Services__c == 'Yes'}">
+                <apex:pageBlockSectionItem rendered="{!formObj.Packaging_Services__c == 'Yes'}">
+                    <apex:outputLabel value="How are you identifying pin one to IBM:"/>
+                    <apex:outputPanel >
+                        <div class = "requiredInput">
+                            <div class = "requiredBlock"></div>
+                            <apex:outputField value="{!formObj.PinOneID__c}"/>
+                        </div>
+                    </apex:outputPanel>
+                </apex:pageBlockSectionItem>
+            </apex:pageBlockSection>
+            <apex:pageBlockSection title="Additional Inputs" columns="1" id="pbs12" collapsible="false">
+                <apex:pageBlockSectionItem >
+                    <apex:outputLabel value="Does your design(s) contain any IP that requires identification?"/>
+                    <apex:outputPanel >
+                        <div class = "requiredInput">
+                            <div class = "requiredBlock"></div>
+                            <apex:outputField value="{!formObj.IpIdentification__c}"/>
+                        </div>
+                    </apex:outputPanel>
+                </apex:pageBlockSectionItem>
+                <apex:pageBlockSectionItem rendered="{!formObj.IpIdentification__c == 'Yes'}">
+                    <apex:outputLabel value="Please list the IP Provider Name and Library(s) contained within your design(s). Examples of providers: ARM, ASIC North, IBM, Novocell, Synopsys, etc.:"/>
+                    <apex:outputPanel >
+                        <div class = "requiredInput">
+                            <div class = "requiredBlock"></div>
+                            <apex:outputField value="{!formObj.DesignKitOthers__c}"/>
+                        </div>
+                    </apex:outputPanel>
+                </apex:pageBlockSectionItem>
+                <apex:pageBlockSectionItem rendered="{!dispPickMap}">
+                    <apex:outputLabel value="Are you ordering an Untested Pick-All Wafer Map (Default Map)?:"/>
+                    <apex:outputPanel >
+                        <div class = "requiredInput">
+                            <div class = "requiredBlock"></div>
+                            <apex:outputField value="{!formObj.PickMap__c}"/>
+                        </div>
+                    </apex:outputPanel>
+                </apex:pageBlockSectionItem>
+                <apex:pageBlockSectionItem rendered="{!(formObj.QuoteOnly__c == 'No' && formObj.State_of_the_Form__c == 'Submitted For Quote') || !(formObj.QuoteOnly__c == 'Yes')}">
+                    <apex:outputLabel value="Do you need to add any special instructions or additional information that has not been captured elsewhere in this form?"/>
+                    <apex:outputPanel >
+                        <apex:outputField value="{!formObj.NeedAdditionalComments__c}"/>
+                    </apex:outputPanel>
+                </apex:pageBlockSectionItem>
+                <apex:pageBlockSectionItem rendered="{!((formObj.QuoteOnly__c == 'No' && formObj.State_of_the_Form__c == 'Submitted For Quote') || !(formObj.QuoteOnly__c == 'Yes')) && formObj.NeedAdditionalComments__c == 'Yes'}">
+                    <apex:outputLabel value="List additional information here:"/>
+                    <apex:outputPanel >
+                        <div class = "requiredInput">
+                            <div class = "requiredBlock"></div>
+                            <apex:outputField value="{!formObj.AdditionalComments__c}"/>
+                        </div>
+                    </apex:outputPanel>
+                </apex:pageBlockSectionItem>
+            </apex:pageBlockSection>
+            <!--Commenting out from View page- Changed to configurator button - 20-Oct-2016 -- Ashwin Dash-->
+            <!-- added by karna shiva for configurator - start-->  
+            <!--<apex:outputPanel rendered="{!formObj.TestServices__c == 'No' && formObj.Packaging_Services__c == 'No'}">
+                <p style="color:brown;font-size: 120%;">Click this link to go configurator for entering technical features information </p> <br/>            
+                <apex:commandlink style="font-size: 100%; text-decoration:none;" styleClass="btn" value="Configurator" immediate="true" action="{!redirectConfig}" target="_blank"/>
+            </apex:outputPanel>-->
+            <!--end-->
+        </apex:pageBlock>
+        
+        <apex:pageBlock title="Form Page {!Page4}" id="pb4" rendered="{!((formObj.Packaging_Services__c =='Yes' || formObj.TestServices__c == 'Yes') && (Page4 == 4 || Page4 == 5) && !popupVal)}">
+            <apex:pageBlockSection title="Yield Projection Inputs" columns="1" id="pbs13" collapsible="false" rendered="{!formObj.Packaging_Services__c =='Yes' || formObj.TestServices__c == 'Yes'}">
+                <apex:outputField label="Circuit Types:" value="{!formObj.CircuitTypeInput__c}" rendered="{!formObj.Packaging_Services__c =='Yes' || formObj.TestServices__c == 'Yes'}"/>
+                <apex:outputField label="Total Transistor Count:" value="{!formObj.TotalTransCount__c}" rendered="{!formObj.Packaging_Services__c =='Yes' || formObj.TestServices__c == 'Yes'}"/>
+                <!-- <apex:outputField label="Digital Circuit Count (2-Input NAND Equivalent, not including RAM/ROM/Register Arrays):" value="{!formObj.DigitalCircuitCount__c}" rendered="{!formObj.Packaging_Services__c =='Yes' || formObj.TestServices__c == 'Yes'}"/> -->
+                <apex:outputField label="Digital Circuit Count (2-Input NAND Equivalent, not including RAM/ROM/Register Arrays):" value="{!formObj.DigitalCircuitCount__c}" rendered="{!(formObj.Packaging_Services__c =='Yes' || formObj.TestServices__c == 'Yes') && renderLabel}"/> <!-- Corrected the label name for DEFECT 35 -- Ashwin Dash -->
+                <apex:outputField label="Equivalent Digital Circuit Count (2-Input NAND Equivalent, not including RAM/ROM/Register Arrays):" value="{!formObj.DigitalCircuitCount__c}" rendered="{!(formObj.Packaging_Services__c =='Yes' || formObj.TestServices__c == 'Yes') && !renderLabel}"/>
+                <hr style ="border-color: #b4c374;"/>
+                <h1>Embedded Arrays</h1>
+                
+                <apex:outputField label="RAM (singleport bits):" value="{!formObj.RamSinglePort__c}" rendered="{!formObj.Packaging_Services__c =='Yes' || formObj.TestServices__c == 'Yes'}"/>
+                <apex:outputField label="RAM (multi-port bits):" value="{!formObj.RamMultiPort__c}" rendered="{!formObj.Packaging_Services__c =='Yes' || formObj.TestServices__c == 'Yes'}"/>
+                <apex:outputField label="ROM (bits):" value="{!formObj.RomBits__c}" rendered="{!formObj.Packaging_Services__c =='Yes' || formObj.TestServices__c == 'Yes'}"/>
+                <apex:outputField label="Registers (bits):" value="{!formObj.RegisterBits__c}" rendered="{!formObj.Packaging_Services__c =='Yes' || formObj.TestServices__c == 'Yes'}"/>
+                <apex:outputField label="RAM Redundancy:" value="{!formObj.RamRedundancy__c}" rendered="{!formObj.Packaging_Services__c =='Yes' || formObj.TestServices__c == 'Yes'}"/>
+                <apex:outputField label="Describe Usage:" value="{!formObj.DescriptionOfTransistorUsage__c}" rendered="{!formObj.Packaging_Services__c =='Yes' || formObj.TestServices__c == 'Yes'}"/>
+                <apex:pageblockSectionItem rendered="{!formObj.Packaging_Services__c =='Yes' || formObj.TestServices__c == 'Yes'}">
+                    <apex:outputLabel value="Maximum Tj:"/>
+                    <apex:outputPanel >
+                        <div class = "requiredInput">
+                            <div class = "requiredBlock"></div>
+                            <apex:outputField value="{!formObj.WorstCaseTj__c}"/>
+                        </div>
+                    </apex:outputPanel>
+                </apex:pageblockSectionItem>
+                <apex:outputField label="Minimum Tj:" value="{!formObj.MinimumTj__c}" rendered="{!formObj.Packaging_Services__c =='Yes' || formObj.TestServices__c == 'Yes'}"/>
+            </apex:pageBlockSection>
+            <!--Commenting out from View page-  Changed to configurator button - 20-Oct-2016 -- Ashwin Dash-->
+            <!-- added by karna shiva for configurator - start-->  
+            <!--<apex:outputPanel rendered="{!formObj.TestServices__c == 'Yes' && formObj.Packaging_Services__c == 'No'}">
+                <p style="color:brown;font-size: 120%;">Click this link to go configurator for entering technical features information </p> <br/>            
+                <apex:commandlink style="font-size: 100%; text-decoration:none;" styleClass="btn" value="Configurator" immediate="true" action="{!redirectConfig}" target="_blank"/>
+            </apex:outputPanel>-->
+            <!--end-->
+        </apex:pageBlock>
+        
+        <apex:pageBlock title="Form Page {!Page5}" id="pb5" rendered="{!(formObj.Packaging_Services__c =='Yes' && (Page5 == 5 || Page5 == 6) && !popupVal)}">
+            <apex:pageBlockSection title="Requested Package" columns="1" id="pbs14" collapsible="false" rendered="{!formObj.Packaging_Services__c =='Yes'}">
+                <apex:pageblockSectionItem id="pbsi1" rendered="{!(formObj.Packaging_Services__c== 'Yes')}">
+                    <apex:outputLabel value="Package Requirements:"/>
+                    <apex:outputPanel >
+                        <div class = "requiredInput">
+                            <div class = "requiredBlock"></div>
+                            <apex:outputField label="Package Requirements:" value="{!formObj.PackageRequirement__c}"/>
+                        </div>
+                    </apex:outputPanel>
+                </apex:pageblockSectionItem>
+                <apex:pageblockSectionItem id="pckgTypeNeedSec" rendered="{!(formObj.Packaging_Services__c== 'Yes')}">
+                    <apex:outputLabel value="Package Type needed (Click the Help icon to view the descriptions):"/>
+                    <apex:outputPanel >
+                        <apex:outputPanel rendered="{!(formObj.PackageRequirement__c == 'Customer Existing Package')}">
+                            <div class = "requiredInput">
+                                <div class = "requiredBlock"></div>
+                                <apex:outputField label="Package Type needed (Click the Help icon to view the descriptions):" value="{!formObj.PackageType__c }" />
+                            </div>
+                        </apex:outputPanel>
+                        <apex:outputPanel rendered="{!(formObj.PackageRequirement__c != 'Customer Existing Package')}">
+                            <apex:outputField label="Package Type needed (Click the Help icon to view the descriptions):" value="{!formObj.PackageType__c }" />
+                        </apex:outputPanel>
+                    </apex:outputPanel>
+                </apex:pageblockSectionItem>
+                <apex:pageblockSectionItem rendered="{!(formObj.Packaging_Services__c== 'Yes' && formObj.PackageType__c == 'Other')}">
+                    <apex:outputLabel value="Other:"/>
+                    <apex:outputPanel >
+                        <apex:outputPanel id="outPannel3" rendered="{!(formObj.PackageRequirement__c == 'Customer Existing Package')}" >
+                            <div class = "requiredInput">
+                                <div class = "requiredBlock"></div>
+                                <apex:outputField label="Other:" value="{!formObj.PackageTypeOther__c}"/>
+                            </div>
+                        </apex:outputPanel>
+                        <apex:outputPanel rendered="{!(formObj.PackageRequirement__c != 'Customer Existing Package')}">
+                            <apex:outputField label="Other:" value="{!formObj.PackageTypeOther__c }" />
+                        </apex:outputPanel>
+                    </apex:outputPanel>
+                </apex:pageblockSectionItem>
+                <apex:pageblockSectionItem id="SidSec" rendered="{!(formObj.Packaging_Services__c== 'Yes')}">
+                    <apex:outputLabel value="SID or IBM Part Number:"/>
+                    <apex:outputPanel >
+                        <apex:outputPanel rendered="{!(formObj.PackageRequirement__c == 'Customer Existing Package')}" >
+                            <div class = "requiredInput">
+                                <div class = "requiredBlock"></div>
+                                <apex:outputField value="{!formObj.SID__c }" />
+                            </div>
+                        </apex:outputPanel>
+                        <apex:outputPanel rendered="{!(formObj.PackageRequirement__c != 'Customer Existing Package')}">
+                            <apex:outputField value="{!formObj.SID__c }" />
+                        </apex:outputPanel>
+                    </apex:outputPanel>
+                </apex:pageblockSectionItem>
+                <apex:pageblockSectionItem id="mdulPwrNmlsec" rendered="{!(formObj.Packaging_Services__c== 'Yes')}">
+                    <apex:outputLabel value="Module Power (Nominal):"/>
+                    <apex:outputPanel id="outPannel5">
+                        <!--<apex:outputPanel rendered="{!(formObj.PackageRequirement__c == 'Customer Existing Package')}" >
+                            <div class = "requiredInput">
+                                <div class = "requiredBlock"></div>
+                                <apex:outputField value="{!formObj.ModulePowerNominal__c }"/>
+                            </div>
+                        </apex:outputPanel>-->
+                        <apex:outputPanel >
+                            <apex:outputField value="{!formObj.ModulePowerNominal__c }" />
+                        </apex:outputPanel>
+                    </apex:outputPanel>
+                </apex:pageblockSectionItem>
+                <!--<apex:pageblockSectionItem id="mdulPwrMaxsec" rendered="{!(formObj.Packaging_Services__c== 'Yes')}">
+                    <apex:outputLabel value="Module Power (Max):"/>
+                    <apex:outputPanel id="outPannel6">
+                        <apex:outputPanel rendered="{!(formObj.PackageRequirement__c == 'Customer Existing Package')}" >
+                            <div class = "requiredInput">
+                                <div class = "requiredBlock"></div>
+                                <apex:outputField value="{!formObj.ModulePowerMax__c }"/>
+                            </div>
+                        </apex:outputPanel>
+                        <apex:outputPanel rendered="{!(formObj.PackageRequirement__c != 'Customer Existing Package')}" >
+                            <apex:outputField value="{!formObj.ModulePowerMax__c }" />
+                        </apex:outputPanel>
+                    </apex:outputPanel>
+                </apex:pageblockSectionItem>-->
+                <apex:pageblockSectionItem id="mdulPwrMaxsec" rendered="{!(formObj.Packaging_Services__c== 'Yes')}">
+                    <apex:outputLabel value="Module Power (Max):"/>
+                    <apex:outputPanel id="outPannel6">
+                        <div class = "requiredInput">
+                            <div class = "requiredBlock"></div>
+                            <apex:outputField value="{!formObj.ModulePowerMax__c}"/>
+                        </div>
+                    </apex:outputPanel>
+                </apex:pageblockSectionItem>
+            </apex:pageBlockSection>
+            <!--<apex:pageblockSection title="Ambient Temperature" columns="1" id="pbs16">-->
+            <apex:pageblockSection columns="1" id="pbs16">
+            <hr style ="border-color: #b4c374;"/>
+            <h1>Ambient Temperature</h1>
+                <apex:outputField label="Maximum Ambient Temperature:" value="{!formObj.MaxAmbientTemp__c }" rendered="{!(formObj.Packaging_Services__c== 'Yes')}"/>
+                <apex:outputField label="Maximum air temperature rise from machine to module:" value="{!formObj.MaxAirTemp__c}" rendered="{!(formObj.Packaging_Services__c== 'Yes')}"/>
+                <hr style ="border-color: #b4c374;"/>
+                <apex:pageblockSectionItem id="coolingsec" rendered="{!(formObj.Packaging_Services__c== 'Yes')}">
+                    <apex:outputLabel value="Cooling:"/>
+                    <apex:outputPanel id="CoolingPnl" >
+                        <div class = "requiredInput">
+                            <div class = "requiredBlock"></div>
+                            <apex:outputField id="coolingFld" label="Package Type needed (Click the Help icon to view the descriptions):" value="{!formObj.Cooling__c }"/>
+                        </div>
+                    </apex:outputPanel>
+                </apex:pageblockSectionItem>
+                <apex:pageblockSectionItem rendered="{!(formObj.Packaging_Services__c== 'Yes' && formObj.Cooling__c == 'Other')}">
+                    <apex:outputLabel value="Other:"/>
+                    <apex:outputPanel id="coolingOtherPnl">
+                        <div class = "requiredInput">
+                            <div class = "requiredBlock"></div>
+                            <apex:outputField value="{!formObj.CoolingOther__c}" />
+                        </div>
+                    </apex:outputPanel>
+                </apex:pageblockSectionItem>
+                <apex:pageblockSectionItem id="crssflwsec" rendered="{!(formObj.Packaging_Services__c== 'Yes'  && formObj.Cooling__c == 'Cross Flow')}">
+                    <apex:outputLabel value="Cross Flow (feet/min):"/>
+                    <apex:outputPanel id="crossFlwPnl">
+                        <div class = "requiredInput">
+                            <div class = "requiredBlock"></div>
+                            <apex:outputField id="crsFlwIFPM" value="{!formObj.CrossFlowIFPM__c}"/>
+                        </div>
+                    </apex:outputPanel>
+                </apex:pageblockSectionItem>
+                <apex:outputField label="Number of Power Supplies to Support:" value="{!formObj.NoOfPowerSupplies__c}" rendered="{!(formObj.Packaging_Services__c== 'Yes')}"/>
+                <apex:pageblockSectionItem id="pcksrvSec" rendered="{!(formObj.Packaging_Services__c== 'Yes')}">
+                    <apex:outputLabel value="Lifetime Power On Hours:"/>
+                    <apex:outputPanel id="pckgSerpnl" >
+                        <div class = "requiredInput">
+                            <div class = "requiredBlock"></div>
+                            <apex:outputField id="pckgSerFld" label="Package Type needed (Click the Help icon to view the descriptions):" value="{!formObj.LifetimePOH__c }" />
+                        </div>
+                    </apex:outputPanel>
+                </apex:pageblockSectionItem>
+                <apex:pageblockSectionItem rendered="{!(formObj.Packaging_Services__c== 'Yes'  && formObj.LifetimePOH__c == 'Other')}">
+                    <apex:outputLabel value="Other:"/>
+                    <apex:outputPanel id="lifetimepohPnl">
+                        <div class = "requiredInput">
+                            <div class = "requiredBlock"></div>
+                            <apex:outputField value="{!formObj.LifetimePOHOther__c}" />
+                        </div>
+                    </apex:outputPanel>
+                </apex:pageblockSectionItem>
+                <apex:pageblockSectionItem rendered="{!(formObj.Packaging_Services__c== 'Yes')}">
+                    <apex:outputLabel value="Are differential pairs required?:"/>
+                    <apex:outputPanel id="diffPairReqpnl" >
+                        <apex:outputField id="diffPairReqFld" value="{!formObj.DiffPairRequired__c }" />
+                    </apex:outputPanel>
+                </apex:pageblockSectionItem>
+                <apex:pageblockSectionItem rendered="{!(formObj.Packaging_Services__c== 'Yes'  && formObj.DiffPairRequired__c == 'Yes')}">
+                    <apex:outputLabel value="How many:"/>
+                    <apex:outputPanel id="howManyPnl">
+                        <div class = "requiredInput">
+                            <div class = "requiredBlock"></div>
+                            <apex:outputField value="{!formObj.NoOfDiffPairs__c}" />
+                        </div>
+                    </apex:outputPanel>
+                </apex:pageblockSectionItem>
+                <apex:pageblockSectionItem rendered="{!(formObj.Packaging_Services__c== 'Yes')}">
+                    <apex:outputLabel value="Is the package a single chip module or a multichip module?:"/>
+                    <apex:outputPanel id="pkgchiptypepnl" >
+                        <div class = "requiredInput">
+                            <div class = "requiredBlock"></div>
+                            <apex:outputField id="diffPairReqFld" value="{!formObj.ModuleType__c }" />
+                        </div>
+                    </apex:outputPanel>
+                </apex:pageblockSectionItem>
+                <apex:pageblockSectionItem id="multchpDetSec" rendered="{!(formObj.Packaging_Services__c== 'Yes'  && formObj.ModuleType__c == 'Multi-Chip Module')}">
+                    <apex:outputLabel value="If multichip, provide additional details:"/>
+                    <apex:outputPanel id="multichipdetailspnl">
+                        <div class = "requiredInput">
+                            <div class = "requiredBlock"></div>
+                            <apex:outputField id="multChpDetails" value="{!formObj.MultiChipDetails__c}"/>
+                        </div>
+                    </apex:outputPanel>
+                </apex:pageblockSectionItem>
+                <apex:pageblockSectionItem rendered="{!(formObj.Packaging_Services__c== 'Yes'  && formObj.ModuleType__c == 'Multi-Chip Module')}">
+                    <apex:outputLabel value="If multichip, list form IDs for other chips in this same package:"/>
+                    <apex:outputPanel id="chipFormpnl">
+                        <apex:outputField value="{!formObj.ChipFormIDs__c}" />
+                    </apex:outputPanel>
+                </apex:pageblockSectionItem>
+            </apex:pageblockSection>
+            <!--<apex:pageblockSection title="# of Module Pins/Balls" columns="1" id="pbs17">-->
+            <apex:pageblockSection columns="1" id="pbs176">
+                <hr style ="border-color: #b4c374;"/>
+                <h1># of Module Pins/Balls</h1>
+                <apex:pageblockSectionItem >
+                    <apex:outputLabel value="Total:"/>
+                    <apex:outputPanel >
+                        <apex:outputPanel rendered="{!(formObj.PackageRequirement__c == 'Customer Existing Package')}" >
+                            <div class = "requiredInput">
+                                <div class = "requiredBlock"></div>
+                                <apex:outputField value="{!formObj.ModulePinsBallsTotal__c }" />
+                            </div>
+                        </apex:outputPanel>
+                        <apex:outputPanel rendered="{!(formObj.PackageRequirement__c != 'Customer Existing Package')}" >
+                            <apex:outputField value="{!formObj.ModulePinsBallsTotal__c }"/>
+                        </apex:outputPanel>
+                    </apex:outputPanel>
+                </apex:pageblockSectionItem>
+                <apex:pageblockSectionItem >
+                    <apex:outputLabel value="Signal:"/>
+                    <apex:outputPanel >
+                        <apex:outputPanel rendered="{!(formObj.PackageRequirement__c == 'Customer Existing Package')}" >
+                            <div class = "requiredInput">
+                                <div class = "requiredBlock"></div>
+                                <apex:outputField value="{!formObj.ModulePinsBallsSignal__c}" />
+                            </div>
+                        </apex:outputPanel>
+                        <apex:outputPanel rendered="{!(formObj.PackageRequirement__c != 'Customer Existing Package')}" >
+                            <apex:outputField value="{!formObj.ModulePinsBallsSignal__c}"/>
+                        </apex:outputPanel>
+                    </apex:outputPanel>
+                </apex:pageblockSectionItem>
+                <apex:pageblockSectionItem >
+                    <apex:outputLabel value="Power:"/>
+                    <apex:outputPanel >
+                        <apex:outputPanel rendered="{!(formObj.PackageRequirement__c == 'Customer Existing Package')}" >
+                            <div class = "requiredInput">
+                                <div class = "requiredBlock"></div>
+                                <apex:outputField value="{!formObj.ModulePinsBallsPower__c}" />
+                            </div>
+                        </apex:outputPanel>
+                        <apex:outputPanel rendered="{!(formObj.PackageRequirement__c != 'Customer Existing Package')}" >
+                            <apex:outputField value="{!formObj.ModulePinsBallsPower__c}"/>
+                        </apex:outputPanel>
+                    </apex:outputPanel>
+                </apex:pageblockSectionItem>
+                <apex:pageblockSectionItem >
+                    <apex:outputLabel value="Ground:"/>
+                    <apex:outputPanel >
+                        <apex:outputPanel rendered="{!(formObj.PackageRequirement__c == 'Customer Existing Package')}" >
+                            <div class = "requiredInput">
+                                <div class = "requiredBlock"></div>
+                                <apex:outputField value="{!formObj.ModulePinsBallsGround__c}" />
+                            </div>
+                        </apex:outputPanel>
+                        <apex:outputPanel rendered="{!(formObj.PackageRequirement__c != 'Customer Existing Package')}" >
+                            <apex:outputField value="{!formObj.ModulePinsBallsGround__c}"/>
+                        </apex:outputPanel>
+                    </apex:outputPanel>
+                </apex:pageblockSectionItem>
+                <apex:pageblockSectionItem >
+                    <apex:outputLabel value="Unused:"/>
+                    <apex:outputPanel >
+                        <apex:outputPanel rendered="{!(formObj.PackageRequirement__c == 'Customer Existing Package')}" >
+                            <div class = "requiredInput">
+                                <div class = "requiredBlock"></div>
+                                <apex:outputField value="{!formObj.ModulePinsBallsUnused__c}" />
+                            </div>
+                        </apex:outputPanel>
+                        <apex:outputPanel rendered="{!(formObj.PackageRequirement__c != 'Customer Existing Package')}" >
+                            <apex:outputField value="{!formObj.ModulePinsBallsUnused__c}"/>
+                        </apex:outputPanel>
+                    </apex:outputPanel>
+                </apex:pageblockSectionItem>
+                <hr style ="border-color: #b4c374;"/>
+                <apex:pageblockSectionItem id="moduleDecoupleSec" rendered="{!(formObj.Packaging_Services__c== 'Yes')}">
+                    <apex:outputLabel value="Module Decoupling Capacitors:"/>
+                    <apex:outputPanel id="moduleDecouplepnl" >
+                        <apex:outputField id="moduleDecoupleFld" value="{!formObj.ModuleDecouplingCapacitors__c }" />
+                    </apex:outputPanel>
+                </apex:pageblockSectionItem>
+                <apex:pageblockSectionItem rendered="{!(formObj.Packaging_Services__c== 'Yes'  && formObj.ModuleDecouplingCapacitors__c == 'Yes')}">
+                    <apex:outputLabel value="Total quantity of module decoupling capacitors:"/>
+                    <apex:outputPanel id="totalQuanDecoupPnl">
+                        <apex:outputField value="{!formObj.NumberModuleDecouplingCapacitors__c}" />
+                    </apex:outputPanel>
+                </apex:pageblockSectionItem>
+                <apex:pageblockSectionItem id="capacitanceValSec" rendered="{!(formObj.Packaging_Services__c== 'Yes' && formObj.ModuleDecouplingCapacitors__c== 'Yes')}">
+                    <apex:outputLabel value="Capacitance Value:"/>
+                    <apex:outputPanel id="capacitanceValpnl" >
+                        <apex:outputField id="capacitanceValFld" value="{!formObj.CapacitanceValue__c }" />
+                    </apex:outputPanel>
+                </apex:pageblockSectionItem>
+                <apex:pageblockSectionItem id="cptcvalOtherSec" rendered="{!(formObj.Packaging_Services__c== 'Yes' && formObj.ModuleDecouplingCapacitors__c == 'Yes' && formObj.CapacitanceValue__c == 'Other')}">
+                    <apex:outputLabel value="Other:"/>
+                    <apex:outputPanel id="cptcvalOtherPnl">
+                        <div class = "requiredInput">
+                            <div class = "requiredBlock"></div>
+                            <apex:outputField id="cptcvalOtherFld" value="{!formObj.CapacitanceValueOther__c}" />
+                        </div>
+                    </apex:outputPanel>
+                </apex:pageblockSectionItem>
+                <apex:pageblockSectionItem id="prodShipsec" rendered="{!(formObj.Packaging_Services__c== 'Yes')}">
+                    <apex:outputLabel value="Production Shipping Requirements:"/>
+                    <apex:outputPanel id="prodShippnl" >
+                        <apex:outputField id="prodShipFld" value="{!formObj.ProductShipReq__c }" />
+                    </apex:outputPanel>
+                </apex:pageblockSectionItem>
+                <apex:pageblockSectionItem id="prodShipmentOtherSec" rendered="{!(formObj.Packaging_Services__c== 'Yes'  && formObj.ProductShipReq__c == 'Other')}">
+                    <apex:outputLabel value="Other:"/>
+                    <apex:outputPanel id="prodShipmentOtherPnl">
+                        <div class = "requiredInput">
+                            <div class = "requiredBlock"></div>
+                            <apex:outputField id="prodShipothfld" value="{!formObj.ProductShipReqOther__c}" />
+                        </div>
+                    </apex:outputPanel>
+                </apex:pageblockSectionItem>
+                <apex:outputField label="Comments:" value="{!formObj.Comments__c}" rendered="{!(formObj.Packaging_Services__c== 'Yes')}"/>
+            </apex:pageblockSection> 
+        </apex:pageBlock>
+        
+        <div style="float:left; margin-left:485px">
+            <apex:commandLink action="{!redirectToSearchPage}" value="Form Selection" styleClass="btn" style="text-decoration:none;padding:4px;" rendered="{! !popupVal}"/><!-- Changed by Abhita -->
+            <apex:commandLink action="{!openPDF}" target="_blank" value="Print PDF" styleClass="btn" style="text-decoration:none;padding:4px;" id="theButton" rendered="{! !popupVal}"/>
+            
+        </div>
+    </apex:form>
+</apex:page>

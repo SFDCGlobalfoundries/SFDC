@@ -1,0 +1,864 @@
+<apex:page standardController="MRS_Layer_Association__c" extensions="MRSLayerChipSummaryExtn" showHeader="false" sideBar="false" standardStylesheets="false">
+
+<apex:stylesheet value="{!URLFOR($Resource.Swift_MRS,'css/style.css')}"/>
+<apex:stylesheet value="{!URLFOR($Resource.SWIFT_MRS_Changed,'css/style_LayerSummary.css')}"/>
+<apex:stylesheet value="{!URLFOR($Resource.Swift_MRS,'css/jquery.scombobox.min.css')}"/>  
+<apex:stylesheet value="{!URLFOR($Resource.Swift_MRS,'css/jquery.multiselect.css')}"/> 
+<apex:stylesheet value="{!URLFOR($Resource.SWIFT_MRS_Changed,'css/jquery-ui.css')}"/>
+<style>
+        .messageText {
+            color:red;
+        }
+        .messageText h4 {
+            display:inline;
+            color:red;
+        }
+</style> 
+<script type="text/javascript" src="{!URLFOR($Resource.Swift_MRS,'js/jquery.min.js')}"></script>     
+<script type="text/javascript" src="{!URLFOR($Resource.Swift_MRS,'js/leftmenu.js')}"></script>     
+<script type="text/javascript" src="{!URLFOR($Resource.Swift_MRS,'js/advancedDataGrid.js')}"></script>    
+<script type="text/javascript" src="{!URLFOR($Resource.Swift_MRS,'js/jquery-ui.min.js')}"></script>
+<script type="text/javascript" src="{!URLFOR($Resource.Swift_MRS,'js/jquery.multiselect.js')}"></script> 
+<script type="text/javascript" src="{!URLFOR($Resource.SWIFT_MRS_Changed,'js/jquery.loader.min.js')}"></script>
+<script type="text/javascript" src="{!URLFOR($Resource.Swift_MRS,'js/common-script.js')}"></script> 
+<script type="text/javascript">
+    window.onload=showLoader('gf-bigcircle');
+</script>
+<apex:form id="MRSLayerChipSummaryManualUpdateForm">
+<apex:inputHidden value="{!statusSelectedValue}" id="SelectedLayerStatusValue"/>
+<apex:outputPanel >
+<!--Wrapper Div Starts-->
+<div id="wrapper" style="width : 98%;">
+   
+        <!-- Start of Right side content-->
+        <div id="content">
+    
+            <!--Breadcrumb Starts-->
+            <div class="breadcrumb" id="breadcrumbDiv">
+        <a href="javascript:void(0);">My Devices</a> &gt;
+        <a href="javascript:void(0);">Tapeout</a> &gt;
+        <a href="javascript:void(0);">MRS</a> &gt;
+        <a href="javascript:void(0);">Layer Summary</a> &gt;
+        <a href="javascript:void(0);">Layer Chip Summary</a>
+            </div>
+            <!--Breadcrumb Ends-->
+            
+            <div id="layerChipSummaryManual" class="right-panel-section">
+                <h3>Layer Chip Summary - Manual Update</h3>
+          <div class="quicklinks">
+            <a href="javascript:openExcelOrCSV('csv');"><img src="{!URLFOR($Resource.Swift_MRS,'images/expToCsv.png')}" width="24" height="24" alt="Export to CSV" title="Export to CSV"/></a>
+            <a href="javascript:openExcelOrCSV('excel');"><img src="{!URLFOR($Resource.Swift_MRS,'images/excel-icon.png')}" width="23" height="23" alt="Export to Excel" title="Export to Excel"/></a>          
+            <a href="{!$Label.SWIFT_Support_Link}" target="_blank"><img src="{!URLFOR($Resource.Swift_MRS,'images/help-icon.png')}" width="23" height="23" alt="Help"  title="Help"/></a>
+          </div>
+        
+                <!-- --------------- First Row Starts --------------- -->
+                <div id="firstRowContentDiv" class="right-section-row right-section-row-borderbottom">        
+          <dl>
+            <dt class="bold-font min-width-cust-name">Customer Name:</dt>
+            <dd class="pading-left"> <apex:outputLabel value="{!strCustomerName}"></apex:outputLabel>  </dd>
+         </dl>
+         <dl class="display-inline">
+            <dt class="bold-font min-width-cust-name">Mask Set Title:</dt>
+            <dd class="pading-left">
+              <apex:outputLabel value="{!objLayerSummaryDetails.Mask_Set_Title_Name__c}"></apex:outputLabel> 
+            </dd>
+        </dl>
+        <dl class="display-inline">
+          <dt class="bold-font min-width-cust-name">Mask Layer:</dt>
+            <dd>
+              <apex:outputLabel value="{!objLayerSummaryDetails.name}{!objLayerSummaryDetails.Mask_Layer_Rev__c}{!if(objLayerSummaryDetails.ROM_Code__c != 'NULL' && objLayerSummaryDetails.ROM_Code__c != '' && objLayerSummaryDetails.ROM_Code__c != '####','('+objLayerSummaryDetails.ROM_Code__c+')','')}"></apex:outputLabel> 
+            </dd>
+        </dl>
+      <div class="clear"></div>
+     </div>
+    <div class="clear"></div>
+        <!-- --------------- First Row Ends --------------- -->
+    <!--Filters goes here................. -->
+        <div class="right-section-panel border-bottom">
+     <div id="filters" class="right-section-row-filter-border" title="filterContent">               
+                <a href="javascript:void(0)" id="filter_anchor" name="filterContent" class="filters_slideDown">Filters</a>
+     </div>
+     <div id="filterContent">                        
+     <dl class="margin-top-5">
+      <dt class="tcell-width-146 bold-font">Layer Chip Status</dt>
+      <dd class="pading-left">
+        <!--<apex:selectList id="drpLayerStatus" value="{!statusSelectedValue}"  styleClass="dropdown-size-big-normal" size="1">
+             <apex:selectOptions value="{!optionlistLayerStatus }"/>
+        </apex:selectList>-->
+         <apex:outputPanel id="LayerFilter">
+        <select id="layersummarydropdown" class="layerStatus-drpdwn-size multiSelect" multiple="multiple">
+          <apex:repeat value="{!optionlistLayerStatus }" var="layerVal">
+                  <!-- <apex:variable var="sel" value="{!IF(layerVal.value==ValueCatcher,true,false)}"/> -->
+                  <apex:variable var="sel" value="{!IF(CONTAINS(ValueCatcher,layerVal.value),true,false)}"/>                  
+                  <apex:repeat var="l" value="{!lstSizeOne}" rendered="{!sel}">
+                      <option value="{!layerVal.value}" selected="selected">{!layerVal.label}</option>
+                  </apex:repeat>
+                  <apex:repeat var="l" value="{!lstSizeOne}" rendered="{!NOT(sel)}">
+                      <option value="{!layerVal.value}">{!layerVal.label}</option>
+                  </apex:repeat>
+                 
+          </apex:repeat>
+    </select>
+    </apex:outputPanel>
+      </dd>
+     </dl>
+     <dl>
+      <dt class="tcell-width-146 bold-font">Device ID</dt>
+      <dd class="pading-left">
+       <apex:selectList id="drpDeviceId" value="{!deviceSelectedValue}"  styleClass="dropdown-size-big-normal" size="1">
+             <apex:selectOptions value="{!optionlistDevice}"/>
+        </apex:selectList>
+      </dd>
+     </dl>
+     <dl>
+     <dt class="tcell-width-146 bold-font">PTRF/DRT Number</dt>
+      <dd class="float-left">
+         <apex:selectList id="drpPTRForDRT" value="{!ptrfSelectedValue}" styleClass="dropdown-size-big-normal" size="1">
+             <apex:selectOptions value="{!optionlistPTRFnDRT }"/>
+        </apex:selectList>
+      </dd>                                
+    </dl>
+    <dl>
+     <dt class="line-height-15 tcell-width-146 bold-font">Tech Geo</dt>
+    <dd class="float-left">
+      <apex:selectList id="drpTechGeo" value="{!techgeoSelectedValue}"  styleClass="dropdown-size-big-normal" size="1">
+             <apex:selectOptions value="{!optionlistTechGeo}"/>
+        </apex:selectList>
+    </dd>
+   </dl>
+   
+    <dl>
+    <dt class="line-height-15 tcell-width-146">&nbsp;</dt>
+       <dd class="float-left">
+     <input type="button" id="apply" value="Apply" class="margin-top-10" onclick="showResult();"/>
+       </dd>
+       <dd class="pading-left float-left">
+    <input type="button" id="clear" value="Clear" class="margin-top-10" onclick="javasctipt:resetFilter();"/>
+       </dd>
+      </dl>
+      
+    </div>
+    <div class="clear"></div>
+   </div>
+     <!--Filters ends here...................-->
+                    
+     <!-- --------------- Third Row Starts --------------- -->      
+  <div id="secondRowContentDiv" class="right-section-row  no-padding-top" >
+
+    <input type="button"  class="proceed-approved-button-style" value="Save" onclick="showLoader('gf-bigcircle');acfn_saveLayerChipData();" />
+    <input type="button"  class="discard-approved-button-style" value="Discard" onclick="customAlert('Any changes made will be Discarded. Please Confirm.','ManualUpdate');" />
+    <div style="float: center; font-weight:bold; padding-top: 12px;  " class="messageText">
+     <apex:pageMessages id="mrsMessage"  /></div>
+    <div class="table-caption-with-link" >
+     <p class="no-padding-bottom table-caption display-inline" >Selected Layer Details</p>
+            
+    </div>
+    <!-----------Start of selected layer details table---------->
+   <div class="advance-datagrid-first table-width-1013ptper">
+        <div class="add-row-container"> 
+            <div class="main-tbl-wrapper border-bottom tcell-width-497 overflowx-none">
+                <div class="tabl-header-wrapper">
+          <table class="gen-table main-Tbl header-tbl tcell-width-497" id="summaryLayerLeftHeaderTable">
+           <tbody>
+            <tr class="tcell-height-83">
+              <apex:outputLabel rendered="{!!boolShowTechGeo}">
+              <td class="tcell-width-48">No.</td>
+              <td class="tcell-width-250"><span class="table-lable"><strong>Mask Layer (ROM Code)</strong></span></td>
+              <td class="tcell-width-155"><span class="table-lable"><strong>Layer Status</strong></span></td>
+            </apex:outputLabel>
+            
+            <apex:outputLabel rendered="{!boolShowTechGeo}">
+              <td class="tcell-width-48">No.</td>
+              <td class="tcell-width-200"><span class="table-lable"><strong>Mask Layer (ROM Code)</strong></span></td>
+              <td class="tcell-width-110"><span class="table-lable"><strong>Layer Status</strong></span></td>
+              <td class="tcell-width-83"><span class="table-lable"><strong>Tech Geo</strong></span></td>
+            </apex:outputLabel></tr>
+           </tbody>
+          </table> 
+         </div>                         
+ <apex:outputPanel id="PanelLayerMain" >     
+<div class="tbl-content-wrapper">
+      <table class="gen-table main-Tbl summaryLayerLeftContent tcell-width-497" id="main-tbl-content" >                                 
+          <tbody>
+             <tr class="tcell-height-35">
+                 <apex:outputLabel rendered="{!!boolShowTechGeo}">
+                     <td class="tcell-width-48"><span class="audit-trail-img-alignment">1</span><a onclick="javascript:callLinkPage2('{!objLayerSummaryDetails.Id}',this,{!isBreadcrumbActive},'{!strCustomerId}','{!strCustomerName}','{!idCurrentLayer}','{!objLayerSummaryDetails.Mask_Set_Title_Name__c}','{!objLayerSummaryDetails.name}{!objLayerSummaryDetails.Mask_Layer_Rev__c}{!if(objLayerSummaryDetails.ROM_Code__c != 'NULL' && objLayerSummaryDetails.ROM_Code__c != '' && objLayerSummaryDetails.ROM_Code__c != '####','('+objLayerSummaryDetails.ROM_Code__c+')','')}');" href="javascript:void(0);" class="audit-trail click-icon"><img src="{!URLFOR($Resource.Swift_MRS,'images/Audit.png')}" height="19" width="19" alt="Audit Trail"/></a></td>
+                     <td class="tcell-width-250 text-align-left"><apex:outputLabel value="{!objLayerSummaryDetails.name}{!objLayerSummaryDetails.Mask_Layer_Rev__c}{!if(objLayerSummaryDetails.ROM_Code__c != 'NULL' && objLayerSummaryDetails.ROM_Code__c != '' && objLayerSummaryDetails.ROM_Code__c != '####','('+objLayerSummaryDetails.ROM_Code__c+')','')}"></apex:outputLabel></td>
+                     <td class="tcell-width-155"><apex:outputLabel value="{!objLayerSummaryDetails.Layer_Status__c}"></apex:outputLabel></td>
+                 </apex:outputLabel>
+            
+                <apex:outputLabel rendered="{!boolShowTechGeo}">
+                   <td class="tcell-width-48"><span class="audit-trail-img-alignment">1</span><a onclick="javascript:callLinkPage2('{!objLayerSummaryDetails.Id}',this,{!isBreadcrumbActive},'{!strCustomerId}','{!strCustomerName}','{!idCurrentLayer}','{!objLayerSummaryDetails.Mask_Set_Title_Name__c}','{!objLayerSummaryDetails.name}{!objLayerSummaryDetails.Mask_Layer_Rev__c}{!if(objLayerSummaryDetails.ROM_Code__c != 'NULL' && objLayerSummaryDetails.ROM_Code__c != '' && objLayerSummaryDetails.ROM_Code__c != '####','('+objLayerSummaryDetails.ROM_Code__c+')','')}');" href="javascript:void(0);" class="audit-trail click-icon"><img src="{!URLFOR($Resource.Swift_MRS,'images/Audit.png')}" height="19" width="19" alt="Audit Trail"/></a></td>
+                   <td class="tcell-width-200 text-align-left"><apex:outputLabel value="{!objLayerSummaryDetails.name}{!objLayerSummaryDetails.Mask_Layer_Rev__c}{!if(objLayerSummaryDetails.ROM_Code__c != 'NULL' && objLayerSummaryDetails.ROM_Code__c != '' && objLayerSummaryDetails.ROM_Code__c != '####','('+objLayerSummaryDetails.ROM_Code__c+')','')}"></apex:outputLabel></td>
+                   <td class="tcell-width-110"><apex:outputLabel value="{!objLayerSummaryDetails.Layer_Status__c}"></apex:outputLabel></td>
+                   <td class="tcell-width-83">{!strTechGeo}</td>
+                 </apex:outputLabel>
+                 </tr>                     
+           </tbody>
+             </table>
+        </div>
+        </apex:outputpanel>
+        <div class="clear"></div>
+        <div class="spacer display-block"></div>
+      </div>                        
+      <div class="mask-layer-tbl-wrapper border-right overflow-hidden" id="detailMaskTbl">                                   
+        <div class="mask-tbl-hdr-cont">
+          <div class="mask-tbl-header-wrapper">
+            <table class="gen-table mask-tbl header-tbl auto-width" id="summaryLayerRightHeaderTable">
+              <tbody>                    
+                  <tr class="tcell-height-44">
+                  <td class="tcell-width-96">
+                    <span class="table-lable"><strong>GDSOUT<br/> Review <br/></strong> Customer</span>
+                  </td>
+                  <td class="tcell-width-96">
+                    <span class="table-lable"><strong>GDSOUT <br/> Review <br/></strong> Foundry</span>
+                  </td>
+                  <td class="tcell-width-96">
+                    <span class="table-lable"><strong>Frame<br/> Mockup Review <br/></strong> Customer</span>
+                  </td>
+                  <td class="tcell-width-96">
+                    <span class="table-lable"><strong>Frame<br/> Mockup Review <br/></strong> Foundry</span>
+                  </td>
+                   <td  class="tcell-width-96">
+                    <span class="table-lable"><strong>Send Data <br/></strong> Prime</span>
+                  </td>
+                  <td class="tcell-width-96">
+                    <span class="table-lable"><strong>Send Data <br/></strong> Frame</span>
+                  </td>
+                  <td class="tcell-width-96">
+                    <span class="table-lable"><strong>ORC</strong></span>
+                  </td>
+                   <td class="tcell-width-96">
+                    <span class="table-lable"><strong>DRW</strong></span>
+                  </td>
+                  <td class="tcell-width-96">
+                    <span class="table-lable"><strong>Customer <br/> Remote Jobview <br/></strong> Prime</span>
+                  </td>
+                  <td class="tcell-width-96">
+                    <span class="table-lable"><strong>Customer <br/> Remote Jobview <br/></strong> Frame</span>
+                  </td>
+                  <td class="tcell-width-96">
+                    <span class="table-lable"><strong>Foundry<br/> Remote Jobview <br/></strong> Prime</span>
+                  </td>
+                  <td class="tcell-width-96">
+                    <span class="table-lable"><strong>Foundry<br/> Remote Jobview <br/></strong> Frame</span>
+                  </td>
+                   
+                  <td class="tcell-width-96">
+                    <span class="table-lable"><strong>MEBES<br/> Received <br/></strong> Prime</span>
+                  </td>
+                  <td class="tcell-width-96">
+                    <span class="table-lable"><strong>MEBES<br/> Received <br/></strong> Frame</span>
+                  </td> 
+                  <td class="tcell-width-96">
+                    <span class="table-lable"><strong>MEBES<br/> Jobview <br/></strong> Customer</span>
+                  </td>                        
+                    <td class="tcell-width-96">
+                    <span class="table-lable"><strong>MEBES<br/> Jobview <br/></strong> Foundry</span>
+                  </td>
+                  <td class="tcell-width-96">
+                    <span class="table-lable"><strong>MEBES<br/> Jobview <br/></strong> Tapeout Centre</span>
+                  </td>
+                  <td class="tcell-width-116">
+                    <span class="table-lable"><strong>MEBES<br/> Jobview <br/></strong> Tapeout Applications</span>
+                  </td>
+                  <td class="tcell-width-96">
+                    <span class="table-lable"><strong>MEBES<br/> Jobview <br/></strong> GlobalShuttle</span>
+                  </td>
+                   <td class="tcell-width-96">
+                    <!-- TASK-2479 -->
+					<!-- 
+					 <span class="table-lable"><strong>MEBES<br/> Jobview <br/></strong> MDP</span>
+                    -->                    
+                    <span class="table-lable"><strong>DRR</strong></span>
+                    <!-- TASK-2479 END -->
+                  </td>
+                  <td class="tcell-width-110">
+                    <span class="table-lable"><strong>MEBES<br/> Jobview<br/></strong> TDTI-MPW</span>
+                  </td>
+                 </tr> 
+                </tbody>            
+              </table>
+            </div>
+          </div>            
+          
+    <div class="clear"></div>   
+    <div class="mask-tbl-btm-container border-bottom">
+       <apex:outputPanel id="PanelLayerRight" >     
+      <div class="mask-tbl-content-wrapper">
+      <table class="gen-table mask-tbl auto-width" id="summaryLayerRightContentTable">
+        <tbody>
+          <tr class="tcell-height-35">
+            <td class="tcell-width-96" style="text-align:center"><apex:outputLabel value="{!objLayerSummaryDetails.Customer_GDSOUT_Review__c}"></apex:outputLabel></td>
+            <td class="tcell-width-96" style="text-align:center"><apex:outputLabel value="{!objLayerSummaryDetails.Foundry_GDSOUT_Review__c}"></apex:outputLabel></td>
+            <td class="tcell-width-96" style="text-align:center"><apex:outputLabel value="{!objLayerSummaryDetails.Customer_Frame_Mockup__c}"></apex:outputLabel></td>
+            <td class="tcell-width-96" style="text-align:center"><apex:outputLabel value="{!objLayerSummaryDetails.Foundry_Frame_Mockup__c}"></apex:outputLabel></td>
+            <td class="tcell-width-96" style="text-align:center"><apex:outputLabel value="{!objLayerSummaryDetails.Send_Prime_Data__c}"></apex:outputLabel></td>
+            <td class="tcell-width-96" style="text-align:center"><apex:outputLabel value="{!objLayerSummaryDetails.Send_Frame_Data__c}"></apex:outputLabel></td>
+            <td class="tcell-width-96" style="text-align:center"><apex:outputLabel value="{!objLayerSummaryDetails.ORC__c}"></apex:outputLabel></td>
+            <td class="tcell-width-96" style="text-align:center"><apex:outputLabel value="{!objLayerSummaryDetails.DRW__c}"></apex:outputLabel></td> 
+            <td class="tcell-width-96" style="text-align:center"><apex:outputLabel value="{!objLayerSummaryDetails.Customer_Prime_Remote_Jobview_Setup__c}"></apex:outputLabel></td>
+            <td class="tcell-width-96" style="text-align:center"><apex:outputLabel value="{!objLayerSummaryDetails.Customer_Frame_Remote_Jobview_Setup__c}"></apex:outputLabel></td>
+            <td class="tcell-width-96" style="text-align:center"><apex:outputLabel value="{!objLayerSummaryDetails.Foundry_Prime_Remote_Jobview_Setup__c}"></apex:outputLabel></td>
+            <td class="tcell-width-96" style="text-align:center"><apex:outputLabel value="{!objLayerSummaryDetails.Foundry_Frame_Remote_Jobview_Setup__c}"></apex:outputLabel></td>                  
+            <td class="tcell-width-96" style="text-align:center"><apex:outputLabel value="{!objLayerSummaryDetails.Prime_MEBES_Received__c}"></apex:outputLabel></td>
+            <td class="tcell-width-96" style="text-align:center"><apex:outputLabel value="{!objLayerSummaryDetails.Frame_MEBES_Received__c}"></apex:outputLabel></td>
+            <td class="tcell-width-96" style="text-align:center"><apex:outputLabel value="{!objLayerSummaryDetails.Customer_MEBES_Jobview__c}"></apex:outputLabel></td>
+            <td class="tcell-width-96" style="text-align:center"><apex:outputLabel value="{!objLayerSummaryDetails.Foundry_MEBES_Jobview__c}"></apex:outputLabel></td>
+            <td class="tcell-width-96" style="text-align:center"><apex:outputLabel value="{!objLayerSummaryDetails.Tapeout_Centre_MEBES_Jobview__c}"></apex:outputLabel></td>                
+            <td class="tcell-width-116" style="text-align:center"><apex:outputLabel value="{!objLayerSummaryDetails.Tapeout_Applications_MEBES_Jobview__c}"></apex:outputLabel></td>
+            <td class="tcell-width-96" style="text-align:center"><apex:outputLabel value="{!objLayerSummaryDetails.GlobalShuttle_MEBES_Jobview__c}"></apex:outputLabel></td>
+            <td class="tcell-width-96" style="text-align:center"><apex:outputLabel value="{!objLayerSummaryDetails.MDP_MEBES_Jobview__c}"></apex:outputLabel></td>
+            <td class="tcell-width-110" style="text-align:center"><apex:outputLabel value="{!objLayerSummaryDetails.TDTI_MPW_MEBES_Jobview__c}"></apex:outputLabel></td>
+          </tr>                 
+        </tbody>
+      </table>
+    </div>
+    </apex:outputPanel>
+    </div>       
+    </div>
+</div>
+    <div class="empty-tableCell tcell-height-25 float-left"><strong>Layer Chip Summary</strong></div>   
+</div> 
+
+    <!-----------End of selected layer details table---------->
+    <!-- start of layer chip summary table-->
+ <div class="clear"></div>          
+  <div class="advance-datagrid width-100per no-padding-top">
+    <div class="add-row-container"> 
+      <div class="main-tbl-wrapper border-bottom tcell-width-497">
+       <div class="tabl-header-wrapper tcell-width-497">
+        <table class="gen-table main-Tbl header-tbl tcell-width-497" id="summaryLayerLeftHeaderTable">
+         <tbody>
+           <tr class="tcell-height-83">
+               <td class="tcell-width-48">No.</td>
+               <td class="tcell-width-126"><span class="table-lable"><strong>Chip</strong></span></td>
+               <td class="tcell-width-192"><span class="table-lable"><strong>PTRF/DRT Number</strong></span></td>
+                <td class="tcell-width-76"><span class="table-lable span-wordwrap tcell_width_75"><strong>Layer Chip Status</strong></span></td>
+           </tr>
+          </tbody>
+         </table> 
+        </div>    
+        <apex:outputPanel id="PanelLayerChipMain" >                     
+        <div class="tbl-content-wrapper tcell-width-497 tbody-max-height min-height350">
+          <table class="gen-table main-Tbl summaryLayerLeftContent tcell-width-497" id="main-tbl-content" >                                  
+            <tbody>
+             <apex:variable value="{!1}" var="counter1"/>
+            <apex:repeat value="{!lstLayerChipSummary}" var="objWrapper" >
+              
+               <apex:outputLabel rendered="{!mod(counter1,2)==1}"> 
+                <tr class="tcell-height-35">
+                   <td class="tcell-width-48"><span class="audit-trail-img-alignment">{!counter1 }</span><a onclick="javascript:callLinkPage('{!objWrapper.Id}',this,{!isBreadcrumbActive},'{!strCustomerId}','{!strCustomerName}','{!idCurrentLayer}','{!objLayerSummaryDetails.Mask_Set_Title_Name__c}','{!objLayerSummaryDetails.name}{!objLayerSummaryDetails.Mask_Layer_Rev__c}{!if(objLayerSummaryDetails.ROM_Code__c != '' && objLayerSummaryDetails.ROM_Code__c != '####','('+objLayerSummaryDetails.ROM_Code__c+')','')}','{!objWrapper.Chip_Name__c}','{!if(objWrapper.Layer_Chip_Status__c=='Void' || objLayerSummaryDetails.Layer_Status__c=='Shipped',false,true)}');" href="javascript:void(0);" class="audit-trail click-icon"><img src="{!URLFOR($Resource.Swift_MRS,'images/Audit.png')}" height="19" width="19" alt="Audit Trail"/></a></td>
+                   <td class="tcell-width-126 text-align-left">{!objWrapper.Chip_Name__c}</td>
+                   <td class="tcell-width-192 underline-text anchor-underline-color text-align-left"><a href="javascript:void(0);">{!IF(objWrapper.PTRF_Or_DRT__c=='DRT',objWrapper.DRT__r.name,objWrapper.PTRF__r.name)}</a></td>                           
+                   <td class="tcell-width-76" style="text-align:center">{!objWrapper.Layer_Chip_Status__c }</td>
+               </tr>
+               </apex:outputLabel>
+         
+              <apex:outputLabel rendered="{!NOT(mod(counter1,2)==1)}">  
+                <tr class="tcell-height-35 alt-row-bgcolor">
+                   <td class="tcell-width-48"><span class="audit-trail-img-alignment">{!counter1 }</span><a onclick="javascript:callLinkPage('{!objWrapper.Id}',this,{!isBreadcrumbActive},'{!strCustomerId}','{!strCustomerName}','{!idCurrentLayer}','{!objLayerSummaryDetails.Mask_Set_Title_Name__c}','{!objLayerSummaryDetails.name}{!objLayerSummaryDetails.Mask_Layer_Rev__c}{!if(objLayerSummaryDetails.ROM_Code__c != '' && objLayerSummaryDetails.ROM_Code__c != '####','('+objLayerSummaryDetails.ROM_Code__c+')','')}','{!objWrapper.Chip_Name__c}','{!if(objWrapper.Layer_Chip_Status__c=='Void' || objLayerSummaryDetails.Layer_Status__c=='Shipped',false,true)}');" href="javascript:void(0);" class="audit-trail click-icon"><img src="{!URLFOR($Resource.Swift_MRS,'images/Audit.png')}" height="19" width="19" alt="Audit Trail"/></a></td>
+                   <td class="tcell-width-126 text-align-left">{!objWrapper.Chip_Name__c}</td>
+                   <td class="tcell-width-134 underline-text anchor-underline-color text-align-left"><a href="javascript:void(0);">{!IF(objWrapper.PTRF_Or_DRT__c=='DRT',objWrapper.DRT__r.name,objWrapper.PTRF__r.name)}</a></td>                           
+                   <td class="tcell-width-76" style="text-align:center">{!objWrapper.Layer_Chip_Status__c }</td>
+               </tr>
+               </apex:outputLabel>
+                <apex:variable var="counter1" value="{!counter1+ 1}"/>
+               </apex:repeat>
+              
+              
+             </tbody>
+        </table>
+      </div>
+      </apex:outputPanel>
+      <div class="clear"></div>
+      <div class="spacer display-block"></div>
+    </div>                        
+            <div class="mask-layer-tbl-wrapper" id="rightAdvanceDataGridTable">
+                <div class="mask-scrooler" id="scroller">
+                <div class="dummy-cont"></div>
+                </div>              
+          <div class="mask-tbl-hdr-cont">
+            <div class="mask-tbl-header-wrapper">
+              
+              <table class="gen-table mask-tbl header-tbl auto-width" id="summaryLayerRightHeaderTable">
+                <tbody>                    
+                  <tr class="tcell-height-44">
+                    <td class="tcell-width-96">
+                      <span class="table-lable"><strong>GDSOUT<br/> Review <br/></strong>Customer</span>
+                    </td>
+                     <td class="tcell-width-96">
+                      <span class="table-lable"><strong>GDSOUT<br/> Review<br/></strong> Foundry</span>
+                    </td>
+                    <td class="tcell-width-96">
+                      <span class="table-lable"><strong>Frame <br/> Mockup Review<br/></strong> Customer</span>
+                    </td>
+                    <td  class="tcell-width-96">
+                      <span class="table-lable"><strong>Frame <br/> Mockup Review <br/></strong>Foundry</span>
+                    </td>
+                    <td class="tcell-width-96">
+                      <span class="table-lable"><strong>Send Data<br/></strong> Prime</span>
+                    </td>
+                    <td class="tcell-width-96">
+                      <span class="table-lable"><strong>Send Data <br/></strong> Frame</span>
+                    </td>
+                   <td class="tcell-width-96">
+                      <span class="table-lable"><strong>ORC</strong></span>
+                    </td>
+                    <td class="tcell-width-96">
+                      <span class="table-lable"><strong>DRW</strong></span>
+                    </td>
+                    <td class="tcell-width-96">
+                      <span class="table-lable"><strong>Customer <br/> Remote Jobview<br/></strong> Prime</span>
+                    </td>
+                     <td class="tcell-width-96">
+                      <span class="table-lable"><strong>Customer<br/> Remote Jobview <br/></strong>Frame</span>
+                    </td>
+                    <td class="tcell-width-96">
+                      <span class="table-lable"><strong>Foundry <br/>Remote Jobview <br/></strong>Prime</span>
+                    </td>
+                     <td class="tcell-width-96">
+                      <span class="table-lable"><strong>Foundry <br/>Remote Jobview  <br/></strong>Frame</span>
+                    </td>
+                     
+                    <td class="tcell-width-96">
+                    <span class="table-lable"><strong>MEBES<br/> Received<br/></strong> Prime</span>
+                  </td>
+                  <td class="tcell-width-96">
+                    <span class="table-lable"><strong>MEBES <br/> Received <br/></strong> Frame</span>
+                  </td> 
+                  <td class="tcell-width-96">
+                    <span class="table-lable"><strong>MEBES <br/> Jobview <br/></strong>Customer</span>
+                  </td>                        
+                  <td class="tcell-width-96">
+                    <span class="table-lable"><strong>MEBES <br/> Jobview <br/></strong> Foundry</span>
+                  </td>
+                  <td class="tcell-width-96">
+                    <span class="table-lable"><strong>MEBES <br/> Jobview <br/></strong> Tapeout Centre</span>
+                  </td>
+                  <td class="tcell-width-116">
+                    <span class="table-lable"><strong>MEBES <br/> Jobview <br/></strong> Tapeout Applications</span>
+                  </td>
+                  <td class="tcell-width-96">
+                    <span class="table-lable"><strong>MEBES <br/> Jobview <br/></strong> GlobalShuttle</span>
+                  </td>
+                  <td class="tcell-width-96">
+                    <!-- TASK-2479 -->
+					<!-- 
+					 <span class="table-lable"><strong>MEBES <br/>Jobview<br/></strong> MDP</span>
+                    -->                    
+                    <span class="table-lable"><strong>DRR</strong></span>
+                    <!-- TASK-2479 END -->
+                  </td>
+                  <td class="tcell-width-110">
+                    <span class="table-lable"><strong>MEBES <br/> Jobview<br/></strong> TDTI-MPW</span>
+                  </td>
+                   </tr>           
+                  </tbody>            
+                </table>
+              </div>
+            </div>            
+                    <div class="clear"></div>  
+           <apex:outputPanel id="PanelLayerChipRight" > 
+            <div class="mask-tbl-btm-container border-bottom tbody-max-height min-height350">
+              <div class="mask-tbl-content-wrapper tbody-max-height min-height350">
+                <table class="gen-table mask-tbl auto-width" id="summaryLayerRightContentTable">
+                  <tbody>
+                   <apex:variable value="{!1}" var="counter"/>
+                   <apex:repeat value="{!lstLayerChipSummary}" var="objLayerChip" >
+                 
+                   <apex:outputLabel rendered="true"> 
+                    <tr class="tcell-height-35">
+                     <td class="tcell-width-96" style="text-align:center">
+                       
+                          <apex:selectList onclick="return false;" value="{!objLayerChip.Customer_GDSOUT_Review__c}"  size="1">
+                             <apex:selectOptions value="{!listCustomerGDSOUTReview}"/>
+                          </apex:selectList>
+                         
+                      </td>
+                      <td class="tcell-width-96" style="text-align:center">
+                          <apex:selectList onclick="return false;" value="{!objLayerChip.Foundry_GDSOUT_Review__c}"  size="1">
+                             <apex:selectOptions value="{!listFoundryGDSOUTReview}"/>
+                          </apex:selectList>
+                      </td>
+                      <td class="tcell-width-96" style="text-align:center">
+                      
+                          <apex:selectList onclick="return false;" value="{!objLayerChip.Customer_Frame_Mockup__c}"  size="1">
+                             <apex:selectOptions value="{!listCustomerFrameMockup}"/>
+                          </apex:selectList>
+                      </td>
+                      <td class="tcell-width-96" style="text-align:center">
+                      
+                          <apex:selectList onclick="return false;" value="{!objLayerChip.Foundry_Frame_Mockup__c}"  size="1">
+                             <apex:selectOptions value="{!listFoundryFrameMockup}"/>
+                          </apex:selectList>
+                      </td>
+                      
+                      <td class="tcell-width-96" style="text-align:center">
+                          
+                          <apex:selectList onclick="return false;"  value="{!objLayerChip.Send_Prime_Data__c}"  size="1">
+                             <apex:selectOptions value="{!listSendPrimeData}"/>
+                          </apex:selectList>
+                      </td>
+                     
+                      <td class="tcell-width-96" style="text-align:center">
+                      
+                          <apex:selectList onclick="return false;"  value="{!objLayerChip.Send_Frame_Data__c}"  size="1">
+                             <apex:selectOptions value="{!listSendFrameData}"/>
+                          </apex:selectList>
+                      </td>
+                      <td class="tcell-width-96" style="text-align:center">
+                      
+                          <apex:selectList onclick="return false;" value="{!objLayerChip.ORC__c}"  size="1">
+                             <apex:selectOptions value="{!listORC}"/>
+                          </apex:selectList>
+                      </td>
+                      <td class="tcell-width-96" style="text-align:center">
+                      
+                          <apex:selectList onclick="return false;"  value="{!objLayerChip.DRW__c}"  size="1">
+                             <apex:selectOptions value="{!listDRW}"/>
+                          </apex:selectList>
+                      </td>          
+                      <td class="tcell-width-96" style="text-align:center">
+                       <apex:selectList onclick="return false;"  value="{!objLayerChip.Customer_Prime_Remote_Jobview_Setup__c}"  size="1">
+                             <apex:selectOptions value="{!listCustomerPrimeRemoteJobviewSetup}"/>
+                          </apex:selectList>
+                      </td>
+                      <td class="tcell-width-96" style="text-align:center">
+                       <apex:selectList onclick="return false;"  value="{!objLayerChip.Customer_Frame_Remote_Jobview_Setup__c}"  size="1">
+                             <apex:selectOptions value="{!listCustomerFrameRemoteJobviewSetup}"/>
+                          </apex:selectList>
+                      </td>
+                      <td class="tcell-width-96" style="text-align:center">
+                       <apex:selectList onclick="return false;"  value="{!objLayerChip.Foundry_Prime_Remote_Jobview_Setup__c}"  size="1">
+                             <apex:selectOptions value="{!listFoundryPrimeRemoteJobviewSetup}"/>
+                          </apex:selectList>
+                      </td>
+                      <td class="tcell-width-96" style="text-align:center">
+                       <apex:selectList onclick="return false;"  value="{!objLayerChip.Foundry_Frame_Remote_Jobview_Setup__c}"  size="1">
+                             <apex:selectOptions value="{!listFoundryFrameRemoteJobviewSetup}"/>
+                          </apex:selectList>
+                      </td>
+                                    
+                      <td class="tcell-width-96" style="text-align:center">
+                          <apex:selectList onclick="return false;" value="{!objLayerChip.Prime_MEBES_Received__c}"  size="1">
+                             <apex:selectOptions value="{!listPrimeMEBESReceived}"/>
+                          </apex:selectList>
+                      </td>
+                      <td class="tcell-width-96" style="text-align:center">
+                          <apex:selectList onclick="return false;" value="{!objLayerChip.Frame_MEBES_Received__c}"  size="1">
+                             <apex:selectOptions value="{!listFrameMEBESReceived}"/>
+                          </apex:selectList>
+                      </td>
+                      
+                      <td class="tcell-width-96" style="text-align:center"><span class="tcell-width-92">
+                        
+                            <apex:selectList onclick="return false;" value="{!objLayerChip.Customer_MEBES_Jobview__c}"  size="1">
+                             <apex:selectOptions value="{!listCustomerMEBESJobview}"/>
+                          </apex:selectList>
+                      </span></td>
+                      <td class="tcell-width-96" style="text-align:center"> 
+                        <apex:selectList onclick="return false;" value="{!objLayerChip.Foundry_MEBES_Jobview__c}"  size="1">
+                             <apex:selectOptions value="{!listFoundryMEBESJobview}"/>
+                          </apex:selectList>
+                        </td>
+                      <td class="tcell-width-96" style="text-align:center"><span class="tcell-width-92">
+                        
+                        <apex:selectList onclick="return false;" value="{!objLayerChip.Tapeout_Centre_MEBES_Jobview__c}"  size="1">
+                             <apex:selectOptions value="{!listTapeoutCentreMEBESJobview}"/>
+                          </apex:selectList>
+                      </span></td>                
+                      <td class="tcell-width-116" style="text-align:center"> 
+                        <apex:selectList onclick="return false;" value="{!objLayerChip.Tapeout_Applications_MEBES_Jobview__c}"  size="1">
+                             <apex:selectOptions value="{!listTapeoutApplicationsMEBESJobview}"/>
+                          </apex:selectList>
+                        </td>
+                      <td class="tcell-width-96" style="text-align:center"><span class="tcell-width-92">
+                        
+                        <apex:selectList onclick="return false;" value="{!objLayerChip.GlobalShuttle_MEBES_Jobview__c}"  size="1">
+                             <apex:selectOptions value="{!listGlobalShuttleMEBESJobview}"/>
+                          </apex:selectList>
+                      </span></td>
+                      <td class="tcell-width-96" style="text-align:center"><span class="tcell-width-92">
+                        
+                        <apex:selectList onclick="return false;" value="{!objLayerChip.MDP_MEBES_Jobview__c}"  size="1">
+                             <apex:selectOptions value="{!listMDPMEBESJobview}"/>
+                          </apex:selectList>
+                      </span></td>
+                      <td class="tcell-width-110" style="text-align:center"><span class="tcell-width-92">
+                       
+                        <apex:selectList onclick="return false;" value="{!objLayerChip.TDTI_MPW_MEBES_Jobview__c}"  size="1">
+                             <apex:selectOptions value="{!listTDTIMPWMEBESJobview}"/>
+                          </apex:selectList>
+                      </span></td>
+                        
+                    </tr>  
+                     </apex:outputLabel>
+               
+                    <apex:outputLabel rendered="false"> 
+                     <tr class="tcell-height-35 alt-row-bgcolor">
+                           <td class="tcell-width-96" style="text-align:center">
+                       
+                          <apex:selectList value="{!objLayerChip.Customer_GDSOUT_Review__c}" styleClass="" size="1">
+                             <apex:selectOptions value="{!listCustomerGDSOUTReview}"/>
+                          </apex:selectList>
+                         
+                      </td>
+                      <td class="tcell-width-96" style="text-align:center">
+                          <apex:selectList value="{!objLayerChip.Foundry_GDSOUT_Review__c}"  styleClass="" size="1">
+                             <apex:selectOptions value="{!listFoundryGDSOUTReview}"/>
+                          </apex:selectList>
+                      </td>
+                      <td class="tcell-width-96" style="text-align:center">
+                      
+                          <apex:selectList value="{!objLayerChip.Customer_Frame_Mockup__c}"  styleClass="" size="1">
+                             <apex:selectOptions value="{!listCustomerFrameMockup}"/>
+                          </apex:selectList>
+                      </td>
+                      <td class="tcell-width-96" style="text-align:center">
+                      
+                          <apex:selectList value="{!objLayerChip.Foundry_Frame_Mockup__c}"  styleClass="" size="1">
+                             <apex:selectOptions value="{!listFoundryFrameMockup}"/>
+                          </apex:selectList>
+                      </td>
+                      
+                      <td class="tcell-width-96" style="text-align:center">
+                          
+                          <apex:selectList value="{!objLayerChip.Send_Prime_Data__c}"  styleClass="" size="1">
+                             <apex:selectOptions value="{!listSendPrimeData}"/>
+                          </apex:selectList>
+                      </td>
+                     
+                      <td class="tcell-width-96" style="text-align:center">
+                      
+                          <apex:selectList value="{!objLayerChip.Send_Frame_Data__c}"  styleClass="" size="1">
+                             <apex:selectOptions value="{!listSendFrameData}"/>
+                          </apex:selectList>
+                      </td>
+                      <td class="tcell-width-96" style="text-align:center">
+                      
+                          <apex:selectList value="{!objLayerChip.ORC__c}"  styleClass="" size="1">
+                             <apex:selectOptions value="{!listORC}"/>
+                          </apex:selectList>
+                      </td>
+                      <td class="tcell-width-96" style="text-align:center">
+                      
+                          <apex:selectList value="{!objLayerChip.DRW__c}"  styleClass="" size="1">
+                             <apex:selectOptions value="{!listDRW}"/>
+                          </apex:selectList>
+                      </td>    
+                      <td class="tcell-width-96" style="text-align:center">
+                       <apex:selectList value="{!objLayerChip.Customer_Prime_Remote_Jobview_Setup__c}"  styleClass="" size="1">
+                             <apex:selectOptions value="{!listCustomerPrimeRemoteJobviewSetup}"/>
+                          </apex:selectList>
+                      </td>
+                      <td class="tcell-width-96" style="text-align:center">
+                       <apex:selectList value="{!objLayerChip.Customer_Frame_Remote_Jobview_Setup__c}"  styleClass="" size="1">
+                             <apex:selectOptions value="{!listCustomerFrameRemoteJobviewSetup}"/>
+                          </apex:selectList>
+                      </td>
+                      <td class="tcell-width-96" style="text-align:center">
+                       <apex:selectList value="{!objLayerChip.Foundry_Prime_Remote_Jobview_Setup__c}"  styleClass="" size="1">
+                             <apex:selectOptions value="{!listFoundryPrimeRemoteJobviewSetup}"/>
+                          </apex:selectList>
+                      </td>
+                      <td class="tcell-width-96 border-right" style="text-align:center">
+                       <apex:selectList value="{!objLayerChip.Foundry_Frame_Remote_Jobview_Setup__c}"  styleClass="" size="1">
+                             <apex:selectOptions value="{!listFoundryFrameRemoteJobviewSetup}"/>
+                          </apex:selectList>
+                      </td>                    
+                      <td class="tcell-width-96" style="text-align:center">
+                          <apex:selectList value="{!objLayerChip.Prime_MEBES_Received__c}"  styleClass="" size="1">
+                             <apex:selectOptions value="{!listPrimeMEBESReceived}"/>
+                          </apex:selectList>
+                      </td>
+                      <td class="tcell-width-96" style="text-align:center">
+                          <apex:selectList value="{!objLayerChip.Frame_MEBES_Received__c}"  styleClass="" size="1">
+                             <apex:selectOptions value="{!listFrameMEBESReceived}"/>
+                          </apex:selectList>
+                      </td>
+                      
+                      <td class="tcell-width-96" style="text-align:center"><span class="tcell-width-92">
+                        
+                            <apex:selectList value="{!objLayerChip.Customer_MEBES_Jobview__c}"  styleClass="" size="1">
+                             <apex:selectOptions value="{!listCustomerMEBESJobview}"/>
+                          </apex:selectList>
+                      </span></td>
+                      <td class="tcell-width-96" style="text-align:center"> 
+                        <apex:selectList value="{!objLayerChip.Foundry_MEBES_Jobview__c}"  styleClass="" size="1">
+                             <apex:selectOptions value="{!listFoundryMEBESJobview}"/>
+                          </apex:selectList>
+                        </td>
+                      <td class="tcell-width-96" style="text-align:center"><span class="tcell-width-92">
+                        
+                        <apex:selectList value="{!objLayerChip.Tapeout_Centre_MEBES_Jobview__c}"  styleClass="" size="1">
+                             <apex:selectOptions value="{!listTapeoutCentreMEBESJobview}"/>
+                          </apex:selectList>
+                      </span></td>                
+                      <td class="tcell-width-116" style="text-align:center"> 
+                        <apex:selectList value="{!objLayerChip.Tapeout_Applications_MEBES_Jobview__c}"  styleClass="" size="1">
+                             <apex:selectOptions value="{!listTapeoutApplicationsMEBESJobview}"/>
+                          </apex:selectList>
+                        </td>
+                      <td class="tcell-width-96" style="text-align:center"><span class="tcell-width-92">
+                        
+                        <apex:selectList value="{!objLayerChip.GlobalShuttle_MEBES_Jobview__c}"  styleClass="" size="1">
+                             <apex:selectOptions value="{!listGlobalShuttleMEBESJobview}"/>
+                          </apex:selectList>
+                      </span></td>
+                      <td class="tcell-width-96" style="text-align:center"><span class="tcell-width-92">
+                        
+                        <apex:selectList value="{!objLayerChip.MDP_MEBES_Jobview__c}"  styleClass="" size="1">
+                             <apex:selectOptions value="{!listMDPMEBESJobview}"/>
+                          </apex:selectList>
+                      </span></td>
+                      <td class="tcell-width-110" style="text-align:center"><span class="tcell-width-92">
+                       
+                        <apex:selectList value="{!objLayerChip.TDTI_MPW_MEBES_Jobview__c}"  styleClass="" size="1">
+                             <apex:selectOptions value="{!listTDTIMPWMEBESJobview}"/>
+                          </apex:selectList>
+                      </span></td>
+                        
+                    </tr>  
+                      </apex:outputLabel>
+                      <apex:variable var="counter" value="{!counter+ 1}"/>
+                      </apex:repeat>
+                                     
+                  </tbody>
+                </table>
+              </div>
+            </div>       
+            </apex:outputPanel>
+                </div>
+            </div>          
+            </div>
+            <!-- End of layer chip summary table-->
+            <div class="clear"></div>
+            <!--End of Tables-->
+    </div>
+         
+    <!-- --------------- Third Row Ends --------------- -->        
+        <div class="clear"></div>                 
+    </div>     
+    </div>  
+        <!--End of content-->
+    <div class="clear"></div>
+   
+</div>
+<!--End of Wrapper div-->
+
+</apex:outputPanel>
+
+
+<script type="text/javascript">
+ $(function() {
+        $( document ).tooltip();
+ });
+
+function resetFilter()
+{
+    showLoader('gf-bigcircle');
+    jQuery('[id$=drpLayerStatus]').attr("value","");
+    jQuery('[id$=drpDeviceId]').attr("value","");
+    jQuery('[id$=drpPTRForDRT]').attr("value","");
+    jQuery('[id$=drpTechGeo]').attr("value","");
+    acfn_clearLayerChipData();   
+}
+
+function callLinkPage(strlink,obj,isFoundryView,customerid,custname,layerid,mst,layer,chipname,showVoid)
+{
+    var prefix="";
+    var iconVal;
+    if(isFoundryView){
+        prefix='/GlobalfoundryView';
+    }
+    //alert(customerid);
+    //alert(isVoid);
+    if(showVoid==='true'){
+        iconVal=[["Audit Trail",prefix+"/apex/VFMRSAuditTrail?id="+strlink+"&PageName=ManualUpdate&CustomerId="+customerid+"&customerName="+custname+"&LayerId="+layerid+"&MSTName="+mst+"&LayerNumber="+layer+"&ChipName="+chipname],["Void Chip",prefix+"/apex/VFMRSVoidChip?id="+strlink]];
+        
+    }else{
+        iconVal=[["Audit Trail",prefix+"/apex/VFMRSAuditTrail?id="+strlink+"&PageName=ManualUpdate&CustomerId="+customerid+"&customerName="+custname+"&LayerId="+layerid+"&MSTName="+mst+"&LayerNumber="+layer+"&ChipName="+chipname]];    
+        
+    }
+    iconMenu1(iconVal,obj);
+    //alert(obj);
+}
+function callLinkPage2(strlink,obj,isFoundryView,customerid,customerName,layerid,MSTName,LayerNumber)
+{
+    var prefix="";
+    if(isFoundryView){
+        prefix='/GlobalfoundryView';
+    }    
+    var iconVal=[["Audit Trail",prefix+"/apex/VFMRSAuditTrail?PageName=ManualUpdate&id="+strlink+"&CustomerId="+customerid+"&customerName="+customerName+"&LayerId="+layerid+"&MSTName="+MSTName+"&LayerNumber="+LayerNumber]];
+    iconMenu1(iconVal,obj);
+}
+
+function openExcelOrCSV(renderType){
+            
+            if(renderType == 'excel')
+                acfn_exportToExcel();
+            else if(renderType == 'csv')
+            {
+                acfn_exportToCSV();
+                
+            }
+        }
+  
+   /*increase Iframe starts*/
+   
+   window.onload = function () {
+        try{
+            
+            parent.iframeLoaded();
+        }catch(err){}
+    }
+    /*increase Iframe ends*/ 
+        
+         function showResult()
+    {
+        var str_array= $("#layersummarydropdown").val();
+        if(str_array==null)str_array="";
+        else {
+            for(var i = 0; i < str_array.length; i++) {
+               str_array[i] = str_array[i].replace(/^\s*/, "").replace(/\s*$/, "");
+            }
+        }
+        document.getElementById("{!$Component.MRSLayerChipSummaryManualUpdateForm:SelectedLayerStatusValue}").value = str_array;
+        showLoader('gf-bigcircle');
+        acfn_viewLayerChipData();
+    }
+    
+    
+    function makeMultipleDrpDwn() {
+    if($("#filterContent").is(":visible") && $("#layersummarydropdown").length>0){
+        $("#layersummarydropdown").multiselect({
+            selectedList:2,
+            header:false,
+            minWidth:140,
+            height:'auto',
+            noneSelectedText:'-Select-'
+        });
+    }
+    //callIncreaseIframe();
+    }
+  
+    function showLoader(e) {
+        jQuery.loader({className: e,content: ""});
+    }
+                    
+    function hideLoader() {
+        jQuery.loader("close");
+    }
+   
+</script>
+    
+
+  <apex:actionFunction name="acfn_viewLayerChipData" action="{!viewLayerChipData}" reRender="PanelLayerChipMain,PanelLayerChipRight,mrsMessage" oncomplete="hideLoader();SwiftGen.rowHover();makeMultipleDrpDwn();"/>
+  <apex:actionFunction name="acfn_clearLayerChipData" action="{!clearLayerChipData}" reRender="PanelLayerChipMain,PanelLayerChipRight,mrsMessage,LayerFilter" oncomplete="hideLoader();SwiftGen.rowHover();makeMultipleDrpDwn();"/>
+  <apex:actionFunction name="acfn_saveLayerChipData" action="{!saveLayerChipData}" reRender="mrsMessage,PanelLayerChipRight,PanelLayerChipMain,PanelLayerRight,PanelLayerMain" oncomplete="hideLoader();"/>
+  <apex:actionFunction name="acfn_exportToCSV" action="{!manualExportToCSV}"/>
+  <apex:actionFunction name="acfn_exportToExcel" action="{!manualExportToExcel}"/> 
+  <apex:actionFunction name="acfn_openLayerChip" action="{!openLayerChipPage}"/> 
+   </apex:form>
+</apex:page>

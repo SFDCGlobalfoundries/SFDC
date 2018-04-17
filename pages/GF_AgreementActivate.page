@@ -1,0 +1,241 @@
+<!--Author:- Suvajit
+
+This functionality is a replacement for Apttus Activation process customized for GF. Here the 4step wizard is skipped and implemented as a 1 click Activation wizard.
+Description:-
+> Checks the user has write access on the necessary objects and the user is granted Salesforce CRM Content license.
+> Allows the user to select documents to Activate on the NDA
+> If a document is less than 5MB it is stored in Apttus Document repository,therby enabling Content Search.
+> If a document is more than 5MB and upto 2GB,it stores it in Apttus Library repository,thereby enabling Content Search.
+> Automatically  tries to create the access of the logged in user to the library repository.
+> Performs all steps needed to activate the NDA same as the Apttus managed package,but in context of GF.
+>Triggers an email with the activated documents to email ids defined in a custom label.
+
+Changelog:-
+
+> Removed limitation of 5MB and allowing upto 2GB of document by using Salesforce CRM functionality.
+> Practically no restriction on length of file names,but names might be truncated to 80 characters when stored in the Agreement Document object.
+
+-->
+
+
+<apex:page controller="GFAgreementActivateController" showchat="true" cache="true" title="Activate Agreement" tabstyle="Apttus__APTS_Agreement__c"  id="CustomActivatePage" action="{!init}" deferLastCommandUntilReady="True">
+ 
+ <style>
+    /* This is for the full screen DIV */
+    .popupBackground {
+        /* Background color */
+        background-color:black;
+        opacity: 0.20;
+        filter: alpha(opacity = 20);
+    
+        /* Dimensions */
+        width: 100%;
+        height: 100%;
+        top: 0;
+        left: 0;
+        z-index: 998;
+        position: absolute;
+        
+        /* Mouse */
+        cursor:wait;
+    }
+ 
+    /* This is for the message DIV */
+    .PopupPanel {
+        /* Background color */
+        border: solid 2px blue;
+        background-color: white;
+ 
+        /* Dimensions */
+        left: 50%;
+        width: 400px;
+        margin-left: -100px;
+        top: 50%;
+        height: 50px;
+        margin-top: -25px;
+        z-index: 999;
+        position: fixed;
+        
+        /* Mouse */
+        cursor:pointer;
+    }
+</style>
+
+<script type="text/javascript">
+
+var aId;
+var stat=false;
+function RedirectToBase()
+    {
+    
+        if(stat.toString()=='true') {alert('There are errors on the record. Please correct them.');}
+        else
+        {
+            window.parent.location.href="/"+aId;
+        }
+    }
+
+
+
+</script>
+
+
+    
+    
+    <apex:sectionHeader title="Activate Agreement" subtitle="{!objAgr.Apttus__FF_Agreement_Number__c} : {!objAgr.Name}"/>
+    
+    <apex:pageMessages />
+    
+    <apex:form id="TheForm" rendered="{!objAgr!=null}">
+    
+      <apex:pageBlock id="DocumentSelector" title="Select Document"  mode="mainDetails" rendered="{!(hasAvailableDocItems && UserAccess)}" > 
+        
+                    <apex:pageBlockButtons location="bottom" >
+                      <apex:actionStatus id="AjaxStatus1" startText="Activating.." stopText="Activated">
+                            <apex:facet name="stop">
+                                   <apex:outputPanel >
+                                        <apex:commandButton status="AjaxStatus1"  title="Click to Activate the Agreement" id="activatebtn" action="{!doActivate}" rerender="ProcessRender,TheForm,msgs,script_block" value="Activate" disabled="{!attchlst.size==0 || isSuccessOp || ErrorsPresent}" oncomplete="RedirectToBase();" onclick="if(!confirm('PLEASE READ CAREFULLY!!\n\n>For optimum performance,please try to ensure that the Attachment(s) to be Activated are less than 5MB each and are not null notes or null documents.\n\n>While Document(s) larger than 5 MB may be used but MAY NOT ALWAYS be enabled for Content Search and will be available in the Attachment Section of the record.\n\nProceed for Activation?')){return false;} addAccesstoLib();"/>
+                                        <apex:commandButton title="Click to go back to the main record" action="{!returntoAgr}" value="Cancel" disabled="{!isSuccessOp}" immediate="true"/>
+                                    </apex:outputPanel>
+                            </apex:facet>
+                            <apex:facet name="start">
+                            <apex:outputPanel id="ProcessRender">
+                                <apex:commandButton value="Activating..." disabled="true" rendered="{!AccessGranted}"/>
+                                <apex:commandButton value="Activating..." disabled="true" rendered="{!AccessGranted}"/>
+                             
+                                <div>
+                                    <div class="popupBackground" />
+                                    <div class="PopupPanel">
+                                        <table border="0" width="100%" height="100%">
+                                            <tr>
+                                                <td align="center"><b>Activating Agreement..Please Wait..</b></td>
+                                            </tr>
+                                            <tr>
+                                                <td align="center"><img src="{!$Resource.ProgressBar}"/></td>
+                                            </tr>
+                                        </table>
+                                    </div>
+                                </div>
+                             </apex:outputPanel> 
+                                                            
+                            </apex:facet>
+                    </apex:actionStatus>
+                    
+                    
+                    <apex:actionStatus id="AjaxStatus2" startText="Granting Access.." stopText="Granted">
+                            <apex:facet name="stop">
+                                   <apex:outputPanel >
+                                    <apex:actionFunction name="addAccesstoLib"  action="{!AddUsertoGroupForLibraryAccess}" rerender="AccessRender,ProcessRender,msgs,script_block" status="AjaxStatus2" />
+                                   </apex:outputPanel>
+                            </apex:facet>
+                            <apex:facet name="start">                      
+                             <apex:outputPanel id="AccessRender">
+                                <apex:commandButton value="Processing..." disabled="true" />
+                                <apex:commandButton value="Processing..." disabled="true" />
+                             
+                                <div>
+                                    <div class="popupBackground" />
+                                    <div class="PopupPanel">
+                                        <table border="0" width="100%" height="100%">
+                                            <tr>
+                                                <td align="center"><b>Granting Access to Library...Please Wait..</b></td>
+                                            </tr>
+                                            <tr>
+                                                <td align="center"><img src="{!$Resource.ProgressBar}"/></td>
+                                            </tr>
+                                        </table>
+                                    </div>
+                                </div>
+                             </apex:outputPanel>
+                                
+                            </apex:facet>
+                    </apex:actionStatus>
+                    
+                    
+                    
+                </apex:pageBlockButtons>
+                <apex:pageBlockSection title="Select the document(s) below to Activate:" columns="1">
+                     <apex:outputText escape="false" style="font-weight:600; text-decoration: underline; color:red" value="FOR OPTIMUM PERFORMANCE:"/>
+                      
+                     <apex:outputText escape="false" style="font-style:normal; color:red" value="{!$Label.Custom_NDA_Activation_Process_Disclaimer}"/>
+                     
+                     <apex:outputText escape="false" style="font-style:normal" value="</br>Please confirm the documents below contains a copy of the contract.</br>Please select the appropriate document(s) and click Activate.</br>The selected document(s) will be enabled for Content Search as well.</br>"/>
+                     <apex:selectList value="{!attchLst}"  multiSelect="True" size="8"  dir="LTR" style="font-family: Arial, Helvetica, sans-serif;font color :#ff0000;font-size: 10pt ; width: 1000px; height: 200px">
+                        <apex:selectOptions value="{!Items}"/>
+                       <apex:actionSupport event="onchange" rerender="out,activatebtn" status="choices"/>
+
+                    </apex:selectList>
+                    
+                </apex:pageBlockSection> 
+                
+                <apex:pageBlock title="Activation Errors" rendered="{!ErrorsPresent}">
+                    <apex:pageMessages id="msgs"/>  
+                </apex:pageBlock>      
+      </apex:pageBlock> 
+      
+       <apex:pageBlock title="Select Document"  mode="mainDetails" rendered="{!(NOT(hasAvailableDocItems) && NOT(ISNULL(objAgr.id)))}" > 
+            <apex:pageBlockButtons location="bottom" >
+                        <apex:commandButton action="{!returntoAgr}"  value="Return" rendered="{!NOT(ISNULL(objAgr.id))}"  immediate="true"/>
+            </apex:pageBlockButtons>
+                    <apex:pageMessage escape="false" summary="</br> There are no available documents to Activate.</br>Please upload fully executed contract.</br>"  severity="warning" strength="3"/>
+                  
+       </apex:pageBlock> 
+       
+       
+       <apex:pageBlock title="Select Document"  mode="mainDetails" rendered="{!(NOT(UserAccess) && NOT(ISNULL(objAgr.id)))}" > 
+            <apex:pageBlockButtons location="bottom" >
+                        <apex:commandButton action="{!returnToAgr}"  value="Return" rendered="{!NOT(ISNULL(objAgr.id))}"  immediate="true"/>
+            </apex:pageBlockButtons>
+                    <apex:pageMessage escape="false" summary="</br> You do not have the proper privileges to perform the operation.</br>Please ensure you have the following privileges:</br> > You have write access on Agreement and Agreement Documents.</br> > If you still unable to Activate your documents,contact your administrator to grant you Salesforce CRM content user license.</br>"  severity="Error" strength="3"/>
+                  
+       </apex:pageBlock> 
+       
+       
+       
+    </apex:form>
+ 
+ 
+<apex:outPutPanel id="script_block">
+<script>
+stat='{!ErrorsPresent}';
+aId = '{!objAgr.Id}';
+</script>
+</apex:outPutPanel>
+    
+<apex:pageBlock title="Summary"  mode="mainDetails" rendered="{!(hasAvailableDocItems && UserAccess)}">    
+  <apex:pageBlockSection id="Summary" title="Summary:" columns="1">
+       <apex:outputPanel id="out">
+            <apex:actionstatus id="choices" startText="Please Wait.....">
+                <apex:facet name="stop">
+                     <apex:pageBlockSectionItem >
+                     <apex:outputPanel >
+                         <apex:outputPanel id="Panel1"   rendered="{!attchLst.size>0}">
+                                 <apex:outputText style="font-style:normal;font-weight: bold" value="Document(s) selected for Activation."  />  
+              
+                                 <apex:dataList value="{!attchLst}" var="c" styleClass="tableClass">
+                                        <apex:outputText value="{!NameMap[c]}"/>
+                                 </apex:dataList>
+                         </apex:outputPanel>
+         
+                      
+                         <apex:outputPanel id="Panel2"   rendered="{!attchLst.size>0}">
+                                 <apex:outputText style="font-style:normal;font-weight: bold" value="Document(s) selected for Content Search."  />  
+              
+                                 <apex:dataList value="{!attchLst}" var="c" styleClass="tableClass">
+                                        <apex:outputText value="{!NameMap[c]}"/>
+                                 </apex:dataList>
+                         </apex:outputPanel>
+                         
+                         
+                         <!--<apex:outputPanel id="Panel3"    rendered="{!attchLst.size>0}">
+                                 <apex:outputText style="font-style:normal;font-weight: bold" value="No Document(s) Selected for Removal."  />  
+                         
+                         </apex:outputPanel> -->
+                     </apex:outputPanel>    
+                    </apex:pageBlockSectionItem>
+                </apex:facet>
+        </apex:actionstatus>
+    </apex:outputPanel>
+</apex:pageBlockSection>    
+</apex:pageBlock>
+  </apex:page>

@@ -1,0 +1,197 @@
+<!--
+@ Author :- Navneet Rajput
+@ Company :- CTS
+@ Description :- Page help to provision PDK bundle to selected Accounts(support account level provisioning)
+@ Change History :- 
+@ Modified Date: 5/26/2015
+@ Reason: Case 41455 - Check account sync before provisioning
+@ Author: Sunita
+@ Modified Date: 6/17/2015
+@ Reason: Case 42841 - sorting acc serach by shortname
+@ Author: Sunita
+* @ Author : Prajnith Karra
+* @ Modified Date: 5/6/2017
+* @ Reason: CHG0041538 PDK Blacklist validations
+* @ line numbers modified - 300-304,319-324,
+-->
+
+<apex:page standardController="Sub_PDK__c" extensions="FV_PDKProvisioningHandler" action="{!isValidProfileForProvisioning}" >
+
+    <!---------------------------------------------------     JS File   ------------------------------------------------------------------>
+        <apex:stylesheet value="{!URLFOR($Resource.GF_DQ_JQueryLatest, '/jquery-ui-1.10.3/themes/base/jquery-ui.css')}"/>
+        <apex:includeScript value="{!URLFOR($Resource.GF_DQ_jQueryLib, '/js/jquery-1.9.0.min.js')}"/>
+        <apex:includeScript value="{!URLFOR($Resource.GF_DQ_JQueryLatest, '/jquery-ui-1.10.3/ui/jquery-ui.js')}"/>
+        <apex:includeScript value="{!URLFOR($Resource.GF_DQ_jQueryLib, '/jquery.blockUI.js')}"/>
+    <!------------------------------------------------------------------------------------------------------------------------------------>
+    
+    <style>
+          .headerRow .TableTitle {
+            background-color: #F0F8FF !important;
+            background-image: none !important; 
+            color: #CC0000 !important; 
+            font-size:100% !important; 
+          }
+     </style>
+     
+     <script type="text/javascript">
+        function checkAll(cb){
+            var inputElem = document.getElementsByTagName('input');                     
+            for(var i=0; i<inputElem.length; i++){   
+                if(inputElem[i].id.indexOf("checkboxSelectAccount")!=-1){
+                        inputElem[i].checked = cb.checked;              
+                }
+            }
+        }
+        
+                
+        function checkContacts(cb,accid){
+            var inputElem = document.getElementsByTagName('input');                            
+            for(var i=0; i<inputElem.length; i++){ 
+                if(inputElem[i].parentNode.getAttribute('rowid')==accid)                                                 
+                    inputElem[i].checked = cb.checked;               
+                }
+        }
+        
+        function provisionPDK(){
+            $('<div></div>').appendTo('body')
+                 .html('<div><h6>Do you want to proceed with PDK provisioning?</h6></div>')
+                 .dialog({
+                         modal: true, 
+                         title: 'message', 
+                         zIndex: 10000, 
+                         autoOpen: true,
+                         width: 'auto', 
+                         resizable: false,
+                         buttons: {
+                             Yes: function () {
+                                $.blockUI({ css: { backgroundColor: '##0174DF', color: '#FAFAFA'} });
+                            
+                                doProvisioning();
+                               
+                                $(this).dialog("close");
+                             },
+                             No: function () {
+                                 $(this).dialog("close");
+                             }
+                         },
+                         close: function (event, ui) {
+                             $(this).remove();
+                         }
+              });
+        }
+      
+      //function to unblock the page  
+      function unblockPage(){  
+         $.unblockUI();  
+      }
+            
+    </script>    
+    
+    <apex:form >
+    <apex:outputpanel ><!-- rendered="{!isReadyForProvisioning}" -->
+        <apex:actionFunction action="{!doProvision}" name="doProvisioning" reRender="messageblock" oncomplete="unblockPage()"/>
+        <apex:outputPanel id="messageblock">
+            <apex:pageMessages escape="false"/>
+        </apex:outputPanel>
+        
+        <apex:outputPanel id="searchPanel">
+            <!-- Below block holds information about PDK,Search Account, Display Accounts -->
+            <apex:pageblock mode="detail" title="PDK Provisioning"> 
+                <!-- Below section will display Bundle Information -->
+                <apex:pageblockSection title="PDK Information" columns="2" rendered="{!((isValidProfile)&&(isValidReleaseStatusForProvisioning)&& (isNotObsoletePDK) && (isReadyForProvisioning))}" >
+
+                    <apex:repeat value="{!$ObjectType.Sub_PDK__c.FieldSets.Provisioning_Fields}" var="f">
+                        <apex:outputField value="{!objSubPDK[f]}" rendered="{!If(NOT(f=='PDK_Bundle_ASIC__c' && objSubPDK.PDK_Bundle_ASIC__c==false),true,false)}"/>                     
+                    </apex:repeat>
+                 </apex:pageblockSection>
+                 <!-- Below Block will help to serach Accounts -->
+                <apex:pageBlockSection title="Search Accounts" columns="1" collapsible="true" 
+                                       rendered="{!((showAddAccounts) && (isValidProfile) && (isNotObsoletePDK) && (isReadyForProvisioning))}">
+                        <apex:outputPanel style="padding-left:30%;padding-top:10%;padding-bottom:10%;">
+                            <a href=""><img src="/img/func_icons/util/help16.png"
+                                title="{!$Label.FV2_Help_Text_Accoun_Search}"
+                                onmouseover="this.src='/img/msg_icons/info16.png'"
+                                onmouseout="this.src='/img/func_icons/util/help16.png'" />
+                            </a>
+                            <apex:inputText value="{!searchText}"/ >
+                            <apex:commandButton value="Search" action="{!searchAccount}" />
+                        </apex:outputPanel>
+               </apex:pageBlockSection>
+               
+               <!-- Below Block will help to show list of Accounts -->
+               <apex:pageBlockSection title="Provision To Accounts" columns="1" collapsible="no" rendered="{!((isValidProfile) && (isNotObsoletePDK) && (isReadyForProvisioning))}"> 
+                   <apex:pageBlockTable id="tableid" var="Acc" value="{!searchResult}"
+                                        rendered="{!renderSearchResults}" title="Account Details">
+                        <apex:column id="columnid">
+                            <apex:facet Name="header">
+                                <apex:inputcheckbox id="headerid" onchange="checkAll(this);" />
+                            </apex:facet>
+                            <!--apex:inputcheckbox value="{!Acc.selected}" rendered="{!IF(Acc.selected=false,True,False)}" disabled="{!Acc.acct.ASIC_Business_Flag__c}"-->
+                            <!-- onchange="AsicAlertMessage('{!Acc.acct.ASIC_Business_Flag__c}');" -->    
+                           <apex:outputPanel rendered="{!IF(((Acc.acct.ASIC_Business_Flag__c=true && objSubPDK.PDK_Bundle_ASIC__c = true)|| (objSubPDK.PDK_Bundle_ASIC__c = false)),true,false)}">                            
+                                <apex:inputcheckbox id="checkboxSelectAccount"    value="{!Acc.selected}" rendered="{!IF((Acc.isAlreadyProvisioned=false && Acc.isAccountBlacklisted=false ),True,False)}">
+                                </apex:inputcheckbox>
+                             <apex:outputText rendered="{!Acc.isAccountBlacklisted}" > 
+                                    <span style="color:red; font-weight: bold">                                                                                                                                                                                                 
+                                        <a href="/{!Acc.BlackListID}" target="_blank">Prohibited</a> 
+                                        </span>                                    
+                             </apex:outputText>                                 
+                            </apex:outputPanel>   
+                                                                                                     
+                        </apex:column>
+                       <!-- <apex:column headerValue="Short Name" value="{!Acc.acct.Short_Name__c}" /> -->
+                        <apex:column headerValue="ASIC Business" value="{!Acc.acct.ASIC_Business_Flag__c}" rendered="{!If((objSubPDK.PDK_Bundle_ASIC__c = true),true,false)}" />                        
+                        <apex:column headerValue="Short Name">
+                             <apex:outputText value="{!Acc.acct.Short_Name__c}" />                                                                                  
+                        </apex:column>                   
+                        <apex:column headerValue="Account Name" value="{!Acc.acct.Name}" />
+                        <apex:column headerValue="Site/Department"
+                            value="{!Acc.acct.Site_Department__c}" />
+                        <apex:column headerValue="Stage" value="{!Acc.acct.Stage__c}" />
+                          <!--apex:column headerValue="Short Name"
+                            value="{!Acc.acct.Short_Name__c}" /-->
+                        <apex:column headerValue="Parent Account Name" value="{!Acc.acct.Parent_Account_Name__c}" />
+                        <apex:column headerValue="Parent Account Short Name" value="{!Acc.acct.Parent_Account_Short_Name__c}" />
+                        
+                         <apex:column headerValue="Provisioned" width="10%">
+                             <apex:outputText value="{!If(Acc.selected=false,'NO','YES')}" style="{!If(Acc.selected=false,'Color:Red','Color:Green')}"/> 
+                         </apex:column>                   
+                       <!-- <apex:column headerValue="ASIC Business" value="{!Acc.acct.ASIC_Business_Flag__c}" rendered="{!If((objSubPDK.PDK_Bundle_ASIC__c = true),true,false)}" /> 
+                          <apex:column headerValue="ASIC Business" width="10%">                             
+                              <apex:inputcheckbox value="{!Acc.acct.ASIC_Business_Flag__c}" disabled="true"/>
+                         </apex:column>
+                        -->                         
+                        <!--
+                         <apex:column headerValue="License Agreement Required" width="10%" value="{!Acc.acct.IP_Licensing_Agreement_Status__c}" />                                                                                                                       
+                          <apex:inputcheckbox value="{!Acc.acct.IP_Agreement_Licensing_Attachment_Check__c}" disabled="true"/> -->                                                                                  
+                                                  
+                                                  
+                         
+                    </apex:pageBlockTable>
+                </apex:pageBlockSection>
+                
+                <!-- Button Section -->
+                <apex:pageBlockButtons location="both">
+                    <input type="button" value="Provision to Account" onclick="return provisionPDK();" class="btn" rendered="{!isReadyForProvisioning}"/>
+                    <!--  <apex:commandButton value="Provision to Account" onclick="return provisionPDK();" rendered="{!isReadyForProvisioning}"/>-->
+                    <!--  apex:commandButton action="{!doProvision}" value="Do Provision" rerender="messageblock"/-->
+                    <apex:commandButton action="{!back}" value="Back"/>
+                </apex:pageBlockButtons>
+                
+              <!-- END OF PAGE BLOCK -->  
+            </apex:pageblock>
+           <!-- END OF FIRST OUTPUT PANEL --> 
+        </apex:outputPanel>
+        <!-- END OF FORM -->
+       </apex:outputpanel>
+       <!--  <apex:outputpanel rendered="{!NOT(isReadyForProvisioning)}">
+        <apex:pageblock>
+            <apex:outputtext  value="PDK bundle creation is in progress. Please try again after {!objSubPDK.Time_Req_To_Create_Association_In_OT__c} minutes."/>
+            <apex:pageBlockButtons location="both">
+                <apex:commandButton action="{!back}" value="Back"/>
+            </apex:pageBlockButtons>
+       </apex:pageblock>    
+       </apex:outputpanel>--> 
+    </apex:form>
+    <!-- END OF PAGE -->
+</apex:page>

@@ -1,0 +1,795 @@
+<apex:page controller="DesignExecutionSignOffController" tabStyle="Custom_Design__c" action="{!getUserLavelSignOffAccess}">
+
+  <apex:form enctype="multipart/form-data">
+      <apex:pageBlock title="{!recordTypeName}">
+      
+            <style>
+                body .bPageBlock .pbBody .red .pbSubheader{
+                    background-color:#c00000;
+                }
+                body .bPageBlock .pbBody .grey .pbSubheader{
+                    background-color:#e9e9e9;
+                }
+                body .bPageBlock .pbBody .grey .pbSubheader h3{
+                color:#000;
+                }
+                .tableHeader 
+                {
+                  padding: 0px 10px 10px 0px;
+                  margin: 0px 0px 0px 0px;
+                  color: #4A4A56;
+                  font-size: 100%;
+                  //font-weight: bold;
+                  background: white;
+                  font-family: Arial,Helvetica,sans-serif;
+                }
+            </style>
+            
+          <!--<apex:pageMessages id="showmsg"></apex:pageMessages> -->
+          <apex:pageBlockButtons >
+            <apex:commandButton value="Save" action="{!saveSignOffRTMDetail}">
+                <apex:param name="recordName" value="{!recordTypeName}"/>
+            </apex:commandButton> 
+            <apex:commandButton value="Back to Design Phase Form" action="{!cancelExecutionDetail}"/> 
+            <apex:commandButton value="Requote" action="{!requoteExecutionDetail}"/> 
+            <apex:commandButton value="Waiver Summary" onclick="window.open('/apex/DesignExecutionWaiverCapabilityRec?scontrolCaching=1&deid={!designExecution.Id}'); return false;"/>
+          </apex:pageBlockButtons>
+          
+          <apex:outputPanel styleClass="tableHeader" layout="block">
+              <apex:pageBlockSection collapsible="false" title="{!recordTypeName} Checklist - View/Edit" columns="1">
+                  <c:BnP_OptionHeader RcId="{!designExecution.Option__c}"></c:BnP_OptionHeader>
+              </apex:pageBlockSection>
+            </apex:outputPanel>
+            
+            
+            <apex:outputPanel styleClass="grey" layout="block"> 
+                <apex:pageBlockSection collapsible="false" columns="1" title="Design Checklist:">
+                </apex:pageBlockSection>
+            </apex:outputPanel> 
+            
+            <table border="0" width="100%" class="tableHeader">
+                  <tr>
+                      <td>
+Please indicate that the following checks have been performed: <br/><br/>
+
+<font color="red">*</font> denotes questions which MUST be answered in order to complete approval of the Document.<br/><br/>
+
+Answers to all Questions are Required for RIT A/B and RIT B releases unless otherwise indicated.<br/>
+
+Questions required for RIT DT or RIT A releases are indicated below:<br/>
+                      </td>
+                  </tr>
+              </table>
+              
+              <apex:outputPanel styleClass="grey" layout="block"> 
+                <apex:pageBlockSection collapsible="false" columns="1" title="RTC Sign Off Module (SOM) Methodology Review for Stage 1 {!recordTypeName} Approval">
+                </apex:pageBlockSection>
+            </apex:outputPanel>
+              
+              <table border="0" width="100%" class="tableHeader">
+                <tr>
+                      <td>
+                            <font color="red">*</font>  All Signoff Requirement Details for Stage 1 approval, including Product Parameters, can be found in the SOM Capsule File attached to the RTC document for this design. <br/><br/>
+
+                            Please review the data in the RTC SOM Capsule prior to proceeding with RTM Stage 1 Approval.
+                      </td>
+                </tr>
+                <tr>
+                    <td> Please Attach File: <br/>
+                        <apex:inputFile value="{!signOffAttachmentRTC.body}" filename="{!signOffAttachmentRTC.name}"/>
+                        
+                    </td>
+                </tr>
+                
+                <tr><td>&nbsp;</td></tr>
+                
+             <!--   <tr>
+                    <td width="80%">
+                       <apex:outputText rendered="{!IF(recordTypeName =='PTRF RIT A', True, False)}"><i>PTRF RIT A:</i></apex:outputText> 
+                    </td>
+                    <td width="20%">
+                        <apex:inputCheckbox label="PTRF RIT A" value="{!signOffModue.PTRF_RIT_A__c}" rendered="{!IF(recordTypeName =='PTRF RIT A', True, False)}"/>
+                    </td>
+                </tr>  
+                <tr>
+                    <td  width="80%">
+                       <apex:outputText rendered="{!IF(recordTypeName =='PTRF RIT B', True, False)}"><i>PTRF RIT B:</i></apex:outputText>
+                    </td>
+                    <td width="20%">
+                        <apex:inputCheckbox label="PTRF RIT B" value="{!signOffModue.PTRF_RIT_B__c}" rendered="{!IF(recordTypeName =='PTRF RIT B', True, False)}"/>
+                    </td>
+                </tr>  -->
+                <tr>
+                      <td width="80%">
+                            <font color="red">{</font> 1. Has the Customer reviewed, approved, and provided (if needed) any corrections to the data in the BOM Audit Template generated by ASIC PE? (Applications Engineer)<br/>
+                            
+                      </td>
+                      <td width="20%">
+                        <apex:inputCheckbox label="Yes" value="{!CustomerReviewed}" disabled="{!signOffModue.RIT_Customer_Reviewed__c}"
+                                            selected="true" rendered="{!signOffModue.RIT_Customer_Reviewed__c}"/>
+                        <apex:inputCheckbox label="Yes" value="{!CustomerReviewed}" disabled="{!signOffModue.RIT_Customer_Reviewed__c}"
+                                            selected="false" rendered="{!NOT(signOffModue.RIT_Customer_Reviewed__c)}"/>
+                      </td>
+                </tr>
+                <tr>
+                    <td colspan="2">
+                        A <b>Yes</b> response is required for RTM and module bill of materials (BOM) release.
+                    </td>
+                </tr>
+                
+           </table>
+            
+            <apex:outputPanel styleClass="grey" layout="block"> 
+                <apex:pageBlockSection collapsible="false" columns="1" title="Release to Manufacturing ({!recordTypeName}) Checklist">
+                </apex:pageBlockSection>
+            </apex:outputPanel> 
+             <table border="0" width="100%" class="tableHeader">
+                  <tr>
+                      <td>
+                            CUSTOMER: <i>{!designExecution.Customer_Part_Name__c} </i><br/>
+                            CHIP: <i>{!designExecution.Customer_Part_Name__c} </i> <br/>
+                      </td>
+                  </tr>
+              </table>
+           
+            
+          <apex:outputPanel styleClass="grey" layout="block">
+              <apex:pageBlockSection collapsible="false" columns="1" title="Stage 1 {!recordTypeName} Approval">
+                  
+                  
+                  <table border="0" width="100%" class="tableHeader">
+                    <tr>
+                      <td colspan="2">Completion of the questions in the preceding sections of this document is sufficient to obtain Stage 1 RTM approval. This approval is granted by the GlobalFoundries Field Design Center Engineer, the GlobalFoundries Physical Design Engineer and the Customer. The remaining sections of this document must be completed prior to Stage 2 (Final) RTM approval.
+                      </td>
+                  </tr>
+                    
+                    <tr>
+                        <td colspan="2"> <u>Field Design Center Engineer</u> </td>
+                    </tr>
+                    <tr>
+                        <td width="80%"><font color="red">{</font> I have reviewed the answers in this document and to the best of my knowledge they are complete and accurate.
+                        </td>
+                        <td width="20%">
+                            <!--<input type="checkbox" value="True" Name="Field_Design_Center_Engineer__c" /> Yes -->
+                            <apex:inputCheckbox disabled="{!signOffApprover.dceApproval}" label="Yes" value="{!signOffApprover.dceChecked}" 
+                                                                    selected="true" rendered="{!signOffApprover.selectDCE}"/> 
+                            <apex:inputCheckbox disabled="{!signOffApprover.dceApproval}" label="Yes" value="{!signOffApprover.dceChecked}" 
+                                        selected="false" rendered="{!NOT(signOffApprover.selectDCE)}"/> 
+                        </td>
+                    </tr>
+                    
+                    <tr>
+                        <td colspan="2"> <u>Physical Design Engineer</u> </td>
+                    </tr>
+                    <tr>
+                        <td width="80%"><font color="red">{</font> I have reviewed the answers in this document and to the best of my knowledge they are complete and accurate.
+                        </td>
+                        <td width="20%">
+                            <!--<input type="checkbox" value="True" Name="Physical_Design_Engineer__c" /> Yes-->
+                            <apex:inputCheckbox disabled="{!signOffApprover.pdApproval}" label="Yes" value="{!signOffApprover.pdChecked}" 
+                                                                                selected="true" rendered="{!signOffApprover.selectPD}"/>
+                            <apex:inputCheckbox disabled="{!signOffApprover.pdApproval}" label="Yes" value="{!signOffApprover.pdChecked}" 
+                                                selected="false" rendered="{!NOT(signOffApprover.selectPD)}"/>
+                        </td>
+                    </tr>
+                    
+                    <tr>
+                        <td colspan="2"> <u>Customer</u> </td>
+                    </tr>
+                    <tr>
+                        <td width="80%">
+                            <font color="red">{</font> The Customer has reviewed the preceeding sections of this RTM document and approves all data contained therein. <br/>
+                        </td>
+                        <td width="20%">
+                            <!--<apex:inputCheckbox label="Yes" value="{!CustomerChecked}" /> -->
+                            <apex:inputCheckbox label="Yes" value="{!cusomerReviewedRTM}" 
+                                            selected="true" rendered="{!signOffModue.Customer_RTM_Reviewed__c}" disabled="{!signOffModue.Customer_RTM_Reviewed__c}"/>
+                            <apex:inputCheckbox label="Yes" value="{!cusomerReviewedRTM}" 
+                                            selected="false" rendered="{!NOT(signOffModue.Customer_RTM_Reviewed__c)}" disabled="{!signOffModue.Customer_RTM_Reviewed__c}"/>
+                        </td>
+                    </tr>
+                    
+                    <tr>
+                        <td width="80%">
+                            Documentation confirming the approval (i.e e-mail or scanned copy of the signed and dated signature page from this document) is attached. (DCE) <br/>
+                            The Customer signature on this Phase 1 approval page authorizes GlobalFoundries to release data to manufacturing provided that the following criteria is met:<br/><br/>
+
+                            1. The list of cores and associated core versions listed in the Additional Signoff Requirements section of the RTC SOM capsule are proved to be the versions actually included in the design gds data.<br/>
+                            2. The silicon portion of this design is dispositioned as "PQ" (Potentially Qualifiable) level or the Customer acknowledges that non-PQ level hardware will meet their requirements.<br/>
+                            
+                            If either of these items is found to be not true for this design prior to RTM, the Customer will be consulted before the design data is released to manufacturing.<br/><br/>
+                            
+                            <b>Customer Signature:</b><br/>
+                            <b>Date:</b><br/>
+
+                        </td>
+                        <td width="20%">
+                            &nbsp;
+                        </td>
+                    </tr>
+                    
+                    <tr>
+                        <td colspan="2"> Attach Customer Approval Document: <br/>
+                            <apex:inputFile value="{!customerApprovalAttachment.body}" filename="{!customerApprovalAttachment.name}"/>
+                        </td>
+                    </tr>
+               </table>              
+             </apex:pageBlockSection>
+         </apex:outputPanel>
+         
+         
+         <apex:outputPanel styleClass="grey" layout="block"> 
+                <apex:pageBlockSection collapsible="false" columns="1" title="Sign Off Module (SOM) Methodology - {!recordTypeName}">
+                </apex:pageBlockSection>
+            </apex:outputPanel> 
+            
+            <table border="0" width="100%" class="tableHeader">
+                <tr>
+                    <td width="80%"><font color="red">{</font> Has the ASIC Verification Sign Off Methodology (SOM) been run against this design to determine whether or not the RTM Checkpoint has been reached? (PE)
+                    </td>
+                    <td width="20%">
+                       <!-- <input type="radio" value="True" Name="SignOff"/> Yes &nbsp;<input type="radio" value="False" Name="SignOff"/> No -->
+                        <apex:selectRadio value="{!signOffModue.RTL_Checkpoint_Reached__c}" >
+                            <apex:selectOption itemLabel="Yes" itemValue="True" />
+                            <apex:selectOption itemLabel="No" itemValue="False" />
+                        </apex:selectRadio>
+
+                    </td>
+                </tr>
+                <tr><td>&nbsp;</td></tr>
+                <tr>
+                    <td colspan="2"> Please attach the required SOM Capsule here: <br/>
+                        <apex:inputFile value="{!signOffAttachment.body}" filename="{!signOffAttachment.name}"/>
+                    </td>
+                </tr>
+                
+                
+                <tr>
+                        <td width="80%">
+                            The RTM Ready section is required for all RIT DT, RIT A, RIT B, and RIT A/B Releases.<br/><br/>
+
+                            3. Please enter the date that this design was RTM-Ready: (PE)<br/>
+                            (Use calendar pop-up to select Date)<br/>
+                        </td>
+                        <td width="20%">
+                            <apex:inputField value="{!signOffModue.RTM_Ready__c}"/>
+                        </td>
+                </tr>
+                
+                <tr>
+                        <td width="80%">
+                            <i> Please enter Comments here:</i> <br/>
+                            <apex:inputField value="{!signOffModue.RTM_Comments__c}" style="margin: 0px; height: 100px; width: 500px;" />
+
+                        </td>
+                        <td width="20%">
+                            &nbsp;
+                        </td>
+                </tr>
+                
+                <tr><td>&nbsp;</td></tr>
+                <tr>
+                    <td colspan="2"> Attach File: <br/>
+                        <apex:inputFile value="{!signOffAttachmentRTM.body}" filename="{!signOffAttachmentRTM.name}"/>
+                        
+                    </td>
+                </tr>
+           </table>
+         
+        <apex:outputPanel styleClass="grey" layout="block">
+            <apex:pageBlockSection collapsible="false" columns="1" title="Testability and Test Generations">
+            </apex:pageBlockSection>           
+        </apex:outputPanel>      
+         
+         <table border="0" width="100%" class="tableHeader">
+                <tr>
+                    <td width="80%">Post Layout TMD Generation</td>
+                    <td width="20%">&nbsp;</td>
+                </tr>
+                <tr>
+                    <td width="80%">4. Has the ATPG software been successfully run on this design yielding the Post-Layout Test Manufacturing Data (TMD)? (PE)
+                    </td>
+                    <td width="20%">
+                       <!-- <input type="radio" value="True" Name="TMD_Generation"/> Yes &nbsp;<input type="radio" value="False" Name="TMD_Generation"/> No -->
+                        <apex:selectRadio value="{!signOffModue.TMD_Generation__c}" >
+                            <apex:selectOption itemLabel="Yes" itemValue="True" />
+                            <apex:selectOption itemLabel="No" itemValue="False" />
+                        </apex:selectRadio>
+                    </td>
+                </tr>
+                
+                <tr>
+                        <td width="80%">
+                            If the anwser above is no, please complete these four questions. Otherwise, go to the next numbered item.
+                        </td>
+                        <td width="20%">&nbsp;</td>
+                </tr>
+                
+                <tr>
+                        <td width="80%">
+                            a. Please enter the afs/dfs location of the VIM that the Post_Layout ATPG run should be executed agains: (PE)
+                        </td>
+                        <td width="20%">
+                            <input type="text" Name="TMD_AFS_DFS_Location"/>
+                        </td>
+                </tr>
+                
+                <tr>
+                    <td width="80%">b. Has the REQUIRED Pre-Layout ATPG run been executed to ensure no test coverage or test data volume issues exist, and that all VIM test flags are present? (PE)
+                    </td>
+                    <td width="20%">
+                        <!--<input type="radio" value="True" Name="TMD_Pre_Layout_ATPG"/> Yes &nbsp;<input type="radio" value="False" Name="TMD_Pre_Layout_ATPG"/> -->
+                        <apex:selectRadio value="{!signOffModue.TMD_Pre_Layout_ATPG__c}" >
+                            <apex:selectOption itemLabel="Yes" itemValue="True" />
+                            <apex:selectOption itemLabel="No" itemValue="False" />
+                        </apex:selectRadio>
+                    </td>
+                </tr>
+                
+                <tr>
+                    <td width="80%">c. Please write the committed date for completion of the Post-Layout ATPG run and the person responsible (date mush be within 5 days Release to Manufacturing data)
+
+                    </td>
+                    <td width="20%">&nbsp;</td>
+                </tr>
+                
+                <tr>
+                    <td width="80%">Date:</td>
+                    <td width="20%"><input type="text" Name="TMD_Post_Layout_ATPG_Commited_Date"/></td>
+                </tr>
+                <tr>
+                    <td width="80%">Name:</td>
+                    <td width="20%"><input type="text" Name="TMD_Post_Layout_ATPG_Name"/></td>
+                </tr>
+                
+                
+                <tr>
+                    <td width="80%">Post Layout TMD Checks</td>
+                    <td width="20%">&nbsp;</td>
+                </tr>
+                <tr>
+                    <td width="80%">
+                    All questions are required for RIT A/B and RIT B releases.<br/>
+                    The TSV, MSV and Scan Chain questions are required for all RIT A releases.<br/>
+                    <i> If a Post-Layout ATPG run has been completed, please complete the next group of questions. </i>
+                    </td>
+                    <td width="20%">&nbsp;</td>
+                </tr>
+                
+                <tr>
+                    <td width="80%">5. Have all required test sign-off checks been run on the Post-Layout Produciton netlist and completed successfully? A "yes" response requires all of the following three bulletted statements to be answered affirmatively: (PE)
+                    </td>
+                    <td width="20%">
+                        <!--<input type="radio" value="True" Name="TMD_Post_Layout_Produciton"/> Yes &nbsp;<input type="radio" value="False" Name="TMD_Post_Layout_Produciton"/> No -->
+                        <apex:selectRadio value="{!signOffModue.TMD_Post_Layout_Produciton__c}" >
+                            <apex:selectOption itemLabel="Yes" itemValue="True" />
+                            <apex:selectOption itemLabel="No" itemValue="False" />
+                        </apex:selectRadio>
+                    </td>
+                </tr>
+                
+                <tr>
+                    <td width="80%">* TSV checks have been run in all required test modes and have completed with no (S) Level errors. (PE)
+                    </td>
+                    <td width="20%">
+                        <!--<input type="radio" value="True" Name="TMD_TSV_checks"/> Yes &nbsp;<input type="radio" value="False" Name="TMD_TSV_checks"/> No -->
+                        <apex:selectRadio value="{!signOffModue.TMD_TSV_checks__c}" >
+                            <apex:selectOption itemLabel="Yes" itemValue="True" />
+                            <apex:selectOption itemLabel="No" itemValue="False" />
+                        </apex:selectRadio>
+                    </td>
+                </tr>
+                
+                <tr>
+                    <td width="80%">* MSV checks have been run in all required test modes and have completed with no (S) Level errors. (PE)
+                    </td>
+                    <td width="20%">
+                       <!-- <input type="radio" value="True" Name="TMD_MSV_checks"/> Yes &nbsp;<input type="radio" value="False" Name="TMD_MSV_checks"/> No -->
+                        <apex:selectRadio value="{!signOffModue.TMD_MSV_checks__c}" >
+                            <apex:selectOption itemLabel="Yes" itemValue="True" />
+                            <apex:selectOption itemLabel="No" itemValue="False" />
+                        </apex:selectRadio>
+                    </td>
+                </tr>
+                <tr>
+                    <td colspan="2">
+                        <i>Note: TSV (W) and (E) level messages should be reviewed by an AD or other TSV knowledgeable person to assess the testability impact. No waiver is required for those messages. For documentation on required test modes please refer to Encounter Test documentation in the ASIC Design Kit.</i>
+                    </td>
+                </tr>   
+                <tr>
+                    <td width="80%">6. Does the Post-Layout TMD contain the LUF file? (PE)
+                    </td>
+                    <td width="20%">
+                        <!--<input type="radio" value="True" Name="TMD_LUF_file"/> Yes &nbsp;<input type="radio" value="False" Name="TMD_LUF_file"/> No -->
+                        <apex:selectRadio value="{!signOffModue.TMD_LUF_file__c}" >
+                            <apex:selectOption itemLabel="Yes" itemValue="True" />
+                            <apex:selectOption itemLabel="No" itemValue="False" />
+                        </apex:selectRadio>
+                    </td>
+                </tr>
+
+                <tr>
+                    <td width="80%">7. Has an audit been performed on the methodology portion of the LUF? (PE)
+                    </td>
+                    <td width="20%">
+                        <!--<input type="radio" value="True" Name="TMD_LUF"/> Yes &nbsp;<input type="radio" value="False" Name="TMD_LUF"/> No -->
+                        <apex:selectRadio value="{!signOffModue.TMD_LUF__c}" >
+                            <apex:selectOption itemLabel="Yes" itemValue="True" />
+                            <apex:selectOption itemLabel="No" itemValue="False" />
+                        </apex:selectRadio>
+                    </td>
+                </tr>
+                <tr>
+                    <td width="80%">8. Did the Post-Layout data Volume Calculation for this part show that the Test Data Volume will exceed one buffer load? (PE)
+                    </td>
+                    <td width="20%">
+                        <!--<input type="radio" value="True" Name="TMD_Test_Data_Volume_exceed"/> Yes &nbsp;<input type="radio" value="False" Name="TMD_Test_Data_Volume_exceed"/> No -->
+                        <apex:selectRadio value="{!signOffModue.TMD_Test_Data_Volume_exceed__c}" >
+                            <apex:selectOption itemLabel="Yes" itemValue="True" />
+                            <apex:selectOption itemLabel="No" itemValue="False" />
+                        </apex:selectRadio>
+                    </td>
+                </tr>
+                <tr>
+                    <td colspan="2"><i>Note: If the Post-Layout Test Data Volume exceeds one buffer load, the data volume will be truncated and the test coverage for the design will be lower that the calculated value.</i>
+
+                    </td>
+                </tr>
+                <tr>
+                    <td width="80%">9. Does this design require custom fusing thru the use of spare bits on the ECID macro? (DCE)
+                    </td>
+                    <td width="20%">
+                        <!--<input type="radio" value="True" Name="TMD_ECID_macro"/> Yes &nbsp;<input type="radio" value="False" Name="TMD_ECID_macro"/> No -->
+                        <apex:selectRadio value="{!signOffModue.TMD_ECID_macro__c}" >
+                            <apex:selectOption itemLabel="Yes" itemValue="True" />
+                            <apex:selectOption itemLabel="No" itemValue="False" />
+                        </apex:selectRadio>
+                    </td>
+                </tr>
+                <tr>
+                    <td width="80%">10. If this design utilizes any spare bits of the ECID macro to support custom fusing, has the ECID section of the LPXREF been modified according to this design's customization requirements? (PE)
+                    </td>
+                    <td width="20%">
+                        <!--<input type="radio" value="True" Name="TMD_ECID_section_of_the_LPXREF"/> Yes &nbsp;<input type="radio" value="False" Name="TMD_ECID_section_of_the_LPXREF"/> No -->
+                        <apex:selectRadio value="{!signOffModue.TMD_ECID_section_of_the_LPXREF__c}" >
+                            <apex:selectOption itemLabel="Yes" itemValue="True" />
+                            <apex:selectOption itemLabel="No" itemValue="False" />
+                        </apex:selectRadio>
+                   </td>
+                </tr>
+                
+                <tr>
+                        <td width="80%">
+                            <i> Please enter Comments here:</i> <br/> <!-- TMD Comments -->
+                            <apex:inputField value="{!signOffModue.TMD_Comments__c}" style="margin: 0px; height: 100px; width: 500px;" />
+
+                        </td>
+                        <td width="20%">
+                            &nbsp;
+                        </td>
+                </tr>
+                
+                <tr><td>&nbsp;</td></tr>
+                <tr>
+                    <td colspan="2"> Attach File: <br/>
+                        <apex:inputFile value="{!signOffAttachmentTMD.body}" filename="{!signOffAttachmentTMD.name}"/>
+                        
+                    </td>
+                </tr>
+                
+           </table>
+         <apex:outputPanel styleClass="grey" layout="block">
+             <apex:pageBlockSection collapsible="false" columns="1" title="TDI Submission:">
+                </apex:pageBlockSection>           
+         </apex:outputPanel>
+            
+<style type="text/css">
+table.myTable { 
+  border-collapse: collapse; 
+  }
+table.myTable td, 
+table.myTable th { 
+  border: 1px solid black;
+  padding: 5px; 
+  }
+</style>
+            
+            <table width="70%" class="myTable">
+                <tr>
+                    <td width="5%">&nbsp;</td>
+                    <td width="60%" colspan="3">Fill in the information with regard to the files submitted to CPRODREC *</td>
+                </tr>
+                
+                <tr>
+                    <td>&nbsp;</td>
+                    <td width="5%">File</td>
+                    <td width="60%">Date Submitted</td>
+                    <td width="20%">Initials</td>
+                </tr>
+                <tr>
+                    <td width="5%"><font color="red">*</font>a</td>
+                    <td width="45%"><b>RTM Actual</b></td>
+                    <td width="25%"><apex:inputField value="{!signOffModue.TDI_ERelease__c}"/></td>
+                    <td width="25%"><apex:inputField value="{!signOffModue.TDI_ERelease_Initials__c}"/></td>
+                </tr>
+                <tr>
+                    <td width="5%"><font color="red">*</font>b</td>
+                    <td width="45%"><b>Library Usage File (LUF)</b></td>
+                    <td width="25%"><apex:inputField value="{!signOffModue.TDI_Library_Usage_File_LUF__c}"/></td>
+                    <td width="25%"><apex:inputField value="{!signOffModue.TDI_Library_Usage_File_LUF_Initials__c}"/></td>
+                </tr>
+                <tr>
+                    <td width="5%">c</td>
+                    <td width="45%">VIM/IDB</td>
+                    <td width="25%"><apex:inputField value="{!signOffModue.TDI_VIM__c}"/></td>
+                    <td width="25%"><apex:inputField value="{!signOffModue.TDI_VIM_Initials__c}"/></td>
+                </tr>
+                <tr>
+                    <td width="5%">d</td>
+                    <td width="45%">Waiver File</td>
+                    <td width="25%"><apex:inputField value="{!signOffModue.TDI_Waiver_File__c}"/></td>
+                    <td width="25%"><apex:inputField value="{!signOffModue.TDI_Waiver_File_Initials__c}"/></td>
+                </tr>
+                <tr>
+                    <td width="5%">e</td>
+                    <td width="45%">LPXREF/TMX</td>
+                    <td width="25%"><apex:inputField value="{!signOffModue.TDI_LPXREF__c}"/></td>
+                    <td width="25%"><apex:inputField value="{!signOffModue.TDI_LPXREF_Initials__c}"/></td>
+                </tr>
+                <tr>
+                    <td width="5%">f</td>
+                    <td width="45%">TMD</td>
+                    <td width="25%"><apex:inputField value="{!signOffModue.TDI_TMD__c}"/></td>
+                    <td width="25%"><apex:inputField value="{!signOffModue.TDI_TMD_Initials__c}"/></td>
+                </tr>
+                <tr>
+                    <td width="5%">g</td>
+                    <td width="45%">Testbench LUF (TLUF)</td>
+                    <td width="25%"><apex:inputField value="{!signOffModue.TDI_Testbench_LUF_TLUF__c}"/></td>
+                    <td width="25%"><apex:inputField value="{!signOffModue.TDI_Testbench_LUF_TLUF_Initials__c}"/></td>
+                </tr>
+            </table>
+            <table border="0" width="100%" class="tableHeader">
+                <tr>
+                        <td width="80%">
+                            <i> Please enter Comments here:</i> <br/>
+                            <apex:inputField value="{!signOffModue.TDI_Comments__c}" style="margin: 0px; height: 100px; width: 500px;" />
+
+                        </td>
+                        <td width="20%">
+                            &nbsp;
+                        </td>
+                </tr>
+                
+                
+                <tr><td>&nbsp;</td></tr>
+                <tr>
+                    <td colspan="2"> Attach File: <br/>
+                        <apex:inputFile value="{!signOffAttachmentTDI.body}" filename="{!signOffAttachmentTDI.name}"/>
+                        
+                    </td>
+                </tr>
+            </table>
+         <apex:outputPanel styleClass="grey" layout="block">
+             <apex:pageBlockSection collapsible="false" columns="1" title="Quality Level Disposition:">
+                </apex:pageBlockSection>           
+         </apex:outputPanel>
+         <table border="0" width="100%" class="tableHeader">
+                <tr>
+                    <td colspan="2">
+                         Disposition of the Quality Level of the silicon portion of this product has dependencies on 3 aspects of the design. Please mark the appropriate Quality Level for each of the areas listed below:
+                    </td>
+                </tr>
+                <tr>
+                    <td width="80%">
+                        11. Customer Applicaiton (Applications Engineer) <br/>
+                        (determined after AE reviews all RTC waivers for this design)
+                    </td>
+                    <td width="20%">
+                    <!--<input type="radio" value="True" Name="QLD"/> P level &nbsp;<input type="radio" value="False" Name="QLD"/> PQ level -->
+                        <apex:selectRadio value="{!signOffModue.QLD__c}" >
+                            <apex:selectOption itemLabel="P level" itemValue="True" />
+                            <apex:selectOption itemLabel="PQ level" itemValue="False" />
+                        </apex:selectRadio>
+                     </td>
+                    
+                </tr>
+                <tr>
+                        <td colspan="2">
+                            <i> If disposition for Customer Application is NOT PQ, please describe why here: </i><br/>
+                            <apex:inputField value="{!signOffModue.QLD_Comments__c}" style="margin: 0px; height: 100px; width: 500px;" />
+                        </td>
+                </tr>
+                <tr>
+                    <td colspan="2">
+                        please see the attached RTM SOM capsule to view the remainder of the Quality Level sign-off questions.
+                    </td>
+                </tr>
+                <tr>
+                    <td width="80%">
+                        12. Has the Design System used for this design completed it's T2 Qualification? (Applications Engineer)
+                    </td>
+                   <!-- <td width="20%"><input type="radio" value="True" Name="T2"/> Yes &nbsp;<input type="radio" value="False" Name="T2"/> No</td> -->
+                    <td><apex:selectRadio value="{!signOffModue.T2__c}" >
+                        <apex:selectOption itemLabel="Yes" itemValue="True" />
+                        <apex:selectOption itemLabel="No" itemValue="False" />
+                    </apex:selectRadio> </td>
+                </tr>
+                <tr>
+                    <td width="80%">
+                        * If not, please list the projected T2 qualification date: (Applications Engineer)
+                    </td>
+                    <td width="20%"><apex:inputField value="{!signOffModue.T2_qualification__c}" /></td>
+                </tr>
+                <tr>
+                    <td width="80%">
+                        13. Are any of the cores used in this design currently unqualified? (Applications Engineer)
+                    </td>
+                    <td width="20%">
+                        <!--<input type="radio" value="True" Name="Unqualified"/> Yes &nbsp;<input type="radio" value="False" Name="Unqualified"/> No -->
+                        <apex:selectRadio value="{!signOffModue.Unqualified__c}" >
+                            <apex:selectOption itemLabel="Yes" itemValue="True" />
+                            <apex:selectOption itemLabel="No" itemValue="False" />
+                        </apex:selectRadio> 
+                    </td>
+                    
+                </tr>
+                <tr>
+                    <td width="80%">
+                        <i> If yes, please list those cores below along with their projected qualification dates: </i> <br/>
+                        <apex:inputField value="{!signOffModue.Qualification_Dates__c}" style="margin: 0px; height: 100px; width: 500px;" />
+                    </td>
+                    <td width="20%">&nbsp;</td>
+                </tr>
+                <tr>
+                    <td width="80%">
+                        14. Are there any custom components on this design that have not been qualified? (Applications Engineer)
+                    </td>
+                    <td width="20%">
+                    <!--<input type="radio" value="True" Name="Qualified"/> Yes &nbsp;<input type="radio" value="False" Name="Qualified"/> No </td>-->
+                        <apex:selectRadio value="{!signOffModue.Qualified__c}" >
+                            <apex:selectOption itemLabel="Yes" itemValue="True" />
+                            <apex:selectOption itemLabel="No" itemValue="False" />
+                        </apex:selectRadio> 
+                    </td>
+                </tr>
+                <tr>
+                    <td width="80%">
+                        <i> * If so, when and how (our testsite or customer hardware) will they be qualified? </i> <br/>
+                        <apex:inputField value="{!signOffModue.Qualified_Comments__c}" style="margin: 0px; height: 100px; width: 500px;" />
+
+                    </td>
+                    <td width="20%">&nbsp;</td>
+                </tr>
+                <tr>
+                    <td width="80%">
+                        15. Has a qualified set of tune bits been properly programmed for PLLs on this design? (Applications Engineer)
+                    </td>
+                    <td width="20%">
+                        <!--<input type="radio" value="True" Name="PLLs"/> Yes &nbsp;<input type="radio" value="False" Name="PLLs"/> No -->
+                        <apex:selectRadio value="{!signOffModue.PLLs__c}" >
+                            <apex:selectOption itemLabel="Yes" itemValue="True" />
+                            <apex:selectOption itemLabel="No" itemValue="False" />
+                        </apex:selectRadio>
+                    </td>
+                </tr>
+                <tr>
+                        <td width="80%">
+                            <i> Please enter Comments here:</i> <br/>
+                            <apex:inputField value="{!signOffModue.PLLs_Comments__c}" style="margin: 0px; height: 100px; width: 500px;" />
+
+                        </td>
+                        <td width="20%">
+                            &nbsp;
+                        </td>
+                </tr>
+                
+                <tr><td>&nbsp;</td></tr>
+                <tr>
+                    <td colspan="2"> Attach File: <br/>
+                        <apex:inputFile value="{!signOffAttachmentQLD.body}" filename="{!signOffAttachmentQLD.name}"/>
+                        
+                    </td>
+                </tr>
+         </table>
+        
+         
+         <apex:outputPanel styleClass="grey" layout="block">
+              <apex:pageBlockSection collapsible="false" columns="1" title="{!recordTypeName} Verification:">
+                  
+                  
+                  <table border="0" width="100%" class="tableHeader">
+                    <tr>
+                        <td colspan="2"> <u>Application Engineer</u> </td>
+                    </tr>
+                    <tr>
+                        <td width="80%"><font color="red">{</font> I have reviewed the answers in this document and to the best of my knowledge they are complete and accurate.
+                        </td>
+                        <td width="20%">                        
+                             <apex:inputCheckbox disabled="{!signOffApprover.aeApproval}" label="Yes" value="{!signOffApprover.aeChecked}" 
+                                                                        selected="true" rendered="{!signOffApprover.selectAE}"/>
+                            <apex:inputCheckbox disabled="{!signOffApprover.aeApproval}" label="Yes" value="{!signOffApprover.aeChecked}" 
+                                                selected="false" rendered="{!NOT(signOffApprover.selectAE)}"/>  
+                        </td>
+                    </tr>
+                    
+                    <tr>
+                        <td colspan="2"> <u>Product Engineer</u> </td>
+                    </tr>
+                    <tr>
+                        <td width="80%"><font color="red">{</font> I have reviewed the answers in this document and to the best of my knowledge they are complete and accurate.
+                        </td>
+                        <td width="20%">
+                            <!--<input type="checkbox" value="True" Name="Product_Engineer__c" /> Yes -->
+                            <apex:inputCheckbox disabled="{!signOffApprover.peApproval}" label="Yes" value="{!signOffApprover.peChecked}" 
+                                                                                selected="true" rendered="{!signOffApprover.selectPE}"/> 
+                            <apex:inputCheckbox disabled="{!signOffApprover.peApproval}" label="Yes" value="{!signOffApprover.peChecked}" 
+                                                selected="false" rendered="{!NOT(signOffApprover.selectPE)}"/> 
+                        </td>
+                    </tr>
+                    
+                    <tr>
+                        <td colspan="2"> <u>Customer</u> </td>
+                    </tr>
+                    <tr>
+                        <td width="80%">
+                            <font color="red">{</font> The Customer has reviewed the preceeding sections of this RTM document and approves all data contained therein. (DCE) <br/>
+                        </td>
+                        <td width="20%">
+                            <apex:inputCheckbox label="Yes" value="{!CustomerChecked}" 
+                                            selected="true" rendered="{!signOffModue.Customer__c}" disabled="{!signOffModue.Customer__c}"/>
+                            <apex:inputCheckbox label="Yes" value="{!CustomerChecked}" 
+                                            selected="false" rendered="{!NOT(signOffModue.Customer__c)}" disabled="{!signOffModue.Customer__c}"/>
+                        </td>
+                    </tr>
+                    
+                    <tr>
+                        <td colspan="2">
+                            1. The Customer has not yet provided approval on the Phase 1 approval page. <br/>
+                            2. One of the criteria listed on the Phase 1 approval page has been found to be untrue.<br/>
+                            <b>Customer Signature:</b><br/>
+                            <b>Date:</b><br/>
+                        </td>
+                    </tr>
+                    
+                    <tr><td>&nbsp;</td></tr>
+                    <tr>
+                        <td colspan="2"> Attach Customer Approval Document: <br/>
+                            <apex:inputFile value="{!customerApprovalAttachmentRTM.body}" filename="{!customerApprovalAttachmentRTM.name}"/>
+                        </td>
+                    </tr>
+               </table>              
+             </apex:pageBlockSection>
+         </apex:outputPanel>
+           
+           
+           <apex:pageBlocksection title="Attachments"> 
+                <apex:actionRegion >   
+                <apex:outputPanel >
+                
+                   <table class="ui-widget" style="width:1000px;table-layout:fixed;font-size:11px;" id="table_cds">
+                   <thead> <tr>
+                         <td class="ui-widget-header" style="width:270px">Action</td>
+                         <td class="ui-widget-header" style="width:270px">Title</td>
+                          <td class="ui-widget-header" style="width:270px">Created By</td>
+                       
+                    </tr></thead>
+                       <tbody>
+                     <apex:repeat value="{!SOMAttachmentId}" var="na">
+                     <tr>
+                         <td class="ui-widget-content" > <apex:outputLink value="/servlet/servlet.FileDownload?file={!na.Id}" target="_blank" style="width:270px;">View</apex:outputLink>&nbsp;
+                      </td>
+                        <td class="ui-widget-content" > <apex:outputLink value="/{!na.Id}" target="_blank" style="width:270px;">{!SUBSTITUTE(na.Name,'CDS_HEADER_STARTSWITH','')}</apex:outputLink></td> 
+                      <td class="ui-widget-content" > <apex:outputText value="{!na.CreatedBy.Name}" style="width:270px;"></apex:outputText> </td>
+                   </tr>
+                
+                    </apex:repeat>  </tbody>
+                </table>
+                
+                </apex:outputPanel>
+                   </apex:actionRegion>
+                </apex:pageBlockSection> 
+        
+      </apex:pageBlock>
+  </apex:form>
+</apex:page>

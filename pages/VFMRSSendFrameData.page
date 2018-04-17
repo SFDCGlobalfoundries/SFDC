@@ -1,0 +1,529 @@
+<apex:page standardController="MRS_Layer_Chip_Association__c" extensions="MRSSendFrameDataExtn" showHeader="false" sideBar="false" standardStylesheets="false" readOnly="true">
+
+<apex:form id="frm">
+<apex:stylesheet value="{!URLFOR($Resource.Swift_MRS,'css/jquery.scombobox.min.css')}"/>
+<apex:stylesheet value="{!URLFOR($Resource.Swift_MRS,'css/send-data.css')}"/>
+<apex:stylesheet value="{!URLFOR($Resource.Swift_MRS,'css/jquery.multiselect.css')}"/>
+<apex:stylesheet value="{!URLFOR($Resource.Swift_MRS,'css/style.css')}"/>
+<apex:stylesheet value="{!URLFOR($Resource.SWIFT_MRS_Changed,'css/style_LayerSummary.css')}"/>
+<apex:stylesheet value="{!URLFOR($Resource.SWIFT_MRS_Changed,'css/jquery-ui.css')}"/>
+<!--[if IE]>
+  <link rel="stylesheet" type="text/css" href="{!URLFOR($Resource.Swift_MRS, 'css/styleIE.css')}" />
+<![endif]-->
+<script>
+    var lookupMSTURL = "{!lookupMSTURL}";
+</script>
+<script type="text/javascript" src="{!URLFOR($Resource.Swift_MRS,'js/jquery.min.js')}"></script>
+<script type="text/javascript" src="{!URLFOR($Resource.Swift_MRS,'js/leftmenu.js')}"></script>
+<script type="text/javascript" src="{!URLFOR($Resource.Swift_MRS,'js/jquery-ui.min.js')}"></script>
+<script type="text/javascript" src="{!URLFOR($Resource.Swift_MRS,'js/advancedDataGrid.js')}"></script>
+<script type="text/javascript" src="{!URLFOR($Resource.Swift_MRS,'js/jquery.multiselect.js')}"></script>
+<script type="text/javascript" src="{!URLFOR($Resource.Swift_MRS,'js/jquery.scombobox.min.js')}"></script>
+<script type="text/javascript" src="{!URLFOR($Resource.Swift_MRS,'js/common-script.js')}"></script>
+<script type="text/javascript" src="{!URLFOR($Resource.SWIFT_MRS_Changed,'js/jquery.loader.min.js')}"></script>
+<script type="text/javascript">
+    window.onload=showLoader('gf-bigcircle');
+</script>
+
+<!--Wrapper Div Starts-->
+<div id="wrapper">
+ <apex:inputHidden value="{!selectedmst}" id="selectedmstId"/>
+ <apex:inputHidden value="{!selectedChipName}" id="selectedChipNameId"/>
+<apex:inputHidden value="{!selectedSendData}" id="selectedSendDataId"/>
+<apex:inputHidden value="{!ValueCatcher}" id="SelectedLayerStatusValue"/>
+<apex:inputHidden value="{!selectedCounter}" id="selectedCounterId"/>
+<apex:inputHidden value="{!counterPagination}" id="counterId"/>
+<apex:inputHidden value="{!numberOfRecordsPerPage}" id="noOfRecordsPerPageId"/>
+<apex:inputHidden value="{!countOfTotalRecord}" id="totalDrtId"/>
+ <apex:inputhidden id="isLargeRecord" value="{!isLargeRecord}"/>
+    <!--Container Div Starts-->
+    <!-- <div id="container" class="use-sidebar"> -->
+        
+        <!--Left Side Navigation Menu-->
+                
+        <!--End of Left Side Navigation Menu-->
+    
+        <!-- Start of Right side content-->
+        <!-- <div id="content"> -->
+    
+            <!--Breadcrumb Starts-->
+             <apex:outputLabel rendered="{!isBreadcrumbActive}">     
+                <div class="breadcrumb" id="breadcrumbDiv">
+                        <label><a href="javascript:void(0);" onclick="openMyParentDevices();"><u>My Devices</u></a></label> &gt;
+                        Tapeout &gt;
+                        MRS &gt;
+                        Send Data - Frame
+                </div> 
+            </apex:outputLabel>
+            <apex:outputLabel rendered="{!!isBreadcrumbActive}">     
+                <div class="breadcrumb" id="breadcrumbDiv">
+                        MRS &gt;
+                        Send Data - Frame
+                </div> 
+            </apex:outputLabel>
+            
+            <!--Breadcrumb Ends-->
+            
+            <div id="sendDataFrame" class="right-panel-section">
+                <!-- Start DRT Right side Header-->
+                  <h3>Send Data - Frame</h3>  
+               
+                <!-- End Right side Header-->                 
+                
+        <div class="quicklinks" style="width:110px">
+         <ul id="list">
+        <apex:outputPanel id="links" > 
+      <!--  <apex:outputPanel id="linkExport" rendered="{!countOfTotalRecord<=15000}"> -->
+        <apex:variable var="excelURL" value="{!currentUrl+'VFMRSSendFrameDataExcel?selectedmst=' +selectedmst + '&selectedSendData=' + selectedSendData + '&selectedLayerStatus=' + ValueCatcher + '&selectedMaskLayer=' + selectedMaskLayer  + '&selectedDeviceId=' + selectedDeviceId + '&selectedPTRFDRTNumber=' + selectedPTRFDRTNumber + '&selectedChipName=' + selectedChipName + '&strExport=' + strExport}"/>
+        <apex:variable var="csvURL" value="{!currentUrl+'VFMRSSendFrameDataCSV?selectedmst=' +selectedmst + '&selectedSendData=' + selectedSendData + '&selectedLayerStatus=' + ValueCatcher + '&selectedMaskLayer=' + selectedMaskLayer  + '&selectedDeviceId=' + selectedDeviceId + '&selectedPTRFDRTNumber=' + selectedPTRFDRTNumber + '&selectedChipName=' + selectedChipName + '&strExport=' + strExport}"/>
+            <a href="{!csvURL}" target="_blank"><img src="{!URLFOR($Resource.Swift_MRS,'images/expToCsv.png')}" width="24" height="24" alt="Export to CSV" title="Export to CSV" /></a>
+            <a href="{!excelURL}"  target="_blank"><img src="{!URLFOR($Resource.Swift_MRS,'images/excel-icon.png')}" width="23" height="23" alt="Export to Excel" title="Export to Excel"/></a>          
+            <a href="{!$Label.SWIFT_Support_Link}"><img src="{!URLFOR($Resource.Swift_MRS,'images/help-icon.png')}" width="23" height="23" alt="Help"  title="Help"/></a>
+        </apex:outputPanel>
+       <!--   <apex:outputPanel id="linkError" rendered="{!countOfTotalRecord>15000}"> 
+          <a href="javascript:OpenExcelOrCSV('CSV');" target="_blank"><img src="{!URLFOR($Resource.Swift_MRS,'images/expToCsv.png')}" width="24" height="24" alt="Export to CSV" title="Export to CSV" /></a>
+            <a href="javascript:OpenExcelOrCSV('Excel');"><img src="{!URLFOR($Resource.Swift_MRS,'images/excel-icon.png')}" width="23" height="23" alt="Export to Excel" title="Export to Excel"/></a>          
+            <a href="#"><img src="{!URLFOR($Resource.Swift_MRS,'images/help-icon.png')}" width="23" height="23" alt="Help"  title="Help"/></a>
+          </apex:outputPanel>
+        </apex:outputPanel>-->
+        </ul>
+        </div>
+        
+        <!-- --------------- First Row Starts --------------- -->
+        <div id="firstRowContentDiv" class="right-section-row right-section-row-borderbottom">  
+            <dl>
+              <dt class="min-width-cust-name"><b style="font-weight: bold;">Mask Set Title:</b><span class="red-font"></span></dt>
+                <dd id="ddMST" class="pading-left lookupImg">    
+                    <div class="dropdown-size" id="divMSTDropdown">    
+                        <label class="mstLbl lookupLbl" id="mstLabel">All</label>   
+                        <a href="" class="lookupMST"><img src="{!URLFOR($Resource.Swift_MRS,'images/icon/lookup.png')}" width="17" height="17" alt="lookup" title="lookup" class="lookupImg"/></a> 
+                        <a href="javascript:void(0);" class="display-none" id="lkpReset">
+                           <img src="{!URLFOR($Resource.Swift_MRS,'images/icon/undo.gif')}" title="Reset"/>
+                        </a>
+                    </div>
+                </dd>
+            </dl>
+ 
+           <dl>
+                <dt class="min-width-cust-name"><b style="font-weight: bold;">Send Data:</b><span class="red-font"></span></dt>
+                <dd class="pading-left tcell_width_172">
+              
+                   <select id="drtdropdown1" class="dropdown-size  multiSelect send-data-dropdownSize" multiple="multiple" onchange="getMaskLayer(this);">
+                        <option value="N.A.">N.A.</option>
+                        <option value="Ready" selected="selected">Ready</option>
+                        <option value="Not Ready" selected="selected">Not Ready</option>  
+                        <option value="Done">Done</option>
+                    </select>
+                    
+                   
+                </dd>
+             </dl>
+              
+            <div class="clear"></div>
+        </div>
+        <!-- --------------- First Row Ends --------------- -->
+                <!--Filters goes here................. -->
+         <div class="right-section-panel border-bottom">
+        <div id="filters" class="right-section-row-filter-border" title="filterContent">                
+                <a href="javascript:void(0)" id="filter_anchor" name="filterContent" class="filters_slideDown">Filters</a>
+        </div>
+                     
+         <div id="filterContent">
+          <dl  class="margin-top-5">
+              <dt class="tcell-width-146 bold-font">Layer Status</dt>
+              <dd class="pading-left">
+                <apex:outputPanel id="slLayerStatus">  
+               <!--  <apex:selectList id="slLayerStatus1" value="{!selectedLayerStatus}" size="1" styleClass="dropdown-size-big-normal">
+                <apex:selectOptions Value="{!lstLayerStatus}"/>
+                </apex:selectList>-->
+                
+               <select id="layersummarydropdown" class="layerStatus-drpdwn-size multiSelect" multiple="multiple">
+                  <apex:repeat value="{!lstLayerStatus}" var="layerVal">
+                      <option value="{!layerVal.value}">{!layerVal.label}</option>
+                  </apex:repeat>
+              </select>
+              </apex:outputPanel> 
+          </dd>
+      </dl>
+
+        <dl><dt class="tcell-width-146 bold-font">Mask Layer</dt>
+          <dd class="pading-left">
+        <apex:outputPanel id="slMaskLayer">
+          <apex:selectList id="slMaskLayer1" value="{!selectedMaskLayer}" size="1" styleClass="dropdown-size-big-normal">
+            <apex:selectOptions Value="{!lstMaskLayer}"/>
+          </apex:selectList> 
+         </apex:outputPanel> 
+          </dd>
+       </dl>
+       
+     
+   <!--  <dl>
+        <dt class="tcell-width-146 bold-font">Chip Name</dt>
+        <dd class="pading-left">
+        <apex:outputPanel id="slChipName"> 
+        <apex:selectList id="slChipName1" value="{!selectedChipName}" size="1" styleClass="dropdown-size-big-normal" onchange="assignChipName(this)">
+            <apex:selectOptions Value="{!lstChipName}"/>
+          </apex:selectList>
+          </apex:outputPanel>
+        </dd>
+      </dl>-->
+      <dl>
+        <dt class="tcell-width-146 bold-font">Device ID</dt>
+        <dd class="pading-left">
+       
+        <apex:selectList id="slDeviceId" value="{!selectedDeviceId}" size="1" styleClass="dropdown-size-big-normal">
+            <apex:selectOptions Value="{!lstDeviceId}"/>
+          </apex:selectList>
+        </dd>
+      </dl>
+
+            <dl>
+        <dt class="line-height-15 tcell-width-146 bold-font">PTRF Number</dt>
+        <dd class="float-left">
+        <apex:selectList id="slPTRFDRT" value="{!selectedPTRFDRTNumber }" size="1" styleClass="dropdown-size-big-normal">
+            <apex:selectOptions Value="{!lstPTRFDRTNumber}"/>
+          </apex:selectList>
+        </dd>
+        <dd class="pading-left float-left"><input type="button" id="apply" value="Apply" class="no-margin" onclick="showResult()"/></dd>
+        <dd class="pading-left float-left"><input type="button" id="clear" value="Clear" class="no-margin" onclick="jsShowFilters()"/></dd>
+        </dl>
+    </div>
+    <div class="clear"></div>
+    
+   
+  
+  </div>
+        <!--Filters ends here...................-->
+  
+ <!-- <apex:pageBlock Id="ChipLayerId" rendered="{!(!noRecord)}">  -->    
+        <!-- --------------- Second Row Starts --------------- -->
+    <apex:outputPanel styleClass="float-left" style="padding-left:20px;" id="ErrorMassage">
+    <apex:outputPanel rendered="{!isLargeRecord}">
+        <dt class="comment-note error-container margin-top-5 red-font auto-width" id="NoteId">{!$Label.SWIFT_SendData_LargeRecord}</dt>
+    </apex:outputPanel>
+     <apex:outputPanel rendered="{!noRecords}">
+        <div class="error-container margin-top-10" style="color:#000000">No records to display</div>
+    </apex:outputPanel>
+     </apex:outputPanel>
+    <div id="secondRowContentDiv" class="right-section-row no-padding-top  padding-bottom-10  float-left">  
+               
+    <!--Start of Tables-->
+          <!---- Start of Frame Type Table ----->
+
+    <apex:outputPanel id="MRSSendFrameDataPanel"> 
+    <div class="advance-datagrid no-padding">    
+     <apex:outputPanel rendered="{!lstSendDataPrimeWrapper.size>0}">      
+        <table class="data-table" id="review-customer-table">
+          <thead>
+            <tr class="tcell-height-48 line-height-17">
+                  <th class="tcell_width_25">No.</th>
+                  <th class="tcell-width-83"><span class="float-none span-wordwrap">Mask Set Title</span></th>
+                  <th class="tcell-width-124">Mask Layer<br/>(ROM Code)</th>
+                  <th class="tcell-width-192">PTRF Number</th>
+                  <th class="tcell-width-94">Send Frame Data Status</th>
+                 <apex:outputLabel rendered="{!reticleType}"><th class="tcell-width-94"><b style="font-weight: bold;">Tech Geo</b></th></apex:outputLabel>             
+            </tr>
+          </thead>  
+          <tbody>
+       <apex:variable value="{!1}" var="counter"/>       
+       <apex:repeat value="{!lstSendDataPrimeWrapper}" var="MCLA" rendered="{!(lstSendDataPrimeWrapper.size>0)}">
+          <apex:outputLabel rendered="{!MCLA.isEven}">
+            <tr class="tcell-height-30" >
+              <td class="text-align-centre">{!MCLA.SlNo}</td>
+              <td class="tcell-width-200 text-align-left">{!MCLA.objMRSLCA.Layer__r.MRS__r.Mask_Set_Title__r.Name}</td>
+              <td class="tcell-width-200 text-align-left">{!MCLA.objMRSLCA.Layer__r.Name}{!MCLA.objMRSLCA.Rev__c}<apex:outputLabel rendered="{!MCLA.objMRSLCA.ROM_Code__c!=null}">({!MCLA.objMRSLCA.ROM_Code__c})</apex:outputLabel></td>
+              
+              <td class="tcell-width-250 text-align-left">
+              		<!-- TASK-2469 -->
+              		<!-- 
+              		<a href="{!if(isBreadcrumbActive,'/GlobalfoundryView','')}/apex/VFMRSPTRFDetail?ptrfURL={!MCLA.objMRSLCA.PTRF__c}" title="{!MCLA.objMRSLCA.PTRF_Number__c}" target="_blank">{!MCLA.objMRSLCA.PTRF_Number__c}</a>
+              		 -->
+              		<a href="{! $Label.HYPERLINK_TO_SWIFT + MCLA.objMRSLCA.PTRF_Number__c }" title="{!MCLA.objMRSLCA.PTRF_Number__c}" target="_blank">{!MCLA.objMRSLCA.PTRF_Number__c}</a>
+              		<!-- TASK-2469 END -->
+              </td>
+              
+              <td class="tcell-width-200 text-align-centre" title="{!MCLA.userTimeStamp}" align="center">{!MCLA.objMRSLCA.Send_Frame_Data__c}</td>
+              <apex:outputLabel rendered="{!reticleType}"><td class="text-align-left">{!MCLA.objMRSLCA.Tech_Geo__c}</td> </apex:outputLabel>
+            </tr>
+          </apex:outputLabel>
+          <apex:outputLabel rendered="{!!MCLA.isEven}">
+             <tr class="tcell-height-30 alt-row-bgcolor">
+              <td class="text-align-centre">{!MCLA.SlNo}</td>
+              <td class="tcell-width-200 text-align-left">{!MCLA.objMRSLCA.Layer__r.MRS__r.Mask_Set_Title__r.Name}</td>
+              <td class="tcell-width-200 text-align-left">{!MCLA.objMRSLCA.Layer__r.Name}{!MCLA.objMRSLCA.Rev__c}<apex:outputLabel rendered="{!MCLA.objMRSLCA.ROM_Code__c!=null}">({!MCLA.objMRSLCA.ROM_Code__c})</apex:outputLabel></td>
+              
+              <td class="tcell-width-250 text-align-left">
+              	<!-- TASK-2469 -->
+              	<!--  
+              	<a href="{!if(isBreadcrumbActive,'/GlobalfoundryView','')}/apex/VFMRSPTRFDetail?ptrfURL={!MCLA.objMRSLCA.PTRF__c}" title="{!MCLA.objMRSLCA.PTRF_Number__c}" target="_blank">{!MCLA.objMRSLCA.PTRF_Number__c}</a>
+              	-->
+              	<a href="{! $Label.HYPERLINK_TO_SWIFT + MCLA.objMRSLCA.PTRF_Number__c }" title="{!MCLA.objMRSLCA.PTRF_Number__c}" target="_blank">{!MCLA.objMRSLCA.PTRF_Number__c}</a>
+              	<!-- TASK-2469 END -->
+              </td>
+              
+              <td class="tcell-width-200 text-align-centre" title="{!MCLA.userTimeStamp}">{!MCLA.objMRSLCA.Send_Frame_Data__c}</td>
+              <apex:outputLabel rendered="{!reticleType}"><td class="text-align-left">{!MCLA.objMRSLCA.Tech_Geo__c}</td></apex:outputLabel>
+            </tr>
+          </apex:outputLabel>
+          <apex:variable value="{!counter+1}" var="counter"/>
+       </apex:repeat>
+        </tbody>
+        <tfoot>
+            <tr>
+                <td colspan="7">
+                    <div class="data-table-pagination">
+                    <span class="float-left padding-top-5">{!counterPagination}-{!endOfDisplay} of {!countOfTotalRecord}</span> 
+                        <apex:selectList id="showRecordNumberId" value="{!numberOfRecordsPerPage}" styleClass="float-left pagination-drpdwn" size="1" onchange="retrieveRecords();" >
+                            <apex:selectOptions value="{!noOfRecordsPerPage}"/>
+                        </apex:selectList> 
+                        
+                        <a id="previousId" href="#" onclick="jsPreviousClick();return false;" class="previous" style="color:black" >Previous</a>                          
+                        <a id="nextId" href="#" onclick="jsNextClick();return false;" class="next" style="color:black">Next</a>
+                        <span class="float-right">
+                            <label for="">Page</label>
+                            <input type="text" size="1" value="{!selectedCounter}" class="text-center" onblur="saveCounter(this);"/>
+                            <span>of {!totalPages}</span>
+                        </span>
+                    </div>
+                </td>   
+            </tr>
+        </tfoot>
+        </table>
+    </apex:outputPanel>                        
+    </div>
+    </apex:outputPanel>  
+    
+    </div>
+     <div class="clear"></div>
+    </div>
+   
+    <!-- --------------- Second Row Ends --------------- -->    
+        
+    <!-- </div> --> 
+    <!--End of content-->
+    <div class="clear"></div>
+    <!-- </div> -->
+    <!--End of container div--> 
+</div>
+<apex:pagemessages id="pgMsg"/>
+<!--End of Wrapper div-->
+<script>
+
+function jsShowFilters()
+{
+showLoader('gf-bigcircle'); 
+    showFilters();
+}
+$(document).on( "click","#list a", function( event ) {
+   var status = jQuery('#drtdropdown1').val();
+    jQuery('[id$=selectedSendDataId]').prop("value",status);
+   
+    acfn_exportToExcel();
+});
+
+$(document).on( "click","#lkpReset", function(event) {
+    sendSelectedMST('All','All');
+    $('#lkpReset').addClass('display-none');
+});
+
+function showResult()
+{ 
+var status = jQuery('#drtdropdown1').val();
+    jQuery('[id$=selectedSendDataId]').prop("value",status);
+  var str_array= $("#layersummarydropdown").val();
+        if(str_array==null)str_array="";
+        else {
+            for(var i = 0; i < str_array.length; i++) {
+               str_array[i] = str_array[i].replace(/^\s*/, "").replace(/\s*$/, "");
+            }
+        }
+        document.getElementById("{!$Component.frm:SelectedLayerStatusValue}").value = str_array;
+         var status = jQuery('#drtdropdown1').val();
+    jQuery('[id$=selectedSendDataId]').prop("value",status);
+    showLoader('gf-bigcircle'); 
+    showSearch();
+}
+
+function sendSelectedMST(mstId,mstName) {
+    showLoader('gf-bigcircle');    
+    var status = jQuery('#drtdropdown1').val();
+    jQuery('[id$=selectedSendDataId]').prop("value",status);
+    jQuery('[id$=selectedmstId]').prop("value",mstId );
+    jQuery('#mstLabel').text(mstName);
+    jQuery('#lkpReset').removeClass('display-none');    
+    LayerDetail();
+}
+
+function getMaskLayer(elem)
+{
+    var status = jQuery(elem).val();
+    jQuery('[id$=selectedSendDataId]').prop("value",status);
+    showLoader('gf-bigcircle');
+    getLayerDetail1();
+ 
+}
+function openMyParentDevices() {
+    try {
+        parent.openMyDevices();
+    }catch(e) {
+        window.location.reload("{!$Label.SWIFT_Community_URL}"+'MyDevices');
+    }
+}
+function OpenExcelOrCSV(exportTo)
+ {
+    var status = jQuery('#drtdropdown1').val();
+    jQuery('[id$=selectedSendDataId]').prop("value",status);
+   
+    acfn_exportToExcel();
+ }
+  
+ function showLoader(e) {
+    jQuery.loader({className: e,content: ""});
+ }
+                
+ function hideLoader() {
+    jQuery.loader("close");
+ }
+function jsNextClick()
+{
+
+  var status = jQuery('#drtdropdown1').val();
+    jQuery('[id$=selectedSendDataId]').prop("value",status);
+  var str_array= $("#layersummarydropdown").val();
+        if(str_array==null)str_array="";
+        else {
+            for(var i = 0; i < str_array.length; i++) {
+               str_array[i] = str_array[i].replace(/^\s*/, "").replace(/\s*$/, "");
+            }
+        }
+        document.getElementById("{!$Component.frm:SelectedLayerStatusValue}").value = str_array;
+         var status = jQuery('#drtdropdown1').val();
+    jQuery('[id$=selectedSendDataId]').prop("value",status);
+    showLoader('gf-bigcircle');
+    next();
+}
+ function jsPreviousClick()
+ {
+     var status = jQuery('#drtdropdown1').val();
+    jQuery('[id$=selectedSendDataId]').prop("value",status);
+  var str_array= $("#layersummarydropdown").val();
+        if(str_array==null)str_array="";
+        else {
+            for(var i = 0; i < str_array.length; i++) {
+               str_array[i] = str_array[i].replace(/^\s*/, "").replace(/\s*$/, "");
+            }
+        }
+        document.getElementById("{!$Component.frm:SelectedLayerStatusValue}").value = str_array;
+         var status = jQuery('#drtdropdown1').val();
+    jQuery('[id$=selectedSendDataId]').prop("value",status);
+    showLoader('gf-bigcircle');
+    previous();
+ } 
+ function saveCounter(idx) {
+        document.getElementById("{!$Component.frm:selectedCounterId}").value=idx.value;
+       showLoader('gf-bigcircle');
+        changePage();
+    }
+    function retrieveRecords()
+    {
+        var status = jQuery('#drtdropdown1').val();
+        jQuery('[id$=selectedSendDataId]').prop("value",status);
+        var str_array= $("#layersummarydropdown").val();
+        if(str_array==null)str_array="";
+        else {
+            for(var i = 0; i < str_array.length; i++) {
+               str_array[i] = str_array[i].replace(/^\s*/, "").replace(/\s*$/, "");
+            }
+        }
+        document.getElementById("{!$Component.frm:SelectedLayerStatusValue}").value = str_array;
+         var status = jQuery('#drtdropdown1').val();
+        jQuery('[id$=selectedSendDataId]').prop("value",status);
+        showLoader('gf-bigcircle');
+        retrieveRecord();
+    }
+   
+ function disablePrevious() {
+ var counterElem = document.getElementById('{!$Component.frm:counterId}');
+        var noOfRecordElem = document.getElementById('{!$Component.frm:noOfRecordsPerPageId}');
+        var totalDrtElem = document.getElementById('{!$Component.frm:totalDrtId}');
+        
+        var counter,noOfRecord,totalDrt;
+        if(counterElem != null) {
+            counter = counterElem.value;
+        }
+        if(noOfRecordElem != null) {
+            noOfRecord = noOfRecordElem.value;
+        }
+        if(totalDrtElem != null) {
+            totalDrt = totalDrtElem.value;
+        }
+        
+        if(counter == 1 && (parseInt(counter) + parseInt(noOfRecord) <= parseInt(totalDrt)) ){
+            document.getElementById("previousId").removeAttribute('href');
+            document.getElementById("previousId").removeAttribute('onclick');
+            document.getElementById("previousId").style.color="gray";
+        }    
+        else  if(counter !=1 && (parseInt(counter) + parseInt(noOfRecord) <= parseInt(totalDrt))){
+            document.getElementById("previousId").setAttribute('href','#');
+            document.getElementById("previousId").setAttribute('onclick','jsPreviousClick();return false;');
+            document.getElementById("previousId").style.color="black";
+            
+            document.getElementById("nextId").setAttribute('href','#');
+            document.getElementById("nextId").setAttribute('onclick','jsNextClick();return false;');
+            document.getElementById("nextId").style.color="black";
+            
+        }
+        else if((parseInt(counter) + parseInt(noOfRecord) > parseInt(totalDrt)) && counter==1) {
+            document.getElementById("previousId").removeAttribute('href');
+            document.getElementById("previousId").removeAttribute('onclick');
+            document.getElementById("previousId").style.color="gray";
+            
+            document.getElementById("nextId").removeAttribute('href');
+            document.getElementById("nextId").removeAttribute('onclick');
+            document.getElementById("nextId").style.color="gray";
+        }
+        else if(counter!=1 && (parseInt(counter) + parseInt(noOfRecord) > parseInt(totalDrt)) ) {
+            document.getElementById("nextId").removeAttribute('href');
+            document.getElementById("nextId").removeAttribute('onclick');
+            document.getElementById("nextId").style.color="gray";
+        }
+     
+}
+</script>
+
+<apex:actionFunction name="next"  action="{!next}" rerender="slMaskLayer,slChipName1,slDeviceId,slPTRFDRT,noOfRecordsPerPageId,totalDrtId,selectedCounterId,MRSSendFrameDataPanel,counterId,ErrorMassage,links" oncomplete="callIncreaseIframe();disablePrevious();hideLoader();"/> 
+<apex:actionFunction name="previous"  action="{!previous}" rerender="slMaskLayer,slChipName1,slDeviceId,slPTRFDRT,noOfRecordsPerPageId,totalDrtId,selectedCounterId,MRSSendFrameDataPanel,counterId,ErrorMassage,links" oncomplete="callIncreaseIframe();disablePrevious();hideLoader();"/> 
+<apex:actionFunction name="changePage"  action="{!changePage}" rerender="slMaskLayer,slChipName1,slDeviceId,slPTRFDRT,noOfRecordsPerPageId,totalDrtId,selectedCounterId,MRSSendFrameDataPanel,counterId,ErrorMassage,links" oncomplete="callIncreaseIframe();disablePrevious();hideLoader();"/> 
+<apex:actionFunction name="retrieveRecord"  action="{!retrieveRecord}" rerender="slMaskLayer,slChipName1,slDeviceId,slPTRFDRT,noOfRecordsPerPageId,totalDrtId,selectedCounterId,MRSSendFrameDataPanel,counterId,ErrorMassage,links" oncomplete="callIncreaseIframe();disablePrevious();callIncreaseIframe();hideLoader();"/>
+<apex:actionFunction name="acfn_exportToExcel"  action="{!exportToExcel}" rerender="drtdropdown,drtdropdown1,slMaskLayer,slDeviceId,slPTRFDRT,MRSSendFrameDataPanel,isLargeRecord,noOfRecordsPerPageId,totalDrtId,selectedCounterId,counterId,ErrorMassage,links"/> 
+<apex:actionFunction name="acfn_exportToCSV"  action="{!exportToCSV}" rerender="drtdropdown,drtdropdown1,slMaskLayer,slDeviceId,slPTRFDRT,MRSSendFrameDataPanel,isLargeRecord,noOfRecordsPerPageId,totalDrtId,selectedCounterId,counterId,ErrorMassage,links"/> 
+<apex:actionFunction name="showFilters" action="{!clear}" rerender="slMaskLayer,slLayerStatus,slDeviceId,slPTRFDRT,MRSSendFrameDataPanel,noOfRecordsPerPageId,totalDrtId,selectedCounterId,counterId,ErrorMassage,links" oncomplete="callIncreaseIframe();makeMultipleDrpDwn();hideLoader();"/>
+<apex:actionFunction name="showSearch" action="{!showSearch}" rerender="pgMsg,slMaskLayer,slDeviceId,slPTRFDRT,MRSSendFrameDataPanel,noOfRecordsPerPageId,totalDrtId,selectedCounterId,counterId,ErrorMassage,links" oncomplete="callIncreaseIframe();callIncreaseIframe();hideLoader();makeMultipleDrpDwn();disablePrevious();"/>
+<apex:actionFunction name="LayerDetail" action="{!filterOnMST}" rerender="pgMsg,slMaskLayer,slDeviceId,slPTRFDRT,MRSSendFrameDataPanel,noOfRecordsPerPageId,totalDrtId,selectedCounterId,counterId,selectedmstId,links,ErrorMassage" oncomplete="callIncreaseIframe();hideLoader();makeMultipleDrpDwn();disablePrevious();"/>
+<apex:actionFunction name="getLayerDetail1" action="{!filterOnMST}" rerender="pgMsg,slMaskLayer,slDeviceId,slPTRFDRT,MRSSendFrameDataPanel,noOfRecordsPerPageId,totalDrtId,selectedCounterId,counterId,selectedmstId,links,ErrorMassage" oncomplete="callIncreaseIframe();hideLoader();makeMultipleDrpDwn();disablePrevious();"/>
+<script type="text/javascript">
+/*increase Iframe starts*/
+    function callIncreaseIframe() {
+        try{
+            parent.iframeLoaded();
+        }catch(err){}
+    }
+    /*increase Iframe ends*/
+    
+    function makeMultipleDrpDwn() {
+    if($("#filterContent").is(":visible") && $("#layersummarydropdown").length>0){
+        $("#layersummarydropdown").multiselect({
+            selectedList:10,
+            header:false,
+            minWidth:140,
+            height:'auto',
+            noneSelectedText:'-Select-'
+        });
+    }
+     callIncreaseIframe();
+   
+}
+</script>
+</apex:form>
+
+</apex:page>

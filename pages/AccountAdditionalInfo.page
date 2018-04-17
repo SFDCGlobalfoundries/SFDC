@@ -1,0 +1,956 @@
+<apex:page controller="AccountAdditionalInfoController" tabStyle="Account" id="pg" extensions="AccountAdditionalInfoController" action="{!validateToDisplayAdditionalInfo}">
+    <apex:includeScript value="//code.jquery.com/jquery-1.10.2.js"/>
+    <apex:includeScript value="//code.jquery.com/ui/1.11.4/jquery-ui.js"/>
+    <style>    
+    .bPageBlock .requiredInput {
+        position: relative;
+        height: 100%;
+        float:left !important;
+    }
+    .errorMsg{
+        color: #d74c3b !important;
+    }
+    </style>
+    <apex:form id="frm">
+        <apex:pageMessages id="pageMsgId"/>                     
+        <apex:pageBlock > 
+            <apex:pageBlockButtons >                
+                <apex:commandButton value="Submit for Approval" onclick="validate();return false;"/>
+                <apex:commandButton value="Cancel" action="{!cancel}" immediate="true"/>                
+            </apex:pageBlockButtons> 
+             <apex:outputPanel id="soldToQuestionId"> 
+             <apex:pageBlock rendered="{!NOT(soldToQuestReadOnly)}">                
+                <apex:pageBlockSection title="Sold To Customer Proliferation, Diversion Risk and Military Screening Questions" columns="1" >                       
+                    <h1 style="color:blue;">1. Is there any reason to believe or suspect this entity may be DIRECTLY or INDIRECTLY involved in the production, development or marketing of technology or products used in relation to:</h1>            
+                    <apex:outputPanel >
+                    <table><tr><td>
+                    <apex:outputLabel value="Nuclear Explosive Devices, Reactors, and/or specified activity related to the nuclear fuel cycle:" style="font-size: 11px;font-weight:bold;float:left !important;padding-right:10px;"/>
+                    </td><td>
+                    <apex:inputField value="{!accList[0].Sold_To_Nuclear_Fuel_Related_Activity__c}" label="" required="true" rendered="{!soldToAddQuestion}"/> 
+                    <apex:outputText value="{!accList[0].Sold_To_Nuclear_Fuel_Related_Activity__c}" rendered="{!NOT(soldToAddQuestion)}" style="font-weight:bold;font-size: 12px;"/>   
+                    </td></tr></table>
+                    </apex:outputPanel> 
+                     
+                    <apex:outputPanel >
+                    <table><tr><td>              
+                    <apex:outputLabel value="Chemical or Biological Weapons Systems: " style="font-size: 11px;font-weight:bold;float:left;padding-right:10px;"/>
+                    </td><td>
+                    <apex:inputField value="{!accList[0].Sold_To_Chemical_Biological_Sysytem__c}" label="" required="true" rendered="{!soldToAddQuestion}"/> 
+                    <apex:outputText value="{!accList[0].Sold_To_Chemical_Biological_Sysytem__c}" rendered="{!NOT(soldToAddQuestion)}" style="font-weight:bold;font-size: 12px;"/> 
+                    </td></tr></table>
+                    </apex:outputPanel>
+                    
+                    <apex:outputPanel >
+                    <table><tr><td>
+                    <apex:outputLabel value="Missiles (e.g. Rocket systems and/or unmanned air vehicles): " style="font-size: 11px;font-weight:bold;float:left;padding-right:10px;"/>
+                    </td><td>
+                    <apex:inputField value="{!accList[0].Sold_To_Missiles_Related_Activity__c}" label="" required="true" rendered="{!soldToAddQuestion}"/>
+                    <apex:outputText value="{!accList[0].Sold_To_Missiles_Related_Activity__c}" rendered="{!NOT(soldToAddQuestion)}" style="font-weight:bold;font-size: 12px;"/> 
+                    </td></tr></table>
+                    </apex:outputPanel>
+                    
+                    <h1 style="color:blue;">2. Is there any reason to believe or suspect exports to this entity may be illegally diverted to another party or foreign country, or be used in any manner contrary to U.S. export laws?</h1>                                  
+                    <apex:inputField value="{!accList[0].Sold_To_Is_Contrary_to_US_Export_Laws__c}" label="" id="illegalId" required="true" rendered="{!soldToAddQuestion}"/>
+                    <apex:outputText value="{!accList[0].Sold_To_Is_Contrary_to_US_Export_Laws__c}" label="" rendered="{!NOT(soldToAddQuestion)}" style="font-weight:bold;font-size: 12px;font-weight: bold;"/>
+                    <h1 style="color:blue;">3. Is this customer / consignee a foreign government entity, foreign embassy/consulate or is any part of this setup related to either Russia or Ukraine?</h1>
+                    <apex:inputField value="{!accList[0].Sold_To_Is_Related_to_Russia_or_Ukraine__c}" label="" id="russiaId" required="true" rendered="{!soldToAddQuestion}"/>
+                    <apex:outputText value="{!accList[0].Sold_To_Is_Related_to_Russia_or_Ukraine__c}" label="" rendered="{!NOT(soldToAddQuestion)}" style="font-weight:bold;font-size: 12px;font-weight: bold;"/>
+                                        
+                    <h1 style="color:blue;">4. Do you have reason believe or suspect that this customer is?</h1>
+                    <apex:outputPanel >
+                    <table><tr><td>                                                        
+                    <apex:outputLabel value="A Military End User:" style="font-size: 11px;font-weight:bold;float:left;padding-right:10px;"/>
+                    </td><td>
+                    <apex:inputField value="{!accList[0].Sold_To_Is_Military_End_User__c}" label="" required="true" rendered="{!soldToAddQuestion}"/>
+                    <apex:outputText value="{!accList[0].Sold_To_Is_Military_End_User__c}" rendered="{!NOT(soldToAddQuestion)}" style="font-weight:bold;font-size: 12px;"/>
+                    </td></tr></table>
+                    </apex:outputPanel>
+                    
+                    <apex:outputPanel >
+                    <table><tr><td>                    
+                    <apex:outputLabel value="Working with activities subject to a Military End Use:" style="font-size: 11px;font-weight:bold;float:left;padding-right:10px;"/>
+                    </td><td>
+                    <apex:inputField value="{!accList[0].Sold_To_Subject_to_Military_End_Use__c}" label="" required="true" rendered="{!soldToAddQuestion}"/>
+                    <apex:outputText value="{!accList[0].Sold_To_Subject_to_Military_End_Use__c}" rendered="{!NOT(soldToAddQuestion)}" style="font-weight:bold;font-size: 12px;"/>
+                    </td></tr></table>
+                    </apex:outputPanel>
+                    
+                    <h1 style="color:blue;">Name of person who provided Customer Proliferation and Military Screening responses</h1>
+                    <apex:outputPanel >
+                    <table><tr><td>
+                    <apex:outputLabel value="Name:" style="font-size: 11px;font-weight:bold;float:left;padding-right:10px;"/>
+                    </td><td>
+                    <apex:inputField label="" value="{!accList[0].Sold_To_Proliferation_Info_By_Name__c}" required="true" rendered="{!soldToAddQuestion}"/>
+                    <apex:outputText value="{!accList[0].Sold_To_Proliferation_Info_By_Name__c}" rendered="{!NOT(soldToAddQuestion)}" style="font-weight:bold;font-size: 12px;"/>
+                    </td></tr></table>
+                    </apex:outputPanel>
+                    
+                    <apex:outputPanel >
+                    <table><tr><td>
+                    <apex:outputLabel value="Email:" style="font-size: 11px;font-weight: bold;float:left;padding-right:10px;"/>
+                    </td><td>
+                    <apex:inputField label="" value="{!accList[0].Sold_To_Proliferation_Info_By_Email__c}" required="true" rendered="{!soldToAddQuestion}"/>
+                    <apex:outputText value="{!accList[0].Sold_To_Proliferation_Info_By_Email__c}" rendered="{!NOT(soldToAddQuestion)}" style="font-weight:bold;font-size: 12px;"/>
+                    </td></tr></table>
+                    </apex:outputPanel>
+                    
+                </apex:pageBlockSection>                
+                <center>
+                <apex:commandButton value="Save" rendered="{!soldToAddQuestion}" action="{!saveSoldToQuestionaire}" reRender="soldToQuestionId" status="soldToQuestStat"/>
+                <apex:commandButton value="Cancel" rendered="{!soldToAddQuestion}" action="{!cancelSoldToQuestionaire}" reRender="soldToQuestionId" immediate="true" status="soldToQuestStat"/>
+                <apex:commandButton value="Edit" rendered="{!NOT(soldToAddQuestion)}" action="{!editSoldToQuestionaire}" reRender="soldToQuestionId" status="soldToQuestStat"/>    
+                <apex:actionStatus id="soldToQuestStat" >
+                        <apex:facet name="start" >
+                          <img src="/img/loading.gif" />                    
+                        </apex:facet>
+                </apex:actionStatus>            
+                </center>                            
+            </apex:pageBlock>
+            <apex:pageBlock rendered="{!soldToQuestReadOnly}">                
+                <apex:pageBlockSection title="Sold To Customer Proliferation, Diversion Risk and Military Screening Questions" columns="1" >                       
+                    <h1 style="color:blue;">1. Is there any reason to believe or suspect this entity may be DIRECTLY or INDIRECTLY involved in the production, development or marketing of technology or products used in relation to:</h1>            
+                    <apex:outputPanel >
+                    <table><tr><td>
+                    <apex:outputLabel value="Nuclear Explosive Devices, Reactors, and/or specified activity related to the nuclear fuel cycle:" style="font-size: 11px;font-weight:bold;float:left !important;padding-right:10px;"/>
+                    </td><td>                    
+                    <apex:outputText value="{!accList[0].Sold_To_Nuclear_Fuel_Related_Activity__c}" style="font-weight:bold;font-size: 12px;"/>   
+                    </td></tr></table>
+                    </apex:outputPanel> 
+                     
+                    <apex:outputPanel >
+                    <table><tr><td>              
+                    <apex:outputLabel value="Chemical or Biological Weapons Systems: " style="font-size: 11px;font-weight:bold;float:left;padding-right:10px;"/>
+                    </td><td>                    
+                    <apex:outputText value="{!accList[0].Sold_To_Chemical_Biological_Sysytem__c}" style="font-weight:bold;font-size: 12px;"/> 
+                    </td></tr></table>
+                    </apex:outputPanel>
+                    
+                    <apex:outputPanel >
+                    <table><tr><td>
+                    <apex:outputLabel value="Missiles (e.g. Rocket systems and/or unmanned air vehicles): " style="font-size: 11px;font-weight:bold;float:left;padding-right:10px;"/>
+                    </td><td>                    
+                    <apex:outputText value="{!accList[0].Sold_To_Missiles_Related_Activity__c}" style="font-weight:bold;font-size: 12px;"/> 
+                    </td></tr></table>
+                    </apex:outputPanel>
+                    
+                    <h1 style="color:blue;">2. Is there any reason to believe or suspect exports to this entity may be illegally diverted to another party or foreign country, or be used in any manner contrary to U.S. export laws?</h1>                                                      
+                    <apex:outputText value="{!accList[0].Sold_To_Is_Contrary_to_US_Export_Laws__c}" label="" style="font-weight:bold;font-size: 12px;font-weight: bold;"/>
+                    <h1 style="color:blue;">3. Is this customer / consignee a foreign government entity, foreign embassy/consulate or is any part of this setup related to either Russia or Ukraine?</h1>                    
+                    <apex:outputText value="{!accList[0].Sold_To_Is_Related_to_Russia_or_Ukraine__c}" label="" style="font-weight:bold;font-size: 12px;font-weight: bold;"/>
+                                        
+                    <h1 style="color:blue;">4. Do you have reason believe or suspect that this customer is?</h1>
+                    <apex:outputPanel >
+                    <table><tr><td>                                                        
+                    <apex:outputLabel value="A Military End User:" style="font-size: 11px;font-weight:bold;float:left;padding-right:10px;"/>
+                    </td><td>                    
+                    <apex:outputText value="{!accList[0].Sold_To_Is_Military_End_User__c}" style="font-weight:bold;font-size: 12px;"/>
+                    </td></tr></table>
+                    </apex:outputPanel>
+                    
+                    <apex:outputPanel >
+                    <table><tr><td>                    
+                    <apex:outputLabel value="Working with activities subject to a Military End Use:" style="font-size: 11px;font-weight:bold;float:left;padding-right:10px;"/>
+                    </td><td>                    
+                    <apex:outputText value="{!accList[0].Sold_To_Subject_to_Military_End_Use__c}" style="font-weight:bold;font-size: 12px;"/>
+                    </td></tr></table>
+                    </apex:outputPanel>
+                    
+                    <h1 style="color:blue;">Name of person who provided Customer Proliferation and Military Screening responses</h1>
+                    <apex:outputPanel >
+                    <table><tr><td>
+                    <apex:outputLabel value="Name:" style="font-size: 11px;font-weight:bold;float:left;padding-right:10px;"/>
+                    </td><td>                    
+                    <apex:outputText value="{!accList[0].Sold_To_Proliferation_Info_By_Name__c}" style="font-weight:bold;font-size: 12px;"/>
+                    </td></tr></table>
+                    </apex:outputPanel>
+                    
+                    <apex:outputPanel >
+                    <table><tr><td>
+                    <apex:outputLabel value="Email:" style="font-size: 11px;font-weight: bold;float:left;padding-right:10px;"/>
+                    </td><td>                    
+                    <apex:outputText value="{!accList[0].Sold_To_Proliferation_Info_By_Email__c}" style="font-weight:bold;font-size: 12px;"/>
+                    </td></tr></table>
+                    </apex:outputPanel>
+                    
+                </apex:pageBlockSection>                                                           
+            </apex:pageBlock>
+            </apex:outputPanel>
+            
+            <apex:pageBlock >                                                                     
+            <apex:pageBlockSection title="Sold To Customer Info" columns="1" id="contactDetails">                
+                <apex:pageBlockTable value="{!conList}" var="cont">                    
+                    <apex:column headerValue="Name">
+                        {!cont.firstName}&nbsp;{!cont.lastName}                        
+                    </apex:column>
+                    <apex:column value="{!cont.email}"/>
+                    <apex:column value="{!cont.Is_Primary_Sold_to_Customer__c}"/>
+                    <apex:column value="{!cont.Role__c}"/>                    
+                    <apex:column width="20%">
+                        <apex:commandButton action="{!makePrimaryContact}" value="Primary Contact" reRender="frm" rendered="{!if(cont.Is_Primary_Sold_to_Customer__c,false,true)}" status="primaryContactId">
+                            <apex:param name="primaryContact" assignTo="{!primaryContact}" value="{!cont.id}"/>
+                        </apex:commandButton>
+                        <apex:actionStatus id="primaryContactId" >
+                                <apex:facet name="start" >
+                                  <img src="/img/loading.gif" />                    
+                                </apex:facet>
+                        </apex:actionStatus>
+                    </apex:column>
+                </apex:pageBlockTable><br/>
+                <h1 style="color:blue;">If you want to create new Sold To Customer Contact or Update existing then you can do from below link</h1><br/>
+                <apex:outputPanel id="contactCreationSoldTo">                    
+                   <apex:commandLink value="Click to Create/Update Sold To Customer Contact" action="{!showAllNonSoldToContacts}" reRender="newSoldToContact,newAccPayableContact,createNewShipToAddress,editExistingShipToAddress" status="linkToNewCon" immediate="true"/> 
+                   <apex:actionStatus id="linkToNewCon" >
+                                <apex:facet name="start" >
+                                  <img src="/img/loading.gif" />                    
+                                </apex:facet>
+                    </apex:actionStatus> 
+                    <apex:outputPanel >
+                        <script>                                                
+                         function validateSoldToContact(){                                                                                                                              
+                                if('{!soldToContactExist}' == 'false'){
+                                    return false;
+                                }                                                                
+                        }                         
+                        </script>                                                                             
+                  </apex:outputPanel>                                                       
+                </apex:outputPanel>                                                     
+            </apex:pageBlockSection>  
+            
+            <apex:outputPanel id="newSoldToContact">
+            
+                <apex:pageBlock rendered="{!showAllNonSoldToContacts}">
+                    <center>
+                        <apex:commandButton value="Close Selection/Creation" action="{!cancelSoldToAccSelectCreate}" reRender="newSoldToContact,pageMsgId" status="closeAccPaySelCre" immediate="true"/>&nbsp;                 
+                        <apex:actionStatus id="closeAccPaySelCre" >
+                                        <apex:facet name="start" >
+                                          <img src="/img/loading.gif" />                    
+                                        </apex:facet>
+                        </apex:actionStatus>
+                    </center><br/>
+                    <apex:pageBlockSection columns="1" title="Select Existing Contact For Sold To Customer">
+                        <apex:actionStatus id="selectSoldToCon" >
+                                    <apex:facet name="start" >
+                                      <img src="/img/loading.gif" />                    
+                                    </apex:facet>
+                        </apex:actionStatus>
+                        <apex:pageBlockTable value="{!allNonSoldToConList}" var="showAllNonSold" rendered="{!If(allNonSoldToConList.size>0,true,false)}"> 
+                            <apex:column headerValue="Name">
+                                <apex:commandLink value="{!showAllNonSold.firstName} {!showAllNonSold.lastName}" action="{!updateExisConToSoldToCust}" reRender="newSoldToContact,contactDetails,pageMsgId" status="selectSoldToCon">                             
+                                    <apex:param assignTo="{!selectedConForSoldTo}" value="{!showAllNonSold.id}" name="selecSoldToId"/>
+                                </apex:commandLink>                       
+                            </apex:column>
+                            <apex:column value="{!showAllNonSold.email}"/>                    
+                            <apex:column value="{!showAllNonSold.Role__c}"/> 
+                        </apex:pageBlockTable>                    
+                    </apex:pageBlockSection>
+                    
+                    <apex:outputPanel id="newSoldToForm">
+                        <apex:pageBlockSection title="Create New Sold To Customer Contact" columns="1">
+                        <apex:outputPanel id="newSoldToButtonId">
+                            <apex:commandButton value="New Sold To Contact" reRender="newSoldToConForm,newSoldToButtonId,pageMsgId" action="{!createNewContact}" rendered="{!NOT(createNewContact)}" status="newSoldToCon"/>
+                            <apex:actionStatus id="newSoldToCon" >
+                                    <apex:facet name="start" >
+                                      <img src="/img/loading.gif" />                    
+                                    </apex:facet>
+                            </apex:actionStatus>
+                        </apex:outputPanel>
+                        <apex:outputPanel id="newSoldToConForm">
+                        <apex:pageBlockSection title="New Contact Creation" columns="1" rendered="{!createNewContact}">
+                            <apex:inputField value="{!newCon.firstName}" required="true"/>
+                            <apex:inputField value="{!newCon.lastName}"/>
+                            <apex:inputField value="{!newCon.accountId}" rendered="{!IF(newCon.accountId == null,true,false)}"/>
+                            <apex:outputField value="{!newCon.accountId}" rendered="{!IF(newCon.accountId != null,true,false)}"/>
+                            <apex:inputField value="{!newCon.email}" required="true"/>
+                            <apex:inputField value="{!newCon.phone}"/> 
+                            <apex:inputField value="{!newCon.Is_Primary_Sold_to_Customer__c}"/>                    
+                            <apex:outputpanel >              
+                            <apex:commandButton value="Create New Contact" action="{!saveContact}" style="margin-left:20%" reRender="newSoldToContact,contactDetails,pageMsgId" status="createConStatId"/>
+                            <apex:commandButton value="Cancel Contact" action="{!cancelContact}" style="margin-left:2%" reRender="newSoldToForm,pageMsgId" immediate="true" status="createConStatId"/> &nbsp;&nbsp;&nbsp;&nbsp;
+                            <apex:actionStatus id="createConStatId" >
+                                        <apex:facet name="start" >
+                                          <img src="/img/loading.gif" />                    
+                                        </apex:facet>
+                            </apex:actionStatus>              
+                            </apex:outputpanel>
+                        </apex:pageBlockSection>
+                        </apex:outputPanel>
+                        </apex:pageBlockSection>
+                    </apex:outputPanel>
+                </apex:pageBlock>
+                
+            </apex:outputPanel>
+            
+            </apex:pageBlock>
+            
+            <apex:pageBlock >
+            <apex:outputPanel id="accountPayableConDetails">
+            <apex:pageBlockSection title="Primary Accounts Payable Contact" columns="1">                
+                <apex:pageBlockTable value="{!accPayableConList}" var="payCont" rendered="{!if(accPayableConList.size>0,true,false)}">                    
+                    <apex:column headerValue="Name">
+                        {!payCont.firstName}&nbsp;{!payCont.lastName}                        
+                    </apex:column>
+                    <apex:column value="{!payCont.email}"/>                    
+                    <apex:column value="{!payCont.Role__c}"/>                    
+                </apex:pageBlockTable><br/>                
+                <h1 style="color:blue;">If you want to create new Primary Accounts Payable Contact or update exisiting then you can do from below link</h1><br/>
+                <apex:outputPanel id="contactCreation">                    
+                   <apex:commandLink value="Click to create New/Update Primary Accounts Payable Contact" reRender="newAccPayableContact,createNewContact,newSoldToContact,createNewShipToAddress,editExistingShipToAddress" action="{!showAllContacts}" status="linkToAccPayCon" immediate="true"/>
+                   <apex:actionStatus id="linkToAccPayCon" >
+                                <apex:facet name="start" >
+                                  <img src="/img/loading.gif" />                    
+                                </apex:facet>
+                    </apex:actionStatus>
+                   <apex:outputPanel >
+                        <script>                                                
+                         function validateAccPrimary(){                                                                                                                              
+                                if('{!accPayableContactExist}' == 'false'){
+                                    return false;
+                                }                                                                
+                        }                         
+                        </script>                                                                             
+                  </apex:outputPanel>                                                         
+                </apex:outputPanel>                                                                     
+            </apex:pageBlockSection>
+            </apex:outputPanel>
+            
+            <apex:outputPanel id="newAccPayableContact">                
+                <apex:pageBlock rendered="{!showAllContact}">
+                <center>
+                <apex:commandButton value="Close Selection/Creation" action="{!cancelPrimaryAccSelectCreate}" reRender="newAccPayableContact,pageMsgId" status="closeAccPaySelCre" immediate="true"/>&nbsp;                 
+                <apex:actionStatus id="closeAccPaySelCre" >
+                                <apex:facet name="start" >
+                                  <img src="/img/loading.gif" />                    
+                                </apex:facet>
+                    </apex:actionStatus>
+                </center><br/>
+                <apex:pageBlockSection columns="1" title="Select Existing Contact For Primary Accounts Payable">
+                    <apex:actionStatus id="selectAccPayCon" >
+                                <apex:facet name="start" >
+                                  <img src="/img/loading.gif" />                    
+                                </apex:facet>
+                    </apex:actionStatus>
+                    <apex:pageBlockTable value="{!allContactList}" var="showAll" rendered="{!If(allContactList.size>0,true,false)}"> 
+                        <apex:column headerValue="Name">
+                            <apex:commandLink value="{!showAll.firstName} {!showAll.lastName}" action="{!updateExisConToAccPayable}" reRender="newAccPayableContact,accountPayableConDetails,pageMsgId" status="selectAccPayCon">                             
+                                <apex:param assignTo="{!selectedConForAccPayable}" value="{!showAll.id}" name="selecAccPayId"/>
+                            </apex:commandLink>                       
+                        </apex:column>
+                        <apex:column value="{!showAll.email}"/>                    
+                        <apex:column value="{!showAll.Role__c}"/> 
+                    </apex:pageBlockTable>                    
+                </apex:pageBlockSection> 
+                <apex:pageBlockSection rendered="{!showAllContact}" columns="1" title="Create New Primary AccountsPayable">
+                    <apex:outputPanel id="newButtonId">
+                        <apex:commandButton value="New Primary Accounts Payable" reRender="newPrimaryAccPayForm,newButtonId,pageMsgId" action="{!newPrimaryAccPayForm}" rendered="{!NOT(createNewContactPayable)}" status="newAccPayCon"/>
+                        <apex:actionStatus id="newAccPayCon" >
+                                <apex:facet name="start" >
+                                  <img src="/img/loading.gif" />                    
+                                </apex:facet>
+                    </apex:actionStatus>
+                    </apex:outputPanel>
+                    <apex:outputPanel id="newPrimaryAccPayForm">
+                        <apex:pageBlockSection rendered="{!createNewContactPayable}" columns="1">
+                        <apex:inputField value="{!newConAccPayable.firstName}"/>
+                        <apex:inputField value="{!newConAccPayable.lastName}"/>                        
+                        <apex:outputField value="{!newConAccPayable.accountId}"/>
+                        <apex:inputField value="{!newConAccPayable.email}"/>
+                        <apex:inputField value="{!newConAccPayable.phone}"/>
+                        <apex:outputPanel >                                                                               
+                        <apex:commandButton value="Create New Contact" style="margin-left:20%" status="createConPayStatId" rendered="{!createNewContactPayable}" action="{!newPrimaryAccPayCreation}" reRender="accountPayableConDetails,newAccPayableContact,pageMsgId"/>
+                        <apex:commandButton value="Cancel Contact" style="margin-left:2%" immediate="true" status="createConPayStatId" rendered="{!createNewContactPayable}" reRender="newPrimaryAccPayForm,newButtonId,pageMsgId" action="{!cancelPrimaryAccPayCreation}"/> &nbsp;&nbsp;&nbsp;&nbsp;
+                        <apex:actionStatus id="createConPayStatId" >
+                                    <apex:facet name="start" >
+                                      <img src="/img/loading.gif" />                    
+                                    </apex:facet>
+                        </apex:actionStatus> 
+                        </apex:outputPanel> 
+                        </apex:pageBlockSection>             
+                    </apex:outputPanel>
+                </apex:pageBlockSection>               
+               </apex:pageBlock>
+            </apex:outputPanel>            
+            </apex:pageBlock>
+            
+            <apex:pageBlock >
+            <apex:pageBlockSection title="Ship To Customer Information" columns="1" id="shipAddress">
+                <apex:pageBlockTable value="{!accAddress}" var="shipAdd">                    
+                    <apex:column headerValue="Name">
+                        <apex:commandLink value="{!shipAdd.Name}" action="{!retrieveExistingShipToAdd}" reRender="editExistingShipToAddress,newAccPayableContact,createNewContact,newSoldToContact,createNewShipToAddress" immediate="true">
+                            <apex:param assignTo="{!existingShipToId}" value="{!shipAdd.id}" name="existingShipTo"/>
+                        </apex:commandLink>
+                    </apex:column>
+                    <apex:column headerValue="Address" value="{!shipAdd.Address_1__c}"/>                        
+                    <apex:column value="{!shipAdd.Is_Primary_Address__c}" headerValue="Is Primary Address"/>
+                    <apex:column value="{!shipAdd.Type__c}" headerValue="Address Type"/>
+                    <apex:column value="{!shipAdd.Status__c}" headerValue="Address Status"/>                    
+                    <apex:column width="25%">                                          
+                        <apex:commandButton value="Primary Address" action="{!makePrimaryAddress}" reRender="frm" rendered="{!if(shipAdd.Is_Primary_Address__c,false,true)}" status="primaryAddId">
+                            <apex:param assignTo="{!primaryAddress}" value="{!shipAdd.id}" name="primaryAdd"/>                                                       
+                        </apex:commandButton> 
+                        <apex:actionStatus id="primaryAddId" >
+                                <apex:facet name="start" >
+                                  <img src="/img/loading.gif" />                    
+                                </apex:facet>
+                        </apex:actionStatus>                                          
+                    </apex:column>                    
+                </apex:pageBlockTable><br/>
+                <h1 style="color:blue;">If you want to create new Ship to Address then you can do from below link</h1><br/>
+                <apex:outputPanel id="shipToAddressCreation">                   
+                  <a style="text-decoration:underline;cursor:pointer;" onclick="pendingAddress()" status="linkToNewShipTo">Click to create New Ship Address</a>
+                  <apex:actionStatus id="linkToNewShipTo" >
+                                <apex:facet name="start" >
+                                  <img src="/img/loading.gif" />                    
+                                </apex:facet>
+                    </apex:actionStatus>                                                         
+                  <apex:outputPanel >
+                        <script>                        
+                        function pendingAddress(){                            
+                            if('{!pendingAddressCount}' == '1'){                               
+                                if('{!acctStage}' == 'Authorized'){
+                                    alert('There is already a ship to address in pending status. Until that ship to address is not approved/rejected you cannot add new ship to address.');                                                                
+                                }
+                                else{
+                                    alert('There is already a ship to address in approved status. You can only add 1 ship to address till account is not authorized.');                                                                
+                                }
+                            } 
+                            else{
+                                createNewShipToAdd();
+                            }                       
+                         } 
+                         
+                         function validate(){ 
+                                var primaryAccExist = validateAccPrimary(); 
+                                var soldToConExist = validateSoldToContact();  
+                                
+                                if('{!shipToAddressExist}' == 'false' && (((('{!acctStage}' == 'Unqualified' || '{!acctStage}' == 'Qualified') && '{!approvalRequest}' == 'Promote to Authorized') || '{!acctStage}' == 'Authorized') && '{!sapAccountNumber}' == '')){
+                                    alert('Atleast 1 ship to address should be added before submitting the account for approval.');
+                                }
+                                else if(primaryAccExist == false && (((('{!acctStage}' == 'Unqualified' || '{!acctStage}' == 'Qualified') && '{!approvalRequest}' == 'Promote to Authorized') || '{!acctStage}' == 'Authorized') && '{!sapAccountNumber}' == '')){
+                                    alert('Atleast 1 Primary Accounts Payable Contact should be available before submitting the approval.');
+                                } 
+                                else if(soldToConExist == false && (((('{!acctStage}' == 'Unqualified' || '{!acctStage}' == 'Qualified') && '{!approvalRequest}' == 'Promote to Authorized') || '{!acctStage}' == 'Authorized') && '{!sapAccountNumber}' == '')){
+                                    alert('Atleast 1 Sold to Customer Contact should be available before submitting the approval.');
+                                }
+                                else{
+                                    if (confirm("Once you submit this record for approval, you might not be able to edit or recall it from approval process depending on your settings.Continue? ") == true) {                    
+                                        save();
+                                    } else {
+                                        
+                                    }
+                                }                               
+                        }                         
+                        </script>                                                                             
+                  </apex:outputPanel>
+                </apex:outputPanel>
+            </apex:pageBlockSection>
+            
+            <apex:outputPanel id="createNewShipToAddress">
+            <apex:pageBlock rendered="{!createNewShipToAdd}" title="New Ship To Address Creation">
+                <apex:pageBlockSection title="Address Details" columns="2" id="newAddressShip">
+                    <apex:inputField value="{!newShipAdd.Name}" label="Name" required="true"/>
+                    <apex:inputField value="{!newShipAdd.Address_1__c}" label="Division" required="true"/>
+                    <apex:inputField value="{!newShipAdd.Address_2__c}" label="Address" required="true"/>
+                    <apex:inputField value="{!newShipAdd.City__c}" label="City" required="true"/>
+                    <apex:inputField value="{!newShipAdd.State__c}" label="State"/>
+                    <apex:pageblockSectionItem >
+                    <apex:outputLabel value="Country"/>
+                    <apex:actionRegion >
+                    <apex:inputField value="{!newShipAdd.Country__c}" label="Country" required="true">
+                        <apex:actionSupport reRender="sgtTaxExemptReg,USTaxExemptReg,newShipVATDepnd,newShipAIATADepnd,USTaxExemptRegRead" event="onchange" status="taxDetailsStatus" action="{!setTaxExemptForNonUS}">
+                            <apex:actionStatus id="taxDetailsStatus">
+                                <apex:facet name="start" >
+                                  <img src="/img/loading.gif" />                    
+                                </apex:facet>
+                            </apex:actionStatus> 
+                        </apex:actionSupport>
+                    </apex:inputField>
+                    </apex:actionRegion>
+                    </apex:pageblockSectionItem>
+                    <apex:inputField value="{!newShipAdd.Postal_Zip_Code__c}" label="Zip" required="true"/>
+                    <apex:inputField value="{!newShipAdd.Phone__c}" label="Phone" required="true"/>
+                    <apex:inputField value="{!newShipAdd.Fax__c}" label="Fax"/>
+                    <apex:outputField value="{!newShipAdd.Type__c}" label="Address Type"/>                    
+                    <apex:outputField value="{!newShipAdd.Account__c}"/>                     
+                    <apex:inputField value="{!newShipAdd.Is_Primary_Address__c}"/> 
+                    <apex:inputField value="{!newShipAdd.Ship_to_Contact_Name__c}"/>
+                    <apex:inputField value="{!newShipAdd.Ship_to_Contact_Phone_Fax__c}"/> 
+                    <apex:pageBlockSectionItem >    
+                    <apex:outputLabel value="Ship To VAT Registration Number"/>
+                    <apex:outputPanel id="newShipVATDepnd">              
+                    <apex:inputField value="{!newShipAdd.Ship_to_VAT_Registration_Number__c}" required="{!If(Contains(vatRegMandateCountry,newShipAdd.Country__c),true,false)}"/>
+                    </apex:outputPanel> 
+                    </apex:pageBlockSectionItem>
+                    <apex:pageBlockSectionItem >    
+                    <apex:outputLabel value="Airport IATA code"/>
+                    <apex:outputPanel id="newShipAIATADepnd">
+                    <apex:inputField value="{!newShipAdd.Airport_IATA_code__c}" required="{!If(newShipAdd.Country__c == 'USA',false,true)}"/> 
+                    </apex:outputPanel> 
+                    </apex:pageBlockSectionItem>
+                 </apex:pageBlockSection>                               
+                <apex:pageBlockSection title="Customer Proliferation, Diversion Risk and Military Screening Questions" columns="1" >   
+                    <h1 style="color:blue;">1. Is there any reason to believe or suspect this entity may be DIRECTLY or INDIRECTLY involved in the production, development or marketing of technology or products used in relation to:</h1>            
+                    <apex:outputLabel value="Nuclear Explosive Devices, Reactors, and/or specified activity related to the nuclear fuel cycle:" style="font-size: 11px;font-weight:bold;float:left;padding-right:10px;">
+                    <apex:inputField value="{!newShipAdd.Nuclear_Fuel_Related_Activity__c}" label="" required="true"/> 
+                    </apex:outputLabel>
+                    <apex:outputLabel value="Chemical or Biological Weapons Systems: " style="font-size: 11px;font-weight:bold;float:left;padding-right:10px;">
+                        <apex:inputField value="{!newShipAdd.Chemical_Biological_Sysytem__c}" label="" required="true"/> 
+                    </apex:outputLabel>
+                    <apex:outputLabel value="Missiles (e.g. Rocket systems and/or unmanned air vehicles): " style="font-size: 11px;font-weight:bold;float:left;padding-right:10px;">
+                        <apex:inputField value="{!newShipAdd.Missiles_Related_Activity__c}" label="" required="true"/> 
+                    </apex:outputLabel>
+                    <h1 style="color:blue;">2. Is there any reason to believe or suspect exports to this entity may be illegally diverted to another party or foreign country, or be used in any manner contrary to U.S. export laws?</h1>              
+                    <apex:inputField value="{!newShipAdd.Is_Contrary_to_US_Export_Laws__c}" label="" id="illegalId" required="true"/>
+                    <h1 style="color:blue;">3. Is this customer / consignee a foreign government entity, foreign embassy/consulate or is any part of this setup related to either Russia or Ukraine?</h1>
+                    <apex:inputField value="{!newShipAdd.Is_Related_to_Russia_or_Ukraine__c}" label="" id="russiaId" required="true"/>
+                    <h1 style="color:blue;">4. Do you have reason believe or suspect that this customer is?</h1>                                    
+                    <apex:outputLabel value="A Military End User:" style="font-size: 11px;font-weight:bold;float:left;padding-right:10px;">
+                        <apex:inputField value="{!newShipAdd.Is_Military_End_User__c}" label="" required="true"/>
+                    </apex:outputLabel> 
+                    <apex:outputLabel value="Working with activities subject to a Military End Use:" style="font-size: 11px;font-weight:bold;float:left;padding-right:10px;">
+                        <apex:inputField value="{!newShipAdd.Activities_Subject_to_Military_End_Use__c}" label="" required="true"/>
+                    </apex:outputLabel>
+                    <h1 style="color:blue;">Name of person who provided Customer Proliferation and Military Screening responses</h1>
+                    <apex:outputLabel value="Name:" style="font-size: 11px;font-weight:bold;float:left;padding-right:10px;">
+                        <apex:inputField label="" value="{!newShipAdd.Proliferation_Info_Provided_By_Name__c}" required="true"/>
+                    </apex:outputLabel>
+                    <apex:outputLabel value="Email:" style="font-size: 11px;font-weight: bold;float:left;padding-right:10px;">
+                        <apex:inputField label="" value="{!newShipAdd.Proliferation_Info_Provided_By_Email__c}" required="true"/>
+                    </apex:outputLabel>
+                </apex:pageBlockSection>            
+                <apex:pageBlockSection title="Deliveries" columns="1">
+                    <apex:inputField value="{!newShipAdd.Order_Combination_Allowed__c}" required="true"/>
+                    <apex:inputField value="{!newShipAdd.Partial_Deliveries_Accepted__c}" required="true"/>
+                </apex:pageBlockSection>
+                <apex:pageBlockSection title="Carrier Info" columns="2" id="carrierInfoNewId">
+                    <apex:pageblockSectionItem >
+                    <apex:outputLabel value="Carrier Name and Service Level"/>
+                    <apex:actionRegion >
+                    <apex:inputField value="{!newShipAdd.Carrier_Name_and_Service_Level__c}" required="true">
+                        <apex:actionSupport reRender="carrierNewNameOthersLabel,carrierNewNameOthersId,newCarrierAccountNumberlabel,newCarrierAccountNumber" event="onchange" status="carrierInfoNew">
+                            <apex:actionStatus id="carrierInfoNew" >
+                                <apex:facet name="start" >
+                                  <img src="/img/loading.gif" />                    
+                                </apex:facet>
+                            </apex:actionStatus>
+                        </apex:actionSupport>
+                    </apex:inputField>
+                    </apex:actionRegion>
+                    </apex:pageblockSectionItem>
+                   
+                    <apex:pageblockSectionItem >
+                        <apex:outputPanel id="carrierNewNameOthersLabel">
+                            <apex:outputLabel value="Carrier Name Others" rendered="{!If(newShipAdd.Carrier_Name_and_Service_Level__c == 'Others',true,false)}"/>
+                        </apex:outputPanel>
+                        <apex:actionRegion >
+                            <apex:outputPanel id="carrierNewNameOthersId">
+                                <apex:inputField value="{!newShipAdd.Carrier_Name_Others__c}" rendered="{!If(newShipAdd.Carrier_Name_and_Service_Level__c == 'Others',true,false)}" required="{!If(newShipAdd.Carrier_Name_and_Service_Level__c == 'Others',true,false)}"/>                   
+                            </apex:outputPanel>
+                        </apex:actionRegion>
+                    </apex:pageblockSectionItem>
+                    
+                    <apex:inputField value="{!newShipAdd.Special_Shipping_Instructions__c}" required="true"/>
+                    
+                    
+                    <apex:pageblockSectionItem >
+                        <apex:outputPanel id="newCarrierAccountNumberlabel">
+                            <apex:outputLabel value="Carrier Account Number"/>
+                        </apex:outputPanel>
+                        <apex:actionRegion >
+                            <apex:outputPanel id="newCarrierAccountNumber">
+                                <apex:inputField value="{!newShipAdd.Carrier_Account_Number__c}" required="{!If(newShipAdd.Carrier_Name_and_Service_Level__c == 'DHL' || newShipAdd.Carrier_Name_and_Service_Level__c == 'UPS SCS',true,false)}"/>
+                            </apex:outputPanel>
+                        </apex:actionRegion>
+                    </apex:pageblockSectionItem>
+                   
+                    <apex:inputField value="{!newShipAdd.Freight_Forwarder__c}" required="true"/>                    
+                    <apex:inputField value="{!newShipAdd.Import_Broker__c}" required="true"/>
+                    
+                    
+                </apex:pageBlockSection>
+                <apex:outputPanel id="USExportsNew">                      
+                    <apex:pageBlockSection title="Exports" columns="1"> 
+                        <apex:pageBlockSectionItem > 
+                            <apex:outputLabel value="Will Shipments be exported from USA ?"/> 
+                            <apex:actionRegion >                                                                             
+                                <apex:inputField value="{!newShipAdd.Shipments_exported_from_USA__c}" required="true">
+                                    <apex:actionSupport reRender="USExportsNew,USTaxExemptRegRead" event="onchange" status="USExportNewStat" action="{!setTaxExemptForNonUS}">
+                                        <apex:actionStatus id="USExportNewStat" >
+                                            <apex:facet name="start" >
+                                              <img src="/img/loading.gif" />                    
+                                            </apex:facet>
+                                        </apex:actionStatus> 
+                                    </apex:actionSupport>
+                                </apex:inputField>
+                            </apex:actionRegion> 
+                        </apex:pageBlockSectionItem>
+                        <apex:pageBlockSectionItem > 
+                            <apex:outputLabel value="If ‘Yes’, Who will be Exporter of Record ?"/> 
+                            <apex:actionRegion >                                                                             
+                                <apex:inputField value="{!newShipAdd.Who_will_be_Exporter_of_Record__c}" required="{!If(newShipAdd.Shipments_exported_from_USA__c == 'Yes',true,false)}">
+                                    <apex:actionSupport reRender="USTaxExemptRegRead" event="onchange" status="USExportNewStat1"  action="{!setTaxExemptForNonUS}">
+                                        <apex:actionStatus id="USExportNewStat1" >
+                                            <apex:facet name="start" >
+                                              <img src="/img/loading.gif" />                    
+                                            </apex:facet>
+                                        </apex:actionStatus> 
+                                    </apex:actionSupport>
+                                </apex:inputField>
+                            </apex:actionRegion> 
+                        </apex:pageBlockSectionItem>                                                                                                                                                                                                                                       
+                    </apex:pageBlockSection>                                      
+                </apex:outputPanel>                
+                <apex:outputPanel id="sgtTaxExemptReg">                      
+                    <apex:pageBlockSection title="Singapore Goods and Services Tax Status" columns="1" rendered="{!If(newShipAdd.Country__c == 'Singapore',true,false)}"> 
+                        <apex:pageBlockSectionItem > 
+                            <apex:outputLabel value="Taxable"/> 
+                            <apex:actionRegion >                                                                             
+                                <apex:inputField value="{!newShipAdd.SGT_Taxable__c}" required="true">
+                                    <apex:actionSupport reRender="sgtTaxExemptReg,reminderMsgNew" event="onchange" status="sgtTaxExemptRegStatId">
+                                        <apex:actionStatus id="sgtTaxExemptRegStatId" >
+                                            <apex:facet name="start" >
+                                              <img src="/img/loading.gif" />                    
+                                            </apex:facet>
+                                        </apex:actionStatus> 
+                                    </apex:actionSupport>
+                                </apex:inputField>
+                            </apex:actionRegion> 
+                        </apex:pageBlockSectionItem>
+                        <apex:pageBlockSectionItem > 
+                            <apex:outputLabel value="Singapore GST Tax Exemption"/> 
+                            <apex:actionRegion >                                                                             
+                                <apex:inputField value="{!newShipAdd.Singapore_GST_Tax_Exemption__c}" required="{!If(newShipAdd.SGT_Taxable__c == 'No',true,false)}">
+                                    <apex:actionSupport reRender="reminderMsgNew" event="onchange" status="sgtTaxExemptRegStatId1">
+                                        <apex:actionStatus id="sgtTaxExemptRegStatId1" >
+                                            <apex:facet name="start" >
+                                              <img src="/img/loading.gif" />                    
+                                            </apex:facet>
+                                        </apex:actionStatus> 
+                                    </apex:actionSupport>
+                                </apex:inputField>
+                            </apex:actionRegion> 
+                        </apex:pageBlockSectionItem>                                                                                                                                                                                                               
+                        <apex:outputPanel id="reminderMsgNew">                        
+                            <apex:outputLabel value="REMINDER - Proof of export documents must be provided to GLOBALFOUNDRIES Singapore within 60 days of shipment date" style="color: #d74c3b !important;font-weight: bold;"  rendered="{!If(newShipAdd.Singapore_GST_Tax_Exemption__c == 'Domestic Shipments within Singapore' && newShipAdd.SGT_Taxable__c == 'No',true,false)}"/>
+                        </apex:outputPanel>
+                    </apex:pageBlockSection>                                      
+                </apex:outputPanel>
+                <apex:outputPanel id="USTaxExemptReg">                      
+                    <apex:pageBlockSection title="U.S. Sales Tax Status" columns="1" rendered="{!If(newShipAdd.Country__c == 'USA',true,false)}"> 
+                        <apex:pageBlockSectionItem > 
+                            <apex:outputLabel value="Taxable"/> 
+                            <apex:actionRegion >                                                                             
+                                <apex:inputField value="{!newShipAdd.US_Taxable__c}" required="true">
+                                    <apex:actionSupport reRender="USTaxExemptReg" event="onchange" status="USTaxExemptRegStatId">
+                                        <apex:actionStatus id="USTaxExemptRegStatId" >
+                                            <apex:facet name="start" >
+                                              <img src="/img/loading.gif" />                    
+                                            </apex:facet>
+                                        </apex:actionStatus> 
+                                    </apex:actionSupport>
+                                </apex:inputField>
+                            </apex:actionRegion> 
+                        </apex:pageBlockSectionItem>                                                                                                                                                                                                               
+                        <apex:inputField value="{!newShipAdd.US_Tax_Exempt__c}" required="{!If(newShipAdd.US_Taxable__c == 'No',true,false)}"/> 
+                        <apex:inputField value="{!newShipAdd.Certificate_Type__c}" required="{!If(newShipAdd.US_Taxable__c == 'No',true,false)}"/>                                                                                                
+                    </apex:pageBlockSection>                                      
+                </apex:outputPanel>
+                
+                <apex:outputPanel id="USTaxExemptRegRead">                      
+                    <apex:pageBlockSection title="U.S. Sales Tax Status" columns="1" rendered="{!If(newShipAdd.Country__c != 'USA' && newShipAdd.Country__c != 'Singapore' && newShipAdd.Shipments_exported_from_USA__c == 'Yes' && newShipAdd.Who_will_be_Exporter_of_Record__c == 'Customer',true,false)}">                                                   
+                        <apex:outputText value="{!newShipAdd.US_Taxable__c}"/>                                                                                                                                                                                                                                          
+                        <apex:outputText value="{!newShipAdd.US_Tax_Exempt__c}"/>
+                        <apex:outputText value="{!newShipAdd.Certificate_Type__c}"/>                                                                                                
+                    </apex:pageBlockSection>                                      
+                </apex:outputPanel>
+                                                                  
+                 <apex:commandButton value="Save Ship To Address" action="{!saveNewShipToAdd}" style="margin-left:20%" reRender="editSectionDetails,createNewShipToAddress,shipAddress,pageMsgId" status="createShipStatId"/>
+                <apex:commandButton value="Cancel" action="{!cancelNewShipToAdd}" style="margin-left:2%" reRender="editSectionDetails,createNewShipToAddress,pageMsgId" immediate="true" status="createShipStatId"/>   &nbsp;&nbsp;&nbsp;&nbsp;                                
+                <apex:actionStatus id="createShipStatId" >
+                            <apex:facet name="start" >
+                              <img src="/img/loading.gif" />                    
+                            </apex:facet>
+                </apex:actionStatus>                        
+            </apex:pageBlock>
+        </apex:outputPanel>
+        
+        <apex:outputPanel id="editExistingShipToAddress">
+            <apex:pageBlock rendered="{!retrieveExistingShipToAdd}" title="Details of {!existingShipTo.name}">
+                <apex:pageBlockButtons rendered="{!existingShipTo.Is_Primary_Address__c}">
+                    <apex:commandButton value="Save" action="{!updateExistingShipTo}" reRender="editExistingShipToAddress,shipAddress,pageMsgId" status="createExistShipTo"/>                    
+                    <apex:commandButton value="Cancel" action="{!cancelExistingShipTo}" reRender="editExistingShipToAddress,pageMsgId" immediate="true" status="createExistShipTo"/> 
+                    <apex:actionStatus id="createExistShipTo" >
+                                <apex:facet name="start" >
+                                  <img src="/img/loading.gif" />                    
+                                </apex:facet>
+                    </apex:actionStatus>               
+                </apex:pageBlockButtons> 
+                <apex:pageBlockSection title="Address Details" columns="2" id="existAddressShip">
+                    <apex:inputField value="{!existingShipTo.Name}" label="Name" required="true" rendered="{!existingShipTo.Is_Primary_Address__c}"/>
+                    <apex:outputField value="{!existingShipTo.Name}" rendered="{!NOT(existingShipTo.Is_Primary_Address__c)}"/>
+                    <apex:inputField value="{!existingShipTo.Address_1__c}" label="Division" required="true" rendered="{!existingShipTo.Is_Primary_Address__c}"/>
+                    <apex:outputField value="{!existingShipTo.Address_1__c}" label="Division" rendered="{!NOT(existingShipTo.Is_Primary_Address__c)}"/>
+                    <apex:inputField value="{!existingShipTo.Address_2__c}" label="Address" required="true" rendered="{!existingShipTo.Is_Primary_Address__c}"/>
+                    <apex:outputField value="{!existingShipTo.Address_2__c}" label="Address" rendered="{!NOT(existingShipTo.Is_Primary_Address__c)}"/>
+                    <apex:inputField value="{!existingShipTo.City__c}" label="City" required="true" rendered="{!existingShipTo.Is_Primary_Address__c}"/>
+                    <apex:outputField value="{!existingShipTo.City__c}" rendered="{!NOT(existingShipTo.Is_Primary_Address__c)}"/>
+                    <apex:inputField value="{!existingShipTo.State__c}" label="State" rendered="{!existingShipTo.Is_Primary_Address__c}"/>
+                    <apex:outputField value="{!existingShipTo.State__c}" rendered="{!NOT(existingShipTo.Is_Primary_Address__c)}"/>                    
+                    <apex:pageblocksectionItem >
+                    <apex:outputLabel value="Country"/>
+                    <apex:actionregion >
+                    <apex:inputField value="{!existingShipTo.Country__c}" label="Country" required="true" rendered="{!existingShipTo.Is_Primary_Address__c}">
+                        <apex:actionSupport reRender="sgtTaxExemptRegUpdate,USTaxExemptRegUpdate,existShipVATDepnd,existShipAIATADepnd,USTaxExemptRegUpdateRead" event="onchange" status="taxDetailsExistStatus" action="{!setTaxExemptForNonUS}">
+                            <apex:actionStatus id="taxDetailsExistStatus">
+                                <apex:facet name="start" >
+                                  <img src="/img/loading.gif" />                    
+                                </apex:facet>
+                            </apex:actionStatus> 
+                        </apex:actionSupport>
+                    </apex:inputField>
+                    </apex:actionregion>
+                    </apex:pageblocksectionItem>
+                    <apex:outputField value="{!existingShipTo.Country__c}" rendered="{!NOT(existingShipTo.Is_Primary_Address__c)}"/>
+                    <apex:inputField value="{!existingShipTo.Postal_Zip_Code__c}" label="Zip" required="true" rendered="{!existingShipTo.Is_Primary_Address__c}"/>
+                    <apex:outputField value="{!existingShipTo.Postal_Zip_Code__c}" label="Zip" rendered="{!NOT(existingShipTo.Is_Primary_Address__c)}"/>
+                    <apex:inputField value="{!existingShipTo.Phone__c}" label="Phone" required="true" rendered="{!existingShipTo.Is_Primary_Address__c}"/>
+                    <apex:outputField value="{!existingShipTo.Phone__c}" rendered="{!NOT(existingShipTo.Is_Primary_Address__c)}"/>
+                    <apex:inputField value="{!existingShipTo.Fax__c}" label="Fax" rendered="{!existingShipTo.Is_Primary_Address__c}"/>
+                    <apex:outputField value="{!existingShipTo.Fax__c}" rendered="{!NOT(existingShipTo.Is_Primary_Address__c)}"/>
+                    <apex:outputField value="{!existingShipTo.Type__c}" label="Address Type" rendered="{!existingShipTo.Is_Primary_Address__c}"/>
+                    <apex:outputField value="{!existingShipTo.Type__c}" rendered="{!NOT(existingShipTo.Is_Primary_Address__c)}"/>                   
+                    <apex:outputField value="{!existingShipTo.Account__c}" rendered="{!existingShipTo.Is_Primary_Address__c}"/> 
+                    <apex:outputField value="{!existingShipTo.Account__c}" rendered="{!NOT(existingShipTo.Is_Primary_Address__c)}"/>                                        
+                    <apex:inputField value="{!existingShipTo.Ship_to_Contact_Name__c}" rendered="{!existingShipTo.Is_Primary_Address__c}"/>
+                    <apex:outputField value="{!existingShipTo.Ship_to_Contact_Name__c}" rendered="{!NOT(existingShipTo.Is_Primary_Address__c)}"/>
+                    <apex:inputField value="{!existingShipTo.Ship_to_Contact_Phone_Fax__c}" rendered="{!existingShipTo.Is_Primary_Address__c}"/>
+                    <apex:outputField value="{!existingShipTo.Ship_to_Contact_Phone_Fax__c}" rendered="{!NOT(existingShipTo.Is_Primary_Address__c)}"/> 
+                    
+                    <apex:pageBlockSectionItem rendered="{!existingShipTo.Is_Primary_Address__c}">    
+                    <apex:outputLabel value="Ship To VAT Registration Number"/>
+                    <apex:outputPanel id="existShipVATDepnd">                   
+                    <apex:inputField value="{!existingShipTo.Ship_to_VAT_Registration_Number__c}" required="{!If(Contains(vatRegMandateCountry,existingShipTo.Country__c),true,false)}" rendered="{!existingShipTo.Is_Primary_Address__c}"/>
+                    </apex:outputPanel>
+                    </apex:pageBlockSectionItem>                        
+                    <apex:outputField value="{!existingShipTo.Ship_to_VAT_Registration_Number__c}" rendered="{!NOT(existingShipTo.Is_Primary_Address__c)}"/>                     
+                    
+                    <apex:pageBlockSectionItem rendered="{!existingShipTo.Is_Primary_Address__c}">    
+                    <apex:outputLabel value="Airport IATA code"/>
+                    <apex:outputPanel id="existShipAIATADepnd">
+                    <apex:inputField value="{!existingShipTo.Airport_IATA_code__c}" required="{!If(existingShipTo.Country__c == 'USA',false,true)}" rendered="{!existingShipTo.Is_Primary_Address__c}"/> 
+                    </apex:outputPanel>
+                    </apex:pageBlockSectionItem>
+                    <apex:outputField value="{!existingShipTo.Airport_IATA_code__c}" rendered="{!NOT(existingShipTo.Is_Primary_Address__c)}"/>
+                 </apex:pageBlockSection>                
+                <apex:pageBlockSection title="Customer Proliferation, Diversion Risk and Military Screening Questions" columns="1" >   
+                    <h1 style="color:blue;">1. Is there any reason to believe or suspect this entity may be DIRECTLY or INDIRECTLY involved in the production, development or marketing of technology or products used in relation to:</h1>            
+                    <apex:outputLabel value="Nuclear Explosive Devices, Reactors, and/or specified activity related to the nuclear fuel cycle:" style="font-size: 11px;font-weight:bold;float:left;padding-right:10px;">
+                    <apex:inputField value="{!existingShipTo.Nuclear_Fuel_Related_Activity__c}" label="" required="true" rendered="{!existingShipTo.Is_Primary_Address__c}"/> 
+                    <apex:outputText value="{!existingShipTo.Nuclear_Fuel_Related_Activity__c}" rendered="{!NOT(existingShipTo.Is_Primary_Address__c)}" style="padding-left:10px;font-size: 12px;"/> 
+                    </apex:outputLabel>                    
+                    <apex:outputLabel value="Chemical or Biological Weapons Systems: " style="font-size: 11px;font-weight:bold;float:left;padding-right:10px;">
+                        <apex:inputField value="{!existingShipTo.Chemical_Biological_Sysytem__c}" label="" required="true" rendered="{!existingShipTo.Is_Primary_Address__c}"/> 
+                        <apex:outputText value="{!existingShipTo.Chemical_Biological_Sysytem__c}" rendered="{!NOT(existingShipTo.Is_Primary_Address__c)}" style="padding-left:10px;font-size: 12px;"/> 
+                    </apex:outputLabel>
+                    <apex:outputLabel value="Missiles (e.g. Rocket systems and/or unmanned air vehicles): " style="font-size: 11px;font-weight:bold;float:left;padding-right:10px;">
+                        <apex:inputField value="{!existingShipTo.Missiles_Related_Activity__c}" label="" required="true" rendered="{!existingShipTo.Is_Primary_Address__c}"/>
+                        <apex:outputText value="{!existingShipTo.Missiles_Related_Activity__c}" rendered="{!NOT(existingShipTo.Is_Primary_Address__c)}" style="padding-left:10px;font-size: 12px;"/> 
+                    </apex:outputLabel>
+                    <h1 style="color:blue;">2. Is there any reason to believe or suspect exports to this entity may be illegally diverted to another party or foreign country, or be used in any manner contrary to U.S. export laws?</h1>              
+                    <apex:inputField value="{!existingShipTo.Is_Contrary_to_US_Export_Laws__c}" label="" id="illegalId" required="true" rendered="{!existingShipTo.Is_Primary_Address__c}"/>
+                    <apex:outputText value="{!existingShipTo.Is_Contrary_to_US_Export_Laws__c}" label="" rendered="{!NOT(existingShipTo.Is_Primary_Address__c)}" style="padding-left:10px;font-size: 12px;font-weight: bold;"/>
+                    <h1 style="color:blue;">3. Is this customer / consignee a foreign government entity, foreign embassy/consulate or is any part of this setup related to either Russia or Ukraine?</h1>
+                    <apex:inputField value="{!existingShipTo.Is_Related_to_Russia_or_Ukraine__c}" label="" id="russiaId" required="true" rendered="{!existingShipTo.Is_Primary_Address__c}"/>
+                    <apex:outputText value="{!existingShipTo.Is_Related_to_Russia_or_Ukraine__c}" label="" rendered="{!NOT(existingShipTo.Is_Primary_Address__c)}" style="padding-left:10px;font-size: 12px;font-weight: bold;"/>
+                    <h1 style="color:blue;">4. Do you have reason believe or suspect that this customer is?</h1>                                    
+                    <apex:outputLabel value="A Military End User:" style="font-size: 11px;font-weight:bold;float:left;padding-right:10px;">
+                        <apex:inputField value="{!existingShipTo.Is_Military_End_User__c}" label="" required="true" rendered="{!existingShipTo.Is_Primary_Address__c}"/>
+                        <apex:outputText value="{!existingShipTo.Is_Military_End_User__c}" rendered="{!NOT(existingShipTo.Is_Primary_Address__c)}" style="padding-left:10px;font-size: 12px;"/>
+                    </apex:outputLabel> 
+                    <apex:outputLabel value="Working with activities subject to a Military End Use:" style="font-size: 11px;font-weight:bold;float:left;padding-right:10px;">
+                        <apex:inputField value="{!existingShipTo.Activities_Subject_to_Military_End_Use__c}" label="" required="true" rendered="{!existingShipTo.Is_Primary_Address__c}"/>
+                        <apex:outputText value="{!existingShipTo.Activities_Subject_to_Military_End_Use__c}" rendered="{!NOT(existingShipTo.Is_Primary_Address__c)}" style="padding-left:10px;font-size: 12px;"/>
+                    </apex:outputLabel>
+                    <h1 style="color:blue;">Name of person who provided Customer Proliferation and Military Screening responses</h1>
+                    <apex:outputLabel value="Name:" style="font-size: 11px;font-weight:bold;float:left;padding-right:10px;">
+                        <apex:inputField label="" value="{!existingShipTo.Proliferation_Info_Provided_By_Name__c}" required="true" rendered="{!existingShipTo.Is_Primary_Address__c}"/>
+                        <apex:outputText value="{!existingShipTo.Proliferation_Info_Provided_By_Name__c}" rendered="{!NOT(existingShipTo.Is_Primary_Address__c)}" style="padding-left:10px;font-size: 12px;"/>
+                    </apex:outputLabel>
+                    <apex:outputLabel value="Email:" style="font-size: 11px;font-weight: bold;float:left;padding-right:10px;">
+                        <apex:inputField label="" value="{!existingShipTo.Proliferation_Info_Provided_By_Email__c}" required="true" rendered="{!existingShipTo.Is_Primary_Address__c}"/>
+                        <apex:outputText value="{!existingShipTo.Proliferation_Info_Provided_By_Email__c}" rendered="{!NOT(existingShipTo.Is_Primary_Address__c)}" style="padding-left:10px;font-size: 12px;"/>
+                    </apex:outputLabel>
+                </apex:pageBlockSection>            
+                <apex:pageBlockSection title="Deliveries" columns="1">
+                    <apex:inputField value="{!existingShipTo.Order_Combination_Allowed__c}" required="true" rendered="{!existingShipTo.Is_Primary_Address__c}"/>
+                    <apex:outputText value="{!existingShipTo.Order_Combination_Allowed__c}" rendered="{!NOT(existingShipTo.Is_Primary_Address__c)}"/>
+                    <apex:inputField value="{!existingShipTo.Partial_Deliveries_Accepted__c}" required="true" rendered="{!existingShipTo.Is_Primary_Address__c}"/>
+                    <apex:outputText value="{!existingShipTo.Partial_Deliveries_Accepted__c}" rendered="{!NOT(existingShipTo.Is_Primary_Address__c)}"/>
+                </apex:pageBlockSection>
+                <apex:pageBlockSection title="Carrier Info" columns="2" id="carrierInfoExistId">  
+                                                     
+                    <apex:pageblockSectionItem rendered="{!existingShipTo.Is_Primary_Address__c}">
+                    <apex:outputLabel value="Carrier Name and Service Level"/>
+                    <apex:actionRegion >
+                    <apex:inputField value="{!existingShipTo.Carrier_Name_and_Service_Level__c}" required="true">
+                        <apex:actionSupport reRender="carrierExistNameOthersLabel,carrierExistNameOthersId,carrierExistAccountNumberLabel,carrierExistAccountNumberId" event="onchange" status="carrierInfoExist">
+                            <apex:actionStatus id="carrierInfoExist" >
+                                <apex:facet name="start" >
+                                  <img src="/img/loading.gif" />                    
+                                </apex:facet>
+                            </apex:actionStatus>
+                        </apex:actionSupport>
+                    </apex:inputField>
+                    </apex:actionRegion>
+                    </apex:pageblockSectionItem>
+                    
+                    <apex:outputText value="{!existingShipTo.Carrier_Name_and_Service_Level__c}" rendered="{!NOT(existingShipTo.Is_Primary_Address__c)}"/>                                        
+                    
+                    <apex:pageblockSectionItem rendered="{!existingShipTo.Is_Primary_Address__c}">
+                        <apex:outputPanel id="carrierExistNameOthersLabel">
+                            <apex:outputLabel value="Carrier Name Others" rendered="{!If(existingShipTo.Carrier_Name_and_Service_Level__c == 'Others' && existingShipTo.Is_Primary_Address__c,true,false)}"/>
+                        </apex:outputPanel>
+                        <apex:actionRegion >
+                            <apex:outputPanel id="carrierExistNameOthersId">
+                                <apex:inputField value="{!existingShipTo.Carrier_Name_Others__c}" rendered="{!If(existingShipTo.Carrier_Name_and_Service_Level__c == 'Others' && existingShipTo.Is_Primary_Address__c,true,false)}" required="{!If(existingShipTo.Carrier_Name_and_Service_Level__c == 'Others',true,false)}"/>                            
+                            </apex:outputPanel>
+                        </apex:actionRegion>
+                    </apex:pageblockSectionItem>
+                    <apex:outputText value="{!existingShipTo.Carrier_Name_Others__c}" rendered="{!If(existingShipTo.Carrier_Name_and_Service_Level__c == 'Others' && NOT(existingShipTo.Is_Primary_Address__c),true,false)}"/>                    
+                    
+                    <apex:inputField value="{!existingShipTo.Special_Shipping_Instructions__c}" required="true" rendered="{!existingShipTo.Is_Primary_Address__c}"/>
+                    <apex:outputText value="{!existingShipTo.Special_Shipping_Instructions__c}" rendered="{!NOT(existingShipTo.Is_Primary_Address__c)}"/>                    
+                    
+                    <apex:pageblockSectionItem rendered="{!existingShipTo.Is_Primary_Address__c}">
+                        <apex:outputPanel id="carrierExistAccountNumberLabel">
+                            <apex:outputLabel value="Carrier Account Number"/>
+                        </apex:outputPanel>
+                        <apex:actionRegion >
+                            <apex:outputPanel id="carrierExistAccountNumberId">
+                                <apex:inputField value="{!existingShipTo.Carrier_Account_Number__c}" required="{!If(existingShipTo.Carrier_Name_and_Service_Level__c == 'DHL' || existingShipTo.Carrier_Name_and_Service_Level__c == 'UPS SCS',true,false)}" rendered="{!existingShipTo.Is_Primary_Address__c}"/>
+                            </apex:outputPanel>
+                        </apex:actionRegion>
+                    </apex:pageblockSectionItem>
+                    <apex:outputText value="{!existingShipTo.Carrier_Account_Number__c}" rendered="{!NOT(existingShipTo.Is_Primary_Address__c)}"/>
+                    
+                    <apex:inputField value="{!existingShipTo.Freight_Forwarder__c}" required="true" rendered="{!existingShipTo.Is_Primary_Address__c}"/>
+                    <apex:outputText value="{!existingShipTo.Freight_Forwarder__c}" rendered="{!NOT(existingShipTo.Is_Primary_Address__c)}"/>                    
+                    <apex:inputField value="{!existingShipTo.Import_Broker__c}" required="true" rendered="{!existingShipTo.Is_Primary_Address__c}"/>
+                    <apex:outputText value="{!existingShipTo.Import_Broker__c}" rendered="{!NOT(existingShipTo.Is_Primary_Address__c)}"/>
+                    
+                </apex:pageBlockSection>                  
+                <apex:outputPanel id="USExportsExist">                      
+                    <apex:pageBlockSection title="Exports" columns="1"> 
+                        <apex:pageBlockSectionItem > 
+                            <apex:outputLabel value="Will Shipments be exported from USA ?"/> 
+                            <apex:actionRegion >                                                                             
+                                <apex:inputField value="{!existingShipTo.Shipments_exported_from_USA__c}" required="true" rendered="{!existingShipTo.Is_Primary_Address__c}">
+                                    <apex:actionSupport reRender="USExportsExist,USTaxExemptRegUpdateRead" event="onchange" status="USExportExistStat" action="{!setTaxExemptForNonUS}">
+                                        <apex:actionStatus id="USExportExistStat" >
+                                            <apex:facet name="start" >
+                                              <img src="/img/loading.gif" />                    
+                                            </apex:facet>
+                                        </apex:actionStatus> 
+                                    </apex:actionSupport>
+                                </apex:inputField>
+                                <apex:outputText value="{!existingShipTo.Shipments_exported_from_USA__c}" rendered="{!NOT(existingShipTo.Is_Primary_Address__c)}" style="font-size: 11px;padding-left:10px;"/>
+                            </apex:actionRegion> 
+                        </apex:pageBlockSectionItem> 
+                        <apex:pageBlockSectionItem > 
+                        <apex:outputLabel value="If ‘Yes’, Who will be Exporter of Record ?"/> 
+                        <apex:actionRegion >                                                                             
+                            <apex:inputField value="{!existingShipTo.Who_will_be_Exporter_of_Record__c}" required="{!If(existingShipTo.Shipments_exported_from_USA__c == 'Yes',true,false)}" rendered="{!existingShipTo.Is_Primary_Address__c}">
+                                <apex:actionSupport reRender="USTaxExemptRegUpdateRead" event="onchange" status="USExportExistWhoStat" action="{!setTaxExemptForNonUS}">
+                                    <apex:actionStatus id="USExportExistWhoStat" >
+                                        <apex:facet name="start" >
+                                          <img src="/img/loading.gif" />                    
+                                        </apex:facet>
+                                    </apex:actionStatus> 
+                                </apex:actionSupport>                                                                                                                                                                                                              
+                        </apex:inputField>                                                                                               
+                        <apex:outputField value="{!existingShipTo.Who_will_be_Exporter_of_Record__c}" label="If ‘Yes’, Who will be Exporter of Record ?" rendered="{!NOT(existingShipTo.Is_Primary_Address__c)}"/>
+                        </apex:actionRegion> 
+                        </apex:pageBlockSectionItem>
+                    </apex:pageBlockSection>                                                          
+                </apex:outputPanel> 
+                                           
+                 <apex:outputPanel id="sgtTaxExemptRegUpdate">                      
+                    <apex:pageBlockSection title="Singapore Goods and Services Tax Status" columns="1" rendered="{!If(existingShipTo.Country__c == 'Singapore',true,false)}"> 
+                        <apex:pageBlockSectionItem > 
+                            <apex:outputLabel value="Taxable"/> 
+                            <apex:actionRegion >                                                                             
+                                <apex:inputField value="{!existingShipTo.SGT_Taxable__c}" required="true" rendered="{!existingShipTo.Is_Primary_Address__c}">
+                                    <apex:actionSupport reRender="sgtTaxExemptRegUpdate,reminderMsg" event="onchange" status="sgtTaxExemptRegUpStatId">
+                                        <apex:actionStatus id="sgtTaxExemptRegUpStatId" >
+                                            <apex:facet name="start" >
+                                              <img src="/img/loading.gif" />                    
+                                            </apex:facet>
+                                        </apex:actionStatus> 
+                                    </apex:actionSupport>
+                                </apex:inputField>
+                                <apex:outputField value="{!existingShipTo.SGT_Taxable__c}" rendered="{!NOT(existingShipTo.Is_Primary_Address__c)}" style="font-size: 11px;padding-left:10px;"/>
+                            </apex:actionRegion> 
+                        </apex:pageBlockSectionItem> 
+                        <apex:pageBlockSectionItem > 
+                            <apex:outputLabel value="Singapore GST Tax Exemption"/> 
+                            <apex:actionRegion >                                                                             
+                                <apex:inputField value="{!existingShipTo.Singapore_GST_Tax_Exemption__c}" required="{!If(existingShipTo.SGT_Taxable__c == 'No',true,false)}" rendered="{!existingShipTo.Is_Primary_Address__c}">
+                                    <apex:actionSupport reRender="reminderMsg" event="onchange" status="sgtTaxExemptRegUpStatId1">
+                                        <apex:actionStatus id="sgtTaxExemptRegUpStatId1" >
+                                            <apex:facet name="start" >
+                                              <img src="/img/loading.gif" />                    
+                                            </apex:facet>
+                                        </apex:actionStatus> 
+                                    </apex:actionSupport>
+                                </apex:inputField>
+                                <apex:outputField value="{!existingShipTo.Singapore_GST_Tax_Exemption__c}" rendered="{!NOT(existingShipTo.Is_Primary_Address__c)}"/>
+                            </apex:actionRegion> 
+                        </apex:pageBlockSectionItem>                                                                                                                                                                                                              
+                        <apex:outputPanel id="reminderMsg">                        
+                            <apex:outputLabel value="REMINDER - Proof of export documents must be provided to GLOBALFOUNDRIES Singapore within 60 days of shipment date" style="color: #d74c3b !important;font-weight: bold;"  rendered="{!If(existingShipTo.Singapore_GST_Tax_Exemption__c == 'Domestic Shipments within Singapore' && existingShipTo.SGT_Taxable__c == 'No',true,false)}"/>
+                        </apex:outputPanel>
+                    </apex:pageBlockSection>                                      
+                </apex:outputPanel>
+                <apex:outputPanel id="USTaxExemptRegUpdate">                      
+                    <apex:pageBlockSection title="U.S. Sales Tax Status" columns="1" rendered="{!If(existingShipTo.Country__c == 'USA',true,false)}"> 
+                        <apex:pageBlockSectionItem > 
+                            <apex:outputLabel value="Taxable"/> 
+                            <apex:actionRegion >                                                                             
+                                <apex:inputField value="{!existingShipTo.US_Taxable__c}" required="true" rendered="{!existingShipTo.Is_Primary_Address__c}">                                
+                                    <apex:actionSupport reRender="USTaxExemptRegUpdate" event="onchange" status="USTaxExemptRegUpStatId">
+                                        <apex:actionStatus id="USTaxExemptRegUpStatId" >
+                                            <apex:facet name="start" >
+                                              <img src="/img/loading.gif" />                    
+                                            </apex:facet>
+                                        </apex:actionStatus> 
+                                    </apex:actionSupport>
+                                </apex:inputField>
+                                <apex:outputField value="{!existingShipTo.US_Taxable__c}" rendered="{!NOT(existingShipTo.Is_Primary_Address__c)}"/>
+                            </apex:actionRegion> 
+                        </apex:pageBlockSectionItem>                                                                                                                                                                                                               
+                        <apex:inputField value="{!existingShipTo.US_Tax_Exempt__c}" required="{!If(existingShipTo.US_Taxable__c == 'No',true,false)}" rendered="{!existingShipTo.Is_Primary_Address__c}"/>
+                        <apex:outputField value="{!existingShipTo.US_Tax_Exempt__c}" rendered="{!NOT(existingShipTo.Is_Primary_Address__c)}"/>
+                        <apex:inputField value="{!existingShipTo.Certificate_Type__c}" required="{!If(existingShipTo.US_Taxable__c == 'No',true,false)}" rendered="{!existingShipTo.Is_Primary_Address__c}"/> 
+                        <apex:outputField value="{!existingShipTo.Certificate_Type__c}" rendered="{!NOT(existingShipTo.Is_Primary_Address__c)}"/>                                                                                                
+                    </apex:pageBlockSection>                                      
+                </apex:outputPanel>
+                
+                <apex:outputPanel id="USTaxExemptRegUpdateRead">                      
+                    <apex:pageBlockSection title="U.S. Sales Tax Status" columns="1" rendered="{!If(existingShipTo.Country__c != 'USA' && existingShipTo.Country__c != 'Singapore' && existingShipTo.Shipments_exported_from_USA__c == 'Yes' && existingShipTo.Who_will_be_Exporter_of_Record__c == 'Customer',true,false)}">                                                   
+                        <apex:outputText value="{!existingShipTo.US_Taxable__c}"/>                                                                                                                                                                                                                                          
+                        <apex:outputText value="{!existingShipTo.US_Tax_Exempt__c}"/>
+                        <apex:outputText value="{!existingShipTo.Certificate_Type__c}"/>                                                                                                
+                    </apex:pageBlockSection>                                      
+                </apex:outputPanel>                                
+                                        
+            </apex:pageBlock>
+        </apex:outputPanel>
+        
+            </apex:pageBlock>                                                                           
+        </apex:pageBlock>
+        
+        
+        
+        <apex:actionFunction name="createNewShipToAdd" action="{!createNewShipToAdd}" reRender="createNewShipToAddress,newAccPayableContact,createNewContact,newSoldToContact,editExistingShipToAddress" immediate="true"/>
+        <apex:actionFunction name="save" action="{!save}"/> 
+    </apex:form>       
+</apex:page>

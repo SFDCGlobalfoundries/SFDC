@@ -1,0 +1,223 @@
+<!--
+    Author: Zymark Ambat
+    Description: This serves as the Page for MPWMyDevicesController.
+    History: 
+        ZAmbat    060242015    - page creation.
+        SNair     06262015     - added Raise MPW Request button.
+-->
+
+<apex:page id="MPWMyDevicesVF" controller="MPWMyDevicesController" showHeader="false" sidebar="false">
+
+	<apex:stylesheet value="{!URLFOR($Resource.MPWRelatedCSS, '/MPWRelatedCSS/MPWMyDevicesVF.css')}" />
+    <apex:stylesheet value="/sCSS/21.0/sprites/1297816277000/Theme3/default/gc/versioning.css" />
+    
+    <!-- <script src="//ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script> -->
+    <apex:includeScript value="{!URLFOR($Resource.jQuery_1_11_3_min, '/jquery-1.11.3.min/jquery-1.11.3.min.js')}" />
+    <script type="text/javascript">
+        function startLoading(){
+            $('#load_scrl').css('top', $(document).scrollTop() + 200);
+            $('.loadingBox').show(); 
+        }
+        
+        function endLoading(){
+             $('.loadingBox').hide();
+        }
+    </script>
+    
+    <apex:pageMessages id="errorSection" />
+    
+    <apex:form >
+        <apex:pageBlock id="mydevicesBlock" title="My Devices">
+			<apex:pageBlockButtons location="top">
+				<apex:commandButton value="Raise MPW Request"
+					action="{!raiseMPWRequest}" />	
+			</apex:pageBlockButtons>
+			<apex:pageBlockTable id="myDevicesTable" value="{!MyMPWDevices}" rendered="{!IF(MyMPWDevices.size > 0, true, false)}" var="d">
+                <apex:column headerClass="{!IF(sortField == 'deviceName', 'TableTitle', '')}">
+                    <apex:facet name="header">
+                        <apex:outputLabel onclick="sortRecords('deviceName');" styleClass="hand colDiv">
+                            Device
+                            <apex:image value="data:image/gif;base64,R0lGODlhAQABAID/AMDAwAAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==" styleClass="sortASC" rendered="{!IF(AND(sortField == 'deviceName', sortType == 'ASC'), true, false)}" />
+                            <apex:image value="data:image/gif;base64,R0lGODlhAQABAID/AMDAwAAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==" styleClass="sortDESC" rendered="{!IF(AND(sortField == 'deviceName', sortType == 'DESC'), true, false)}" />
+                        </apex:outputLabel>
+                    </apex:facet>
+                    <apex:outputText value="{!d.deviceName}" />
+                </apex:column>
+                <apex:column headerClass="{!IF(sortField == 'accountName', 'TableTitle', '')}">
+                    <apex:facet name="header">
+                        <apex:outputLabel onclick="sortRecords('accountName');" styleClass="hand colDiv">
+                            Account
+                            <apex:image value="data:image/gif;base64,R0lGODlhAQABAID/AMDAwAAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==" styleClass="sortASC" rendered="{!IF(AND(sortField == 'accountName', sortType == 'ASC'), true, false)}" />
+                            <apex:image value="data:image/gif;base64,R0lGODlhAQABAID/AMDAwAAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==" styleClass="sortDESC" rendered="{!IF(AND(sortField == 'accountName', sortType == 'DESC'), true, false)}" />
+                        </apex:outputLabel>
+                    </apex:facet>
+                    <apex:outputText value="{!d.accountName}" />
+                </apex:column>
+                <apex:column headerClass="{!IF(sortField == 'tapeoutDate', 'TableTitle', '')}">
+                    <apex:facet name="header">
+                        <apex:outputLabel onclick="sortRecords('tapeoutDate');" styleClass="hand colDiv">
+                            Tapeout <br/> Date
+                            <apex:image value="data:image/gif;base64,R0lGODlhAQABAID/AMDAwAAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==" styleClass="sortASC" rendered="{!IF(AND(sortField == 'tapeoutDate', sortType == 'ASC'), true, false)}" />
+                            <apex:image value="data:image/gif;base64,R0lGODlhAQABAID/AMDAwAAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==" styleClass="sortDESC" rendered="{!IF(AND(sortField == 'tapeoutDate', sortType == 'DESC'), true, false)}" />
+                        </apex:outputLabel>
+                    </apex:facet>
+                    <apex:outputText value="{!MONTH(d.tapeoutDate)}/{!DAY(d.tapeoutDate)}/{!YEAR(d.tapeoutDate)}" rendered="{!IF(NOT(ISBLANK(d.tapeoutDate)), true, false)}" />
+                </apex:column>
+                <apex:column headerClass="{!IF(sortField == 'geometry', 'TableTitle', '')}">
+                    <apex:facet name="header">
+                        <apex:outputLabel onclick="sortRecords('geometry');" styleClass="hand colDiv">
+                            Geometry
+                            <apex:image value="data:image/gif;base64,R0lGODlhAQABAID/AMDAwAAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==" styleClass="sortASC" rendered="{!IF(AND(sortField == 'geometry', sortType == 'ASC'), true, false)}" />
+                            <apex:image value="data:image/gif;base64,R0lGODlhAQABAID/AMDAwAAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==" styleClass="sortDESC" rendered="{!IF(AND(sortField == 'geometry', sortType == 'DESC'), true, false)}" />
+                        </apex:outputLabel>
+                    </apex:facet>
+                    <apex:outputText value="{!d.geometry}" />
+                </apex:column>
+                <apex:column headerClass="{!IF(sortField == 'processFamily', 'TableTitle', '')}">
+                    <apex:facet name="header">
+                        <apex:outputLabel onclick="sortRecords('processFamily');" styleClass="hand colDiv">
+                            Process <br/> Family
+                            <apex:image value="data:image/gif;base64,R0lGODlhAQABAID/AMDAwAAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==" styleClass="sortASC" rendered="{!IF(AND(sortField == 'processFamily', sortType == 'ASC'), true, false)}" />
+                            <apex:image value="data:image/gif;base64,R0lGODlhAQABAID/AMDAwAAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==" styleClass="sortDESC" rendered="{!IF(AND(sortField == 'processFamily', sortType == 'DESC'), true, false)}" />
+                        </apex:outputLabel>
+                    </apex:facet>
+                    <apex:outputText value="{!d.processFamily}" />
+                </apex:column>
+                <apex:column headerClass="{!IF(sortField == 'status', 'TableTitle', '')}">
+                    <apex:facet name="header">
+                        <apex:outputLabel onclick="sortRecords('status');" styleClass="hand colDiv">
+                            Status
+                            <apex:image value="data:image/gif;base64,R0lGODlhAQABAID/AMDAwAAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==" styleClass="sortASC" rendered="{!IF(AND(sortField == 'status', sortType == 'ASC'), true, false)}" />
+                            <apex:image value="data:image/gif;base64,R0lGODlhAQABAID/AMDAwAAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==" styleClass="sortDESC" rendered="{!IF(AND(sortField == 'status', sortType == 'DESC'), true, false)}" />
+                        </apex:outputLabel>
+                    </apex:facet>
+                    <apex:outputText value="{!d.status}" />
+                </apex:column>
+                <apex:column headerClass="{!IF(sortField == 'stage', 'TableTitle', '')}">
+                    <apex:facet name="header">
+                        <apex:outputLabel onclick="sortRecords('stage');" styleClass="hand colDiv">
+                            Stage
+                            <apex:image value="data:image/gif;base64,R0lGODlhAQABAID/AMDAwAAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==" styleClass="sortASC" rendered="{!IF(AND(sortField == 'stage', sortType == 'ASC'), true, false)}" />
+                            <apex:image value="data:image/gif;base64,R0lGODlhAQABAID/AMDAwAAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==" styleClass="sortDESC" rendered="{!IF(AND(sortField == 'stage', sortType == 'DESC'), true, false)}" />
+                        </apex:outputLabel>
+                    </apex:facet>
+                    <apex:outputText value="{!d.stage}" />
+                </apex:column>
+                <apex:column headerClass="{!IF(sortField == 'fab', 'TableTitle', '')}">
+                    <apex:facet name="header">
+                        <apex:outputLabel onclick="sortRecords('fab');" styleClass="hand colDiv">
+                            Fab
+                            <apex:image value="data:image/gif;base64,R0lGODlhAQABAID/AMDAwAAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==" styleClass="sortASC" rendered="{!IF(AND(sortField == 'fab', sortType == 'ASC'), true, false)}" />
+                            <apex:image value="data:image/gif;base64,R0lGODlhAQABAID/AMDAwAAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==" styleClass="sortDESC" rendered="{!IF(AND(sortField == 'fab', sortType == 'DESC'), true, false)}" />
+                        </apex:outputLabel>
+                    </apex:facet>
+                    <apex:outputText value="{!d.fab}" />
+                </apex:column>
+                <apex:column headerClass="{!IF(sortField == 'mpwTrainName', 'TableTitle', '')}">
+                    <apex:facet name="header">
+                        <apex:outputLabel onclick="sortRecords('mpwTrainName');" styleClass="hand colDiv">
+                            MPW Train
+                            <apex:image value="data:image/gif;base64,R0lGODlhAQABAID/AMDAwAAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==" styleClass="sortASC" rendered="{!IF(AND(sortField == 'mpwTrainName', sortType == 'ASC'), true, false)}" />
+                            <apex:image value="data:image/gif;base64,R0lGODlhAQABAID/AMDAwAAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==" styleClass="sortDESC" rendered="{!IF(AND(sortField == 'mpwTrainName', sortType == 'DESC'), true, false)}" />
+                        </apex:outputLabel>
+                    </apex:facet>
+                    <apex:outputLink value="/apex/MPWTrainScheduleTranxVF?tranx=View&id={!d.mpwTrainId}" target="_blank" rendered="{!IF(NOT(ISBLANK(d.mpwTrainId)), true, false)}">{!d.mpwTrainName}</apex:outputLink>
+                </apex:column>
+                <apex:column headerClass="{!IF(sortField == 'mpwReservationFormName', 'TableTitle', '')}">
+                    <apex:facet name="header">
+                        <apex:outputLabel onclick="sortRecords('mpwReservationFormName');" styleClass="hand colDiv">
+                            MPW Reservation <br/> Form
+                            <apex:image value="data:image/gif;base64,R0lGODlhAQABAID/AMDAwAAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==" styleClass="sortASC" rendered="{!IF(AND(sortField == 'mpwReservationFormName', sortType == 'ASC'), true, false)}" />
+                            <apex:image value="data:image/gif;base64,R0lGODlhAQABAID/AMDAwAAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==" styleClass="sortDESC" rendered="{!IF(AND(sortField == 'mpwReservationFormName', sortType == 'DESC'), true, false)}" />
+                        </apex:outputLabel>
+                    </apex:facet>
+                    <apex:outputLink value="/apex/MPWReservationFormVF?Id={!d.mpwReservationFormId}&mode=View" target="_blank" rendered="{!IF(NOT(ISBLANK(d.mpwReservationFormId)), true, false)}">{!d.mpwReservationFormName}</apex:outputLink>
+                </apex:column>
+                <apex:column headerClass="{!IF(sortField == 'tapeoutReadiness', 'TableTitle', '')}">
+                    <apex:facet name="header">
+                        <apex:outputLabel onclick="sortRecords('tapeoutReadiness');" styleClass="hand colDiv">
+                            Tapeout <br/> Readiness
+                            <apex:image value="data:image/gif;base64,R0lGODlhAQABAID/AMDAwAAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==" styleClass="sortASC" rendered="{!IF(AND(sortField == 'tapeoutReadiness', sortType == 'ASC'), true, false)}" />
+                            <apex:image value="data:image/gif;base64,R0lGODlhAQABAID/AMDAwAAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==" styleClass="sortDESC" rendered="{!IF(AND(sortField == 'tapeoutReadiness', sortType == 'DESC'), true, false)}" />
+                        </apex:outputLabel>
+                    </apex:facet>
+                    <apex:outputText value="{!d.tapeoutReadiness}" />
+                </apex:column>
+                <apex:column headerClass="{!IF(sortField == 'actualTapeoutDate', 'TableTitle', '')}">
+                    <apex:facet name="header">
+                        <apex:outputLabel onclick="sortRecords('actualTapeoutDate');" styleClass="hand colDiv">
+                            Tapeout <br/> Date
+                            <apex:image value="data:image/gif;base64,R0lGODlhAQABAID/AMDAwAAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==" styleClass="sortASC" rendered="{!IF(AND(sortField == 'actualTapeoutDate', sortType == 'ASC'), true, false)}" />
+                            <apex:image value="data:image/gif;base64,R0lGODlhAQABAID/AMDAwAAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==" styleClass="sortDESC" rendered="{!IF(AND(sortField == 'actualTapeoutDate', sortType == 'DESC'), true, false)}" />
+                        </apex:outputLabel>
+                    </apex:facet>
+                    <apex:outputText value="{!MONTH(d.actualTapeoutDate)}/{!DAY(d.actualTapeoutDate)}/{!YEAR(d.actualTapeoutDate)}" rendered="{!IF(NOT(ISBLANK(d.actualTapeoutDate)), true, false)}" />
+                </apex:column>
+                <apex:column headerClass="{!IF(sortField == 'maskSetTitle', 'TableTitle', '')}">
+                    <apex:facet name="header">
+                        <apex:outputLabel onclick="sortRecords('maskSetTitle');" styleClass="hand colDiv">
+                            Mask Set Title
+                            <apex:image value="data:image/gif;base64,R0lGODlhAQABAID/AMDAwAAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==" styleClass="sortASC" rendered="{!IF(AND(sortField == 'maskSetTitle', sortType == 'ASC'), true, false)}" />
+                            <apex:image value="data:image/gif;base64,R0lGODlhAQABAID/AMDAwAAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==" styleClass="sortDESC" rendered="{!IF(AND(sortField == 'maskSetTitle', sortType == 'DESC'), true, false)}" />
+                        </apex:outputLabel>
+                    </apex:facet>
+                    <apex:outputText value="{!d.maskSetTitle}" />
+                </apex:column>
+                <apex:column headerClass="{!IF(sortField == 'createdDate', 'TableTitle', '')}">
+                    <apex:facet name="header">
+                        <apex:outputLabel onclick="sortRecords('createdDate');" styleClass="hand colDiv">
+                            Created Date
+                            <apex:image value="data:image/gif;base64,R0lGODlhAQABAID/AMDAwAAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==" styleClass="sortASC" rendered="{!IF(AND(sortField == 'createdDate', sortType == 'ASC'), true, false)}" />
+                            <apex:image value="data:image/gif;base64,R0lGODlhAQABAID/AMDAwAAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==" styleClass="sortDESC" rendered="{!IF(AND(sortField == 'createdDate', sortType == 'DESC'), true, false)}" />
+                        </apex:outputLabel>
+                    </apex:facet>
+                    <apex:outputText value="{!MONTH(d.createdDate)}/{!DAY(d.createdDate)}/{!YEAR(d.createdDate)}" rendered="{!IF(NOT(ISBLANK(d.createdDate)), true, false)}" />
+                </apex:column>
+                <apex:facet name="footer">Showing Page {!currentPageNo} of {!totalNoOfPages} ({!totalNoOfRecords} Records)</apex:facet>
+            </apex:pageBlockTable> 
+            <apex:outputText value="No records found." rendered="{!IF(MyMPWDevices.size == 0, true, false)}" />
+                
+            <!-- Pagination Controls -->
+            <br/>
+            <apex:outputPanel id="controlPanel" layout="block" style="margin: 0; white-space: nowrap; align: center; position: relative;" rendered="{!IF(MyMPWDevices.size > 0, true, false)}">
+                <center>
+                    <apex:commandLink action="{!first}" style="text-decoration: none;" rendered="{!IF(HasPrevious, true, false)}" rerender="myDevicesTable, controlPanel" status="loadStatus">
+                        <apex:image value="/s.gif" styleClass="first1" alt="First Page" />
+                    </apex:commandLink>
+                    <apex:outputPanel rendered="{!IF(NOT(HasPrevious), true, false)}">
+                        <apex:image value="/s.gif" styleClass="firstoff1" alt="First Page" />
+                    </apex:outputPanel>
+                    &nbsp;
+                    <apex:commandLink action="{!previous}" style="text-decoration: none;" rendered="{!IF(HasPrevious, true, false)}" rerender="myDevicesTable, controlPanel" status="loadStatus">
+                        <apex:image value="/s.gif" styleClass="prev1" alt="Previous" /><span class="prevtext">Previous</span>
+                    </apex:commandLink>
+                    <apex:outputPanel rendered="{!IF(NOT(HasPrevious), true, false)}">
+                        <apex:image value="/s.gif" styleClass="prevoff1" alt="Previous" /><span class="prevtextoff1">Previous</span>
+                    </apex:outputPanel>
+                    &nbsp;&nbsp;
+                    <apex:commandLink action="{!next}" style="text-decoration: none;" rendered="{!IF(HasNext, true, false)}" rerender="myDevicesTable, controlPanel" status="loadStatus">
+                        <span class="nexttext">Next</span><apex:image value="/s.gif" styleClass="next1" alt="Next" />
+                    </apex:commandLink>
+                    <apex:outputPanel rendered="{!IF(NOT(HasNext), true, false)}">
+                        <span class="nexttextoff1">Next</span><apex:image value="/s.gif" styleClass="nextoff1" alt="Next" />
+                    </apex:outputPanel>
+                    &nbsp;
+                    <apex:commandLink action="{!last}" style="text-decoration: none;" rendered="{!IF(HasNext, true, false)}" rerender="myDevicesTable, controlPanel" status="loadStatus">
+                        <apex:image value="/s.gif" styleClass="last1" alt="Last Page" />
+                    </apex:commandLink>
+                    <apex:outputPanel rendered="{!IF(NOT(HasNext), true, false)}">
+                        <apex:image value="/s.gif" styleClass="lastoff1" alt="Last Page" />
+                    </apex:outputPanel>
+                </center>
+            </apex:outputPanel>
+        </apex:pageBlock>
+        
+        <apex:actionfunction name="sortRecords" action="{!sortRecords}" rerender="myDevicesTable, errorSection" status="loadStatus">     
+            <apex:param name="sortField" value="" />           
+        </apex:actionfunction>
+        
+        <apex:actionStatus onstart="startLoading();" onstop="endLoading();" id="loadStatus"/>
+        <div id="load_scrl" class="loadingBox loader" style="display: none" />
+        <div class="loadingBox overlay" />
+    </apex:form>
+</apex:page>

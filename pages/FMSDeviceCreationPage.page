@@ -1,0 +1,143 @@
+<!-- 
+    Author: Anil Kumar Reddy L
+    Company: GLOBALFOUNDRIES
+    Project: FMS 2.0
+    Description: Page used for displaying of Device Fields .
+    Change History: 
+    Date               Name                    Comments
+    01082017        Abhita Bansal            Modified the code to associate the correct device on creation
+    03082017        ARoy                     Added link for Export Control
+    01162018        PSaha                    Added Export Control Template field for Skywork Qorvo Template automation
+-->
+<apex:page standardcontroller="Device__c" extensions="FMSDeviceCreation_Ext">
+    <apex:includeScript value="{!URLFOR($Resource.jquery, 'js/jquery-1.8.3.js')}"/>
+    <apex:pagemessages id="errorMsg" escape="false" rendered="{!(!viewPage || editPage)}"/>
+    <apex:form id="form1" >
+        <apex:outputPanel id="popup">
+            <apex:outputPanel styleClass="popupBackground" layout="block" rendered="{!displayPopUp}"/>
+            <apex:outputPanel styleClass="customPopup" layout="block" rendered="{!displayPopUp}">
+                <apex:outputText style="font-style:italic;color:Red;font-weight:bold" value="I {!$User.FirstName} {!$User.LastName}, certify that the above is true and correct to the best of my knowledge. I certify that I am duly authorized to bind {!accountName}"></apex:outputText>
+                <br/><br/>
+                <apex:commandButton value="Ok" action="{!save}" rerender="popup"/>
+                <apex:commandButton value="Cancel" action="{!closePopup}" rerender="popup"/>
+            </apex:outputPanel>
+        </apex:outputPanel>
+        <apex:pageBlock >
+            <apex:outputPanel rendered="{!((!viewPage || editPage) && isAccountsAvailable) }" id="devField">
+                <apex:pageBlockSection >
+                    <apex:repeat value="{!$ObjectType.Device__c.FieldSets.FMS_DeviceEditFields}" var="fse"  >
+                        <!--Modified the code to associate the correct device on creation - 01082017-->
+                        <apex:inputField value="{!deviceObj[fse]}"  required="{!OR(fse.required, fse.dbrequired)}" rendered="{!IF(((fse!='Tapeout_Type__c' && fse!='Account__c' && fse!='Reticle_Type__c' && fse!='Automotive_Device__c' && fse!='Device_Purpose__c' && fse!='Export_Control_Template__c')),true,false)}"/ > <!--Added condition by ABhita--> <!--|| (fse=='Account__c' && isAccountsAvailable)-->
+                        <apex:outputfield value="{!deviceObj[fse]}" rendered="{!IF(and(fse=='Account__c'),true,false)}"/ >
+                        <!--End-->
+                        <apex:outputfield value="{!deviceObj[fse]}" rendered="{!IF(and(fse=='Tapeout_Type__c'),true,false)}"/ >
+                        <!--Starting code for review comments by Abhita-->
+                        <apex:outputfield value="{!deviceObj[fse]}" rendered="{!IF(and(fse=='Reticle_Type__c'),true,false)}"/ >
+                        <apex:outputfield value="{!deviceObj[fse]}" rendered="{!IF(and(fse=='Automotive_Device__c'),true,false)}"/ >
+                        <apex:selectList value="{!deviceObj[fse]}" multiselect="false" size="1" rendered="{!IF(and(fse=='Device_Purpose__c'),true,false)}">
+                            <apex:selectOptions value="{!devicePurposeList}"/>
+                        </apex:selectList>
+                        <apex:outputfield value="{!deviceObj[fse]}" rendered="{!IF(and(fse=='Export_Control_Template__c',!isMemberofECTempGroup),true,false)}"/ >
+                        <!--Ending code for review comments by Abhita-->
+                    </apex:repeat>
+                    <apex:actionRegion >
+                            <apex:pageBlockSection >
+                            <apex:selectList value="{!deviceObj.Export_Control_Template__c}" multiselect="false" size="1" rendered="{!IF(and(isMemberofECTempGroup),true,false)}">
+                                <apex:actionSupport event="onchange" action="{!changeECTemp}" rerender="devField" />
+                                <apex:selectOptions value="{!ecTemplateList}"/>
+                            </apex:selectList>
+                            </apex:pageBlockSection>
+                    </apex:actionRegion>
+                </apex:pageBlockSection>
+            </apex:outputPanel>
+            <apex:outputPanel rendered="{!(viewPage&&!editPage) }">
+                <apex:pageBlockSection >
+                    <apex:repeat value="{!$ObjectType.Device__c.FieldSets.FMS_DeviceFieldsView}" var="fsv">
+                        <apex:outputField value="{!Device__c[fsv]}" rendered="{!IF(OR(fsv=='Base_Device__c',fsv=='Account__c',fsv=='Opportunity2__c',fsv=='Opportunity_Program__c',fsv=='Enabled_via_previous_MPW_1__c',fsv=='OwnerId'),false,true)}" / >
+                        <apex:outputField label="Created By" value="{!Device__c[fsv]}" rendered="{!IF(fsv=='OwnerId',true,false)}"/><!--Changed the Label for Prod issue #46-->
+                        <apex:pageBlockSectionItem rendered="{!IF(fsv=='Base_Device__c',true,false)}">
+                            <apex:outputLabel value="{!fsv.Label}" />
+                            <apex:outputLink target="_blank" rendered="{!IF(fsv=='Base_Device__c',true,false)}" value="/apex/FMSDeviceCreationPage?id={!Device__c[fsv]}" title="Base Device">
+                                <apex:outputText value="{!baseDevice}" />
+                            </apex:outputLink>
+                        </apex:pageBlockSectionItem>
+                       <apex:pageBlockSectionItem rendered="{!IF(OR(fsv=='Account__c',fsv=='Opportunity_Program__c'),true,false)}">
+                           <apex:outputLabel value="{!fsv.Label}" />
+                           <apex:outputText value="{!devFieldname[fsv]}" />
+                        </apex:pageBlockSectionItem>
+                       </apex:repeat>
+                </apex:pageBlockSection>
+            </apex:outputPanel>
+            <apex:pageBlockButtons >
+                <apex:commandButton value="Save" action="{!openPopUp}" rerender="form1,errorMsg,popup" rendered="{!((!viewPage&&!editPage) && isAccountsAvailable)}"/> <!--rendered="{!(!viewPage&&!editPage)}" />-->
+                <apex:outputLink value="/GlobalfoundryView/apex/{!$CurrentPage.Name}?id={!deviceObj.id}&tnx=edit" styleClass="btn" style="text-decoration:none;padding:4px;" rendered="{!(viewPage && !editPage && isButtonsAccessable)}">Edit</apex:outputLink>
+                <apex:commandButton value="Save Device" action="{!openPopUp}" rerender="form1,errorMsg,popup" rendered="{!(editPage && isButtonsAccessable && isAccountsAvailable)}" reRender="errorMsg,popup" />
+                <apex:commandLink action="{!generateExpControl}" target="_blank" styleClass="btn" style="text-decoration:none;padding:4px;" rendered="{!(viewPage && !editPage)}" value="Go to Export Control"/>
+                <apex:commandButton value="Create FMS Main Form" action="{!newFMSMainForm}" rerender="form1,errorMsg"  rendered="{!(viewPage && !editPage && fmsFlag && !isRetrofit)}" />
+                <apex:commandButton value="Create FMS IMC Form" action="{!newFMSMainForm}" rerender="form1,errorMsg"  rendered="{!(viewPage && !editPage && fmsFlag && isRetrofit)}" />
+                <apex:outputLink value="/GlobalfoundryView/apex/{!$CurrentPage.Name}?id={!deviceObj.id}" styleClass="btn" style="text-decoration:none;padding:4px;" rendered="{!editPage}">Cancel</apex:outputLink>
+                <apex:outputLink value="/GlobalfoundryView/apex/MyDevices" styleClass="btn" style="text-decoration:none;padding:4px;" rendered="{!(!viewPage && !editPage)}">Cancel</apex:outputLink>
+                <!--<apex:outputLink value="/GlobalfoundryView/apex/{!$CurrentPage.Name}?baseId={!deviceObj.id}&tnx=copy&devicetype={!deviceObj.Device_Type__c}" styleClass="btn" style="text-decoration:none;padding:4px;" rendered="{!(viewPage && !editPage && isButtonsAccessable)}">Copy Device</apex:outputLink>
+                <apex:outputLink value="/GlobalfoundryView/apex/DeviceExposeToCustomerVF?deviceId={!deviceObj.id}" styleClass="btn" style="text-decoration:none;padding:4px;" rendered="{!(viewPage && !editPage && deviceObj.Device_Type__c != 'Retrofit' && isExposeDeviceFlag)}" target="_blank">Expose Device to customer</apex:outputLink>-->
+                <apex:outputPanel id="outputval" styleClass="valRet">
+                    <apex:inputHidden id="valueReturnedid" value="{!valueReturned}"/>
+                </apex:outputPanel>
+         </apex:pageBlockButtons>
+        </apex:pageBlock>
+		<apex:outputPanel rendered="false">{!Device__c.Original_Forecasted_Tapeout_Date__c}{!Device__c.Current_Forecast_Tapeout_Date__c}</apex:outputPanel>
+    </apex:form>
+    
+    <script>
+    function generateFruits(id){
+            if(document.getElementById(id).value=='Save'){
+                afterSaveSubmit();
+            }
+    }
+    </script>
+    <style type="text/css">
+       .customPopup{
+            background-color: white;
+            border-style: solid;
+            border-width: 2px;
+            //left: 50%;
+            padding:10px;
+            position: absolute;
+            z-index: 9999;
+            /* These are the 3 css properties you will need to tweak so the pop 
+            up displays in the center of the screen. First set the width. Then set 
+            margin-left to negative half of what the width is. You can also add 
+            the height property for a fixed size pop up.*/
+            width: 1024px;
+            //margin-left: -250px;
+            top:100px;
+        }
+        
+        .customPopup1{
+            background-color: white;
+            border-style: solid;
+            border-width: 2px;
+            //left: 50%;
+            padding:10px;
+            position: absolute;
+            z-index: 9999;
+            /* These are the 3 css properties you will need to tweak so the pop 
+            up displays in the center of the screen. First set the width. Then set 
+            margin-left to negative half of what the width is. You can also add 
+            the height property for a fixed size pop up.*/
+            width: 1024px;
+            //margin-left: -250px;
+            top:100px;
+        }
+        .popupBackground{
+            background-color:black;
+            opacity: 0.20;
+            filter: alpha(opacity = 20);
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            z-index: 9998;
+        }
+    </style>
+</apex:page>

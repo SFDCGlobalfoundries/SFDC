@@ -1,0 +1,1785 @@
+<apex:page id="MRSCustomerGDSOUTReviewId" standardController="MRS__c" extensions="MRSCustomerGDSOUTReviewExtn" showHeader="false" sideBar="false" standardStylesheets="false">
+  
+<apex:stylesheet value="{!URLFOR($Resource.SWIFT_MRS_Changed,'css/jquery.scombobox.min.css')}"/>
+<apex:stylesheet value="{!URLFOR($Resource.SWIFT_MRS_Changed,'css/style.css')}"/>
+<apex:stylesheet value="{!URLFOR($Resource.SWIFT_MRS_Changed,'css/gdsoutReview.css')}"/>
+<apex:stylesheet value="{!URLFOR($Resource.SWIFT_MRS_Changed,'css/jquery.multiselect.css')}"/>
+<apex:stylesheet value="{!URLFOR($Resource.SWIFT_MRS_Changed,'css/jquery-ui.css')}"/>
+
+
+<!--[if IE]>
+  <link rel="stylesheet" type="text/css" href="{!URLFOR($Resource.SWIFT_MRS_Changed, 'css/styleIE.css')}" />
+<![endif]-->
+    
+<script type="text/javascript" src="{!URLFOR($Resource.SWIFT_MRS_Changed,'js/jquery.min.js')}"></script>
+<script type="text/javascript" src="{!URLFOR($Resource.SWIFT_MRS_Changed,'js/leftmenu.js')}"></script>
+<script type="text/javascript" src="{!URLFOR($Resource.SWIFT_MRS_Changed,'js/jquery.scombobox.min.js')}"></script>
+<script type="text/javascript" src="{!URLFOR($Resource.SWIFT_MRS_Changed,'js/advancedDataGrid.js')}"></script>
+<script type="text/javascript" src="{!URLFOR($Resource.SWIFT_MRS_Changed,'js/jquery.loader.min.js')}"></script>   
+<script type="text/javascript" src="{!URLFOR($Resource.Swift_MRS,'js/jquery-ui.min.js')}"></script>
+<script type="text/javascript">
+    var approveTicker = "{!URLFOR($Resource.Swift_MRS,'images/Checked_img.png')}";
+       
+</script>
+<style>
+    input[type=checkbox].bckset{
+    opacity:0.58;
+    }
+</style>
+<apex:form id="MRSCustomerGDSOUTReviewFormId">    
+    
+    <apex:inputHidden value="{!selectedCustomerId}" id="hiddenCustomerId"/>
+    <apex:inputHidden value="{!selectedMSTId}" id="hiddenMSTId"/>  
+    <apex:inputHidden value="{!customerName}" id="customerIdAfterSave"/>
+    <apex:inputHidden value="{!mstAfterSave}" id="mstIdAfterSave"/>
+    <apex:inputHidden value="{!isTechGeoActive}" id="reticleTypeId"/>    
+    <apex:inputHidden value="{!chipNameSize}" id="chipSize"/>
+    <apex:inputHidden value="{!selectedLayerStatus}" id="SelectedLayerStatusValue"/>
+    <!--Wrapper Div Starts-->
+    <div id="wrapper">
+        <!--Container Div Starts-->
+        <!-- <div id="container" class="use-sidebar"> -->
+            
+            <!--Left Side Navigation Menu-->
+            
+            <!--End of Left Side Navigation Menu-->
+        
+            <!-- Start of Right side content-->
+            <!-- <div id="content"> -->
+        
+                <!--Breadcrumb Starts--> 
+                <apex:outputLabel rendered="{!customerOrFoundry}">  
+                    <apex:outputLabel rendered="{!isBreadcrumbActive}">     
+                        <div class="breadcrumb" id="breadcrumbDiv">
+                                <label><a href="javascript:void(0);" onclick="openMyDevices();"><u>My Devices</u></a></label> &gt;
+                                Tapeout &gt;
+                                MRS &gt;
+                                GDSOUT Review - Customer
+                        </div> 
+                    </apex:outputLabel>
+                    <apex:outputLabel rendered="{!!isBreadcrumbActive}">     
+                        <div class="breadcrumb" id="breadcrumbDiv">
+                                MRS &gt;
+                                GDSOUT Review - Customer
+                        </div> 
+                    </apex:outputLabel>
+                </apex:outputLabel> 
+                <apex:outputLabel rendered="{!!customerOrFoundry}">  
+                    <apex:outputLabel rendered="{!isBreadcrumbActive}">     
+                        <div class="breadcrumb" id="breadcrumbDiv">
+                                <label><a href="javascript:void(0);" onclick="openMyDevices();"><u>My Devices</u></a></label> &gt;
+                                Tapeout &gt;
+                                MRS &gt;
+                                GDSOUT Review - Foundry
+                        </div> 
+                    </apex:outputLabel>
+                    <apex:outputLabel rendered="{!!isBreadcrumbActive}">     
+                        <div class="breadcrumb" id="breadcrumbDiv">
+                                MRS &gt;
+                                GDSOUT Review - Foundry
+                        </div> 
+                    </apex:outputLabel>
+                </apex:outputLabel>          
+                <!--Breadcrumb Ends-->
+                
+                <div id="createDRT" class="right-panel-section">
+                    <!-- Start DRT Right side Header-->
+                    <apex:outputLabel rendered="{!customerOrFoundry}">
+                        <h3>GDSOUT Review - Customer</h3>
+                    </apex:outputLabel> 
+                    <apex:outputLabel rendered="{!!customerOrFoundry}">
+                        <h3>GDSOUT Review - Foundry</h3>
+                    </apex:outputLabel>
+                    <!-- End Right side Header-->                 
+                 
+                 <apex:outputPanel id="imageId">
+                     <apex:outputPanel rendered="{!imageActive}">  
+                         <div class="quicklinks">
+                            <a href="#" onclick="javascript:openExcelOrPDF('pdf');"><img src="{!URLFOR($Resource.Swift_MRS,'images/expToCsv.png')}" width="24" height="24" alt="Export to CSV" title="Export to CSV"/></a>
+                            <a href="#" onclick="javascript:openExcelOrPDF('excel');"><img src="{!URLFOR($Resource.Swift_MRS,'images/excel-icon.png')}" width="23" height="23" alt="Export to Excel" title="Export to Excel"/></a>                            
+                            <a href="{!$Label.SWIFT_Support_Link}" target="_blank"><img src="{!URLFOR($Resource.Swift_MRS,'images/help-icon.png')}" width="23" height="23" alt="Help"  title="Help"/></a>
+                         </div>
+                     </apex:outputPanel>
+                 </apex:outputPanel>
+                 
+            
+                    <!-- --------------- First Row Starts --------------- -->
+                    <div id="firstRowContentDiv" class="right-section-row right-section-row-borderbottom">
+                        <apex:outputPanel id="topSectionId">
+                            <apex:outputPanel rendered="{!labelorDropdown}">
+                            <dl>
+                                <dt class="bold-font min-width-cust-name">Customer Name:</dt>
+                                <dd class="pading-left tcell_width_172">
+                                    <apex:outputLabel rendered="{!isCustomerListActive}">
+                                        <div class="dropdown-size" id="divMSTTxtbox">  
+                                            <label class="custNameLbl lookupLbl" id="customerLabel">{!customerName}</label>   
+                                            <a href="" class="lookupCustName"><img src="{!URLFOR($Resource.SWIFT_MRS_Changed,'images/icon/lookup.png')}" width="17" height="17" alt="lookup" class="lookupImg"/></a>
+                                        </div>
+                                    </apex:outputLabel>
+                                    <apex:outputPanel rendered="{!!isCustomerListActive}">
+                                        <dd class="pading-left">{!customerName}</dd>
+                                    </apex:outputPanel>
+                                    
+                                </dd>
+                            </dl>
+                            <dl>
+                                <dt class="bold-font min-width-cust-name">Mask Set Title:</dt>
+                                <dd class="pading-left lookupImg">
+                                   <apex:outputLabel id="MRSMSTDropdown">
+                                       <div class="dropdown-size" id="divMSTTxtbox2">
+                                         <label class="mstLbl lookupLbl" id="mstLabel">{!mstAfterSave}</label>   
+                                         <a href="" class="lookupMST"><img src="{!URLFOR($Resource.SWIFT_MRS_Changed,'images/icon/lookup.png')}" width="17" height="17" alt="lookup" class="lookupImg"/></a>
+                                       </div>
+                                   </apex:outputLabel>
+                                    
+                                </dd>
+                            </dl>
+                            </apex:outputPanel>
+                            
+                            <apex:outputPanel rendered="{!!labelorDropdown}">
+                            <dl>
+                                <dt class="bold-font">Customer Name:</dt>
+                                <dd class="pading-left tcell_width_172">
+                                    <dd class="pading-left">{!customerName}</dd>
+                                </dd>
+                            </dl>
+                            <dl>
+                                <dt class="bold-font">Mask Set Title:</dt>
+                                <dd class="pading-left">{!mstAfterSave}</dd>
+                            </dl>   
+                            </apex:outputPanel>
+                        </apex:outputPanel>
+                        
+                        <div class="clear"></div>
+                    </div>
+                    <!-- --------------- First Row Ends --------------- -->
+                    <!--Filters goes here................. -->
+                    
+                            <div class="right-section-panel border-bottom">
+                            <div id="filters" class="right-section-row-filter-border" title="filterContent">                
+                                <a href="javascript:void(0)" id="filter_anchor" name="filterContent" class="filters_slideDown">Filters</a>
+                            </div>
+                            <div id="filterContent">
+                            <dl class="margin-top-5">
+                                <dt class="bold-font">Layer Status</dt>
+                                <dd class="pading-left">
+                                    <!--  
+                                    <apex:selectList id="MRSLayerStatusDropdown" value="{!selectedLayerStatus}" styleClass="dropdown-size-big-normal" size="1" disabled="{!isFiltersActive}">
+                                                <apex:selectOptions value="{!layerStatusList}"/>
+                                    </apex:selectList>
+                                    -->
+                                    <apex:outputLabel id="MRSLayerStatusDropdown">
+                                    <select id="layersummarydropdown" class="layerStatus-drpdwn-size multiSelect" multiple="multiple" >
+                                      <apex:repeat value="{!layerStatusList}" var="layerVal">
+                                              <!-- <apex:variable var="sel" value="{!IF(layerVal.value==ValueCatcher,true,false)}"/> -->
+                                             <!-- <apex:variable var="sel" value="{!IF(CONTAINS(ValueCatcher,layerVal.value),true,false)}"/> -->                  
+                                            <!--  <apex:repeat var="l" value="{!lstSizeOne}" rendered="{!sel}">
+                                                  <option value="{!layerVal.value}" selected="selected">{!layerVal.label}</option>
+                                              </apex:repeat> -->
+                                             <!-- <apex:repeat var="l" value="{!lstSizeOne}" rendered="{!NOT(sel)}"> -->
+                                                  <option value="{!layerVal.value}">{!layerVal.label}</option>
+                                              <!--</apex:repeat> -->
+                                              <!--<option value="{!layerVal.value}">{!layerVal.label}</option> -->
+                                      </apex:repeat>
+                                      
+                                  </select>
+                                  </apex:outputLabel>                                    
+                                </dd>
+                            </dl>
+                            <dl><dt class="bold-font">Mask Layer</dt>
+                                <dd class="pading-left">
+                                
+                                <apex:selectList id="MRSMaskLayerDropdown" value="{!selectedLayerId}" styleClass="dropdown-size-big-normal" size="1" disabled="{!isFiltersActive}">
+                                                <apex:selectOptions value="{!maskLayerList}"/>
+                                </apex:selectList>
+                                </dd></dl>
+                                
+                                <dl>
+                                <dt class="bold-font">Chip Name</dt>
+                                <dd class="pading-left">
+                                   
+                                    <apex:selectList id="MRSChipDropdown" value="{!selectedChipId}" styleClass="dropdown-size-big-normal" size="1" disabled="{!isFiltersActive}">
+                                                <apex:selectOptions value="{!chipNameList}"/>
+                                    </apex:selectList>
+                                </dd>
+                                </dl>
+                                <dl>
+                                <dt class="bold-font">Device ID</dt>
+                                <dd class="pading-left">
+                                    
+                                    <apex:selectList id="MRSDeviceDropdown" value="{!selectedDeviceId}" styleClass="dropdown-size-big-normal" size="1" disabled="{!isFiltersActive}">
+                                                <apex:selectOptions value="{!deviceIdList}"/>
+                                    </apex:selectList>
+                                </dd>
+                                </dl>
+                                <dl>
+                                <dt class="line-height-15 bold-font">PTRF</dt>
+                                <dd class="float-left">
+                                   
+                                    <apex:selectList id="MRSPTRFDropdown" value="{!selectedPTRFId}" styleClass="dropdown-size-big-normal" size="1" disabled="{!isFiltersActive}">
+                                                <apex:selectOptions value="{!ptrfList}"/>
+                                    </apex:selectList>
+                                </dd>
+                                <dd class="pading-left float-left">
+                                    <input type="button" id="apply" value="Apply" class="no-margin" onclick="applyFilters();"/>
+                                </dd>
+                                <dd class="pading-left float-left">
+                                    <input type="button" id="clear" value="Clear" class="no-margin" onclick="clearFilters();"/>
+                                </dd>
+                            </dl>
+                        </div>
+                        <div class="clear"></div>
+                        </div>
+                        <br/>
+                    
+                    <!--Filters ends here...................--> 
+                                        <!-- --------------- Second Row Starts --------------- -->
+                    <div id="secondRowContentDiv" class="right-section-row no-padding-top">
+                    
+                        <!--Start of Tables-->
+              <!---- Start of Prime Type Table ----->
+              
+            <apex:outputPanel id="sizeLimitId">
+                <apex:outputPanel rendered="{!isSizeExceeded}">
+                    <div class="error-container margin-top-10" style="color:#000000">{!$Label.MRS_SIZE_EXCEEDED_ERROR}</div>
+                </apex:outputPanel>
+            </apex:outputPanel>
+            
+            <apex:outputPanel id="messageId">
+                <apex:outputPanel rendered="{!noRecords}">
+                    <div class="error-container margin-top-10" style="color:#000000">{!$Label.MRS_GDSOUT_NO_RECORD}</div>
+                </apex:outputPanel>
+            </apex:outputPanel>  
+        
+            <apex:outputPanel id="performId">
+                <apex:outputPanel rendered="{!isPerformActive}">      
+                    <input type="button" id="perform_review" value="Perform Approval" class="margin-top-10 no-margin-left" onclick="retrieveTbl()"/>  
+                </apex:outputPanel>
+            </apex:outputPanel>
+            <apex:outputPanel id="reviewTableId">
+            <apex:outputPanel rendered="{!isTableActive}">
+            <div class="advance-datagrid no-padding" id="startingTable">
+            <div class="perform_table" id="perform_table_initial">
+               <div>
+              <div class="leftMainTblContainer">
+                
+                   
+                <table class="data-table review-customer-table-1 no-margin-top" id="review-customer-table">
+                    <thead>
+                    
+                      <tr class="tcell-height-41">
+                        <th class="tcell-width-45">No.</th>
+                        <th class="tcell-width-114">Mask Layer<br />(ROM Code)</th>
+                        <th class="tcell-width-192">PTRF Number</th>
+                       
+                        <apex:outputLabel rendered="{!isTechGeoActive}">
+                            <th class="tcell_width_80"><span class="bold-font tcell_width_80">Tech Geo</span></th>
+                        </apex:outputLabel>
+                       
+                        
+                           
+                      </tr>
+                      
+                    </thead>
+                    <tbody>
+                      <apex:repeat value="{!otherdisplayTableList}" var="display">
+                          
+                          <apex:outputLabel rendered="{!display.isColor}">
+                      
+                          <tr class= "tcell_height_31" >
+                                <td class="text-align-centre">{!display.slNo}</td>
+                                <td>{!display.maskLayerROMCode}</td> 
+                                
+                                
+                                
+                                <td>
+                                	<!-- TASK-2469 -->
+                                	<!--  
+                                	<a href="{!if(isBreadcrumbActive,'/GlobalfoundryView','')}/apex/VFMRSPTRFDetail?ptrfURL={!display.ptrfId}" title="{!display.ptrf}" target="_blank">{!display.ptrf}</a>
+                                	-->
+                                	<a href="{! $Label.HYPERLINK_TO_SWIFT + display.ptrf }" title="{!display.ptrf}" target="_blank">{!display.ptrf}</a>
+                                	<!-- TASK-2469 END -->  
+                                </td>
+                                
+                                <apex:outputLabel rendered="{!isTechGeoActive}">
+                                    <td>{!display.TechGeo}</td> 
+                                </apex:outputLabel>
+                            </tr>
+                      </apex:outputLabel>       
+                      
+                      
+                      <apex:outputLabel rendered="{!NOT(display.isColor)}">
+                      <tr class="alt-row-bgcolor tcell_height_31">
+                       
+                           <td class="text-align-centre">{!display.slNo}</td>
+                                <td>{!display.maskLayerROMCode}</td> 
+                                
+                                <td>
+                                	<!-- TASK-2469 -->
+                                	<!-- 
+                                	<a href="{!if(isBreadcrumbActive,'/GlobalfoundryView','')}/apex/VFMRSPTRFDetail?ptrfURL={!display.ptrfId}" title="{!display.ptrf}" target="_blank">{!display.ptrf}</a>
+                                	-->
+                                	<a href="{! $Label.HYPERLINK_TO_SWIFT + display.ptrf }" title="{!display.ptrf}" target="_blank">{!display.ptrf}</a>
+                                	<!-- TASK-2469 END --> 
+                                </td>
+                                
+                                <apex:outputLabel rendered="{!isTechGeoActive}">
+                                    <td>{!display.TechGeo}</td> 
+                                </apex:outputLabel>
+                      
+                      </tr>
+                        </apex:outputLabel>
+                        
+                        
+                          
+                          
+                        </apex:repeat>
+                    </tbody>
+                   
+                      </table>
+                      <div class="spacer"></div>
+                      
+                      </div>
+                      
+                      
+                      <div class="rightTblCont" style="width: 949px">
+                      <table class="data-table review-customer-table-1 no-margin-top" style="width:800px;">
+                          <thead>
+                              <tr class="tcell-height-41">
+                                  <apex:repeat value="{!chipNameSet}" var="chip">
+                                    <th class="tcell_width_100">{!chip}</th>
+                                  </apex:repeat>
+                              </tr>
+                          </thead>
+                          <tbody>
+                             
+                             <apex:repeat value="{!otherdisplayTableList}" var="display">
+                              
+                               <apex:outputLabel rendered="{!display.isColor}">
+                                 <tr class="tcell_height_31"> 
+                                  <apex:repeat value="{!chipNameSet}" var="chip">
+                                   <apex:variable var="key" value="{!display.maskLayerROMCode+':'}{!chip}{!':'+display.ptrf}"/>
+                                    
+                                    <apex:outputLabel rendered="{!customerOrFoundry}">
+                                        <apex:outputLabel rendered="{!containsStatus[key]}">   
+                                            <td class="text-align-centre" title="{!statusWithTimestamp[key]}">{!uniqueStatusMapChanged[key]}</td>
+                                        </apex:outputLabel>
+                                        <apex:outputLabel rendered="{!!containsStatus[key]}">   
+                                            <td class="empty"></td>
+                                        </apex:outputLabel>
+                                    </apex:outputLabel>
+                                    <apex:outputLabel rendered="{!!customerOrFoundry}">
+                                        <apex:outputLabel rendered="{!containsStatus[key]}">   
+                                            <td class="text-align-centre" title="{!statusWithTimestamp[key]}">{!uniqueStatusMapChanged[key]}</td>
+                                        </apex:outputLabel>
+                                        
+                                        <apex:outputLabel rendered="{!!containsStatus[key]}">   
+                                            <td class="empty"></td>
+                                        </apex:outputLabel>
+                                    </apex:outputLabel>
+                                  </apex:repeat>
+                                </tr>  
+                                </apex:outputLabel>
+                               
+                                <apex:outputLabel rendered="{!NOT(display.isColor)}">
+                                  <tr class="alt-row-bgcolor tcell_height_31">
+                                    <apex:repeat value="{!chipNameSet}" var="chip">
+                                    <apex:variable var="key" value="{!display.maskLayerROMCode+':'}{!chip}{!':'+display.ptrf}"/>
+                                    <apex:outputLabel rendered="{!customerOrFoundry}">
+                                        <apex:outputLabel rendered="{!containsStatus[key]}">
+                                            <td class="text-align-centre" title="{!statusWithTimestamp[key]}">{!uniqueStatusMapChanged[key]}</td>
+                                        </apex:outputLabel>
+                                        <apex:outputLabel rendered="{!!containsStatus[key]}">   
+                                            <td class="empty"></td>
+                                        </apex:outputLabel>
+                                    </apex:outputLabel>
+                                    <apex:outputLabel rendered="{!!customerOrFoundry}">
+                                        <apex:outputLabel rendered="{!containsStatus[key]}">
+                                            <td class="text-align-centre" title="{!statusWithTimestamp[key]}">{!uniqueStatusMapChanged[key]}</td>
+                                        </apex:outputLabel>
+                                        
+                                        <apex:outputLabel rendered="{!!containsStatus[key]}">   
+                                            <td class="empty"></td>
+                                        </apex:outputLabel>
+                                    </apex:outputLabel>
+                                  </apex:repeat>
+                                  </tr>
+                                </apex:outputLabel>                          
+                               
+                                
+                              </apex:repeat>
+                              
+                             
+                          </tbody>
+                      </table>
+                      </div>
+                      <div class="clear"></div>  
+                                        
+                  </div>
+                   <div class="clear"></div>
+                </div>                      
+                </div> 
+               <!--  </div>  --> 
+               
+                </apex:outputPanel>
+                </apex:outputPanel>
+                
+                <!--table after clicking perform reviews button starts here-->
+                
+          <div class="perform_table display-none" id="perform-table-ready-1">
+             <div class="float-left">
+               <apex:outputPanel id="retrieveApproveTable">
+                <apex:outputPanel rendered="{!isSelectionTableTrue}">
+                 
+                  <div class="leftMainTblContainer">
+                
+                    <table class="data-table review-customer-table-1 no-margin-top" id="review-customer-table-n">
+                    <thead>
+                      <tr class="tcell-height-41">
+                        <th class="tcell-width-45 fixedHeaderChecked line-height-22"><input type="checkbox" class="slNo all-checkbox" id="slNoId" />No.</th>
+                        <th class="tcell-width-114 fixedHeaderChecked">Mask Layer<br />(ROM Code)</th>
+                        <th class="tcell-width-192 fixedHeaderChecked">PTRF <br />Number</th>
+                        <apex:outputLabel rendered="{!isTechGeoActive}">
+                            <th class="tcell_width_80 fixedHeaderChecked"><span class="bold-font tcell_width_80">Tech Geo</span></th>
+                        </apex:outputLabel>
+                        <apex:variable value="{!1}" var="counter"/>
+                        <apex:outputLabel rendered="{!isTechGeoActive}">
+                            <apex:variable value="{!counter+4}" var="counter"/>
+                        </apex:outputLabel>
+                        <apex:outputLabel rendered="{!!isTechGeoActive}">
+                            <apex:variable value="{!counter+3}" var="counter"/>
+                        </apex:outputLabel>
+                       
+                       
+                         
+                      </tr>
+                    </thead>
+                    <tbody>
+                    <apex:variable value="{!1}" var="slno"/>
+                    <apex:repeat value="{!otherdisplayTableList}" var="display">
+                      <apex:outputLabel rendered="{!display.isColor}">
+                      <tr class="tcell_height_31">
+                        <apex:outputLabel rendered="{!layerPtrfCheckbox[display.maskLayerROMCode+':'+display.ptrf]}">
+                            <td class="text-align-centre frame-mst-dropdown" id="{!slno}"><input type="checkbox"  id="row{!slno}" class="checkBoxClickRow" slNO="{!slno}"/><span>{!display.slNo}</span></td>
+                        </apex:outputLabel>
+                        <apex:outputLabel rendered="{!!layerPtrfCheckbox[display.maskLayerROMCode+':'+display.ptrf]}">
+                            <td class="text-align-centre"><span class="padding-left-19">{!display.slNo}</span></td>
+                        </apex:outputLabel>
+                        <td id="maskLayer{!slno}">{!display.maskLayerROMCode}</td>
+                        
+                        <td>                        	
+                        	<!-- TASK-2469 -->
+                           	<!-- 
+                            <a href="{!if(isBreadcrumbActive,'/GlobalfoundryView','')}/apex/VFMRSPTRFDetail?ptrfURL={!display.ptrfId}" title="{!display.ptrf}" target="_blank">{!display.ptrf}</a>
+                            -->
+                            <a href="{! $Label.HYPERLINK_TO_SWIFT + display.ptrf }" title="{!display.ptrf}" target="_blank">{!display.ptrf}</a>
+                            <!-- TASK-2469 END --> 
+                        </td>
+                        
+                        
+                        <apex:outputLabel rendered="{!isTechGeoActive}">
+                                        <td id="techGeo{!slno}">{!display.TechGeo}</td> 
+                        </apex:outputLabel>
+                        <apex:variable value="{!1}" var="counter"/>
+                      
+                        
+                        <apex:variable value="{!counter+1}" var="counter"/>
+                       
+                      </tr>
+                      </apex:outputLabel>
+                      
+                      <apex:outputLabel rendered="{!NOT(display.isColor)}">
+                      <tr class="alt-row-bgcolor tcell_height_31">
+                        <apex:outputLabel rendered="{!layerPtrfCheckbox[display.maskLayerROMCode+':'+display.ptrf]}">
+                            <td class="text-align-centre frame-mst-dropdown" id="{!slno}"><input type="checkbox"  id="row{!slno}" class="checkBoxClickRow" slNO="{!slno}"/><span>{!display.slNo}</span></td>
+                        </apex:outputLabel>
+                        <apex:outputLabel rendered="{!!layerPtrfCheckbox[display.maskLayerROMCode+':'+display.ptrf]}">
+                            <td class="text-align-centre"><span class="padding-left-19">{!display.slNo}</span></td>
+                        </apex:outputLabel>
+                        <td id="maskLayer{!slno}">{!display.maskLayerROMCode}</td>
+                        
+                        <td>
+                        	<!-- TASK-2469 -->
+                           	<!-- 
+                            <a href="{!if(isBreadcrumbActive,'/GlobalfoundryView','')}/apex/VFMRSPTRFDetail?ptrfURL={!display.ptrfId}" title="{!display.ptrf}" target="_blank">{!display.ptrf}</a>
+                            -->
+                            <a href="{! $Label.HYPERLINK_TO_SWIFT + display.ptrf }" title="{!display.ptrf}" target="_blank">{!display.ptrf}</a>
+                            <!-- TASK-2469 END --> 
+                        </td>
+                        
+                        
+                        
+                        <apex:outputLabel rendered="{!isTechGeoActive}">
+                                        <td id="techGeo{!slno}">{!display.TechGeo}</td> 
+                        </apex:outputLabel>
+                        <apex:variable value="{!1}" var="counter"/>
+                        
+                        
+                        
+                        <apex:variable value="{!counter+1}" var="counter"/>
+                       
+                      </tr>
+                      </apex:outputLabel>
+                      
+                      <apex:variable value="{!slno+1}" var="slno"/> 
+                    </apex:repeat>
+                      
+                    </tbody>
+                  </table>
+                   <div class="spacer"></div>
+                   
+                  </div>
+                  
+                   <div class="rightTblCont no-float-IE">
+                   
+                    <table class="data-table review-customer-table-1 cloneButton no-margin-top" id="review-table">
+                      <thead>
+                         <tr class="tcell-height-41">
+                              <apex:variable value="{!1}" var="chipCounter"/>
+                              <apex:repeat value="{!chipNameSet}" var="chip">
+                                  <apex:variable value="{!chip}" var="chipid"/>
+                                  <apex:outputLabel rendered="{!chipWithCheckboxMap[chip]}">
+                                    <th class="tcell_width_100 hasCheckbox line-height-22" id="{!chipid}{!chipCounter}" ><input type="checkbox" id="{!chipid}" class="columnCheckAllCheckbox"/><strong>{!chip}</strong></th>
+                                  </apex:outputLabel>
+                                  <apex:outputLabel rendered="{!!chipWithCheckboxMap[chip]}">
+                                    <th class="tcell_width_100" id="{!chipid}{!chipCounter}"><strong>{!chip}</strong></th>
+                                  </apex:outputLabel>
+                                  <apex:variable value="{!chipCounter+1}" var="chipCounter"/>
+                             </apex:repeat>
+                                              
+                            
+                         </tr>
+                      </thead>
+                      
+                       <tbody>
+                           <apex:variable value="{!1}" var="layerId"/>
+                           <apex:repeat value="{!otherdisplayTableList}" var="display">
+                           <apex:outputLabel rendered="{!display.isColor}"> 
+                           <tr class="tcell_height_31" id="{!layerId}">  
+                           <apex:variable value="{!1}" var="counter"/>                             
+                           <apex:repeat value="{!chipNameSet}" var="chip">
+                            
+                            
+                            <apex:variable value="{!chip}{!counter}" var="chipId"/>
+                            <apex:variable var="key" value="{!display.maskLayerROMCode+':'}{!chip}{!':'+display.ptrf}"/>
+                            
+                            <apex:outputLabel rendered="{!customerOrFoundry}">
+                            
+                                <apex:outputLabel rendered="{!containsStatus[key]}">
+                                    <apex:outputLabel rendered="{!layerPtrfCheckbox[display.maskLayerROMCode+':'+display.ptrf]}">
+                                        <apex:outputLabel rendered="{!IF(uniqueStatusMapChanged[key] == 'Ready',true,false)}">
+                                            <td  class="text-align-centre"><input type="checkbox"  id="{!chipId}" class="individualCheckbox"/><span>{!uniqueStatusMapChanged[key]}</span></td>
+                                        </apex:outputLabel>
+                                        <apex:outputLabel rendered="{!IF(uniqueStatusMapChanged[key] != 'Ready',true,false)}">
+                                            <td class="text-align-centre" ><input type="checkbox"  class="visibility-hidden"/><span>{!uniqueStatusMapChanged[key]}</span></td>
+                                        </apex:outputLabel>
+                                    </apex:outputLabel> 
+                                    <apex:outputLabel rendered="{!!layerPtrfCheckbox[display.maskLayerROMCode+':'+display.ptrf]}">
+                                        <apex:outputLabel rendered="{!IF(uniqueStatusMapChanged[key] == 'Ready',true,false)}">
+                                            <td class="text-align-centre"><input class="bckset" type="checkbox"  id="{!chipId}" onclick="return false;"/><span>{!uniqueStatusMapChanged[key]}</span></td>
+                                        </apex:outputLabel>
+                                        <apex:outputLabel rendered="{!IF(uniqueStatusMapChanged[key] != 'Ready',true,false)}">
+                                            <td class="text-align-centre"><input type="checkbox"  class="visibility-hidden"/><span>{!uniqueStatusMapChanged[key]}</span></td>
+                                        </apex:outputLabel>
+                                    </apex:outputLabel>
+                                </apex:outputLabel>
+                                <apex:outputLabel rendered="{!!containsStatus[key]}">
+                                    <td class="empty"><span></span></td>
+                                </apex:outputLabel>
+                                
+                            </apex:outputLabel>
+                            
+                            <apex:outputLabel rendered="{!!customerOrFoundry}">
+                            
+                                <apex:outputLabel rendered="{!containsStatus[key]}">
+                                    <apex:outputLabel rendered="{!layerPtrfCheckbox[display.maskLayerROMCode+':'+display.ptrf]}">  
+                                        <apex:outputLabel rendered="{!IF(uniqueStatusMapChanged[key] == 'Ready',true,false)}">
+                                            <td class="text-align-centre"><input type="checkbox"  id="{!chipId}" class="individualCheckbox"/><span>{!uniqueStatusMapChanged[key]}</span></td>
+                                        </apex:outputLabel>
+                                        <apex:outputLabel rendered="{!IF(uniqueStatusMapChanged[key] != 'Ready',true,false)}">
+                                            <td class="text-align-centre"><input type="checkbox"  class="visibility-hidden"/><span>{!uniqueStatusMapChanged[key]}</span></td>
+                                        </apex:outputLabel>
+                                   </apex:outputLabel>
+                                   <apex:outputLabel rendered="{!!layerPtrfCheckbox[display.maskLayerROMCode+':'+display.ptrf]}">   
+                                        <apex:outputLabel rendered="{!IF(uniqueStatusMapChanged[key] == 'Ready',true,false)}">
+                                            <td class="text-align-centre"><input class="bckset" type="checkbox"  id="{!chipId}" onclick="return false;"/><span>{!uniqueStatusMapChanged[key]}</span></td>
+                                        </apex:outputLabel>
+                                        <apex:outputLabel rendered="{!IF(uniqueStatusMapChanged[key] != 'Ready',true,false)}">
+                                            <td class="text-align-centre"><input type="checkbox"  class="visibility-hidden"/><span>{!uniqueStatusMapChanged[key]}</span></td>
+                                        </apex:outputLabel>
+                                   </apex:outputLabel>
+                                </apex:outputLabel>   
+                                <apex:outputLabel rendered="{!!containsStatus[key]}">
+                                    <td class="empty"><span></span></td>
+                                </apex:outputLabel>
+                            
+                           </apex:outputLabel>
+                         <apex:variable value="{!counter+1}" var="counter"/>
+                        </apex:repeat>
+                        
+                           </tr>
+                           </apex:outputLabel>
+                           
+                           
+                            <apex:outputLabel rendered="{!NOT(display.isColor)}">
+                            
+                            <tr class="alt-row-bgcolor tcell_height_31" id="{!layerId}">
+                            <apex:variable value="{!1}" var="counter"/>
+                           
+                                <apex:repeat value="{!chipNameSet}" var="chip">
+                            <apex:variable value="{!chip}{!counter}" var="chipId"/>
+                            <apex:variable var="key" value="{!display.maskLayerROMCode+':'}{!chip}{!':'+display.ptrf}"/>
+                          
+                            <apex:outputLabel rendered="{!customerOrFoundry}">
+                            
+                                <apex:outputLabel rendered="{!containsStatus[key]}">
+                                    <apex:outputLabel rendered="{!layerPtrfCheckbox[display.maskLayerROMCode+':'+display.ptrf]}">
+                                        <apex:outputLabel rendered="{!IF(uniqueStatusMapChanged[key] == 'Ready',true,false)}">
+                                            <td class="text-align-centre"><input type="checkbox"  id="{!chipId}" class="individualCheckbox"/><span>{!uniqueStatusMapChanged[key]}</span></td>
+                                        </apex:outputLabel>
+                                        <apex:outputLabel rendered="{!IF(uniqueStatusMapChanged[key] != 'Ready',true,false)}">
+                                            <td class="text-align-centre"><input type="checkbox"  class="visibility-hidden"/><span>{!uniqueStatusMapChanged[key]}</span></td>
+                                        </apex:outputLabel>
+                                    </apex:outputLabel> 
+                                    <apex:outputLabel rendered="{!!layerPtrfCheckbox[display.maskLayerROMCode+':'+display.ptrf]}">
+                                        <apex:outputLabel rendered="{!IF(uniqueStatusMapChanged[key] == 'Ready',true,false)}">
+                                            <td  class="text-align-centre"><input class="bckset" type="checkbox"  id="{!chipId}" onclick="return false;"/><span>{!uniqueStatusMapChanged[key]}</span></td>
+                                        </apex:outputLabel>
+                                        <apex:outputLabel rendered="{!IF(uniqueStatusMapChanged[key] != 'Ready',true,false)}">
+                                            <td  class="text-align-centre"><input type="checkbox"  class="visibility-hidden"/><span>{!uniqueStatusMapChanged[key]}</span></td>
+                                        </apex:outputLabel>
+                                    </apex:outputLabel>
+                                </apex:outputLabel>
+                                <apex:outputLabel rendered="{!!containsStatus[key]}"> 
+                                    <td class="empty"><span></span></td>
+                                </apex:outputLabel>  
+                                
+                            </apex:outputLabel>
+                            
+                            <apex:outputLabel rendered="{!!customerOrFoundry}">
+                            
+                            <apex:outputLabel rendered="{!containsStatus[key]}">
+                                <apex:outputLabel rendered="{!layerPtrfCheckbox[display.maskLayerROMCode+':'+display.ptrf]}">  
+                                    <apex:outputLabel rendered="{!IF(uniqueStatusMapChanged[key] == 'Ready',true,false)}">
+                                        <td class="text-align-centre"><input type="checkbox"  id="{!chipId}" class="individualCheckbox"/><span>{!uniqueStatusMapChanged[key]}</span></td>
+                                    </apex:outputLabel>
+                                    <apex:outputLabel rendered="{!IF(uniqueStatusMapChanged[key] != 'Ready',true,false)}">
+                                        <td class="text-align-centre"><input type="checkbox"  class="visibility-hidden"/><span>{!uniqueStatusMapChanged[key]}</span></td>
+                                    </apex:outputLabel>
+                               </apex:outputLabel>
+                               <apex:outputLabel rendered="{!!layerPtrfCheckbox[display.maskLayerROMCode+':'+display.ptrf]}">   
+                                    <apex:outputLabel rendered="{!IF(uniqueStatusMapChanged[key] == 'Ready',true,false)}">
+                                        <td class="text-align-centre"><input class="bckset" type="checkbox"  id="{!chipId}" onclick="return false;"/><span>{!uniqueStatusMapChanged[key]}</span></td>
+                                    </apex:outputLabel>
+                                    <apex:outputLabel rendered="{!IF(uniqueStatusMapChanged[key] != 'Ready',true,false)}">
+                                        <td class="text-align-centre"><input type="checkbox"  class="visibility-hidden"/><span>{!uniqueStatusMapChanged[key]}</span></td>
+                                    </apex:outputLabel>
+                               </apex:outputLabel>
+                           </apex:outputLabel>
+                           <apex:outputLabel rendered="{!!containsStatus[key]}">
+                               <td class="empty"><span></span></td>
+                           </apex:outputLabel>
+                               
+                           </apex:outputLabel>
+                          
+                          <apex:variable value="{!counter+1}" var="counter"/>
+                            
+                        </apex:repeat>
+                                
+                            </tr>
+                            
+                            
+                            
+                            </apex:outputLabel>
+                           
+                           
+                           <apex:variable value="{!layerId + 1}" var="layerId"/>  
+                           
+                            </apex:repeat>
+                            
+                         
+                           
+                       </tbody>
+                       
+                    </table>
+                   <div class="clear"></div>
+                   </div>
+                   
+                    <div class="clear"></div>
+                   <br/>
+                   
+              <input type="button" value="Approve" class="approve-button-style review-customer-table-1 approve_click" id="approve-button-1-n"  onclick="retrievedApproveTbl()" disabled="true"/>
+              <div class="button-spacer"></div>
+              </apex:outputPanel>
+          </apex:outputPanel>
+              <br/>
+              </div>
+        </div>
+        
+        <!--table after clicking approve button with image according to selection-->
+        <div id="approved-table-data" class="display-none">
+        <div class="error-container margin-top-10" style="color:#000000">{!$Label.SWIFT_Confirm_Approve_Selection}</div>
+        <div class="clear"></div>
+        <br/>
+        <br/>
+        
+        <apex:outputPanel id="confirmApproveId">
+            <apex:outputPanel rendered="{!isConfirmApproved}">
+            
+           <div id="approved-table-data" class="float-left">
+                    <div class="perform_table">
+                    <div class="leftMainTblContainer">
+            
+            <table class="data-table review-customer-table-1 approve-button-1 no-margin-top" id="review-customer-table-1">
+                <thead>
+                    <tr class="tcell-height-41">
+                        <th class="tcell-width-45 fixedHeaderChecked"><input class="slNo display-none"  type="checkbox"/>No.</th>
+                        <th class="tcell-width-114 fixedHeaderChecked">Mask Layer<br/>(ROM Code)</th>
+                        <th class="tcell-width-192 fixedHeaderChecked">PTRF<br/>Number</th>
+                        <apex:outputLabel rendered="{!isTechGeoActive}">
+                                <th class="tcell-width-83 fixedHeaderChecked"><span class="bold-font tcell-width-83">Tech Geo</span></th>
+                        </apex:outputLabel>
+                        
+                        
+                        
+                    </tr>
+               </thead>
+               <tbody>
+                   <apex:variable value="{!1}" var="slNo"/>
+                   <apex:repeat value="{!lstLayer}" var="sideTable">
+                     <apex:outputLabel rendered="{!IF(MOD(slNo,2)==0,true,false)}">
+                       <tr class= "tcell_height_31 alt-row-bgcolor">
+                           
+                           <td class="text-align-centre" id="1">{!slNo}</td>
+                           <td>{!sideTable.maskLayer}</td>
+                           
+                           
+                           <td>
+                           		<!-- TASK-2469 -->
+                           		<!-- 
+                            	<a href="{!if(isBreadcrumbActive,'/GlobalfoundryView','')}/apex/VFMRSPTRFDetail?ptrfURL={!ptrfNameIdMap[sideTable.ptrf]}" title="{!sideTable.ptrf}" target="_blank">{!sideTable.ptrf}</a>
+                            	-->
+                            	<a href="{! $Label.HYPERLINK_TO_SWIFT + sideTable.ptrf }" title="{!sideTable.ptrf}" target="_blank">{!sideTable.ptrf}</a>
+                            	<!-- TASK-2469 END --> 
+                           </td>
+                           
+                           
+                           <apex:outputLabel rendered="{!isTechGeoActive}"><td><label>{!sideTable.techgeo}</label></td></apex:outputLabel>
+                        
+                           
+                           
+                           
+                       </tr>
+                       </apex:outputLabel>
+                       <apex:outputLabel rendered="{!!IF(MOD(slNo,2)==0,true,false)}">
+                       <tr class="tcell_height_31">
+                           
+                           <td class="text-align-centre" id="1">{!slNo}</td>
+                           <td>{!sideTable.maskLayer}</td>
+                           
+                           
+                           <td>
+                           		<!-- TASK-2469 -->
+                           		<!-- 
+                            	<a href="{!if(isBreadcrumbActive,'/GlobalfoundryView','')}/apex/VFMRSPTRFDetail?ptrfURL={!ptrfNameIdMap[sideTable.ptrf]}" title="{!sideTable.ptrf}" target="_blank">{!sideTable.ptrf}</a>
+                            	-->
+                            	<a href="{! $Label.HYPERLINK_TO_SWIFT + sideTable.ptrf }" title="{!sideTable.ptrf}" target="_blank">{!sideTable.ptrf}</a>
+                            	<!-- TASK-2469 END -->
+                           </td>
+                           
+                           
+                           <apex:outputLabel rendered="{!isTechGeoActive}"><td><label>{!sideTable.techgeo}</label></td></apex:outputLabel>
+                           
+                           
+                           
+                       </tr>
+                       </apex:outputLabel>
+                       <apex:variable value="{!slNo + 1}" var="slNo"/>
+                   </apex:repeat>
+                   
+               </tbody>
+            </table>
+            <div class="spacer"></div>
+            </div>
+            
+            <div class="rightTblCont">
+                   
+               
+            
+             <div class="" id="perform-table-disabled">
+            <table class="data-table review-customer-table-2 approve-button-2 no-margin-top" id="review-customer-table-2">
+                
+                <thead>
+                    <tr class="tcell-height-41">
+                         <apex:repeat value="{!lstChip}" var="wrapperMain">
+                            <th class="tcell_width_100 fixedHeaderChecked"><label><strong>{!wrapperMain.chip}</strong></label></th>
+                        </apex:repeat>
+                    </tr>
+                    
+                </thead>
+                
+                <tbody>
+                    <apex:variable value="{!1}" var="slNo"/>
+                    <apex:repeat value="{!lstLayer}" var="sideTable">
+                     <apex:outputLabel rendered="{!!IF(MOD(slNo,2)==0,true,false)}">
+                       <tr class="tcell_height_31">
+                           <apex:repeat value="{!lstChip}" var="mainChip">
+                            
+                              <apex:variable var="appkey" value="{!sideTable.maskLayer}:{!sideTable.ptrf}:{!mainChip.chip}"/>
+                                      
+                                   <apex:outputLabel rendered="{!IF(mapForApprove[appkey].flagSet == 'CHECKED' && mapForApprove[appkey].status == 'Ready',true,false)}">
+                                       <td><label><center><img src="{!URLFOR($Resource.SWIFT_MRS_Changed,'images/Checked_img.png')}" style="float:none;"/></center></label></td>
+                                   </apex:outputLabel> 
+                                   
+                                   <apex:outputLabel rendered="{!IF(mapForApprove[appkey].flagSet == 'UNCHECKED' && mapForApprove[appkey].status!='N.A.' && mapForApprove[appkey].status!='Not Ready' && mapForApprove[appkey].status!='Ready' && mapForApprove[appkey].status!='Approve',true,false)}">
+                                      <td class="empty"></td>
+                                  </apex:outputLabel>
+                                  
+                                  <apex:outputLabel rendered="{!IF(mapForApprove[appkey].flagSet == 'UNCHECKED' && (mapForApprove[appkey].status=='N.A.' || mapForApprove[appkey].status=='Not Ready' || mapForApprove[appkey].status=='Ready' || mapForApprove[appkey].status=='Approve'),true,false)}">
+                                       <td class=""><label><span>{!mapForApprove[appkey].status}</span></label></td>
+                                  </apex:outputLabel> 
+                                  
+                                  
+                           </apex:repeat>
+                       </tr>
+                     </apex:outputLabel>
+                     
+                     <apex:outputLabel rendered="{!IF(MOD(slNo,2)==0,true,false)}">
+                       <tr class="tcell_height_31 alt-row-bgcolor">
+                           <apex:repeat value="{!lstChip}" var="mainChip">
+                            
+                              <apex:variable var="appkey" value="{!sideTable.maskLayer}:{!sideTable.ptrf}:{!mainChip.chip}"/>
+                                
+                                   <apex:outputLabel rendered="{!IF(mapForApprove[appkey].flagSet == 'CHECKED' && mapForApprove[appkey].status == 'Ready',true,false)}">
+                                       <td><label><center><img src="{!URLFOR($Resource.SWIFT_MRS_Changed,'images/Checked_img.png')}" style="float:none;"/></center></label></td>
+                                   </apex:outputLabel> 
+                                   
+                                   <apex:outputLabel rendered="{!IF(mapForApprove[appkey].flagSet == 'UNCHECKED' && mapForApprove[appkey].status!='N.A.' && mapForApprove[appkey].status!='Not Ready' && mapForApprove[appkey].status!='Ready' && mapForApprove[appkey].status!='Approve',true,false)}">
+                                         <td class="empty"></td>
+                                  </apex:outputLabel>
+                                  
+                                  <apex:outputLabel rendered="{!IF(mapForApprove[appkey].flagSet == 'UNCHECKED' && (mapForApprove[appkey].status=='N.A.' || mapForApprove[appkey].status=='Not Ready' || mapForApprove[appkey].status=='Ready' || mapForApprove[appkey].status=='Approve'),true,false)}">
+                                         <td class=""><label><span>{!mapForApprove[appkey].status}</span></label></td>
+                                  </apex:outputLabel>
+                                  
+                           </apex:repeat>
+                       </tr>
+                     </apex:outputLabel>
+                      <apex:variable value="{!slNo + 1}" var="slNo"/>
+                  </apex:repeat>                      
+                     
+                     
+                </tbody>
+                
+            </table>
+            </div>
+             </div>
+              </div>
+              
+                  </div>
+            <div class="clear"></div>
+            
+            
+            </apex:outputPanel>
+        </apex:outputPanel>
+        
+    <div class="textarea-holder margin-top-9 display-none">
+        <dl id="secondcreatedrt"></dl>
+        <dt class="full-width no-margin-top"><span class="no-padding commentDisapproveReason">Disapprove Reason:</span><span class="red-font no-padding">*</span></dt>
+        <dd class="full-width"><textarea id="descriprionArea"></textarea></dd>
+    <div class="clear"></div>
+        <dt class="comment-note error-container margin-top-5 red-font display-none">Note: To be provided</dt>
+    <div class="clear"></div>
+    </div>
+    <br/>
+    <div class="error-container margin-top-10 red-font display-none" id="clone-error-message">Note: Please see that the action once done is not reversible</div>
+    <input type="button" value="Proceed" class="proceed-approved-button-style" id="proceed-review-customer-table-n"/>
+    <input type="button" value="Discard" class="discard-approved-button-style" id="discard-review-customer-table-n"/>
+    </div> 
+        <!--table after clicking approve button with image according to selection ends-->
+        <!--table after clicking perform reviews button ends here-->
+        
+            
+        </div>
+        <!-- --------------- Second Row Ends --------------- -->  
+        <div class="clear"></div>
+          </div>     
+            <!-- </div>-->  
+            <!--End of content-->
+        <div class="clear"></div>
+        
+        <!-- </div>-->
+        <!--End of container div--> 
+    </div>
+    <!--End of Wrapper div-->
+    <apex:inputHidden id="hiddenmainTableJSON" value="{!mainTableJSON}"/>
+    <apex:inputHidden id="hiddensideHeaderJSON" value="{!sideHeaderJSON}"/>
+    <apex:inputHidden id="hiddengridTblJSON" value="{!gridTblJSON}"/>
+    <apex:inputHidden value="{!sizeOfTable}" id="sizeOfTableId"/>
+    
+    
+    <apex:outputPanel id="mstLookupPanel">
+        <apex:inputHidden id="hiddenType" value="{!type}"/>
+        <apex:inputHidden id="hiddenJobviewer" value="{!isJobViewer}"/>
+    </apex:outputPanel>    
+    
+    
+    
+    
+    <script type="text/javascript">    
+        var lookupCustomerURL = "{!lookupCustomerURL}";
+        var lookupMSTURL = "{!lookupMSTURL}";
+    
+        function getMRSCustomer() {
+            showLoader('gf-bigcircle');
+            var acctId = jQuery("#drtdropdown").find("input:hidden").val();
+            
+            jQuery('[id$=hiddenCustomerId]').attr("value",acctId);
+            //alert(acctId);
+            resetLSPCookies();
+            retrieveMRSForCustomer();
+            //alert('getMRSCustomer called');
+        }
+        function getMST(idx) {
+            showLoader('gf-bigcircle');        
+            document.getElementById("{!$Component.MRSCustomerGDSOUTReviewFormId:hiddenMSTId}").value = idx.value;
+            //alert(document.getElementById("{!$Component.MRSCustomerGDSOUTReviewFormId:hiddenMSTId}").value);
+            resetLSPCookies();
+            retrieveMRSForMSt();
+           // flowMRS();
+           
+            
+        }
+        
+        function retrieveTbl()
+        {
+            showLoader('gf-bigcircle');        
+            acfn_performReview();
+        }
+        function viewSelectionTable()
+        {
+            jQuery('#perform-table-ready-1').removeClass('display-none');
+             jQuery('#approve-button-1-n').attr('disabled','disabled');
+             jQuery('#startingTable').addClass('display-none');
+              jQuery('#approve-button-1-n').attr('disabled','disabled');
+        }
+        $(document).on("click",".individualCheckbox",function(){
+                     
+            //function individualCheckbox(idx){ 
+            var idx=this;
+            var flag = jQuery(idx).is(':checked') ;
+            var enabletheApproveButton;
+            var columnCount = jQuery(idx).closest("td").index();
+            var counter= idx.id.substring(0, (idx.id.length-columnCount.toString().length));
+            //var columnCount = idx.id.charAt(idx.id.length-1);
+            columnCount=parseInt(columnCount)+1;
+            var rowId = 0; 
+            rowId  = jQuery(idx).closest('tr').attr('id');
+            var allCheckBoxchecked  = 0;
+            var countTheCheckbox = 0;
+
+                 jQuery('#review-table tbody tr td').each(function(){
+                  
+                   var checkedFlag=jQuery(this).find('input').is(':checked');
+                   if(checkedFlag){
+
+                      enabletheApproveButton= true;
+                   }
+             });
+            
+             var totalRowCheckbox = 0;
+
+              var totalRowCount = 0;   
+             jQuery('#review-table tbody tr').each(function(index){
+                 var checkedFlag=jQuery(this).find('td').eq(columnCount-1).find('input:checkbox').not(".visibility-hidden").is(':checked');
+                 
+                 if(checkedFlag){
+                    countTheCheckbox++;
+                 }
+
+                 if(!jQuery(this).find('td').eq(columnCount-1).find('input:checkbox').hasClass("visibility-hidden") && !jQuery(this).find('td').eq(columnCount-1).hasClass("empty")){
+                    allCheckBoxchecked++;
+
+
+
+                  }
+              });
+              var a=jQuery("#review-table tr").eq(rowId).find('td input:checkbox').not(".visibility-hidden").length;
+              var count =0;
+              $('#review-table tr').eq(rowId).find('td input:checkbox').not(".visibility-hidden").each(function(){                                                                                                                   
+                        if(jQuery(this).is(":checked")){
+                            count++;
+                        }
+                });
+
+
+              if(a == count){
+              
+               jQuery('#row'+rowId).attr('checked','checked');
+              }else{
+
+                  jQuery('#row'+rowId).removeAttr('checked');
+              }
+              if(allCheckBoxchecked == countTheCheckbox){
+
+                jQuery('#'+counter).attr('checked','checked');
+              }else{
+                jQuery('#'+counter).removeAttr('checked');
+              }
+
+            var isCheckAllChecked=true;
+            $('#review-table thead tr th').each(function(){                                                                                                                   
+                    if(jQuery(this).find("input[type='checkbox']").length>0 && !jQuery(this).find("input[type='checkbox']").is(":checked")){
+                        isCheckAllChecked=false;
+                    }
+            });
+            $('#review-customer-table-n tbody tr').each(function(){                                                                                                                   
+                if(jQuery(this).find("td").eq(0).find("input[type='checkbox']").length>0 && !jQuery(this).find("td").eq(0).find("input[type='checkbox']").is(":checked")){
+                    isCheckAllChecked=false;
+                }
+            });
+            if(isCheckAllChecked) {
+               $('#review-customer-table-n thead th input.all-checkbox').attr('checked','checked'); 
+            } else {
+                $('#review-customer-table-n thead th input.all-checkbox').removeAttr('checked'); 
+            }
+                
+             if(enabletheApproveButton){
+                jQuery('#approve-button-1-n').removeAttr('disabled');
+                
+               }else
+               {
+                 jQuery('#approve-button-1-n').attr('disabled','disabled');
+               }
+            
+        //}
+        }); 
+        $(document).on("click",".columnCheckAllCheckbox",function(){
+                var that=this;
+                 //function checkBoxClickColumn(that){ 
+                 var tdid =jQuery(that).closest("th").attr("id");
+                 var curChkboxId=jQuery(that).attr("id");
+                 var curColIndex=tdid.length-curChkboxId.length;
+                 //var counter= tdid.charAt(tdid.length-parseInt(curColIndex));
+                 var counter= jQuery(that).closest("th").index()+1;
+                 counter=parseInt(counter);
+                 var flag =jQuery(that).is(':checked');
+                 (flag)?jQuery(that).attr('checked','checked'):jQuery(that).removeAttr('checked');
+                 var rowChkBoxCounter=0;                
+
+                   jQuery('#review-table tbody tr').each(function(index){
+                       if(flag) {
+                           //jQuery('#approve-button-1-n').removeAttr('disabled');
+                           jQuery(this).find("td").eq(counter-1).find("input:checkbox").attr('checked','checked');
+
+                      }
+                       else {
+                           //jQuery('#approve-button-1-n').attr('disabled','disabled');
+                           jQuery(this).find("td").eq(counter-1).find("input:checkbox").removeAttr('checked');
+
+
+
+
+
+
+
+
+
+
+                           
+                       } 
+                       rowChkBoxCounter = jQuery(this).find('td input:checkbox').not(".visibility-hidden").length;
+                       var count =0;
+                       $(this).find('td input:checkbox').not(".visibility-hidden").each(function(){                                                                                                                   
+                            if(jQuery(this).is(":checked")){
+                                count++;
+                            }
+                       });
+                       (rowChkBoxCounter==count)?jQuery("#review-customer-table-n tbody tr").eq(index).find("td").eq(0).find('input:checkbox').attr('checked','checked'):jQuery("#review-customer-table-n tbody tr").eq(index).find("td").eq(0).find('input:checkbox').removeAttr('checked');
+                  });  
+                  var isCheckAllChecked1=true;
+                    $('#review-table thead tr th').each(function(){                                                                                                                   
+                            if(jQuery(this).find("input[type='checkbox']").length>0 && !jQuery(this).find("input[type='checkbox']").is(":checked")){
+                                isCheckAllChecked1=false;
+                            }
+                    });
+                    $('#review-customer-table-n tbody tr').each(function(){                                                                                                                   
+                        if(jQuery(this).find("td").eq(0).find("input[type='checkbox']").length>0 && !jQuery(this).find("td").eq(0).find("input[type='checkbox']").is(":checked")){
+                            isCheckAllChecked1=false;
+                        }
+                    });
+                    if(isCheckAllChecked1) {
+                       $('#review-customer-table-n thead th input.all-checkbox').attr('checked','checked'); 
+                    } else {
+                        $('#review-customer-table-n thead th input.all-checkbox').removeAttr('checked'); 
+                    }
+                    var enblApproveBtn=false;
+                    jQuery('#review-table tbody tr td').each(function(){
+                       var checkedFlag=jQuery(this).find('input').is(':checked');
+                       if(checkedFlag){
+                          enblApproveBtn= true;
+                       }
+                    });
+                    if(enblApproveBtn){
+                        jQuery('#approve-button-1-n').removeAttr('disabled');
+                    }else{
+                        jQuery('#approve-button-1-n').attr('disabled','disabled');
+                    }
+        //}
+        });
+        
+        jQuery(document).on("click",'.all-checkbox',function(){
+
+              var flag =jQuery('#'+this.id).prop('checked');
+              (flag )?jQuery(this).attr("checked","checked"):jQuery(this).removeAttr("checked");
+              jQuery('#perform-table-ready-1 table thead tr th').each(function(index){
+                      if(flag){
+                          jQuery('#approve-button-1-n').removeAttr('disabled');
+                          if(jQuery(this).find("input:checkbox"))
+                          {
+                           jQuery(this).find("input:checkbox").prop('checked',true);
+                          }
+                       }
+                       else {
+                           jQuery('#approve-button-1-n').attr('disabled','disabled');
+                           jQuery(this).find("input:checkbox").prop('checked',false);
+                           
+                       }
+                   });
+                   jQuery('#perform-table-ready-1 table tbody tr td').each(function(index){
+                       if(flag){
+
+                           if(jQuery(this).find("input:checkbox"))
+                          {
+                           jQuery(this).find("input:checkbox").prop('checked',true);
+                          }
+                       }
+                       else {
+
+                           jQuery(this).find("input:checkbox").prop('checked',false);
+                           
+                       }
+                   });
+
+
+        });
+        
+        jQuery(document).on("click",'.frame-mst-dropdown',function(){
+
+
+
+                 var tdid = this.id;              
+                 var chipLength = document.getElementById("{!$Component.MRSCustomerGDSOUTReviewId:MRSCustomerGDSOUTReviewFormId:chipSize}").value;
+                 var flag;
+                 flag =jQuery('#'+this.id).find('input').is(':checked');
+                 var enabletheApproveButton;
+                 jQuery('#review-table tbody tr td').each(function(index){
+                   var checkedFlag=jQuery('#'+this.id).find('input').is(':checked'); 
+                   if(checkedFlag){
+                      enabletheApproveButton= true;
+                   }
+                 });
+                 //alert(':::enabletheApproveButton:::'+enabletheApproveButton);
+                 var counter =0;
+                 var checkbox = this.id;
+                 jQuery('#review-table tbody tr td').each(function(index){
+                     var tobeCheckedtd;
+                     tobeCheckedtd = this.id;
+                     if(flag){
+                     if(tobeCheckedtd ==checkbox)
+                     {
+                       jQuery('#approve-button-1-n').removeAttr('disabled');
+                       jQuery(this).find("input:checkbox").prop('checked',true);
+                       counter = parseInt(counter) + parseInt(1);
+                      }}else {
+                         if(tobeCheckedtd ==checkbox)
+                          {
+                            jQuery(this).find("input:checkbox").prop('checked',false);
+                            if(enabletheApproveButton){
+                              jQuery('#approve-button-1-n').removeAttr('disabled');
+                            }else{
+                              jQuery('#approve-button-1-n').attr('disabled','disabled');
+                            }
+                            counter = parseInt(counter) + parseInt(1);
+                          }        
+                       }
+                       if(counter==chipLength){
+                          return false;
+                        }
+                      });
+                    
+               
+             
+          
+            
+            mrsFlow();
+        });
+        $(document).on("click",".checkBoxClickRow",function(){
+         
+                 var that=this;
+                 var  checkbox=$(this).attr("slNO");
+                 //function checkBoxClickRow(that,checkbox){ 
+                 var tdid = checkbox;                    
+                 var chipLength = document.getElementById("{!$Component.MRSCustomerGDSOUTReviewId:MRSCustomerGDSOUTReviewFormId:chipSize}").value;
+
+                 var flag =jQuery('#'+checkbox).find('input').is(':checked');
+                 (flag)?jQuery(that).attr("checked","checked"):jQuery(that).removeAttr("checked");
+                 var counter =0;
+
+                 jQuery('#review-table tbody tr').eq(checkbox-1).find("td").each(function(index){
+                     var tobeCheckedtd;
+                     if(checkbox.length == 1){
+                        tobeCheckedtd = $(this).closest("tr").attr("id").charAt($(this).closest("tr").attr("id").length -1); 
+                     }else{
+                        tobeCheckedtd = $(this).closest("tr").attr("id");
+                     }
+
+                     if(flag){
+                         if(tobeCheckedtd ==checkbox){
+
+                           //jQuery('#approve-button-1-n').removeAttr('disabled');
+                           jQuery(this).find("input:checkbox").attr('checked','checked');
+                           counter = parseInt(counter) + parseInt(1);
+
+                          }
+                          
+                      }else {
+                         if(tobeCheckedtd ==checkbox)
+                          {
+                            jQuery(this).find("input:checkbox").removeAttr('checked');
+                            //jQuery('#approve-button-1-n').attr('disabled','disabled');
+                            counter = parseInt(counter) + parseInt(1);
+
+                          }    
+                       }
+                       var self=this;
+                      var verticleChkboxCount=0;
+                      var totChkBoxCont=0;
+                       jQuery('#review-table tbody tr').each(function(ind){
+                           if($(this).find("td").eq(index).find("input:checkbox").not(".visibility-hidden").is(":checked")){
+                              verticleChkboxCount++; 
+                           }
+                           if(!$(this).find("td").eq(index).find("input:checkbox").hasClass("visibility-hidden")){
+                              totChkBoxCont++; 
+                           }
+                       });
+                       if(verticleChkboxCount==totChkBoxCont){
+                           $("#review-table thead tr th").eq(index).find("input:checkbox").attr('checked','checked');
+                       } else {
+                           $("#review-table thead tr th").eq(index).find("input:checkbox").removeAttr('checked');
+                       } 
+                       var isCheckAllChecked=true;
+                        $('#review-table thead tr th').each(function(){                                                                                                                   
+                                if(jQuery(this).find("input[type='checkbox']").length>0 && !jQuery(this).find("input[type='checkbox']").is(":checked")){
+                                    isCheckAllChecked=false;
+                                }
+                        });
+                        $('#review-customer-table-n tbody tr').each(function(){                                                                                                                   
+                            if(jQuery(this).find("td").eq(0).find("input[type='checkbox']").length>0 && !jQuery(this).find("td").eq(0).find("input[type='checkbox']").is(":checked")){
+                                isCheckAllChecked=false;
+                            }
+                        });
+                        if(isCheckAllChecked) {
+                           $('#review-customer-table-n thead th input.all-checkbox').attr('checked','checked'); 
+                        } else {
+                            $('#review-customer-table-n thead th input.all-checkbox').removeAttr('checked'); 
+                        }
+                       if(counter==chipLength){
+                          return false;
+                        }
+                      });
+
+
+
+
+
+                      var enblApproveBtn=false;
+                      jQuery('#review-table tbody tr td').each(function(){
+                           var checkedFlag=jQuery(this).find('input').is(':checked');
+                           if(checkedFlag){
+                              enblApproveBtn= true;
+                           }
+                      });
+                      if(enblApproveBtn){
+                          jQuery('#approve-button-1-n').removeAttr('disabled');
+                      }else{
+                         jQuery('#approve-button-1-n').attr('disabled','disabled');
+                      }
+            mrsFlow();
+
+        //} 
+        });
+        function clearFilters()
+        {
+            //alert('Clear');
+            document.getElementById("MRSCustomerGDSOUTReviewId:MRSCustomerGDSOUTReviewFormId:SelectedLayerStatusValue").value = '';
+            showLoader('gf-bigcircle');            
+            retrieveMRSForMSt();
+        }
+        function applyFilters()
+        {
+           showLoader('gf-bigcircle'); 
+            var str_array= $("#layersummarydropdown").val();
+            if(str_array==null)str_array="";
+            else {
+                for(var i = 0; i < str_array.length; i++) {
+                   str_array[i] = str_array[i].replace(/^\s*/, "").replace(/\s*$/, "");
+                }
+            }
+          document.getElementById("MRSCustomerGDSOUTReviewId:MRSCustomerGDSOUTReviewFormId:SelectedLayerStatusValue").value = str_array;  
+                
+           retrieveWithFilters(); 
+        }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
+        jQuery(document).on("click",'.approve_click',function(){
+            //alert('before loader');
+            showLoader('gf-bigcircle');  
+            //alert('afetr loader');      
+          //alert(document.getElementById('MRSCustomerGDSOUTReviewId:MRSCustomerGDSOUTReviewFormId:reticleTypeId').value);
+          var reticleType =document.getElementById('MRSCustomerGDSOUTReviewId:MRSCustomerGDSOUTReviewFormId:reticleTypeId').value;
+          //alert('::::reticleType::'+reticleType );
+          var mainTableArray = new Array();
+          
+                var tblRow ;
+                jQuery('#review-table  thead tr th').each(function(index) {
+                   var lable =jQuery(this).find('label').eq(1).text();
+                   //alert(':::inloop::'+jQuery(this).find('label').text());
+                   if(jQuery(this).find('label').text() !='' && jQuery(this).text() !='Tech Geo')
+                   {
+                      //alert(':::enter:::');
+                      tblRow = new Object();
+                      tblRow.chip= jQuery(this).find('label').text();
+                      mainTableArray.push(tblRow);
+                   }
+                });
+             var maskLayerHeaderJSON = JSON.stringify(mainTableArray);
+             
+             //alert('Mask Layer Header' + maskLayerHeaderJSON   );
+             var sideTblArray = new Array();
+             var slNo=1;
+               jQuery('#review-customer-table-n  tbody tr').each(function(index) {
+                    var sideRow = new Object();
+                    sideRow.slno =jQuery(this).find("td").find("span").text();
+                    sideRow.maskLayer=jQuery(this).find("#maskLayer"+slNo ).text();
+                    sideRow.ptrf=jQuery(this).find("td").find("a").text();
+                    if(document.getElementById('MRSCustomerGDSOUTReviewId:MRSCustomerGDSOUTReviewFormId:reticleTypeId').value)
+                    {
+                        sideRow.techGeo =jQuery(this).find("#techGeo"+slNo).text();
+                        
+                    }else
+                    {
+                        sideRow.techGeo ='';
+                    }
+                    sideTblArray.push(sideRow);
+                    slNo =parseInt(slNo)+parseInt(1);
+                    
+                    //alert(':::maskLayer::'+sideRow.maskLayer);
+                });
+           var sideTblArrayJSON = JSON.stringify(sideTblArray);
+           
+           //alert('SideTable::' + sideTblArrayJSON  )
+           
+           var gridTblArray = new Array();
+           var counter =1;
+           if(document.getElementById('MRSCustomerGDSOUTReviewId:MRSCustomerGDSOUTReviewFormId:reticleTypeId').value!='true')
+           {
+               counter =4;
+           }else
+           {
+               counter= 3;
+           }
+           
+           
+
+
+                jQuery('#review-table  tbody tr td').each(function(index){   
+               
+                var grid;
+               
+                if(jQuery(this).find('input:checkbox').length > 0) {
+                var status = jQuery(this).find('span').text();
+                
+                    
+               
+                
+                if(status =='Ready')
+                {
+                   if(jQuery(this).find('input').is(':checked')) {
+                       grid = new Object();
+                       grid.flagSet ='CHECKED';
+                       grid.status = status;
+                       gridTblArray.push(grid);
+                   }
+                   else {
+                    
+                       grid = new Object();
+                       grid.flagSet ='UNCHECKED';
+                       grid.status = status;
+                       gridTblArray.push(grid); 
+                   }
+                   
+                }
+                else if(status=='Approve' || status=='N.A.' || status=='Not Ready' || status=='Ready'|| status=='')
+                    {
+                         grid = new Object();
+                         grid.flagSet = 'UNCHECKED';                        
+                         grid.status = status;                      
+                         gridTblArray.push(grid);
+                    }
+                 }
+                 else if(jQuery(this).find('span').length > 0)
+                 {
+                    var status = jQuery(this).find('span').text();
+                        if(status == 'Approve' || status == 'N.A.' || status == 'Not Ready' || status == '') {
+                            grid = new Object();
+                            grid.flagSet ='UNCHECKED';
+                            grid.status = status;
+                            gridTblArray.push(grid);
+                    }
+                 }   
+                });
+            var gridTblArrayJSON = JSON.stringify(gridTblArray);
+           
+            
+            jQuery('[id$=hiddenmainTableJSON]').attr("value",maskLayerHeaderJSON);
+            jQuery('[id$=hiddensideHeaderJSON]').attr("value",sideTblArrayJSON);
+            jQuery('[id$=hiddengridTblJSON]').attr("value",gridTblArrayJSON);
+           
+            
+            
+           
+            
+            
+            acfn_approval();
+            
+        });
+      /*  function retrievedApproveTbl()
+        {
+            //alert('before loader');
+            showLoader('gf-bigcircle');  
+            //alert('afetr loader');      
+          //alert(document.getElementById('MRSCustomerGDSOUTReviewId:MRSCustomerGDSOUTReviewFormId:reticleTypeId').value);
+          var reticleType =document.getElementById('MRSCustomerGDSOUTReviewId:MRSCustomerGDSOUTReviewFormId:reticleTypeId').value;
+          //alert('::::reticleType::'+reticleType );
+          var mainTableArray = new Array();
+          
+                var tblRow ;
+                jQuery('#review-table  thead tr th').each(function(index) {
+                   var lable =jQuery(this).find('label').eq(1).text();
+                   //alert(':::inloop::'+jQuery(this).find('label').text());
+                   if(jQuery(this).find('label').text() !='' && jQuery(this).text() !='Tech Geo')
+                   {
+                      //alert(':::enter:::');
+                      tblRow = new Object();
+                      tblRow.chip= jQuery(this).find('label').text();
+                      mainTableArray.push(tblRow);
+                   }
+                });
+             var maskLayerHeaderJSON = JSON.stringify(mainTableArray);
+             
+             //alert('Mask Layer Header' + maskLayerHeaderJSON   );
+             var sideTblArray = new Array();
+             var slNo=1;
+               jQuery('#review-customer-table-n  tbody tr').each(function(index) {
+                    var sideRow = new Object();
+                    sideRow.slno =jQuery(this).find("td").find("span").text();
+                    sideRow.maskLayer=jQuery(this).find("#maskLayer"+slNo ).text();
+                    sideRow.ptrf=jQuery(this).find("td").find("a").text();
+                    if(document.getElementById('MRSCustomerGDSOUTReviewId:MRSCustomerGDSOUTReviewFormId:reticleTypeId').value)
+                    {
+                        sideRow.techGeo =jQuery(this).find("#techGeo"+slNo).text();
+                        
+                    }else
+                    {
+                        sideRow.techGeo ='';
+                    }
+                    sideTblArray.push(sideRow);
+                    slNo =parseInt(slNo)+parseInt(1);
+                    
+                    //alert(':::maskLayer::'+sideRow.maskLayer);
+                });
+           var sideTblArrayJSON = JSON.stringify(sideTblArray);
+           
+           //alert('SideTable::' + sideTblArrayJSON  )
+           
+           var gridTblArray = new Array();
+           var counter =1;
+           if(document.getElementById('MRSCustomerGDSOUTReviewId:MRSCustomerGDSOUTReviewFormId:reticleTypeId').value!='true')
+           {
+               counter =4;
+           }else
+           {
+               counter= 3;
+           }
+           
+           
+
+
+                jQuery('#review-table  tbody tr td').each(function(index){   
+               
+                var grid;
+               
+                if(jQuery(this).find('input:checkbox').length > 0) {
+                var status = jQuery(this).find('span').text();
+                
+                    
+               
+                
+                if(status =='Ready')
+                {
+                   if(jQuery(this).find('input').is(':checked')) {
+                       grid = new Object();
+                       grid.flagSet ='CHECKED';
+                       grid.status = status;
+                       gridTblArray.push(grid);
+                   }
+                   else {
+                    
+                       grid = new Object();
+                       grid.flagSet ='UNCHECKED';
+                       grid.status = status;
+                       gridTblArray.push(grid); 
+                   }
+                   
+                }
+                else if(status=='Approve' || status=='N.A.' || status=='Not Ready' || status=='Ready'|| status=='')
+                    {
+                         grid = new Object();
+                         grid.flagSet = 'UNCHECKED';                        
+                         grid.status = status;                      
+                         gridTblArray.push(grid);
+                    }
+                 }
+                 else if(jQuery(this).find('span').length > 0)
+                 {
+                    var status = jQuery(this).find('span').text();
+                        if(status == 'Approve' || status == 'N.A.' || status == 'Not Ready' || status == '') {
+                            grid = new Object();
+                            grid.flagSet ='UNCHECKED';
+                            grid.status = status;
+                            gridTblArray.push(grid);
+                    }
+                 }   
+                });
+            var gridTblArrayJSON = JSON.stringify(gridTblArray);
+           
+            
+            jQuery('[id$=hiddenmainTableJSON]').attr("value",maskLayerHeaderJSON);
+            jQuery('[id$=hiddensideHeaderJSON]').attr("value",sideTblArrayJSON);
+            jQuery('[id$=hiddengridTblJSON]').attr("value",gridTblArrayJSON);
+           
+            
+            
+           
+            
+            
+            acfn_approval();
+            
+           
+        }*/
+        $(document).on("click","#proceed-review-customer-table-n",function(){        
+            //function saveToApprove(){
+            showLoader('gf-bigcircle');        
+            //alert('save');
+            acfn_save();
+            //}
+        });
+        function viewTable(){
+            jQuery('#approved-table-data').addClass('display-none');
+            jQuery('#startingTable').removeClass('display-none');
+            jQuery('.right-section-panel').removeClass('display-none');
+            
+            var accId = jQuery('[id$=customerIdAfterSave]').val();
+            //alert(':::accId ::'+accId );
+            jQuery('#drtdropdown').find('input.scombobox-display').prop("value",accId);
+            jQuery('#drtdropdown').find('input.scombobox-value:hidden').prop("value",accId);
+            
+            var mst = jQuery('[id$=mstIdAfterSave]').val();
+            jQuery('#mstdropdown').find('input.scombobox-display').prop("value",mst);
+            jQuery('#mstdropdown').find('input.scombobox-value:hidden').prop("value",mst);
+            
+            $('#customerLabel').text($('[id$=customerIdAfterSave]').val());
+            $('#mstLabel').text($('[id$=mstIdAfterSave]').val());
+            
+        }
+        $(document).on("click","#discard-review-customer-table-n",function(){
+        
+            //function discard(){
+            showLoader('gf-bigcircle');        
+            jQuery('#perform-table-ready-1').removeClass('display-none');
+            jQuery('#approved-table-data').addClass('display-none');
+            jQuery('#approve-button-1-n').attr('disabled','disabled');
+            acfn_discard();
+            //}
+        });
+        function openExcelOrPDF(renderType){
+            
+            if(renderType == 'excel')
+                acfn_exportToExcel();
+            else if(renderType == 'pdf')
+            {
+                acfn_exportToCSV();
+                
+            }
+        }
+        function openMyDevices() {
+            try {
+               parent.refreshPage();
+            }catch(e) {
+                window.location.reload($label.SWIFT_COMMUNITY_URL+'MyDevices');
+            }
+        }
+        function saveSelection(){
+            jQuery('#perform-table-ready-1').addClass('display-none');
+            jQuery('#approved-table-data').removeClass('display-none');
+        }
+              
+    </script>
+    <script>
+       function callmrsFlow(){
+                mrsFlow();
+                var tableWidth=$(".rightTblCont .data-table.review-customer-table-1").width();
+                if($("#perform_table_initial .rightTblCont").width()<tableWidth)
+                {
+                    $('.leftMainTblContainer .spacer').show();
+                    $(".rightTblCont").css("border-right","1px solid #ccc");
+                }else {
+                    $('.leftMainTblContainer .spacer').hide();
+                    $(".rightTblCont").css("border-right","0px solid #ccc");
+                }
+        }       
+   
+    /*increase Iframe starts*/
+        function callIncreaseIframe() {
+           
+            try{
+                parent.iframeLoaded();
+                
+            }catch(err){}
+        }
+        /*increase Iframe ends*/
+        /*Loader*/
+        function showLoader(e) {
+            jQuery.loader({className: e,content: ""});
+        }
+                    
+        function hideLoader() {
+            jQuery.loader("close");
+        }
+        /*Loader*/
+        
+function makeMultipleDrpDwn() {
+    if($("#filterContent").is(":visible") && $("#layersummarydropdown").length>0){
+        $("#layersummarydropdown").multiselect({
+            selectedList:10,
+            header:false,
+            minWidth:140,
+            height:'auto',
+            noneSelectedText:'-Select-'
+        });
+    }
+    callIncreaseIframe();
+   
+}
+    window.onload = showLoader('gf-bigcircle');
+    
+    function sendSelectedAccount(accId,accName,accSName){
+        showLoader('gf-bigcircle');
+        
+        var type = $('[id$=hiddenType]').val();
+        var jobviewer = $('[id$=hiddenJobviewer]').val();
+        
+        lookupMSTURL = "{!lookupMSTURL}";
+        
+        var pos = lookupMSTURL.indexOf("?");
+        if(pos == -1){
+            lookupMSTURL = lookupMSTURL + '?aid=' + accId + '&pg=' + type + 'GDSOutReview&jv=' + jobviewer;
+        }
+        else {
+            lookupMSTURL = lookupMSTURL.substring(0,pos) + '?aid=' + accId + '&pg=' + type + 'GDSOutReview&jv=' + jobviewer;
+        }
+        
+        
+        $('[id$=hiddenCustomerId]').val(accId);
+        $('#customerLabel').text(accName+' ('+accSName+')');
+        $('[id$=customerIdAfterSave]').val(accName+' ('+accSName+')');
+        
+        $('[id$=hiddenMSTId]').val('');
+        $('#mstLabel').text('');
+        
+        resetLSPCookies();
+        retrieveMRSForCustomer(); 
+    } 
+    
+    function sendSelectedMST(mstId,mstName) {
+        showLoader('gf-bigcircle');
+        $('[id$=hiddenMSTId]').val(mstId);
+        $('#mstLabel').text(mstName);
+        $('[id$=mstIdAfterSave]').val(mstName);
+        
+        resetLSPCookies();
+        retrieveMRSForMSt();
+        
+    }
+    </script>
+    <script type="text/javascript" src="{!URLFOR($Resource.SWIFT_MRS_Changed,'js/sort.js')}"></script>    
+    <script type="text/javascript" src="{!URLFOR($Resource.SWIFT_MRS_Changed,'js/jquery-ui.min.js')}"></script>
+    <script type="text/javascript" src="{!URLFOR($Resource.SWIFT_MRS_Changed,'js/jquery.multiselect.js')}"></script>
+    <script type="text/javascript" src="{!URLFOR($Resource.SWIFT_MRS_Changed,'js/common-script.js')}"></script>
+
+    <apex:actionFunction name="retrieveMRSForCustomer" action="{!fetchMRSForCustomer}" status="retrieveMRSForCustomerStatus" reRender="reticleTypeId,customerIdAfterSave,messageId,reviewTableId,performId,SelectedLayerStatusValue" oncomplete="hideLoader();"/>
+    <apex:actionFunction name="retrieveMRSForMSt" action="{!fetchMRSForMaskSetTitle}" reRender="MRSMaskLayerDropdown,reticleTypeId,MRSLayerStatusDropdown,MRSChipDropdown,MRSDeviceDropdown,MRSPTRFDropdown,reviewTableId,retrieveApproveTable,performId,messageId,chipSize,mstIdAfterSave,sizeLimitId,SelectedLayerStatusValue" oncomplete="mrsFlow();callIncreaseIframe();makeMultipleDrpDwn();hideLoader();"  />
+    <!--<apex:actionFunction name="retrieveMRSForLayer" action="{!fetchMRSForMaskLayer}" reRender="MRSLayerStatusDropdown,MRSChipDropdown,MRSDeviceDropdown,MRSPTRFDropdown"/>
+    <apex:actionFunction name="retrieveMRSForStatus" action="{!fetchMRSForStatus}" reRender="MRSChipDropdown,MRSDeviceDropdown,MRSPTRFDropdown"/>
+    <apex:actionFunction name="retrieveMRSForChip" action="{!fetchMRSForChipName}" reRender="MRSDeviceDropdown,MRSPTRFDropdown"/>
+    <apex:actionFunction name="retrieveMRSForDevice" action="{!fetchMRSForPtrf}" reRender="MRSPTRFDropdown"/>-->
+    <apex:actionFunction name="retrieveWithFilters" action="{!fetchAfterApply}" reRender="reviewTableId,performId,retrieveApproveTable,messageId,sizeLimitId" oncomplete="mrsFlow();callIncreaseIframe();makeMultipleDrpDwn();hideLoader();"/>
+    <apex:actionFunction name="acfn_approval" action="{!approvalData}" reRender="reviewTableId,reticleTypeId,performId,confirmApproveId,retrieveApproveTable" oncomplete="saveSelection();mrsFlow();callIncreaseIframe();hideLoader();"/>
+    <apex:actionFunction name="acfn_save" action="{!saveData}" reRender="reviewTableId,performId,confirmApproveId,imageId,topSectionId,customerIdAfterSave,mstIdAfterSave,mstLookupPanel" oncomplete="SwiftGen.includeCustomCombo('drtdropdown');SwiftGen.includeCustomCombo('mstdropdown');viewTable();SwiftGen.rowHover();mrsFlow();callIncreaseIframe();hideLoader();"/>
+    <apex:actionFunction name="acfn_discard" action="{!discardSelection}" reRender="confirmApproveId,retrieveApproveTable" oncomplete="SwiftGen.rowHover();mrsFlow();callIncreaseIframe();hideLoader();"/>
+    <apex:actionFunction name="acfn_performReview" action="{!performReview}" reRender="reviewTableId,reticleTypeId,performId,retrieveApproveTable,imageId,topSectionId,customerIdAfterSave,mstLookupPanel" oncomplete="viewSelectionTable();mrsFlow();callIncreaseIframe();hideLoader();"/>
+    <apex:actionFunction name="acfn_exportToExcel" action="{!exportToExcel}"/>
+    <apex:actionFunction name="acfn_exportToCSV" action="{!exportToCSV}"/>
+    <apex:actionFunction name="resetLSPCookies" action="{!resetLSPCookies}" onComplete="SwiftGen.includeCustomCombo('mstdropdown');callIncreaseIframe();makeMultipleDrpDwn();"/>
+    
+</apex:form>
+</apex:page>

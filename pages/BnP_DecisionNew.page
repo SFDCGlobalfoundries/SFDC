@@ -1,0 +1,162 @@
+<!--
+Author        : Varsha Tomar
+Date Created  : 05/10/2016
+Description   : This page is used as Decision creation and edit page.
+Change History: Poulami Saha    13/07/2017: Added help text for Sap Order Detail fields
+-->
+
+<apex:page controller="BnP_DecisionCtrl" tabStyle="Decision__c">
+    
+    <apex:form >
+        <apex:pageMessages ></apex:pageMessages>
+        <apex:commandButton value="OK" action="{!doCancel}" rendered="{!NOT(isValidQuote)}"/>
+        <apex:pageBlock title="Decision - {!decisionRecord.Name}" rendered="{!isValidQuote}">
+            <style>
+                body .bPageBlock .pbBody .red .pbSubheader{
+                    background-color:#c00000;
+                }
+                body .bPageBlock .pbBody .grey .pbSubheader{
+                    background-color:#e9e9e9;
+                }
+                body .bPageBlock .pbBody .grey .pbSubheader h3{
+                color:#000;
+                }
+                .tableHeader 
+                {
+                  padding: 0px 10px 10px 0px;
+                  margin: 0px 0px 0px 0px;
+                  color: #4A4A56;
+                  font-size: 95%;
+                  //font-weight: bold;
+                  font-family: Arial,Helvetica,sans-serif;
+                }
+            </style>
+            
+            <apex:outputPanel rendered="{!$Label.BnP_Show_TR_Component = 'Yes'}">
+                <c:BnP_OptionHeader RcId="{!decisionRecord.Technical_Requirement__c}"></c:BnP_OptionHeader>
+            </apex:outputPanel>
+            <apex:pageBlockSection title="Basic Information">
+                <apex:outputField value="{!decisionRecord.Request_Information__c}"/>
+                <apex:outputField value="{!decisionRecord.Technical_Requirement__c}"/>
+                <apex:outputField value="{!decisionRecord.Account__c}"/>
+                <apex:outputField value="{!decisionRecord.Opportunity__c}"/>
+                <apex:outputField value="{!decisionRecord.Device__c}"/>
+                <apex:inputField value="{!decisionRecord.Status__c}" required="true"/>
+            </apex:pageBlockSection>
+            
+    
+            <apex:pageBlockSection title="Order and Charge Information">
+                <apex:inputField value="{!chargeInfoObj.Charge_Number__c}"/>
+                <apex:inputField value="{!chargeInfoObj.Charge_Type__c}"/>
+                <!--<apex:inputField value="{!chargeInfoObj.SAP_Mask_Order__c}"/>-->
+            </apex:pageBlockSection>
+            <br/>
+            
+            <apex:commandbutton value="Add SAP Order Detail" action="{!addsapOrder}" immediate="true"/>
+            <br/><br/>
+          <!-- Display the related contacts for the Account -->
+          <apex:pageBlockTable id="theTbl" value="{!allSapOrderList}" var="bm"> <apex:variable value="{!0}" var="cnt"/>
+               
+              
+            <apex:column headerValue=">>SAP Order Number" id="nreCol">
+                <apex:facet name="header">
+                    <apex:outputPanel >
+                        <apex:outputText value=">>SAP Order Number"/>
+                        <apex:image value="/s.gif" styleClass="helpOrb" title="{!$ObjectType.SAP_Order_Detail__c.Fields.SAP_Order_Number__c.inlineHelpText}" />
+                    </apex:outputPanel>
+                </apex:facet>
+                <apex:inputfield value="{!bm.SAP_Order_Number__c}" id="nreFld"/>
+            </apex:column>
+            <apex:column headerValue=">>SAP SoldTo #">
+                <apex:facet name="header">
+                    <apex:outputPanel >
+                        <apex:outputText value=">>SAP SoldTo #"/>
+                        <apex:image value="/s.gif" styleClass="helpOrb" title="{!$ObjectType.SAP_Order_Detail__c.Fields.SAP_SoldTo__c.inlineHelpText}" />
+                    </apex:outputPanel>
+                </apex:facet>
+                <apex:inputfield value="{!bm.SAP_SoldTo__c}"/>
+            </apex:column> 
+            <apex:column headerValue=">>Yield Mgmt Data Deliveryto #">
+                <apex:facet name="header">
+                    <apex:outputPanel >
+                        <apex:outputText value=">>Yield Mgmt Data Deliveryto #"/>
+                        <apex:image value="/s.gif" styleClass="helpOrb" title="{!$ObjectType.SAP_Order_Detail__c.Fields.Yield_Mngmnt_Data_Deliveryto__c.inlineHelpText}" />
+                    </apex:outputPanel>
+                </apex:facet>
+                <apex:inputfield value="{!bm.Yield_Mngmnt_Data_Deliveryto__c}"/>
+            </apex:column>   
+            <apex:column headerValue=">>Order Type">
+                <apex:facet name="header">
+                    <apex:outputPanel >
+                        <apex:outputText value=">>Order Type"/>
+                        <apex:image value="/s.gif" styleClass="helpOrb" title="{!$ObjectType.SAP_Order_Detail__c.Fields.Order_Type__c.inlineHelpText}"/>
+                    </apex:outputPanel>
+                </apex:facet>
+                <apex:inputfield value="{!bm.Order_Type__c}"/>
+            </apex:column>
+            <apex:column headervalue="Action">
+              <apex:commandlink value="Remove" action="{!removesapOrder}" immediate="true">
+                  <!-- Pass the row number to the controller so that we know which row to remove -->
+                  <apex:param name="index" value="{!cnt}"/>
+              </apex:commandlink> 
+              <apex:variable var="cnt" value="{!cnt+1}"/>              
+            </apex:column>    
+          </apex:pageblocktable>
+          <br/><br/>
+          
+            
+            <apex:pageBlockSection collapsible="flase" title="Opportunity Schedule" />
+            
+            <c:BnP_OppStageScheduleComponent opId="{!decisionRecord.Opportunity__c}"></c:BnP_OppStageScheduleComponent>
+            
+            
+              <br/>
+              
+              <apex:pageBlockSection collapsible="flase" title="RTM Details" rendered="{!AND(techRev != null, showTechReview)}">
+                <apex:outputText value="{!techRev.RIT_outlook__c}"/>
+                <apex:outputText value="{!techRev.RTM_outlook__c}"/>
+            </apex:pageBlockSection>
+            
+          <!--added by Meghna-->     
+             <apex:pageBlockSection columns="1" title="Attach Documents">
+                  <apex:pageBlockTable value="{!AttachmentList}" var="att" rendered="{! AttachmentList.size > 0}">
+                      <apex:column headerValue="Name">
+                          <apex:outputText value="{!att.fileName}"></apex:outputText>
+                      </apex:column>
+                      <apex:column headerValue="File Type">
+                          <apex:outputText value="{!att.fileType}"></apex:outputText>
+                      </apex:column>
+                      <apex:column headerValue="Created By">
+                          <apex:outputText value="{!att.attRecord.CreatedBy.Name}"></apex:outputText>
+                      </apex:column>
+                      <apex:column headerValue="Created Date">
+                          <apex:outputText value="{!att.attRecord.CreatedDate}"></apex:outputText>
+                      </apex:column>
+                  </apex:pageBlockTable>
+             
+             <apex:inputField label="$Functionality Date" value="{!decisionRecord.Functionality_Date__c}" rendered="{!OR(decisionRecord.Technical_Requirement__r.Option_Stage__c == 'Customer Decision', decisionRecord.Technical_Requirement__r.Option_Stage__c == 'Production', decisionRecord.Technical_Requirement__r.Option_Stage__c == 'Prototype Fulfillment')}"/>
+              
+                <apex:pageBlockSectionItem >
+                  <apex:outputLabel value="Select Type of File"></apex:outputLabel>
+                  <apex:selectList value="{!selectedFileType}" size="1">
+                      <apex:selectOptions value="{!TypesOfFile}"></apex:selectOptions>
+                  </apex:selectList>
+                </apex:pageBlockSectionItem>
+                <apex:pageBlockSectionItem >
+                <apex:outputLabel value="Attach File" for="funcfile"/>
+                <apex:inputFile value="{!funcattachmentbody}" filename="{!funcattachmentname}" id="funcfile"/>
+                </apex:pageBlockSectionItem>
+                <apex:pageBlockSectionItem >
+                    <apex:outputLabel value="Reference Document"/>
+                    <apex:outputLink value="{!decisionLink}" id="theLink" target="_blank">Link</apex:outputLink>
+                </apex:pageBlockSectionItem>
+          </apex:pageBlockSection>
+          
+           <br/>
+            <apex:pageBlockButtons >
+                <apex:commandButton value="Save" action="{!doSave}"/>
+                <apex:commandButton value="Cancel" action="{!doCancel}"/>
+            </apex:pageBlockButtons>
+        </apex:pageBlock>
+    </apex:form>
+</apex:page>

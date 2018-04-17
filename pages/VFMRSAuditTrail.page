@@ -1,0 +1,321 @@
+<apex:page controller="MRSAuditTrail" showHeader="false" sideBar="false" standardStylesheets="false">
+  
+<apex:stylesheet value="{!URLFOR($Resource.Swift_MRS,'css/jquery.scombobox.min.css')}"/>
+<apex:stylesheet value="{!URLFOR($Resource.Swift_MRS,'css/style.css')}"/>
+<apex:stylesheet value="{!URLFOR($Resource.SWIFT_MRS_Changed,'css/jquery-ui.css')}"/>
+<apex:form >
+<!--Wrapper Div Starts-->
+<div id="wrapper">
+    <!--Container Div Starts-->
+    <!-- <div id="container" class="use-sidebar"> -->
+        
+        <!--Left Side Navigation Menu-->
+        
+        <!--End of Left Side Navigation Menu-->
+    
+        <!-- Start of Right side content-->
+        <!-- <div id="content"> -->
+    
+            <!--Breadcrumb Starts-->
+            <apex:outputPanel rendered="{!NOT(internalView)}">
+                <apex:outputPanel rendered="{!showLayerAssociation }">
+                    <div class="breadcrumb" id="breadcrumbDiv">
+                        <label><a href="javascript:void(0);" onclick="openMyDevices();"><u>My Devices</u></a></label> &gt;
+                        <label>Tapeout</label> &gt;
+                        <label>MRS</label> &gt;
+                        <label><apex:outputLink value="{!$Page.VFMRSLayerSummary}"><u>Layer Summary</u></apex:outputLink></label> &gt;
+                        <label>Audit Trail</label>
+                    </div>
+                </apex:outputPanel>
+                <apex:outputPanel rendered="{!!showLayerAssociation }">
+                    <div class="breadcrumb" id="breadcrumbDiv">
+                        <label><a href="javascript:void(0);" onclick="openMyDevices();"><u>My Devices</u></a></label> &gt;
+                        <label>Tapeout</label> &gt;
+                        <label>MRS</label> &gt;
+                        <label><apex:outputLink value="{!$Page.VFMRSLayerSummary}"><u>Layer Summary</u></apex:outputLink></label> &gt;
+                        <label><a href="javascript:window.history.back();"><u>Layer Chip Summary</u></a></label> &gt;
+                        <label>Audit Trail</label>
+                    </div>
+                </apex:outputPanel>
+            </apex:outputPanel>
+            <apex:outputPanel rendered="{!internalView}">
+                <apex:outputPanel rendered="{!showLayerAssociation }">
+                    <div class="breadcrumb" id="breadcrumbDiv">
+                        <label>MRS</label> &gt;
+                        <label><apex:outputLink value="{!$Page.VFMRSLayerSummary}"><u>Layer Summary</u></apex:outputLink></label> &gt;
+                        <label>Audit Trail</label>
+                    </div>
+                </apex:outputPanel>
+                <apex:outputPanel rendered="{!!showLayerAssociation }">
+                    <div class="breadcrumb" id="breadcrumbDiv">
+                        <label>MRS</label> &gt;
+                        <label><apex:outputLink value="{!$Page.VFMRSLayerSummary}"><u>Layer Summary</u></apex:outputLink></label> &gt;
+                        <label><a href="javascript:window.history.back();"><u>Layer Chip Summary</u></a></label> &gt;
+                        <label>Audit Trail</label>
+                    </div>
+                </apex:outputPanel>
+            </apex:outputPanel>
+                      
+            <!--Breadcrumb Ends-->
+            
+            <div id="auditTrail" class="right-panel-section">
+                <!-- Start DRT Right side Header-->
+                <h3>Audit Trail</h3> 
+                <!-- End Right side Header-->                 
+                
+        <div class="quicklinks">
+              <!--  <a href="#"><img src="{!URLFOR($Resource.Swift_MRS,'images/expToCsv.png')}" width="24" height="24" alt="Export to CSV" title="Export to CSV"/></a>-->
+              
+              <!--  <a href="#"><img src="{!URLFOR($Resource.Swift_MRS,'images/excel-icon.png')}" width="23" height="23" alt="Export to Excel" title="Export to Excel"/></a>  -->
+                      
+                <a href="{!$Label.SWIFT_Support_Link}" target="_blank"><img src="{!URLFOR($Resource.Swift_MRS,'images/help-icon.png')}" width="23" height="23" alt="Help"  title="Help"/></a>
+        </div>
+        
+                <!-- --------------- First Row Starts --------------- -->
+                <div id="firstRowContentDiv" class="right-section-row right-section-row-borderbottom" >          
+                    <dl>
+                        <dt class="bold-font fontSize-12">Customer Name:</dt>
+                        <dd class="pading-left tcell-width-600">{!CustomerName}</dd>
+            
+                       <!--
+                       <select id="maskLayerDropdown" class="dropdown-size tcell-width-89" >
+                        <option value="" selected="selected">10AZ</option>
+                        </select>
+                        -->
+              
+           
+                    </dl>
+                    <dl>
+                        <dt class ="bold-font fontSize-12">Mask Set Title:</dt> 
+                <dd class="pading-left">{!MaskSetTitle}</dd>
+                <!--
+                <select id="MSTdropdown" class="dropdown-size tcell-width-89" >
+                                    <option value="" selected="selected">MYMST</option>
+                                </select> -->
+                                
+                                
+                         <apex:outputPanel id="pnlchipname"  rendered="{!NOT(showLayerAssociation)}" > 
+                        <dt class="margin-left-82 pading-left  bold-font fontSize-12">Chip Name:</dt>
+                        <dd class="no-padding">{!ChipName}</dd>
+                        </apex:outputPanel>
+                <!--
+                <select id="MSTdropdown" class="dropdown-size tcell-width-89" >
+                                    <option value="" selected="selected">PD 1</option>
+                                </select> -->
+                                
+            
+                    </dl>
+                    
+                    <dl>
+                         <dt class="bold-font fontSize-12">Mask Layer:</dt>
+                         <dd class="pading-left">{!MaskLayer}</dd>
+
+                    </dl>
+                    
+                <div class="clear"></div>
+                </div>
+                
+                
+                <!-- --------------- First Row Ends --------------- -->     
+                <!-- --------------- Second Row Starts --------------- -->
+    <br/>
+    <br/>    
+    <div id="secondRowContentDiv" class="right-section-row">
+    <div class="float-right">
+       <!-- <a href="javascript:window.history.back();" class="underline-text floatR">&lt; Back</a> -->
+       
+        <apex:outputPanel id="pnlBackLayerAssociation"  rendered="{!backflag}" > 
+          <a href="{!if(isBreadcrumbActive,'/GlobalfoundryView','')}/apex/VFMRSLayerSummary?customerid={!customerid}&mstid={!MaskSetTitle}&customer={!CustomerName}" class="underline-text">&lt; Back </a> 
+        </apex:outputPanel>
+        
+         <apex:outputPanel id="pnlBackLayerChipAssociation"  rendered="{!!backflag}" > 
+        
+           <apex:outputPanel id="pnlBackmanualupdate"  rendered="{!ismanulaupdate}" > 
+        
+            <a href="{!if(isBreadcrumbActive,'/GlobalfoundryView','')}/apex/VFMRSLayerChipSummaryManualUpdate?id={!layerid}&customerid={!customerid}&mstid={!MaskSetTitle}&customer={!CustomerName}" class="underline-text">&lt; Back </a> 
+            
+          </apex:outputPanel>
+          
+           <apex:outputPanel id="pnlBackmanualupdate1"  rendered="{!!ismanulaupdate}" > 
+           
+            <a href="{!if(isBreadcrumbActive,'/GlobalfoundryView','')}/apex/VFMRSLayerChipSummary?id={!layerid}&customerid={!customerid}&mstid={!MaskSetTitle}&customer={!CustomerName}" class="underline-text">&lt; Back </a> 
+          </apex:outputPanel>  
+        </apex:outputPanel>
+        
+       
+        
+        
+        
+       
+    </div>
+    <div class="clear"></div>
+         <!--Start of Audit Trail Table-->
+      <div id="drtAuditTrailTable">                     
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th class="tcell-width-114" rowspan="2">Date</th>
+              <th class="tcell-width-91" rowspan="2">User</th>
+              <th class="tcell-width-200" rowspan="2">Description</th>
+              <th colspan="3">Action</th>                     
+            </tr>
+            <tr>
+              <th class="tcell-width-355">Field Change</th>
+              <th>Old Val</th>
+              <th>New Val</th> 
+                                                    
+            </tr>
+          </thead>
+          
+        <apex:outputPanel id="pnlLayerAssociation"  rendered="{!showLayerAssociation}" >     
+          
+          <tbody>
+
+              <apex:variable value="{!1}" var="slNo"/>
+               <apex:repeat var="MRS" value="{!lstAuditTrailObj}"  > 
+                   <apex:outputLabel rendered="{!!IF(MOD(slNo,2)==0,true,false)}">
+                      <tr > 
+                        <td class="tcell-width-114">{!MRS.createdDate}</td>
+                        <td  class="tcell-width-91">{!MRS.userName}</td>
+                        <td class="tcell_width_94">{!MRS.description}<br/><a href="javascript:void(0);" onClick="showalert(this)"  class="underline-text">{!MRS.ShowComment}</a></td>
+                        <td class="tcell-width-151">{!MRS.fieldChange}</td>
+                        <td class="tcell-width-74">{!MRS.oldValue}</td>
+                        <td class="tcell_width_80">{!MRS.newValue }</td>
+                        
+                        <input type='hidden' class='HiddenId' value='{!MRS.NotesComment}'/>
+
+                      </tr> 
+                   </apex:outputLabel>
+                  
+                  <apex:outputLabel rendered="{!IF(MOD(slNo,2)==0,true,false)}">
+                    <tr class="alt-row-bgcolor" > 
+                        <td class="tcell-width-114">{!MRS.createdDate}</td>
+                        <td  class="tcell-width-91">{!MRS.userName}</td>
+                        <td class="tcell_width_94">{!MRS.description}<br/><a href="javascript:void(0);" onClick="showalert(this)"   class="underline-text">{!MRS.ShowComment}</a></td>
+                        <td class="tcell-width-151">{!MRS.fieldChange}</td>
+                        <td class="tcell-width-74">{!MRS.oldValue}</td>
+                        <td class="tcell_width_80">{!MRS.newValue }</td>
+                       
+                        <input type='hidden' class='HiddenId' value='{!MRS.NotesComment}'/>
+                      </tr> 
+                  
+                   </apex:outputLabel>
+                 <apex:variable value="{!slNo + 1}" var="slNo"/> 
+                 
+               </apex:repeat>
+                           
+         </tbody> 
+        </apex:outputPanel>
+        
+        
+       
+         <apex:outputPanel id="pnlLayerChipAssociation" rendered="{!NOT(showLayerAssociation)}">     
+          
+          <tbody>
+
+            <apex:variable value="{!1}" var="slNo1"/>
+               <apex:repeat var="MRS" value="{!lstAuditTrailObj}" > 
+            
+                   <apex:outputLabel rendered="{!!IF(MOD(slNo1,2)==0,true,false)}">
+                  <tr > 
+                     <td class="tcell-width-114">{!MRS.createdDate}</td>
+                    <td  class="tcell-width-91">{!MRS.userName}</td>
+                    <td class="tcell_width_94">{!MRS.description} <br/><a href="javascript:void(0);" onClick="showalert(this)"  class="underline-text">{!MRS.ShowComment}</a></td>
+                    <td class="tcell-width-151">{!MRS.fieldChange}</td>
+                    <td class="tcell-width-74">{!MRS.oldValue}</td>
+                    <td class="tcell_width_80">{!MRS.newValue }</td>
+                    
+                    <input type='hidden' class='HiddenId' value='{!MRS.NotesComment}'/>
+                  </tr> 
+                 </apex:outputLabel>
+                 
+                 <apex:outputLabel rendered="{!IF(MOD(slNo1,2)==0,true,false)}">
+                    <tr class="alt-row-bgcolor" > 
+                        <td class="tcell-width-114">{!MRS.createdDate}</td>
+                        <td  class="tcell-width-91">{!MRS.userName}</td>
+                        <td class="tcell_width_94">{!MRS.description} <br/><a href="javascript:void(0);" onClick="showalert(this)"  class="underline-text">{!MRS.ShowComment}</a></td>
+                        <td class="tcell-width-151">{!MRS.fieldChange}</td>
+                        <td class="tcell-width-74">{!MRS.oldValue}</td>
+                        <td class="tcell_width_80">{!MRS.newValue }</td>
+                        <input type='hidden' class='HiddenId' value='{!MRS.NotesComment}'/>
+                        
+                      </tr> 
+                  
+                   </apex:outputLabel>
+                 <apex:variable value="{!slNo1 + 1}" var="slNo1"/> 
+                 
+                </apex:repeat>
+                           
+         </tbody> 
+        </apex:outputPanel>
+       
+        
+        
+        
+                               
+    </table>
+   </div>
+     <!-- End of Audit Trail table-->
+        <div class="clear"></div>
+    </div>
+    <!-- --------------- Second Row Ends --------------- -->    
+      </div>     
+        <!-- </div> --> 
+        <!--End of content-->
+    <div class="clear"></div>
+    
+    <!-- </div> -->
+    <!--End of container div--> 
+</div>
+<script type="text/javascript" src="{!URLFOR($Resource.Swift_MRS,'js/jquery.min.js')}"></script>
+<script type="text/javascript" src="{!URLFOR($Resource.Swift_MRS,'js/leftmenu.js')}"></script>
+<script type="text/javascript" src="{!URLFOR($Resource.Swift_MRS,'js/jquery.scombobox.min.js')}"></script>
+<script type="text/javascript" src="{!URLFOR($Resource.Swift_MRS,'js/advancedDataGrid.js')}"></script>
+<script type="text/javascript" src="{!URLFOR($Resource.Swift_MRS,'js/jquery-ui.min.js')}"></script>
+<script type="text/javascript" src="{!URLFOR($Resource.Swift_MRS,'js/common-script.js')}"></script>
+<script type="text/javascript" src="{!URLFOR($Resource.Swift_MRS,'js/sort.js')}"></script>
+<script>
+      $(function() {
+        $( document ).tooltip();
+     });   
+     window.onload=function(){
+      callIncreaseIframe();
+     }
+     /*increase Iframe starts*/
+    function callIncreaseIframe() {
+        try{
+               parent.iframeLoaded();
+           }catch(err){}
+    }
+    /*increase Iframe ends*/
+    
+    function openMyDevices() {
+        try {
+            parent.refreshPage();
+        }catch(e) {
+            window.location.reload($label.SWIFT_COMMUNITY_URL+'MyDevices');
+        }
+    }
+    function showalert(thisObj){
+    
+    var background = "<div class='transparent-background'>&nbsp;</div>";
+    var alertbox = "<div class=\"custom-alert left-shadow\"><div class=\"right-shadow\"><div class=\"top-shadow\"><div class=\"content-holder bottom-shadow\"><p>"+jQuery(thisObj).closest('tr').find('input[type="hidden"]').val();
+    alertbox += "</p><div class=\"alert-button-holder\"><input type=\"button\" value=\"OK\" class=\"alert-button\" /> </div></div></div></div>";
+    alertbox += "<div class=\"top-left-corner\"></div><div class=\"top-right-corner\"></div><div class=\"bottom-left-corner\"></div><div class=\"bottom-right-corner\"></div>";
+    $('body').append(background).append(alertbox);
+    $('.transparent-background').css("height",$(document).height());
+    $(".custom-alert").attr("id","auditTrailCommentPopup");
+    $(".custom-alert").css("left",($(document).width()/2-$(".custom-alert").width()/2));
+     try{
+         $(".custom-alert").css("top",parent.getFrameMiddleHeight());
+    }catch(exp){
+         $(".custom-alert").css("top",($(window).height()/2+$(document).scrollTop()-$(".custom-alert").height()/2));
+    }
+    $('input[value="OK"]').on('click', function(){$('.custom-alert,.transparent-background').remove();});   
+         }
+</script>
+<!--End of Wrapper div-->
+
+</apex:form>
+
+</apex:page>

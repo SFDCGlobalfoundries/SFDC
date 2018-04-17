@@ -1,0 +1,116 @@
+<!--
+ Type Name: FV_DeProvisioningDesignSpec
+ Author: Cognizant Technology Solutions
+ Created Date: 07-April-2015
+ Reason: This page displays the ability to Deprovision Documents.
+-->
+
+
+<apex:page standardController="Design_Spec__c" extensions="FV_DeProvisioningDesignSpec">
+
+<!---------------------------------------------------     JS File   ------------------------------------------------------------------>
+        <apex:stylesheet value="{!URLFOR($Resource.GF_DQ_JQueryLatest, '/jquery-ui-1.10.3/themes/base/jquery-ui.css')}"/>
+        <apex:includeScript value="{!URLFOR($Resource.GF_DQ_jQueryLib, '/js/jquery-1.9.0.min.js')}"/>
+        <apex:includeScript value="{!URLFOR($Resource.GF_DQ_JQueryLatest, '/jquery-ui-1.10.3/ui/jquery-ui.js')}"/>
+        <apex:includeScript value="{!URLFOR($Resource.GF_DQ_jQueryLib, '/jquery.blockUI.js')}"/>
+<!------------------------------------------------------------------------------------------------------------------------------------>
+    
+<script type="text/javascript">
+     function checkAll(cb){
+            var inputElem = document.getElementsByTagName('input');                     
+            for(var i=0; i<inputElem.length; i++){   
+                if(inputElem[i].id.indexOf("checkboxSelectAccount")!=-1){                    
+                        inputElem[i].checked = cb.checked;                            
+                }
+            }
+        }
+   
+    function deProvisionDesignSpec(){
+            $('<div></div>').appendTo('body')
+                 .html('<div><h6>Do you want to proceed with DesignSpec De-provisioning?</h6></div>')
+                 .dialog({
+                         modal: true, 
+                         title: 'message', 
+                         zIndex: 10000, 
+                         autoOpen: true,
+                         width: 'auto', 
+                         resizable: false,
+                         buttons: {
+                             Yes: function () {
+                                $.blockUI({ css: { backgroundColor: '#0174DF', color: '#FAFAFA'} });
+                            
+                                doDeProvisioning();
+                               
+                                $(this).dialog("close");
+                             },
+                             No: function () {
+                                 $(this).dialog("close");
+                             }
+                         },
+                         close: function (event, ui) {
+                             $(this).remove();
+                         }
+              });
+        }
+      
+      //function to unblock the page  
+      function unblockPage(){  
+         $.unblockUI();  
+      }
+</script>
+  
+<apex:form id="theForm">
+        
+        <apex:actionFunction action="{!doDeProvisioning}" name="doDeProvisioning" reRender="messageblock" oncomplete="unblockPage()"/>                           
+        <apex:pageBlock mode="detail" title="Specification DeProvisioning">
+            
+            <apex:pagemessages id="msg" /> 
+            <apex:pageBlockButtons location="both" >
+                <input type="button" value="DeProvision Accounts" onclick="return deProvisionDesignSpec();" class="btn"/>&nbsp;&nbsp;
+                <!--  <apex:commandButton value="DeProvision From Contacts" action="{!removeProvisioningRecords}"  rendered="{!((isValidProfile)&&(isValidReleaseStatusForProvisioning)&& (isValidTechGeometry)&&(isValidSpecificationType) && (provionsedUser))}"/>&nbsp;&nbsp; <!--modified for case 34664-->           
+                <apex:commandButton value="Cancel" action="{!cancel}" status="addAccountStatus" reRender="theForm"/>
+           </apex:pageBlockButtons>
+            
+            <apex:pageblockSection title="Specification Information" columns="2"   rendered="{!((isValidProfile)&&(isValidReleaseStatusForProvisioning)&& (isValidTechGeometry)&&(isValidSpecificationType)&&(provionsedUser))}"><!--modified for case 34664-->    
+            
+                <apex:repeat value="{!$ObjectType.Design_Spec__c.FieldSets.Provisioning_Fields}" var="f">
+                    <apex:outputField value="{!objDesignSpec[f]}"/>                     
+                </apex:repeat>
+                
+            </apex:pageblockSection>
+            
+            <apex:pageBlockSection title="DeProvision From Accounts" columns="1" collapsible="no" >
+                <apex:pageBlockTable id="tableid" var="Acc" value="{!searchResult}" title="Account Details">
+                                    
+                    <apex:column id="columnid">
+                        <apex:facet Name="header">
+                            <apex:inputcheckbox id="headerid" onchange="checkAll(this);" />
+                        </apex:facet>
+                        <apex:inputcheckbox id="checkboxSelectAccount" value="{!Acc.selected}">
+                        </apex:inputcheckbox>
+                    </apex:column>
+                    <apex:column headerValue="Short Name"
+                        value="{!Acc.acct.Short_Name__c}" />
+                    <apex:column headerValue="Account Name" value="{!Acc.acct.Name}" />
+                    <apex:column headerValue="Site/Department"
+                        value="{!Acc.acct.Site_Department__c}" />
+                    <apex:column headerValue="Stage" value="{!Acc.acct.Stage__c}" />
+                      <!--apex:column headerValue="Short Name"
+                        value="{!Acc.acct.Short_Name__c}" /-->
+                    <apex:column headerValue="Parent Account Name" value="{!Acc.acct.Parent_Account_Name__c}" />
+                    <apex:column headerValue="Parent Account Short Name" value="{!Acc.acct.Parent_Account_Short_Name__c}" />
+                    <apex:column headerValue="ASIC Business" value="{!Acc.acct.ASIC_Business_Flag__c}" />                    
+                   <!-- 
+                    <apex:column headerValue="ASIC Business"value="{!Acc.acct.ASIC_Business_Flag__c}"   width="10%">                             
+                              <apex:inputcheckbox value="{!Acc.acct.}" disabled="true"/>
+                    </apex:column>
+                    -->                     
+                                             
+                </apex:pageBlockTable>
+                
+            </apex:pageBlockSection> 
+      </apex:pageBlock>
+      
+ </apex:form>
+    
+</apex:page>

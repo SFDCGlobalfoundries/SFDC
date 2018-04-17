@@ -1,0 +1,537 @@
+<!--
+Author        : Deepti Narayan Biswal
+Date Created  : 06302016
+Description   : This serves as google sheet page.
+-->
+
+<apex:page controller="BNP_GoogleConnectCtrl" sidebar="false" showheader="false">
+<head>
+<apex:stylesheet value="{!URLFOR($Resource.GConnect, 'lightbox.css')}"/>
+<apex:stylesheet value="{!URLFOR($Resource.GConnect, 'google-drive.css')}"/>
+</head>
+<script>
+//var sheetJson=JSON.parse('[{"properties": {"title": "sheet1"}},{"properties": {"title": "sheet2"}}]');
+
+
+</script>
+<body>
+
+<!--
+Bytutorial.com - online community to share articles for web and mobile programming and designers.
+Author: Andy
+-->
+<div id="transparent-wrapper"></div>
+<div id="login-box" class="hide">
+    <p>Please login on your google account.</p>
+    <button id="btnLogin" onclick="handleAuthClick(event)" class="button">Login</button>
+</div>
+<div id="drive-box" class="hide">
+    <div id="drive-breadcrumb" class="hide">
+        <span class='breadcrumb-arrow'></span> <a data-id='root' data-level='0'>Home</a>
+        <span id="span-navigation"></span>
+    </div>
+    The Folder and file creation is almost done. Please close this tab and reload the RFQ page to open the spreadsheet. 
+    <div id="drive-info" class="hide" >
+        <div class="user-item">Welcome <span id="span-name"></span></div>
+        <div class="user-item">Total Quota: <span id="span-totalQuota"></span></div>
+        <div class="user-item">Used Quota: <span id="span-usedQuota"></span></div>
+        <div class="user-item">Share Mode: <span id="span-sharemode">OFF</span></div>
+        <div class="user-item"><a id="link-logout" class="logout-link">Logout</a></div>
+    </div>
+    
+    <div id="drive-menu" class="hide">
+        <button id="btnAddSheet" style="display:none;" onclick="createSheet('testSheet1',sheetJson);" value="Save" class="button">Add Sheet</button>
+        
+        <div id="button-addfolder"  style="display:none;"  onclick="addFolder('oppName');" title="Add Folder" class="button-opt"></div>
+        
+        
+    </div>
+    <div id="drive-content"></div>
+    <div id="error-message" class="flash hidden"></div>
+    <div id="status-message" class="flash hidden"></div>
+</div>
+
+<input type="file" id="fUpload" class="hide"/>
+<div class="float-box" id="float-box">
+    <div class="folder-form">
+        <div class="close-x"><img id="imgClose" class="imgClose" src="images/button_close.png" alt="close" /></div>
+        <h3 class="clear">Add New Folder</h3>
+        <div><input type="text" id="txtFolder" class="text-input" /></div>
+        <button id="btnAddFolder" value="Save" class="button">Add</button>
+        
+        <button id="btnClose" value="Close" class="button btnClose">Close</button>
+    </div>
+</div>
+<div id="float-box-info" class="float-box">
+    <div class="info-form">
+        <div class="close-x"><img id="imgCloseInfo" class="imgClose" src="images/button_close.png" alt="close" /></div>
+        <h3 class="clear">File information</h3>
+        <table cellpadding="0" cellspacing="0" class="tbl-info">
+            <tr>
+                <td class="label">Created Date</td>
+                <td><span id="spanCreatedDate"></span></td>
+            </tr>
+            <tr>
+                <td class="label">Modified Date</td>
+                <td><span id="spanModifiedDate"></span></td>
+            </tr>
+            <tr>
+                <td class="label">Owner</td>
+                <td><span id="spanOwner"></span></td>
+            </tr>
+            <tr>
+                <td class="label">Title</td>
+                <td><span id="spanTitle"></span></td>
+            </tr>
+            <tr>
+                <td class="label">Size</td>
+                <td><span id="spanSize"></span></td>
+            </tr>
+            <tr>
+                <td class="label">Extension</td>
+                <td><span id="spanExtension"></span></td>
+            </tr>
+        </table>
+        <button id="btnCloseInfo" value="Close" class="button btnClose">Close</button>
+    </div>
+</div>
+<div id="float-box-text" class="float-box">
+    <div class="info-form">
+        <div class="close-x"><img id="imgCloseText" class="imgClose" src="images/button_close.png" alt="close" /></div>
+        <h3 class="clear">Text Content</h3>
+        <div id="text-content"></div>
+        <button id="btnCloseText" value="Close" class="button btnClose">Close</button>
+    </div>
+</div>
+
+
+<apex:includeScript value="//ajax.googleapis.com/ajax/libs/jquery/2.1.4/jquery.min.js" />
+<apex:includeScript value="{!URLFOR($Resource.GConnect, 'date.js')}"/>
+<apex:includeScript value="{!URLFOR($Resource.GConnect, 'lightbox.min.js')}"/>
+<apex:includeScript value="{!URLFOR($Resource.GConnect, 'upload.js')}"/>
+
+<script>
+
+/******************** GLOBAL VARIABLES ********************/
+var SCOPES = ['https://www.googleapis.com/auth/drive','profile'];
+var CLIENT_ID = "{!$Label.DIW_Google_Client_ID}";
+var API_Key = "{!$Label.DIW_Google_API_Key}";
+var FOLDER_NAME = "";
+//var FOLDER_ID = "0BxFuktT2XiEJTl9yTUVnM3kzQTg";
+//var FOLDER_ID = "0B3WyXyZC4ltLandGblA2Q3NBdXM";
+var FOLDER_ID = "{!$Label.DIW_Google_Folder_Id}";
+var FOLDER_PERMISSION = true;
+var FOLDER_LEVEL = 0;
+var NO_OF_FILES = 1000;
+var DRIVE_FILES = [];
+var FILE_COUNTER = 0;
+var FOLDER_ARRAY = [];
+var sheetJson=JSON.parse('[{"properties": {"title": "sheet1"}},{"properties": {"title": "sheet2"}}]');
+var sheetName='';
+var reqInfoID='';
+var rfqRouteId='';
+var pfolderId='';
+/******************** AUTHENTICATION ********************/
+
+function checkAuth() {
+    gapi.auth.authorize({
+        'client_id': CLIENT_ID,
+        'scope': SCOPES.join(' '),
+        'immediate': true
+    }, handleAuthResult);
+}
+
+//authorize apps
+function handleAuthClick(event) {
+    gapi.auth.authorize(
+          { client_id: CLIENT_ID, scope: SCOPES, immediate: false },
+          handleAuthResult);
+    return false;
+}
+
+
+function decodeHtml(html) {
+    var txt = document.createElement("textarea");
+    txt.innerHTML = html;
+    return txt.value;
+}
+var routingInfo;
+//check the return authentication of the login is successful, we display the drive box and hide the login box.
+function handleAuthResult(authResult) {
+    if (authResult && !authResult.error) {
+        $("#drive-box").show();
+        $("#drive-box").css("display","inline-block");
+        $("#login-box").hide();
+        //showLoading();
+        //getDriveFiles();
+        //get opportunity name 
+        //get list of tasks
+        var RFQid=getUrlVars()["id"];//'aEKN00000004CA1';
+        Visualforce.remoting.Manager.invokeAction(
+            '{!$RemoteAction.BNP_GoogleConnectCtrl.getRFQRoutingDetail}',
+            RFQid,
+            function handleResult(result, event) {
+                routingInfo=result;
+                var jsonString='';
+                var oppName=result.RFQ__r.Opportunity__r.Name;
+                console.log(result);
+                rfqRouteId=result.Id;
+                reqInfoID=result.RFQ__c;
+                pfolderId=result.RFQ__r.FolderId__c;
+                var fileid=result.FileId__c;
+                sheetName=decodeHtml(result.Name)+'_'+decodeHtml(oppName);
+                //if(result.FileId__c!=null || result.FileId__c!='') {
+                    Visualforce.remoting.Manager.invokeAction(
+                        '{!$RemoteAction.BNP_GoogleConnectCtrl.getTasks}',
+                        RFQid,
+                        function handleResult(result, event) {
+                            var jsonString='';
+                            console.log(result);
+                            for(var i=0;i<result.length;i++){
+                                    jsonString+='{"properties": {"title": "'+decodeHtml(result[i].Task_Name__c )+'"}},';
+                            }
+                            
+                            jsonString= jsonString.replace(/,\s*$/, "");
+                            console.log(sheetJson);
+                            
+                            sheetJson=JSON.parse('['+jsonString+']');
+                            console.log(sheetJson);
+                            
+                            if(pfolderId==null || pfolderId=='') {
+                                addFolder(decodeHtml(oppName));
+                            }else{
+                                if(fileid==null || fileid=='') {
+                                console.log(fileid);
+                                FOLDER_ID=pfolderId;
+                                createSheet(sheetName,sheetJson);
+                                }
+                            }
+                            
+                    });
+                    
+            //}
+                
+                
+            });
+
+        
+        
+        
+        loadSheetsApi();
+    } else {
+        $("#login-box").show();
+        $("#drive-box").hide();
+    }
+}
+/******************** END AUTHENTICATION ********************/
+
+
+function loadSheetsApi() {
+    var discoveryUrl = 'https://sheets.googleapis.com/$discovery/rest?version=v4';
+    gapi.client.load(discoveryUrl);
+}
+
+function createSheet(title,taskList) {
+            var access_token =  gapi.auth.getToken().access_token;
+            
+            var request = gapi.client.request({
+               'path': 'https://sheets.googleapis.com/v4/spreadsheets?key='+API_Key,
+               //'path': 'https://docs.google.com/a/globalfoundries.com/spreadsheets/create?usp=drive_web&folder=0BxFuktT2XiEJTl9yTUVnM3kzQTg&authuser=0',
+               'method': 'POST',
+               'headers': {
+                   'Content-Type': 'application/json',
+                   'Authorization': 'Bearer ' + access_token,             
+               },
+               'body':{
+                     "properties": {
+                      "title": title
+                     },
+                     "sheets": taskList
+                    }
+               
+            });
+            var oldSheetId;
+            request.execute(function(resp) { 
+               if (!resp.error) {
+                   console.log('SPREADSHEETiD'+resp.spreadsheetId);
+                   oldSheetId=resp.spreadsheetId;
+                    showStatus("Creating sheet");
+                    var request1 = gapi.client.request({
+                               'path': 'https://www.googleapis.com/drive/v3/files/'+resp.spreadsheetId+'/copy?key='+API_Key,
+                               'method': 'POST',
+                               'headers': {
+                                   'Content-Type': 'application/json',
+                                   'Authorization': 'Bearer ' + access_token,             
+                               },
+                               'body':{                                    
+                                    "name": sheetName,
+                                     "parents": [
+                                      FOLDER_ID
+                                     ]
+                                    }
+ 
+                                });
+                request1.execute(function(resp) { 
+                   if (!resp.error) {
+                       console.log('SPREADSHEETiD'+resp.id);
+                       //update file id to rfq
+                       
+                       Visualforce.remoting.Manager.invokeAction(
+                            '{!$RemoteAction.BNP_GoogleConnectCtrl.updateRFQ}',
+                            rfqRouteId,resp.id,
+                            function handleResult(result, event) {
+                                //up[date each sheet with data
+                                for(var i=0; i<taskList.length;i++){
+                                    console.log(taskList);
+                           var request1 = gapi.client.request({
+                               
+                                           'path': 'https://sheets.googleapis.com/v4/spreadsheets/'+resp.id+'/values/'+taskList[i].properties.title+'!A1?valueInputOption=RAW&key='+API_Key,
+                                           'method': 'PUT',
+                                           'headers': {
+                                               'Content-Type': 'application/json',
+                                               'Authorization': 'Bearer ' + access_token,             
+                                           },
+                               'body':{"range":taskList[i].properties.title+"!A1","values":[["",decodeHtml(routingInfo.RFQ__r.Opportunity__r.Name+'_'+routingInfo.Name)],["",""],
+                                       ["Opportunity Name",decodeHtml(routingInfo.RFQ__r.Opportunity__r.Name)],["Account Name",decodeHtml(routingInfo.RFQ__r.Account__r.Name)],
+                                       ["Route Name",decodeHtml(routingInfo.Name)],["Option Name",decodeHtml(routingInfo.RFQ__r.Customer_Requirement__r.Name)],
+                                       ["Response Date",new Date(routingInfo.CreatedDate).toISOString()],["",""],["Link for Opportunity",getBaseURL()+routingInfo.RFQ__r.Opportunity__c],,["Link for Account",getBaseURL()+routingInfo.RFQ__r.Account__c],["Link for Option",getBaseURL()+routingInfo.RFQ__r.Customer_Requirement__c],["Link For RFQ",getBaseURL()+routingInfo.Id],["",""],["",""],["",""],["Note: If you are not able to access any link on google sheet you can contact accout manager or FAE"]]}
+                            
+
+                                            });
+                            request1.execute(function(resp) { 
+                               
+                                   console.log('response'+resp);
+                               
+                                hideStatus();
+                                hideLoading();
+                                //store the id of sheet in request information
+                                
+                                //showErrorMessage("Error: " + resp.error.message);
+                            
+                           });
+                           
+                           }
+                            
+                            });
+                       
+                        //delete the old file
+               
+                           var request1 = gapi.client.request({
+                               
+                                           'path': 'https://www.googleapis.com/drive/v3/files/'+oldSheetId+'?key='+API_Key,
+                                           'method': 'DELETE',
+                                           'headers': {
+                                               'Content-Type': 'application/json',
+                                               'Authorization': 'Bearer ' + access_token,             
+                                           }
+
+                                            });
+                            request1.execute(function(resp) { 
+                               
+                                   console.log('response'+resp);
+                               
+                                hideStatus();
+                                hideLoading();
+                                //store the id of sheet in request information
+                                
+                                //showErrorMessage("Error: " + resp.error.message);
+                            
+                           });
+                      
+                       
+                       
+                       
+                   }
+                else{
+                    hideStatus();
+                    hideLoading();
+                    showErrorMessage("Error: " + resp.error.message);
+                }
+               });
+               
+               
+              
+               
+               
+               }else{
+                    hideStatus();
+                    hideLoading();
+                    showErrorMessage("Error: " + resp.error.message);
+               }
+            });
+        
+    }
+    
+function getBaseURL () {
+   return location.protocol + "//" + location.hostname+"/";
+}
+    
+function addFolder(oppName){
+        showLoading();
+        showStatus("Creating folder in progress...");
+        var access_token =  gapi.auth.getToken().access_token;
+        var request = gapi.client.request({
+           'path': '/drive/v2/files/',
+           'method': 'POST',
+           'headers': {
+               'Content-Type': 'application/json',
+               'Authorization': 'Bearer ' + access_token,             
+           },
+           'body':{
+               "title" : oppName,
+               "mimeType" : "application/vnd.google-apps.folder",
+               "parents": [{
+                    "kind": "drive#file",
+                    "id": FOLDER_ID
+                }]
+           }
+        });
+
+        request.execute(function(resp) { 
+           if (!resp.error) {
+                console.log('folderid'+resp.id);
+                
+                FOLDER_ID=resp.id;
+                
+                //update folder id in RI
+                
+                Visualforce.remoting.Manager.invokeAction(
+                            '{!$RemoteAction.BNP_GoogleConnectCtrl.updateRequestInformation}',
+                            reqInfoID,FOLDER_ID,
+                            function handleResult(result, event) {
+                            
+                            
+                            
+                            });
+                
+                showStatus("Loading Google Drive files...");
+                //getDriveFiles();
+                createSheet(sheetName,sheetJson);
+           }else{
+                hideStatus();
+                hideLoading();
+                showErrorMessage("Error: " + resp.error.message);
+           }
+        });
+}
+
+/******************** PAGE LOAD ********************/
+$(function(){
+    hideLoading();
+
+});
+
+function getUrlVars() {
+    var vars = {};
+    var parts = window.location.href.replace(/[?&]+([^=&]+)=([^&]*)/gi,    
+    function(m,key,value) {
+      vars[key] = value;
+    });
+    return vars;
+  }
+
+/******************** END PAGE LOAD ********************/
+
+/******************** DRIVER API ********************/
+function getDriveFiles(){
+    
+}
+
+function getFiles(){
+    
+}
+
+function showUserInfo(){
+    var request = gapi.client.drive.about.get();
+    var obj = {};
+    request.execute(function(resp) { 
+       if (!resp.error) {
+            $("#drive-info").show();
+            $("#span-name").html(resp.name);
+            $("#span-totalQuota").html(formatBytes(resp.quotaBytesTotal));
+            $("#span-usedQuota").html(formatBytes(resp.quotaBytesUsed));
+       }else{
+            showErrorMessage("Error: " + resp.error.message);
+       }
+   });
+}
+
+function buildFiles(){
+    
+}
+
+//Initialize the click button for each individual drive file/folder
+//this need to be recalled everytime the Google Drive data is generated
+function initDriveButtons(){
+    
+}
+
+
+
+//call back function for getting text
+function callBackGetText(response){
+    if(response == null){
+         showErrorMessage("Error getting text content.");
+    }else{
+        hideLoading();
+        hideStatus();
+        $("#transparent-wrapper").show();
+        $("#float-box-text").show();
+        $("#text-content").html(response.replace(/(\r\n|\n|\r)/gm, "<br>"));
+    }
+}
+
+//function to clone an object
+function cloneObject(obj) {
+    if (obj === null || typeof obj !== 'object') {
+        return obj;
+    }
+    var temp = obj.constructor(); 
+    for (var key in obj) {
+        temp[key] = cloneObject(obj[key]);
+    }
+    return temp;
+}
+
+
+/******************** NOTIFICATION ********************/
+//show loading animation
+function showLoading() {
+    if ($("#drive-box-loading").length === 0) {
+        $("#drive-box").prepend("<div id='drive-box-loading'></div>");
+    }
+    $("#drive-box-loading").html("<div id='loading-wrapper'><div id='loading'><img src='images/loading-bubble.gif'></div></div>");
+}
+
+//hide loading animation
+function hideLoading() {
+    $("#drive-box-loading").html("");
+}
+
+//show status message
+function showStatus(text) {
+    $("#status-message").show();
+    $("#status-message").html(text);
+}
+
+//hide status message
+function hideStatus() {
+    $("#status-message").hide();
+    $("#status-message").html("");
+}
+
+//show error message
+function showErrorMessage(errorMessage) {
+    $("#error-message").html(errorMessage);
+    $("#error-message").show(100);
+    setTimeout(function () {
+        $("#error-message").hide(100);
+    }, 3000);
+}
+
+/******************** END NOTIFICATION ********************/
+
+</script>
+<script src="https://apis.google.com/js/client.js?onload=checkAuth"></script>
+</body>
+</apex:page>

@@ -1,0 +1,509 @@
+<!--
+    Author: Anirban Roy
+    Description: This serves as the translation/matching page for GDS and GR masks with CPL masks
+                 in the Multi Source Tapeout.
+    History: 
+        ARoy    09222014    - page creation.
+        ARoy    01122015    - modified page to include the GDS Header component code. 
+-->
+<apex:page controller="CPQTranslateMaskLayerController" sidebar="false" showHeader="false">      
+      <style>
+            .page-number {
+                cursor: pointer;
+                cursor: hand;
+                padding-left:2px;
+                padding-right:2px;
+                border:1px solid;
+            }            
+            #headerTable th
+            {
+                text-align:center; 
+                vertical-align:middle;
+            }
+            #headerTable td
+            {
+                text-align:center; 
+                vertical-align:middle;
+            }
+            /*.inputTextGRLayer
+            {
+                width:100px;
+            }*/
+            .pagination {
+                 background: #f1f1f1;
+                 border: 1px solid #e5e5e5;
+                 text-align: right;
+                 vertical-align:middle;
+                 padding: 0.7em;
+                 cursor: default; 
+             }
+             .pagination a {
+                 text-decoration: underline;
+                 color: black; 
+             }
+             .pagination a:selected {
+                 text-decoration: none; 
+             }
+             .pagination a, .pagination span {
+                 padding: 0.2em 0.3em; 
+             }
+             /*.errorMsg{
+                 font-size: 10px;
+             }*/
+             #GDSLayerTranslationChatterFeeds {
+                 padding-left: 2%;
+             }
+             .customer {
+                 color: #8bc53f;
+             }
+             .internal {
+                 color: #FFA500;
+             } 
+             .maskset {
+                 color: #015ba7;    
+             }
+             .fake-link {
+                text-decoration: underline;
+                cursor: pointer; 
+                cursor: hand;
+             }
+            .field-label {
+                font-weight: bold;
+            }                     
+
+            .checkout-wrap {
+                color: #444;
+                font-family: 'PT Sans Caption', sans-serif;            
+                max-width: 1200px;
+                position: relative;
+            }
+
+            <!-- Progress with steps -->
+    
+            ol.progtrckr {
+                margin: 0;
+                padding: 0;
+                list-style-type none;
+                align: center;
+            }
+    
+            ol.progtrckr li {
+                display: inline-block;
+                text-align: center;
+                line-height: 3em;
+                font-size: 120%;
+                font-family: 'PT Sans Caption', sans-serif;
+                font-weight:bold;
+            }
+
+            ol.progtrckr[data-progtrckr-steps="4"] li { width: 20%; }
+
+            ol.progtrckr li.progtrckr-done {
+                color: yellowgreen;
+                border-bottom: 4px solid yellowgreen;
+            }
+    
+            ol.progtrckr li.progtrckr-active {
+                color: orange;
+                border-bottom: 4px solid orange;
+            }
+    
+            ol.progtrckr li.progtrckr-todo {
+                color: silver; 
+                border-bottom: 4px solid silver;
+            }
+            
+            ol.progtrckr li.progtrckr-next-active {
+                color: black;
+                border-bottom: 4px solid black;
+            }
+
+            ol.progtrckr li:after {
+                content: "\00a0\00a0";
+            }
+            ol.progtrckr li:before {
+                position: relative;
+                bottom: -2.5em;
+                float: left;
+                left: 50%;
+                line-height: 1em;
+            }
+            ol.progtrckr li.progtrckr-done:before {
+                content: "\2713";
+                color: white;
+                background-color: yellowgreen;
+                height: 1.2em;
+                width: 1.2em;
+                line-height: 1.2em;
+                border: none;
+                border-radius: 1.2em;
+            }
+        
+            ol.progtrckr li.progtrckr-active:before {
+                content: "\2713";
+                color: white;
+                background-color: orange;
+                height: 1.2em;
+                width: 1.2em;
+                line-height: 1.2em;
+                border: none;
+                border-radius: 1.2em;
+            }
+            
+            ol.progtrckr li.progtrckr-next-active:before {
+                content: "\039F";
+                color: black;
+                background-color: white;
+                font-size: 1.5em;
+                bottom: -1.6em;
+            }
+        
+            ol.progtrckr li.progtrckr-todo:before {
+                content: "\039F";
+                color: silver;
+                background-color: white;
+                font-size: 1.5em;
+                bottom: -1.6em;
+            }                                                        
+      </style>
+      <c:JqueryLibrary />
+      <script>
+        function confirmTranslation(){
+            var ret = confirm("This will override your current translation. Do you want to continue?");
+            if (ret == true) {
+                blockPage();
+                retranslate();
+            }
+        }
+        
+        function showGDSLayerTranslationChatterFeeds() {
+            document.getElementById("showFeedLink").style.display = "none";
+            document.getElementById("hideFeedLink").style.display = "block";
+            document.getElementById("GDSLayerTranslationChatterFeeds").style.display = "block";
+        }
+        
+        function hideGDSLayerTranslationChatterFeeds() {
+            document.getElementById("showFeedLink").style.display = "block";
+            document.getElementById("hideFeedLink").style.display = "none";
+            document.getElementById("GDSLayerTranslationChatterFeeds").style.display = "none";
+        }
+        
+        function unblockPage(){  
+            $.unblockUI();  
+        } 
+        
+        function blockPage(){   
+           $.blockUI({ message: '<img src="/img/loading32.gif" /><h1>Loading...</h1>',   
+                            css: {   
+                                 border: 'none',   
+                                 padding: '15px',   
+                                 '-webkit-border-radius': '10px',   
+                                 '-moz-border-radius': '10px',   
+                                 opacity: .9  
+                             }   
+           });   
+            return false;  
+        }
+      </script>
+      <apex:sectionHeader title="GDS Layer" subtitle="GDS Layer Translation"/>     
+
+      <div class="chatterShowHideFeed">
+        <span class="showFeedLink" id="showFeedLink" style="display: none;padding-left: 2%;">
+            <a href="javascript:void();" class="innerLink" onclick="javascript:showGDSLayerTranslationChatterFeeds();">
+                <img src="/s.gif" alt="Show Feed" title="Show Feed" />
+                <span class="linkText">Show Feed</span>
+            </a>
+        </span>
+        <span class="hideFeedLink" id="hideFeedLink" style="display: inline-block;padding-left: 2%;">
+            <a href="javascript:void();" class="innerLink" onclick="javascript:hideGDSLayerTranslationChatterFeeds();">
+                <img src="/s.gif" alt="Hide Feed" title="Hide Feed" />
+                <span class="linkText">Hide Feed</span>
+            </a>
+        </span>
+      </div>
+      
+      <table>
+          <tr>
+              <td id="GDSLayerTranslationChatterFeeds" style="display: block;overflow-y: auto;height:250px;width:100%">
+                  <chatter:feed entityId="{!gdsId}" />
+              </td>
+              <td style="width:50%">
+                  <apex:pageMessages id="pgMsgId"/>
+              </td>
+          </tr>
+      </table>
+      
+      <!--<div>
+          <div id="GDSLayerTranslationChatterFeeds" style="display: block;overflow-y: auto;height:250px;width:50%">
+            <chatter:feed entityId="{!gdsId}" />
+          </div>
+          <apex:pageMessages id="pgMsgId"/>
+      </div><br/>
+      <apex:pageMessages id="pgMsgId"/>-->
+                   
+      <apex:form id="formId">            
+            <apex:pageBlock id="mainPgId">                
+                  <div style="text-align:center;">
+                      <apex:panelGrid columns="7" style="padding-right:3px;margin-left:auto;margin-right:auto">
+                          <apex:commandLink action="{!generateExcel}" value="Generate To Excel" styleClass="btn" style="align:center;text-decoration:none;padding:4px;" target="_blank" rendered="{!isGDSTranslate}"/>
+                          <apex:commandLink action="{!goToUploadGDSPage}" value="Modify GDS Layers" styleClass="btn" style="align:center;text-decoration:none;padding:4px;" target="_self" rendered="{!NOT(isExternalUser) && isGDSTranslate}"/>
+                          <apex:outputPanel layout="block">                            
+                              <apex:outputPanel onclick="confirmTranslation();return false;" styleClass="btn" style="align:center;text-decoration:none;padding:4px;" rendered="{!NOT(isExternalUser) && isGDSTranslate}">Retranslate</apex:outputPanel>                      
+                              <apex:actionFunction action="{!retranslate}" name="retranslate" rerender="mainPgId,pgMsgId,GDSLayerTranslationChatterFeeds" oncomplete="unblockPage();" rendered="{!NOT(isExternalUser) && isGDSTranslate}"/>
+                          </apex:outputPanel>                              
+                          <apex:outputPanel layout="block">
+                              <apex:outputPanel onclick="blockPage();save();return false;" styleClass="btn" style="align:center;text-decoration:none;padding:4px;" rendered="{!NOT(isExternalUser) && isGDSTranslate}">Save</apex:outputPanel>
+                              <apex:actionFunction action="{!validationAndSave}" name="save" rerender="mainPgId,pgMsgId" oncomplete="unblockPage();" rendered="{!NOT(isExternalUser) && isGDSTranslate}"/>                                            
+                          </apex:outputPanel>                              
+                          <apex:commandbutton action="{!approve}" value="Finalize" rendered="{!NOT(isExternalUser) && isGDSTranslate}"/>                                                                                                              
+                          <apex:commandbutton action="{!reject}" value="Reject" rendered="{!NOT(isExternalUser) && isGDSTranslate}"/>
+                          <apex:commandbutton action="{!cancel}" value="Close Configuration" />
+                      </apex:panelGrid>                      
+                  </div>
+                  <br/>
+                  <!--<c:GDSHeader gid="{!proposalId}" gTranslatedCount="{!totalRowCount}"/>-->
+                  <!--GDS Header section-->
+                  <apex:actionFunction name="backToGDS" action="{!backToGDS}"/>
+                  <apex:actionFunction name="backToTransLate" action="{!backToTranslate}"/>
+                  <table width="80%" align="center"><tr><td>
+                      <ol class="progtrckr" data-progtrckr-steps="4">
+                          <li class="progtrckr-done">
+                              <apex:outputPanel rendered="{!AND(GDSUploadStep = 'progtrckr-active')}">
+                                  <apex:commandLink target="_self" action="{!back}" value="1. Configuration"/>                        
+                              </apex:outputPanel> 
+                              <apex:outputPanel rendered="{!NOT(GDSUploadStep = 'progtrckr-active')}">
+                                  <apex:outputLabel value="1. Configuration"/>
+                              </apex:outputPanel>                    
+                          </li>    
+                          <li class="{!GDSUploadStep}">
+                            <apex:outputPanel rendered="{!OR(GDSUploadStep = 'progtrckr-active',AND(GDSTranslateStep = 'progtrckr-active',NOT(isExternalUser)))}">
+                                <apex:outputLabel value="2. GDS ASCII File Upload" styleclass="fake-link" onclick="backToGDS()"/>                    
+                            </apex:outputPanel>
+                            <apex:outputPanel rendered="{!OR(AND(NOT(GDSUploadStep = 'progtrckr-active'),NOT(GDSTranslateStep = 'progtrckr-active')),AND(GDSTranslateStep = 'progtrckr-active',(isExternalUser)))}">
+                                <apex:outputLabel value="2. GDS ASCII File Upload"/>
+                            </apex:outputPanel>                                                          
+                          </li>    
+                          <li class="{!GDSTranslateStep}">
+                            <apex:outputPanel rendered="{!AND(OR(GDSTranslateStep = 'progtrckr-active',GDSTranslateStep = 'progtrckr-next-active'),NOT(isExternalUser))}">
+                                <apex:outputLabel value="3. Translation Stage" styleclass="fake-link" onclick="backToTransLate()"/>                                              
+                            </apex:outputPanel>
+                            <apex:outputPanel rendered="{!OR(NOT(OR(GDSTranslateStep = 'progtrckr-active',GDSTranslateStep = 'progtrckr-next-active')),isExternalUser)}">
+                                <apex:outputLabel value="3. Translation Stage"/>
+                            </apex:outputPanel>                 
+                          </li>    
+                          <li class="{!GDSApproveStep}">
+                              <apex:outputPanel rendered="{!AND(GDSApproveStep = 'progtrckr-next-active',NOT(isExternalUser))}">
+                                  <apex:outputLabel value="4. Approved" styleclass="fake-link" onclick="approve()"/>                                              
+                              </apex:outputPanel>
+                              <apex:outputPanel rendered="{!OR(NOT(GDSApproveStep = 'progtrckr-next-active'),isExternalUser)}">
+                                  <apex:outputLabel value="4. Approved"/>
+                              </apex:outputPanel>
+                          </li>      
+                      </ol>
+                  </td></tr></table>
+                  
+                  <apex:panelGrid columns="2" style="padding-top: 40px">       
+                     <apex:outputLabel value="File Name:" styleClass="field-label"/>
+                     <apex:outputText value="{!fileName}" style="padding-left:10px"/>
+                       
+                     <apex:outputLabel value="Top Cell Name:" styleClass="field-label"/>
+                     <apex:outputText value="{!topCellName}" style="padding-left:10px"/>
+                       
+                     <apex:outputLabel value="GDS Layer count:" styleClass="field-label"/>
+                     <apex:outputText value="{!GDSRowCount}" style="padding-left:10px"/>
+                       
+                     <apex:outputLabel value="Translated Record count:" styleClass="field-label" rendered="{!NOT(ISNULL(totalRowCount))}"/>
+                     <apex:outputText value="{!totalRowCount}" rendered="{!NOT(ISNULL(totalRowCount))}" style="padding-left:10px"/>
+                           
+                  </apex:panelGrid>
+                  <!--End of GDS Header section--> 
+                  <br/>
+                  <div style="text-align:right;">
+                      <apex:outputPanel rendered="{!AND(IF(paginater.isAll, false, true), IF(paginater.totalPage == 1, false, true))}" style="padding: 5px 0px; text-align:right;">
+                           <!--<apex:outputText rendered="{!paginater.showPrevious}">
+                               <apex:commandLink action="{!previousPage}" value="Prev" onclick="blockPage();" oncomplete="unblockPage();" rerender="mainPgId" />
+                           </apex:outputText>-->
+                           <apex:repeat value="{!paginater.pageList}" var="pl">
+                               <apex:outputPanel style="padding-left:10px;padding-right:5px">
+                                   <apex:outputText rendered="{!!pl.isActive}">
+                                       <apex:commandLink action="{!updatePage}" onclick="blockPage();" oncomplete="unblockPage();" rerender="mainPgId" style="text-decoration:none;{!IF(!(ISBLANK(errorMap[pl.pageNum - 1])) && errorMap[pl.pageNum - 1],'color:red;',IF(!(ISBLANK(warnMap[pl.pageNum - 1])) && warnMap[pl.pageNum - 1],'color:orange;','color:black;'))}" styleClass="page-number">
+                                           {!pl.pageNum}                              
+                                           <apex:param name="selectedPage" value="{!pl.pageNum}" assignTo="{!paginater.pageNum}" />
+                                       </apex:commandLink>
+                                   </apex:outputText>
+                                   <apex:outputText rendered="{!pl.isActive}" value="{!pl.pageNum}" style="{!IF(!(ISBLANK(errorMap[pl.pageNum - 1])) && errorMap[pl.pageNum - 1],'color:red;',IF(!(ISBLANK(warnMap[pl.pageNum - 1])) && warnMap[pl.pageNum - 1],'color:orange;','color:black;'))}font-weight:bold;font-size:18px;" styleClass="page-number"/>
+                               </apex:outputPanel>  
+                           </apex:repeat>
+                           <!--<apex:outputText rendered="{!paginater.showNext}">
+                               <apex:commandLink action="{!nextPage}" value="Next" onclick="blockPage();" oncomplete="unblockPage();" rerender="mainPgId" />
+                           </apex:outputText>-->
+                      </apex:outputPanel>
+                   </div>
+
+                   <br/>                   
+                   <apex:outputPanel id="dataPanel">
+                       <table width="100%" id="headerTable" class="list">
+                           <thead class="rich-table-thead">
+                               <tr class="headerRow">
+                                    <th class="headerRow" scope="col" colspan="1" style="background-color:#D8CCC0;">
+                                        <div>&nbsp;</div>
+                                    </th>
+                                    <th class="headerRow" scope="col" colspan="{!IF(isExternalUser,3,7)}" style="background-color:#FFCC99;">
+                                        <div>GDS</div>
+                                    </th>
+                                    <th class="headerRow" scope="col" colspan="1" style="background-color:#99CCFF;">
+                                        <div>Configuration</div>
+                                    </th>
+                                    <th class="headerRow" scope="col" colspan="1" style="background-color:#80CCCC;">
+                                        <div>&nbsp;</div>
+                                    </th>
+                               </tr>
+                           </thead>
+                           <thead class="rich-table-thead">
+                               <tr class="headerRow">
+                                    <th class="headerRow" scope="col" colspan="1" style="background-color:#D8CCC0;">
+                                        <div>&nbsp;</div>
+                                    </th>  
+                                    <th class="headerRow" scope="col" colspan="3" style="background-color:#A6A6A6;">
+                                        <div>Customer Layers</div>
+                                    </th>
+                                    
+                                    <th class="headerRow" scope="col" colspan="3" style="{!IF(isExternalUser,'display:none','display:')};background-color:#FF9966;">
+                                        <div>GLOBALFOUNDRIES Design Layer</div>
+                                    </th>
+                                    <th class="headerRow" scope="col" colspan="1" style="{!IF(isExternalUser,'display:none','display:')};background-color:#FF9966;">
+                                        <div>Translated Masks</div>
+                                    </th>
+                                    
+                                    <th class="headerRow" scope="col" colspan="1" style="background-color:#99CCFF;">
+                                        <div>Masks</div>
+                                    </th>
+                                    <th class="headerRow" scope="col" colspan="1" style="background-color:#80CCCC;">
+                                        <div>&nbsp;</div>
+                                    </th>                                    
+                               </tr>
+                           </thead>
+                           <thead class="rich-table-thead">
+                               <tr class="headerRow">
+                                    <th class="headerRow" scope="col" colspan="1" style="background-color:#D8CCC0;">
+                                        <div>Record Number</div>
+                                    </th>  
+                                    <th class="headerRow" scope="col" colspan="1" style="background-color:#A6A6A6;">
+                                        <div>MKT_NAME</div>
+                                    </th>
+                                    <th class="headerRow" scope="col" colspan="1" style="background-color:#A6A6A6;">
+                                        <div>MKT_LAYER</div>
+                                    </th>
+                                    <th class="headerRow" scope="col" colspan="1" style="background-color:#A6A6A6;">
+                                        <div>MKT_DT</div>
+                                    </th>                                    
+                                    
+                                    <th class="headerRow" scope="col" colspan="1" style="{!IF(isExternalUser,'display:none','display:')};background-color:#FF9966;">
+                                        <div>Names</div>
+                                    </th>
+                                    <th class="headerRow" scope="col" colspan="1" style="{!IF(isExternalUser,'display:none','display:')};background-color:#FF9966;">
+                                        <div>Design Layer No</div>
+                                    </th>
+                                    <th class="headerRow" scope="col" colspan="1" style="{!IF(isExternalUser,'display:none','display:')};background-color:#FF9966;">
+                                        <div>Data Type</div>
+                                    </th>                                                                        
+                                    <th class="headerRow" scope="col" colspan="1" style="{!IF(isExternalUser,'display:none','display:')};background-color:#FF9966;">
+                                        <div>Mask</div>
+                                    </th>
+                                    
+                                    <th class="headerRow" scope="col" colspan="1" style="background-color:#99CCFF;">
+                                        <div>Mask</div>
+                                    </th>
+                                    <th class="headerRow" scope="col" colspan="1" style="background-color:#80CCCC;">
+                                        <div>                                            
+                                            <apex:commandlink onclick="blockPage();" oncomplete="unblockPage();" 
+                                                action="{!sortByStatus}" value="Status " rerender="mainPgId">
+                                                <apex:outputPanel layout="none" rendered="{!sortAscending}">&#9650;</apex:outputPanel>
+                                                <apex:outputPanel layout="none" rendered="{!NOT(sortAscending)}">&#9660;</apex:outputPanel>
+                                            </apex:commandLink>                                   
+                                        </div>
+                                    </th>
+                               </tr>
+                           </thead>                               
+                           <!--<apex:repeat value="{!maskLayerListPerPage}" var="calcMaskLayer" id="calcMaskLayerList">-->
+                           <tbody>
+                           <tr>
+                            <td colspan="10">
+                                <div style="overflow-y:auto;overflow-x:none;height:450px;">
+                                    <table width="100%">                           
+                               <apex:repeat value="{!fullGenericObjMap[paginater.index]}" var="calcMaskLayer" id="calcMaskLayerList">                                 
+                                   <tr class="dataRow {!IF(mod(calcMaskLayer.rowCount,2)>0,'odd','even')}">
+                                       <td class="dataCell" width="11%">
+                                           <apex:outputText value="{!calcMaskLayer.rowCount}"/>
+                                       </td>                                                                      
+                                                                  
+                                       <td class="dataCell" width="9%">
+                                           <apex:outputText value="{!calcMaskLayer.gdsLayerName}"/>
+                                       </td>                                                                                                                                            
+                                   
+                                       <td class="dataCell" width="10%">
+                                           <apex:outputText value="{!calcMaskLayer.gdsLayerNumber}"/>
+                                       </td>
+                                       
+                                       <td class="dataCell" width="7%">
+                                           <apex:outputText value="{!calcMaskLayer.gdsLayerDT}"/>
+                                       </td>
+                                       
+                                       <td class="dataCell" width="1%" style="{!IF(isExternalUser,'display:none','display:')}">
+                                           <apex:outputText value="{!calcMaskLayer.grLayerName}"/>
+                                       </td>                                                                  
+                                   
+                                       <td class="dataCell" width="11%" style="{!IF(isExternalUser,'display:none','display:')}">
+                                           <apex:outputText value="{!calcMaskLayer.grLayerNumber}"/>
+                                       </td>
+                                       
+                                       <td class="dataCell" width="8%" style="{!IF(isExternalUser,'display:none','display:')}">
+                                           <apex:outputText value="{!calcMaskLayer.grLayerDT}"/>
+                                       </td>
+                                   
+                                       <td class="dataCell" width="14%" style="{!IF(isExternalUser,'display:none','display:')}">
+                                           <apex:outputText value="{!calcMaskLayer.grMaskLayer}"/>
+                                       </td>
+                                       
+                                       <td class="dataCell" width="11%">
+                                           <apex:outputText value="{!calcMaskLayer.cplMaskLayer}"/>
+                                       </td>
+                                       
+                                       <td class="dataCell" width="5%">
+                                           <apex:image value="/img/msg_icons/confirm32.png" rendered="{!calcMaskLayer.status=='success'}"/>
+                                           <apex:outputLink value="/{!IF(calcMaskLayer.grLayerId==null,calcMaskLayer.grMasterList,calcMaskLayer.grLayerId)}" rendered="{!AND(calcMaskLayer.status=='warn',isUsrInGDSGroup)}" target="_blank"><apex:image value="/img/msg_icons/warning24.png" /></apex:outputLink>
+                                           <apex:image value="/img/msg_icons/warning24.png" rendered="{!AND(calcMaskLayer.status=='warn',NOT(isUsrInGDSGroup))}"/>
+                                           <apex:outputLink value="/{!IF(calcMaskLayer.grLayerId==null,calcMaskLayer.grMasterList,calcMaskLayer.grLayerId)}" rendered="{!AND(calcMaskLayer.status=='error',isUsrInGDSGroup)}" target="_blank"><apex:image value="/img/msg_icons/error32.png" /></apex:outputLink>
+                                           <apex:image value="/img/msg_icons/error32.png" rendered="{!AND(calcMaskLayer.status=='error',NOT(isUsrInGDSGroup))}"/>
+                                       </td>
+                                   </tr>
+                               </apex:repeat>
+                               </table>
+                               </div>
+                               </td>
+                               </tr>
+                            </tbody> 
+                        </table>
+                    </apex:outputPanel>
+                    <br/>
+                    <div style="text-align:center;">
+                      <apex:panelGrid columns="7" style="padding-right:3px;margin-left:auto;margin-right:auto">
+                          <apex:commandLink action="{!generateExcel}" value="Generate To Excel" styleClass="btn" style="align:center;text-decoration:none;padding:4px;" target="_blank" rendered="{!isGDSTranslate}"/>
+                          <apex:commandLink action="{!goToUploadGDSPage}" value="Modify GDS Layers" styleClass="btn" style="align:center;text-decoration:none;padding:4px;" target="_self" rendered="{!NOT(isExternalUser) && isGDSTranslate}"/>                      
+                          <apex:outputPanel layout="block">
+                             <apex:outputPanel onclick="confirmTranslation();return false;" styleClass="btn" style="align:center;text-decoration:none;padding:4px;" rendered="{!NOT(isExternalUser) && isGDSTranslate}">Retranslate</apex:outputPanel>
+                             <apex:actionFunction action="{!retranslate}" name="retranslate" rerender="mainPgId,pgMsgId,GDSLayerTranslationChatterFeeds" oncomplete="unblockPage();" rendered="{!NOT(isExternalUser) && isGDSTranslate}"/>                                  
+                          </apex:outputPanel>
+                          <apex:outputPanel layout="block">
+                             <apex:outputPanel onclick="blockPage();save();return false;" styleClass="btn" style="align:center;text-decoration:none;padding:4px;" rendered="{!NOT(isExternalUser) && isGDSTranslate}">Save</apex:outputPanel>
+                             <apex:actionFunction action="{!validationAndSave}" name="save" rerender="mainPgId,pgMsgId" oncomplete="unblockPage();" rendered="{!NOT(isExternalUser) && isGDSTranslate}"/>
+                          </apex:outputPanel>                          
+                          <apex:commandbutton action="{!approve}" value="Finalize" rendered="{!NOT(isExternalUser) && isGDSTranslate}"/>
+                          <apex:commandbutton action="{!reject}" value="Reject" rendered="{!NOT(isExternalUser) && isGDSTranslate}"/>                                
+                          <apex:commandbutton action="{!cancel}" value="Close Configuration" />
+                      </apex:panelGrid>
+                    </div>                                                                                                     
+                </apex:pageBlock>
+                <apex:actionFunction action="{!approve}" name="approve" />                        
+            </apex:form>                                  
+</apex:page>

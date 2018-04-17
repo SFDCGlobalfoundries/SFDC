@@ -1,0 +1,256 @@
+<apex:page cache="false" controller="CVASurveyController" action="{!rateSurvey}" showHeader="false" sidebar="false" showChat="false" >
+    <html>
+        <head>
+            <title>Thank you for your rating</title>
+            <style type="text/css">
+                body { background-color:#EEE;font-family:arial,sans-serif;padding:0px 0; }
+                #container { background-color:#FFF;max-width:900px;margin:10px auto 10px auto;padding:0px 0 0px 0;border:2px solid #FFA62F;text-align:center;border-radius:20px;font-family:arial,sans-serif; }
+                #container2 { background-color:#FFF;max-width:800px;margin:20px auto 20px auto;padding:20px 0 20px 0;border:2px solid #CCC;text-align:left;border-radius:5px;font-family:arial,sans-serif; }
+                #logo { margin-bottom:15px; }
+                p { padding:0;margin:0 0 10 10;color:#333; }          
+                #divider2 { width:100%;max-width:100%;border:1px;height:2px;background-color:#EEE; }
+                textarea { width:90%;max-width:410px;border:1px solid #CCC;padding:5px;margin-top:5px;margin-bottom:5px;min-height:30px;max-height:200px;height:30px; }
+               .submit { display:block;text-align:center;margin:0 auto;height:25px;width:120px; } 
+                table { margin: 0 auto; }
+                label { font-weight: normal; font-weight: normal; font-size: 0.9em;  margin-center: 10px; display: inline-block;font-family:arial,sans-serif;}                   
+                td {text-align:left; valign:middle;}
+            </style>
+        </head>
+        <script type="text/javascript">
+            window.history.forward();
+            function noBack() { window.history.forward(); }
+        </script>
+        <apex:includeScript value="{!URLFOR($Resource.jQueryRating, 'js/jquery-1.6.1.min.js')}"/>
+        <apex:includeScript value="{!URLFOR($Resource.jQueryRating, 'jquery.rating.js')}"/>
+        <apex:stylesheet value="{!URLFOR($Resource.jQueryRating, 'jquery.rating.css')}"/>
+        <body onload="noBack();" >
+            <div id="container">
+                <apex:image id="logo" url="{!setting.Survey_Site_Logo__c}" height="30%" width="70%"/>  
+                <apex:form Id="FormId" >                                      
+                    <div id="container2">
+                        <apex:outputPanel id="outPanel">
+                            <script type="text/javascript">
+                                $(document).ready(function(){            
+                                    $(".rating").rating();  
+                                });
+                            </script>
+                            <apex:outputPanel rendered="{!isInternal}">
+                                <table id="table21" width="90%" style="border-collapse: collapse;">
+                                    <tbody style="vertical-align: middle;">
+                                        <apex:repeat var="f" value="{!fslistInternal}" rendered="{!fslistQuestion != NULL}"   >
+                                            <tr>
+                                                <td style="width: 50%">
+                                                    <br/>                                                                 
+                                                    <apex:outputLabel title="{!$ObjectType.CVA_Survey__c.fields[f].inlineHelpText}" value="{!$ObjectType.CVA_Survey__c.fields[f].inlineHelpText}" />
+                                                </td>
+                                                <td style="width: 40%">
+                                                <apex:selectList value="{!varSurvey[f]}" disabled="false"  >
+                                                        <apex:selectOptions value="{!items}"/>
+                                                    </apex:selectList>
+                                                </td>
+                                            </tr>
+                                        </apex:repeat>
+                                    </tbody>
+                                </table>
+                                <table id="table31" width="90%">
+                                    <tbody style="vertical-align: middle;">
+                                        <br/> 
+                                        <apex:repeat var="f" value="{!fslistComments}" rendered="{!fslistComments != NULL}">
+                                            <tr>
+                                                <td style="width: 50%">
+                                                    <apex:outputLabel value="{!$ObjectType.CVA_Survey__c.fields[f].inlineHelpText}" title="{!$ObjectType.CVA_Survey__c.fields[f].inlineHelpText}" />
+                                                </td>
+                                                <td style="width: 40%">
+                                                    <apex:inputField value="{!varSurvey[f]}" required="true"  />
+                                                </td>
+                                            </tr>
+                                        </apex:repeat>
+                                    </tbody>
+                                </table>
+                                <table id="table311" width="30%">
+                                    <tbody style="vertical-align: middle;">
+                                        <tr>
+                                            <td style="width: 50%">
+                                                <apex:commandButton styleclass="submit" id="submit2" action="{!submitForm}" value="{!$Label.Customer_CVA_Survey_Submit}" reRender="FormId"/>
+                                            </td>
+                                            <td style="width: 50%">
+                                                <apex:commandButton value="Close" styleclass="submit" onclick="window.top.close();" Immediate="true" />
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </apex:outputPanel>
+                            <apex:outputPanel rendered="{!isLoaded}">
+                                <table id="table1" width="90%">
+                                    <tbody style="vertical-align: middle;">
+                                        <p id="yourrating">{!$Label.Customer_CVA_Survey_Message1}</p>
+                                        <tr>
+                                            <td style="width: 50%">
+                                                <apex:outputLabel value="{!$Label.Customer_CVA_Survey_Question1}" />
+                                            </td>
+                                            <td style="width: 40%">
+                                                <c:CVASurveyStar Id="star0" Rating="{!rate}"/>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                                <hr id="divider2" />
+                                <p id="leavecomment">{!$Label.Customer_CVA_Survey_Message2}</p>
+                                <hr id="divider2" />
+                                <table id="table2" width="90%" style="border-collapse: collapse;">
+                                    <tbody style="vertical-align: middle;">
+                                        <apex:repeat var="f" value="{!fslistQuestion}" rendered="{!fslistQuestion != NULL}"   >
+                                            <tr>
+                                                <td style="width: 50%">
+                                                    <br/>                                                                 
+                                                    <apex:outputLabel title="{!$ObjectType.CVA_Survey__c.fields[f].inlineHelpText}" value="{!$ObjectType.CVA_Survey__c.fields[f].inlineHelpText}" />
+                                                </td>
+                                                <td style="width: 40%">
+                                                    <apex:selectList value="{!varSurvey[f]}" disabled="false" enabledClass="True" styleClass="rating" >
+                                                        <apex:selectOptions value="{!items}"/>
+                                                    </apex:selectList>
+                                                </td>
+                                            </tr>
+                                        </apex:repeat>
+                                    </tbody>
+                                </table>
+                                <table id="table3" width="90%">
+                                    <tbody style="vertical-align: middle;">
+                                        <br/> 
+                                        <apex:repeat var="f" value="{!fslistComments}" rendered="{!fslistComments != NULL}">
+                                            <tr>
+                                                <td style="width: 50%">
+                                                    <apex:outputLabel value="{!$ObjectType.CVA_Survey__c.fields[f].inlineHelpText}" title="{!$ObjectType.CVA_Survey__c.fields[f].inlineHelpText}" />
+                                                </td>
+                                                <td style="width: 40%">
+                                                    <apex:inputtextarea value="{!varSurvey[f]}" />
+                                                </td>
+                                            </tr>
+                                        </apex:repeat>
+                                        
+                                    </tbody>
+                                </table>
+                                <table id="table37" width="30%">
+                                    <tbody style="vertical-align: middle;">
+                                        <tr>
+                                            <td style="width: 50%">
+                                                <apex:commandButton styleclass="submit" id="submit" action="{!submitForm}" value="{!$Label.Customer_CVA_Survey_Submit}" reRender="FormId"/>
+                                            </td>
+                                            <td style="width: 50%">
+                                                <apex:commandButton value="Close" styleclass="submit" onclick="window.top.close();" Immediate="true" />
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </apex:outputPanel>
+                            <apex:outputPanel rendered="{!isUpdated}">
+                                <table id="table2" width="90%" style="border-collapse: collapse;">
+                                    <tbody style="vertical-align: middle;">
+                                        <p id="yourrating">{!$Label.Customer_CVA_Survey_Message3}</p>
+                                        <hr id="divider2" />
+                                        <apex:repeat var="f" value="{!fslistPreview}" rendered="{!fslistPreview != NULL}">
+                                            <tr>
+                                                <td style="width: 50%">
+                                                    <apex:outputLabel title="{!$ObjectType.CVA_Survey__c.fields[f].inlineHelpText}" value="{!$ObjectType.CVA_Survey__c.fields[f].inlineHelpText}" />
+                                                </td>
+                                                <td style="width: 40%">
+                                                    <c:CVASurveyStar Id="star0" Rating="{!varSurvey[f]}"/>
+                                                </td>
+                                            </tr>
+                                        </apex:repeat>
+                                    </tbody>
+                                </table>
+                                <table id="table3" width="90%">
+                                    <tbody style="vertical-align: middle;">
+                                        <apex:repeat var="f" value="{!fslistComments}" rendered="{!fslistComments!= NULL}">
+                                            <tr>
+                                                <td style="width: 50%">
+                                                    <apex:outputLabel value="{!$ObjectType.CVA_Survey__c.fields[f].inlineHelpText}" />
+                                                </td>
+                                                <td style="width: 40%">
+                                                    <apex:outputField value="{!varSurvey[f]}"/>
+                                                </td>
+                                            </tr>
+                                        </apex:repeat> 
+                                        
+                                    </tbody>
+                                </table>
+                                <table id="table38" width="30%">
+                                    <tbody style="vertical-align: middle;">
+                                        <tr>
+                                            <td style="width: 100%">
+                                                <apex:commandButton value="Close" styleclass="submit" onclick="window.top.close();" Immediate="true" />
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </apex:outputPanel>
+                            <apex:outputPanel rendered="{!isError== TRUE}">
+                                <apex:outputText value="{!message}"/>
+                            </apex:outputPanel>
+                            <apex:outputPanel rendered="{!isDup == TRUE}">
+                                <apex:outputText value="{!message}"/>
+                                <hr id="divider2" />
+                                <table id="tableDup" width="90%" style="border-collapse: collapse;">
+                                    <tbody style="vertical-align: middle;">
+                                        <apex:repeat var="f" value="{!fslistPreview}" rendered="{!fslistPreview != NULL}">
+                                            <tr>
+                                                <td style="width: 50%">
+                                                    <apex:outputLabel title="{!$ObjectType.CVA_Survey__c.fields[f].inlineHelpText}" value="{!$ObjectType.CVA_Survey__c.fields[f].inlineHelpText}" />
+                                                </td>
+                                                <td style="width: 40%">
+                                                    <c:CVASurveyStar Id="starDup" Rating="{!varSurvey[f]}"/>
+                                                </td>
+                                            </tr>
+                                        </apex:repeat>
+                                    </tbody>
+                                </table>
+                                <table id="table3" width="90%">
+                                    <tbody style="vertical-align: middle;">
+                                        <apex:repeat var="f" value="{!fslistComments}" rendered="{!fslistComments!= NULL}">
+                                            <tr>
+                                                <td style="width: 50%">
+                                                    <apex:outputLabel value="{!$ObjectType.CVA_Survey__c.fields[f].inlineHelpText}" />
+                                                </td>
+                                                <td style="width: 40%">
+                                                    <apex:outputField value="{!varSurvey[f]}"/>
+                                                </td>
+                                            </tr>
+                                        </apex:repeat>
+                                       
+                                    </tbody>
+                                </table>
+                                <table id="table39" width="30%">
+                                    <tbody style="vertical-align: middle;">
+                                        <tr>
+                                            <td style="width: 100%">
+                                                <apex:commandButton value="Close" styleclass="submit" onclick="window.top.close();" Immediate="true" />
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </apex:outputPanel>
+                        </apex:outputPanel>
+                    </div>
+                    <div id="container2">
+                        <table id="tableCase" width="90%" style="border-collapse: collapse;">
+                            <tbody style="vertical-align: bottom" >
+                                <apex:repeat var="f" value="{!fslistCase}" rendered="{!fslistCase != NULL}"   >
+                                    <tr>
+                                        <td style="width: 20%">
+                                            <br/>                                                                 
+                                            <apex:outputLabel title="{!$ObjectType.Visitation_Record__c.fields[f].Label}" value="{!$ObjectType.Visitation_Record__c.fields[f].Label}" />
+                                        </td>
+                                        <td style="width: 70%">
+                                            <apex:outputText value="{!varCase[f]}" />
+                                        </td>
+                                    </tr>
+                                </apex:repeat>
+                            </tbody>
+                        </table>
+                    </div>
+                </apex:form>
+            </div>
+        </body>
+    </html>
+</apex:page>

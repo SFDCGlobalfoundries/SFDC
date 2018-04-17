@@ -1,0 +1,281 @@
+<apex:page controller="ProcessTechnologyIPReportCntrlr" showHeader="false" sidebar="false" renderAs="{!renderAsPDF}" contentType="{!renderAsExcel}" cache="true">
+    <head>
+        <style type="text/css">            
+             @page{
+                size: landscape;        
+             }
+             tr {
+                 page-break-inside:avoid; 
+                 page-break-after:auto;
+             }
+             .dynamic-header {
+                 vertical-align:top;
+                 {!IF(genReport = 'pdf',IF(addedColumnsCount > 5,'font-size:8px',IF(addedColumnsCount > 3,'font-size:9px','font-size:11px')),'font-size: 12px')};
+             }
+             .dynamic-data {
+                 {!IF(genReport = 'pdf',IF(addedColumnsCount > 5,'font-size:7px',IF(addedColumnsCount > 3,'font-size:8px','font-size:10px')),'font-size: 12px')};
+                 overflow-wrap: break-word;
+                 word-wrap: break-word;
+                 vertical-align:top;
+             }                           
+             .tbl {                                  
+                 table-layout:auto;
+                 -fs-table-paginate:paginate;
+                 width: 100%;
+                 {!IF(NOT(ISBLANK(viewIPDetails)),'page-break-after:always','')};                      
+             }           
+             .empty-column-content {
+                 display: none;               
+             } 
+             .section-detail {              
+                 padding-bottom: 10px;
+                 padding-top: 10px;
+                 page-break-inside:avoid; 
+             }
+             .tbl-detail {
+                 table-layout:auto;
+                 vertical-align:top;
+                 -fs-table-paginate:paginate;                 
+                 width: 100%;                
+                 {!IF(genReport = 'pdf','font-size: 11px','font-size: 12px')};                           
+             } 
+             .bottom-space {
+                 padding-bottom: 10px;
+             }  
+             .break {                 
+                 page-break-after:always; 
+             }
+             .top-space {
+                 padding-top: 10px;
+             }      
+        </style>
+    </head>     
+    <table width="100%">
+        <tr>
+            <td align="center">    
+                <apex:image value="{!URLFOR($Resource.GFLogo)}" width="50%" height="50%" style="position:relative;background-repeat:repeat-x;left: 0cm; top:0cm;" rendered="{!AND(genReport == 'pdf')}"/>
+            </td>        
+        </tr>   
+    </table>        
+    <apex:outputPanel layout="block" rendered="{!showList}" style="margin-top:10px;margin-bottom:25px">
+        <apex:panelGrid columns="1" >
+            <apex:outputText value="Process Technology: {!ptname}" style="font-weight:bold;font-size:16px" rendered="{!NOT(ISBLANK(ptName))}"/>
+            <apex:outputText value="PT Number: {!ptNumber}" style="font-weight:bold;font-size:16px" rendered="{!NOT(ISBLANK(ptNumber))}"/>                               
+            <apex:outputText value="IP ID: {!IPID}" style="font-weight:bold;font-size:16px" rendered="{!NOT(ISBLANK(IPID))}"/>                               
+            <apex:outputText value="IP Type: {!ipType}" style="font-weight:bold;font-size:16px" rendered="{!NOT(ISBLANK(ipType))}"/>
+            <apex:outputText value="IP Vendor: {!ipVendor}" style="font-weight:bold;font-size:16px" rendered="{!NOT(ISBLANK(ipVendor))}"/>
+            <apex:outputText value="IP Lifecycle Stage: {!ipLifeCycle}" style="font-weight:bold;font-size:16px" rendered="{!NOT(ISBLANK(ipLifeCycle))}"/>           
+            <apex:outputText value="Device List Contains: {!deviceName}" style="font-weight:bold;font-size:16px" rendered="{!NOT(ISBLANK(deviceName))}"/>                              
+            <apex:outputText value="Keyword: {!ipName}" style="font-weight:bold;font-size:16px" rendered="{!NOT(ISBLANK(ipName))}"/>                                                          
+            <apex:outputText value="Metal Layers: {!metalStacks}" style="font-weight:bold;font-size:16px" rendered="{!NOT(ISBLANK(metalStacks))}"/>                                                          
+            <apex:outputText value="Number of IPs: {!ipList.ipCount}" style="font-weight:bold;font-size:16px"/>                                
+        </apex:panelGrid>
+    </apex:outputPanel>
+    <apex:outputPanel rendered="{!AND(genReport = 'excel')}">
+        <br/>         
+    </apex:outputPanel>  
+    <apex:dataTable value="{!ipList.rows}" var="i" width="100%" border="1" rendered="{!AND(ipList.rows.size > 0)}" cellpadding="5px" styleclass="tbl" headerclass="dynamic-header" rowClasses="dynamic-data">                                  
+        <apex:repeat value="{!i.fields}" var="col"> 
+            <!-- setting header for apex:column under apex:repeat will not work -->
+            <!-- workaround is to create another list of string for the headers -->
+            <!-- and define it in another apex:repeat                           -->                                           
+                                                                                 
+            <apex:column rendered="{!AND(NOT(CONTAINS('IP Vendor;Release to Customer',col.name)),OR(CONTAINS(addedColumns,col.name),NOT(col.isOptional)))}" style="{!IF(OR(col.name = 'Pvts',col.name = 'Metal Layers'),'width:50px','')}">
+                <apex:outputText value="{!SUBSTITUTE(
+                                              SUBSTITUTE(
+                                                  SUBSTITUTE(
+                                                      SUBSTITUTE(col.value,'_',' '),
+                                                      ',',', '),
+                                                   ';','; '),
+                                              'GLOBALFOUNDRIES','GLOBAL FOUNDRIES')}" />                                              
+            </apex:column>  
+            <apex:column rendered="{!AND(col.name = 'Release to Customer',NOT(isExternalUser),OR(CONTAINS(addedColumns,col.name),NOT(CONTAINS(ipList.optionalColumnsText,col.name))))}">
+                <apex:outputText value="{!col.value}" style=""/>
+            </apex:column>                                              
+            <apex:column rendered="{!AND(col.name = 'IP Vendor',NOT(isIPVendor))}">
+                <apex:outputText value="{!col.value}" style=""/>
+            </apex:column>                       
+        </apex:repeat>
+                
+        <!--Define the headers here and hide the empty cells that are created -->                      
+        <apex:repeat value="{!ipList.tableColumns}" var="col">                        
+            <apex:column styleClass="empty-column-content" rendered="{!AND(NOT(CONTAINS('Release to Customer;IP Vendor',col)),OR(CONTAINS(addedColumns,col),NOT(CONTAINS(ipList.optionalColumnsText,col))))}">  
+                <apex:facet name="header">
+                    <apex:outputPanel layout="block">
+                        <apex:outputPanel layout="block" style="float:left"> 
+                            <apex:outputText value="{!col}" rendered="{!NOT(CONTAINS('IP Description;IP Type Category;Vendor IP Version;IP Lifecycle Stage;Spice Model Version;End User License Agreement;IP Tox Angstrom;Release to Customer',col))}"/>
+                            <apex:outputText rendered="{!AND(col = 'IP Description')}">
+                                Description
+                            </apex:outputText> 
+                            <apex:outputText rendered="{!AND(col = 'IP Type')}">
+                                IP Type
+                            </apex:outputText>                                                                                    
+                            <apex:outputText rendered="{!AND(col = 'IP Type Category')}">
+                                IP Category
+                            </apex:outputText>                                        
+                            <apex:outputText rendered="{!AND(col = 'Vendor IP Version')}">
+                                Vendor IP <br/> Version
+                            </apex:outputText>
+                            <apex:outputText rendered="{!AND(col = 'IP Lifecycle Stage')}">
+                                IP Lifecycle <br/> Stage
+                            </apex:outputText>
+                            <apex:outputText rendered="{!AND(col = 'Spice Model Version')}">
+                                Spice Model <br/> Version
+                            </apex:outputText>
+                            <apex:outputText rendered="{!AND(col = 'End User License Agreement')}">
+                                End User <br/> License <br/> Agreement
+                            </apex:outputText>
+                            <apex:outputText rendered="{!AND(col = 'IP Tox Angstrom')}">
+                                IP Tox  <br/> Angstrom
+                            </apex:outputText>                                              
+                        </apex:outputPanel>                                    
+                    </apex:outputPanel>
+                </apex:facet>          
+            </apex:column>            
+            <apex:column styleClass="empty-column-content" rendered="{!AND(AND(col = 'IP Vendor',NOT(isIPVendor)),OR(CONTAINS(addedColumns,col),NOT(CONTAINS(ipList.optionalColumnsText,col))))}">  
+                <apex:facet name="header">
+                    <apex:outputPanel layout="block">
+                        <apex:outputPanel layout="block" style="float:left">                                                 
+                            <apex:outputText value="IP Vendor"/>                                                   
+                        </apex:outputPanel>
+                    </apex:outputPanel>
+                </apex:facet>          
+            </apex:column> 
+            <apex:column styleClass="empty-column-content" rendered="{!AND(AND(col = 'Release to Customer',NOT(isExternalUser)),OR(CONTAINS(addedColumns,col),NOT(CONTAINS(ipList.optionalColumnsText,col))))}">  
+                <apex:facet name="header">
+                    <apex:outputPanel layout="block">
+                        <apex:outputPanel layout="block" style="float:left">                                                 
+                            <apex:outputText value="Release to Customer"/>                                                   
+                        </apex:outputPanel>
+                    </apex:outputPanel>
+                </apex:facet>          
+            </apex:column>                               
+        </apex:repeat>                                               
+    </apex:dataTable>     
+    <apex:outputPanel rendered="{!AND(genReport = 'excel')}">
+        <br/>         
+    </apex:outputPanel>                    
+    <apex:repeat value="{!ipList.rows}" var="i">                       
+        <apex:outputPanel layout="block"  rendered="{!AND(CONTAINS(viewIPDetails,i.ip.name))}">   
+            <apex:outputPanel layout="block" styleClass="break"/>            
+            <apex:outputPanel rendered="{!AND(genReport = 'excel')}">
+                <br/>         
+            </apex:outputPanel> 
+                                 
+            <apex:outputPanel layout="block" styleClass="bottom-space">
+                <apex:outputText value="IP {!i.ip.name}" style="font-size:20px"/>
+            </apex:outputPanel>
+            
+            <apex:outputPanel rendered="{!AND(genReport = 'excel')}">
+                <br/>         
+            </apex:outputPanel> 
+            
+            <apex:panelGrid width="100%" styleClass="section-detail">
+                <apex:outputPanel layout="block" styleClass="bottom-space">
+                    <apex:outputText value="Overview" style="font-size:16px"/>
+                </apex:outputPanel>                
+                <apex:dataTable value="{!$ObjectType.Base_IP__c.FieldSets.IP_Overview}" var="f" columns="2" styleClass="tbl-detail" border="1" cellpadding="2px">
+                    <apex:column value="{!f.label}" style="font-weight:bold;width:150px"/>
+                    <apex:column >
+                        <apex:outputText value="{!SUBSTITUTE(SUBSTITUTE(i.ip[f],';','; '),',',', ')}"/>     
+                    </apex:column>
+                </apex:dataTable>                           
+            </apex:panelGrid>
+            
+            <apex:outputPanel rendered="{!AND(genReport = 'excel')}">
+                <br/>         
+            </apex:outputPanel> 
+            
+            <apex:panelGrid width="100%" styleClass="section-detail">
+                <apex:outputPanel layout="block" styleClass="bottom-space">
+                    <apex:outputText value="Type Specific Data" style="font-size:16px"/>
+                </apex:outputPanel>                
+                <apex:dataTable value="{!IF(i.ip.ip_type__c = 'LOGIC',$ObjectType.Base_IP__c.FieldSets.IP_Type_Specific_Data_Logic,
+                                         IF(i.ip.ip_type__c = 'IO',$ObjectType.Base_IP__c.FieldSets.IP_Type_Specific_Data_IO,
+                                         IF(i.ip.ip_type__c = 'MEMORY',$ObjectType.Base_IP__c.FieldSets.IP_Type_Specific_Data_Memory,
+                                         IF(i.ip.ip_type__c = 'AMS',$ObjectType.Base_IP__c.FieldSets.IP_Type_Specific_Data_AMS,
+                                         IF(i.ip.ip_type__c = 'PHYS',$ObjectType.Base_IP__c.FieldSets.IP_Type_Specific_Data_PHYs,
+                                         IF(CONTAINS('OTHER NVM CORE',i.ip.ip_type__c),$ObjectType.Base_IP__c.FieldSets.IP_Type_Specific_Data_NVM,''))))))}"
+                                         var="f" columns="2" styleClass="tbl-detail" border="1" cellpadding="2px">
+                     <apex:column value="{!f.label}" style="font-weight:bold;width:150px"/>
+                    <apex:column value="{!i.ip[f]}"/>
+                </apex:dataTable>
+                <apex:outputPanel layout="block" rendered="{!CONTAINS('OTHER NVM CORE',i.ip.Ip_Type__c)}">
+                    <apex:dataTable value="{!$ObjectType.Base_IP__c.FieldSets.IP_Type_Specific_Data_Core}"
+                                    var="f" columns="2" styleClass="tbl-detail" border="1" cellpadding="2px">
+                         <apex:column value="{!f.label}" style="font-weight:bold;width:150px"/>
+                        <apex:column value="{!i.ip[f]}"/>
+                    </apex:dataTable> 
+                </apex:outputPanel>
+            </apex:panelGrid>
+            
+            <apex:outputPanel rendered="{!AND(genReport = 'excel')}">
+                <br/>         
+            </apex:outputPanel>
+                    
+            <apex:panelGrid width="100%" styleClass="section-detail" rendered="{!AND(i.ip.ip_design_kit__r.size > 0)}">            
+                <apex:outputPanel layout="block">                    
+                    <apex:outputPanel layout="block" styleClass="bottom-space">
+                        <apex:outputText value="Design Kits" style="font-size:16px"/>
+                    </apex:outputPanel>   
+                    <apex:dataTable value="{!i.ip.ip_design_kit__r}" var="DK" styleClass="tbl-detail" border="1" cellpadding="2px">
+                        <apex:repeat value="{!$ObjectType.IP__c.FieldSets.IP_Design_Kit}" var="f">               
+                            <apex:column headerValue="{!f.Label}">                            
+                                <apex:outputText value="{!SUBSTITUTE(SUBSTITUTE(DK[f],'_',' '),',',', ')}"/>     
+                            </apex:column>                                                   
+                        </apex:repeat>
+                    </apex:dataTable>
+                </apex:outputPanel> 
+                <apex:outputPanel rendered="{!AND(genReport = 'excel')}">
+                    <br/>         
+                </apex:outputPanel>                                                                                                                                                     
+            </apex:panelGrid>                        
+            
+            <apex:panelGrid width="100%" styleClass="section-detail" rendered="{!AND(i.ip.ip_merge__r.size > 0,$ObjectType.IP_Merge__c.FieldSets.IP_Silicon_Report.size > 0)}">
+                <apex:outputPanel layout="block" styleClass="bottom-space">
+                    <apex:outputText value="Silicon Report" style="font-size:16px"/>
+                </apex:outputPanel>                
+                <apex:dataTable value="{!$ObjectType.IP_Merge__c.FieldSets.IP_Silicon_Report}" var="f" columns="2" styleClass="tbl-detail" border="1" cellpadding="2px">
+                    <apex:column value="{!f.label}" style="font-weight:bold;width:150px"/>
+                    <apex:column value="{!i.ip[f]}"/>
+                </apex:dataTable> 
+                 <apex:outputPanel rendered="{!AND(genReport = 'excel')}">
+                    <br/>         
+                </apex:outputPanel>                           
+            </apex:panelGrid>                       
+            
+            <apex:panelGrid width="100%" rendered="{!AND(i.ip.ip_merge__r.size > 0)}"  styleClass="section-detail">                                   
+                <apex:outputPanel layout="block" styleClass="bottom-space">
+                    <apex:outputText value="Merged Design Kits" style="font-size:16px"/>
+                </apex:outputPanel>   
+                <apex:dataTable value="{!i.ip.ip_merge__r}" var="m" styleClass="tbl-detail" border="1" cellpadding="2px">
+                    <apex:repeat value="{!$ObjectType.IP_Merge__c.FieldSets.IP_Merged_Design_Kit}" var="f">               
+                        <apex:column headerValue="{!f.Label}">                            
+                            <apex:outputText value="{!SUBSTITUTE(SUBSTITUTE(m[f],'_',' '),',',', ')}"/>     
+                        </apex:column>                                                   
+                    </apex:repeat>
+                </apex:dataTable> 
+                 <apex:outputPanel rendered="{!AND(genReport = 'excel')}">
+                    <br/>         
+                </apex:outputPanel>                                                                                                                                                             
+            </apex:panelGrid>
+                                   
+            <apex:panelGrid width="100%" rendered="{!AND(i.ip.ip_pt_mapping__r.size > 0)}"  styleClass="section-detail">                                        
+                <apex:outputPanel layout="block" styleClass="bottom-space">
+                    <apex:outputText value="PTs" style="font-size:16px"/>
+                </apex:outputPanel>   
+                <apex:dataTable value="{!i.ip.ip_pt_mapping__r}" var="m" styleClass="tbl-detail" border="1" cellpadding="2px">
+                    <apex:repeat value="{!$ObjectType.Process_Technology__c.FieldSets.IP_PT_Columns}" var="f">               
+                        <apex:column headerValue="{!f.Label}">                            
+                            <apex:outputText value="{!SUBSTITUTE(SUBSTITUTE(m.pt_number__r[f],'_',' '),',',', ')}"/>     
+                        </apex:column>                                                   
+                    </apex:repeat>
+                </apex:dataTable> 
+                <apex:outputPanel rendered="{!AND(genReport = 'excel')}">
+                    <br/>         
+                </apex:outputPanel>                                                                                                                                                            
+            </apex:panelGrid>  
+                                                                  
+        </apex:outputPanel>                     
+    </apex:repeat>                                                 
+</apex:page>

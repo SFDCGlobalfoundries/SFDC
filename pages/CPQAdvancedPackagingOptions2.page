@@ -1,0 +1,143 @@
+<apex:page title="Packaging Options for 14nm" standardController="Apttus_Proposal__Proposal__c" extensions="CPQ_AdvancedPackagingOptions_Controller2" showHeader="false" sidebar="false">
+  <!-- <apex:sectionHeader title="Select Advanced Packaging Options" 
+                    subtitle="Configurator Plus Advanced Packaging Options"/> -->
+  <apex:form id="theForm">
+      <apex:pageBlock >
+          <apex:pageMessages id="theMessages"></apex:pageMessages>
+          <apex:pageblockButtons >
+              <apex:commandButton value="Save" action="{!saveAction}"  status="status" rendered="{!!readOnlyModeEnabled}"/>
+              <apex:commandButton value="Go Back to Configurator Plus" action="{!Cancel}" status="status"/>
+          </apex:pageblockButtons>
+          <apex:pageBlock >
+           
+        <apex:outputPanel rendered="{!rec.Packaging_Disclaimer_Message__c != '' && rec.Packaging_Disclaimer_Message__c != 'Not Applicable'}"> 
+          <font color="red" size="4"> <apex:outputText value=" {!rec.Packaging_Disclaimer_Message__c}" escape="false"></apex:outputText> </font> 
+        </apex:outputPanel>    
+        <apex:pageblockSection title="Packaging Options">
+          
+        </apex:pageblockSection>
+        
+        <apex:outputPanel id="theOuterOutputPanel">
+         <br/><br/> 
+          <apex:pageblockSection id="theSection" columns="4">
+          
+          <apex:outputText value="Passivation Nitride Opening" style="font-weight:bold"></apex:outputText>
+          <apex:outputLabel value="{!rec.Passivation_Nitride_Opening__c}"></apex:outputLabel>
+          
+          <apex:outputText value="Packaging Option" style="font-weight:bold"></apex:outputText>
+          <apex:outputLabel value="{!rec.APTPS_Packaging_Option__c}"></apex:outputLabel>
+          
+          <apex:outputText value="Polyimide Application Location" style="font-weight:bold"></apex:outputText>
+          <apex:outputLabel value="{!rec.Polyimide_Application_Location__c}"></apex:outputLabel>
+          
+          <apex:outputText value="Polyimide Opening Location" style="font-weight:bold"></apex:outputText>
+          <apex:outputLabel value="{!rec.Polymide_Opening__c}"></apex:outputLabel>
+          
+          <apex:outputText value="Interconnect Material" style="font-weight:bold"></apex:outputText>
+          <apex:outputLabel value="{!rec.Bump_for_FC__c}"></apex:outputLabel>
+          
+          <apex:outputText value="Bumping Location for FC" style="font-weight:bold"></apex:outputText>
+          <apex:outputLabel value="{!rec.Bumping_for_FC__c}"></apex:outputLabel>
+          
+          <apex:outputText value="Crackstop Type" style="font-weight:bold"></apex:outputText>
+          <apex:outputPanel >
+              <apex:selectList value="{!rec.Crackstop_Seal_Ring_Die_Seal__c}" size="1" label=""> 
+                  <apex:selectOption itemLabel="--None--" itemValue="--None--"></apex:selectOption>
+                  <apex:selectOption itemLabel="GLOBALFOUNDRIES PDK" itemValue="GLOBALFOUNDRIES PDK"></apex:selectOption>
+                  <apex:selectOption itemLabel="Other" itemValue="Other"></apex:selectOption>
+              <apex:actionSupport event="onchange"   action="{!putDisclaimerMessage}" reRender="theOuterOutputPanel, theMessages, theForm" status="status"/>
+              </apex:selectList>
+              <apex:outputText rendered="{!rec.Crackstop_Seal_Ring_Die_Seal__c == 'Other'}" value="Contact GF" style="color:red;"></apex:outputText>
+          </apex:outputPanel>
+          <apex:outputText value="Purpose" style="font-weight:bold"></apex:outputText>
+          <apex:outputLabel value="{!purpose}"></apex:outputLabel>
+          
+          
+          </apex:pageblockSection>
+          
+          <apex:pageblockSection rendered="{!rec.Crackstop_Seal_Ring_Die_Seal__c != '--None--'}" columns="4" title="{!rec.APTPS_Packaging_Option__c + ' Details'}">
+              <apex:repeat value="{!questionsByLevel}" var="level">
+              <apex:repeat value="{!questionsByLevel[level]}" var="questionId">
+                  
+                  <apex:outputText value="{!mapOfQuestions[questionId].queName}" style="font-weight:bold" rendered="{!mapOfQuestions[questionId].isEnabled}"></apex:outputText>
+                  
+                  <apex:outputPanel id="theInnerOutputpanel1" rendered="{!mapOfQuestions[questionId].dataType=='Picklist' && !readOnlyModeEnabled && mapOfQuestions[questionId].isEnabled}">
+                      <apex:selectList size="1" value="{!mapOfQuestions[questionId].answer}" disabled="{!!mapOfQuestions[questionId].isEnabled}">
+                          <apex:selectOptions value="{!mapOfQuestions[questionId].picklistValues}"></apex:selectOptions>
+                          <apex:actionSupport event="onchange"   action="{!getreEvaluatePicklistValuesOfChildQuestions}" reRender="theOuterOutputPanel, theMessages, theForm" status="status"/>
+                      </apex:selectList>
+                      <apex:outputText value="{!mapOfQuestions[questionId].errorMessage}" style="color:red;"></apex:outputText>
+                  </apex:outputPanel>
+                  
+                  <apex:outputPanel id="theInnerOutputpanel2" rendered="{!mapOfQuestions[questionId].dataType=='Text' && !readOnlyModeEnabled && mapOfQuestions[questionId].isEnabled}">
+                      <apex:inputText value="{!mapOfQuestions[questionId].answer}" disabled="{!!mapOfQuestions[questionId].isEnabled}"/>
+                      <apex:outputText value="{!mapOfQuestions[questionId].errorMessage}" style="color:red;"></apex:outputText>
+                  </apex:outputPanel>
+                  
+                  <apex:outputPanel id="theInnerOutputPanelReadOnly" rendered="{!readOnlyModeEnabled}">
+                      <apex:outputText value="{!mapOfQuestions[questionId].answer}" rendered="{!mapOfQuestions[questionId].isEnabled}"></apex:outputText>
+                  </apex:outputPanel>
+              </apex:repeat>
+              </apex:repeat>
+              
+          </apex:pageblockSection>
+            <apex:actionStatus id="status">
+                <apex:facet name="start">
+                <div style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; opacity: 0.25; z-index: 1000; background-color: black;">
+                    &nbsp;
+                </div>
+                <div style="position: fixed; left: 0; top: 0; bottom: 0; right: 0; z-index: 1001; margin: 15% 50%">
+                    <div style="display: inline-block; padding: 2px; background-color: #fff; width: 125px;">
+                        <img src="/img/loading.gif" style="float: left; margin: 8px;" />
+                        <span style="display: inline-block; padding: 10px 0px;">Please Wait...</span>
+                    </div>
+                </div>
+                </apex:facet>
+            </apex:actionStatus>
+            
+          
+            <apex:pageblockSection title="Stack Options - Not Applicable" rendered="{!!hasMetalOptions}">
+              
+              <apex:outputText value="Metal Options" style="font-weight:bold"></apex:outputText>
+              <apex:outputLabel value="{!rec.APTPS_Metal_Options__c}" ></apex:outputLabel>
+          
+              <apex:inputField value="{!Apttus_Proposal__Proposal__c.No_of_Metal_Layers__c}" rendered="{!Apttus_Proposal__Proposal__c.Metal_Option_Not_Listed__c}"/>
+              <apex:inputField value="{!Apttus_Proposal__Proposal__c.Additional_Info_on_Metal_Stack__c}" rendered="{!Apttus_Proposal__Proposal__c.Metal_Option_Not_Listed__c}"/>
+              No Metal Option Selected
+            </apex:pageBlockSection>
+            
+            <apex:pageblockSection id="theSection2" title="Stack Options Available" columns="2" rendered="{!hasMetalOptions}">
+              
+              
+              <apex:outputText value="Metal Options" style="font-weight:bold"></apex:outputText>
+              <apex:outputLabel value="{!rec.APTPS_Metal_Options__c}" ></apex:outputLabel>
+          
+              <apex:repeat value="{!questionsForMetalStack}" var="level">
+              <apex:repeat value="{!questionsForMetalStack[level]}" var="questionId">
+                  
+                  <apex:outputText value="{!mapOfQuestions[questionId].queName}" rendered="{!mapOfQuestions[questionId].isEnabled}" style="font-weight:bold"></apex:outputText>
+                  
+                  <apex:outputPanel id="theInnerOutputpanel21" rendered="{!mapOfQuestions[questionId].dataType=='Picklist' && !readOnlyModeEnabled && mapOfQuestions[questionId].isEnabled}">
+                      <apex:selectList size="1" value="{!mapOfQuestions[questionId].answer}" disabled="{!!mapOfQuestions[questionId].isEnabled}">
+                          <apex:selectOptions value="{!mapOfQuestions[questionId].picklistValues}"></apex:selectOptions>
+                          <apex:actionSupport event="onchange"   action="{!getreEvaluatePicklistValuesOfChildQuestions}" reRender="theOuterOutputPanel, theMessages"/>
+                      </apex:selectList>
+                      <apex:outputText value="{!mapOfQuestions[questionId].errorMessage}" style="color:red;"></apex:outputText>
+                  </apex:outputPanel>
+                  
+                  <apex:outputPanel id="theInnerOutputpanel22" rendered="{!mapOfQuestions[questionId].dataType=='Text' && !readOnlyModeEnabled && mapOfQuestions[questionId].isEnabled}">
+                      <apex:inputText value="{!mapOfQuestions[questionId].answer}" disabled="{!!mapOfQuestions[questionId].isEnabled}" />
+                      <apex:outputText value="{!mapOfQuestions[questionId].errorMessage}" style="color:red;"></apex:outputText>
+                  </apex:outputPanel>
+                  <apex:outputPanel id="theInnerOutputPanel22ReadOnly" rendered="{!readOnlyModeEnabled}">
+                      <apex:outputText value="{!mapOfQuestions[questionId].answer}" rendered="{!mapOfQuestions[questionId].isEnabled}"></apex:outputText>
+                  </apex:outputPanel>
+              </apex:repeat>
+              </apex:repeat>
+          </apex:pageblockSection>
+          
+          </apex:outputPanel>
+      </apex:pageBlock>        
+      </apex:pageBlock>
+  </apex:form>
+</apex:page>

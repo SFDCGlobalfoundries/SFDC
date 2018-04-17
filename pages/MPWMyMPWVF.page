@@ -1,0 +1,212 @@
+<!--
+    Author: Zymark Ambat
+    Description: This serves as the Page for MPWMyMPWController.
+    History: 
+        ZAmbat    060242015    - page creation.
+-->
+
+<apex:page id="MPWMyMPWVF" controller="MPWMyMPWController" showHeader="false" sidebar="false">
+    <apex:stylesheet value="/sCSS/21.0/sprites/1297816277000/Theme3/default/gc/versioning.css" />
+    
+    <apex:stylesheet value="{!URLFOR($Resource.MPWRelatedCSS, '/MPWRelatedCSS/MPWMyMPWVF.css')}" />
+    
+    <!-- <script src="//ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script> -->
+    <apex:includeScript value="{!URLFOR($Resource.jQuery_1_11_3_min, '/jquery-1.11.3.min/jquery-1.11.3.min.js')}" />
+    <script type="text/javascript">
+        function startLoading(){
+            $('#load_scrl').css('top', $(document).scrollTop() + 200);
+            $('.loadingBox').show(); 
+        }
+        
+        function endLoading(){
+             $('.loadingBox').hide();
+        }
+    </script>
+    
+    <apex:pageMessages id="errorSection" />
+    
+    <apex:form >
+        <apex:pageBlock id="myMPWBlock" title="My MPW">
+            <apex:pageBlockSection columns="1" title="Filter" collapsible="false">
+                <apex:pageBlockSectionItem >
+                    <apex:outputLabel value="Show Records" />
+                    <apex:selectList value="{!selectedRange}" size="1" multiselect="false">
+                        <apex:selectOptions value="{!Range}" />
+                        <apex:actionSupport action="{!refreshRecords}" event="onchange" rerender="resultsSection, errorSection" status="loadStatus" />
+                    </apex:selectList>
+                </apex:pageBlockSectionItem>
+            </apex:pageBlockSection>
+            
+            <apex:pageBlockSection id="resultsSection" columns="1" title="MPW Results" collapsible="false">
+                <apex:pageBlockTable id="myMPWTable" value="{!MyMPWRecords}" rendered="{!IF(MyMPWRecords.size > 0, true, false)}" var="m">
+                    <apex:column headerClass="{!IF(sortField == 'mpwTrainName', 'TableTitle', '')}">
+                        <apex:facet name="header">
+                            <apex:outputLabel onclick="sortRecords('mpwTrainName');" styleClass="hand colDiv">
+                                MPW Train
+                                <apex:image value="data:image/gif;base64,R0lGODlhAQABAID/AMDAwAAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==" styleClass="sortASC" rendered="{!IF(AND(sortField == 'mpwTrainName', sortType == 'ASC'), true, false)}" />
+                                <apex:image value="data:image/gif;base64,R0lGODlhAQABAID/AMDAwAAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==" styleClass="sortDESC" rendered="{!IF(AND(sortField == 'mpwTrainName', sortType == 'DESC'), true, false)}" />
+                            </apex:outputLabel>
+                        </apex:facet>
+                        <apex:outputLink value="/apex/MPWTrainScheduleTranxVF?tranx=View&id={!m.mpwTrainId}" target="_blank">{!m.mpwTrainName}</apex:outputLink>
+                    </apex:column>
+                    <apex:column headerClass="{!IF(sortField == 'noOfDevices', 'TableTitle', '')}">
+                        <apex:facet name="header">
+                            <apex:outputLabel onclick="sortRecords('noOfDevices');" styleClass="hand colDiv">
+                                No. of Devices
+                                <apex:image value="data:image/gif;base64,R0lGODlhAQABAID/AMDAwAAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==" styleClass="sortASC" rendered="{!IF(AND(sortField == 'noOfDevices', sortType == 'ASC'), true, false)}" />
+                                <apex:image value="data:image/gif;base64,R0lGODlhAQABAID/AMDAwAAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==" styleClass="sortDESC" rendered="{!IF(AND(sortField == 'noOfDevices', sortType == 'DESC'), true, false)}" />
+                            </apex:outputLabel>
+                        </apex:facet>
+                        <apex:outputText value="{!m.noOfDevices}" />
+                    </apex:column>
+                    <apex:column headerClass="{!IF(sortField == 'noOfPrimeDies', 'TableTitle', '')}">
+                        <apex:facet name="header">
+                            <apex:outputLabel onclick="sortRecords('noOfPrimeDies');" styleClass="hand colDiv">
+                                No. of Prime Dies
+                                <apex:image value="data:image/gif;base64,R0lGODlhAQABAID/AMDAwAAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==" styleClass="sortASC" rendered="{!IF(AND(sortField == 'noOfPrimeDies', sortType == 'ASC'), true, false)}" />
+                                <apex:image value="data:image/gif;base64,R0lGODlhAQABAID/AMDAwAAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==" styleClass="sortDESC" rendered="{!IF(AND(sortField == 'noOfPrimeDies', sortType == 'DESC'), true, false)}" />
+                            </apex:outputLabel>
+                        </apex:facet>
+                        <apex:outputText value="{!m.noOfPrimeDies}" />
+                    </apex:column>
+                    <apex:column headerClass="{!IF(sortField == 'geometry', 'TableTitle', '')}">
+                        <apex:facet name="header">
+                            <apex:outputLabel onclick="sortRecords('geometry');" styleClass="hand colDiv">
+                                Geometry
+                                <apex:image value="data:image/gif;base64,R0lGODlhAQABAID/AMDAwAAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==" styleClass="sortASC" rendered="{!IF(AND(sortField == 'geometry', sortType == 'ASC'), true, false)}" />
+                                <apex:image value="data:image/gif;base64,R0lGODlhAQABAID/AMDAwAAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==" styleClass="sortDESC" rendered="{!IF(AND(sortField == 'geometry', sortType == 'DESC'), true, false)}" />
+                            </apex:outputLabel>
+                        </apex:facet>
+                        <apex:outputText value="{!m.geometry}" />
+                    </apex:column>
+                    <apex:column headerClass="{!IF(sortField == 'fab', 'TableTitle', '')}">
+                        <apex:facet name="header">
+                            <apex:outputLabel onclick="sortRecords('fab');" styleClass="hand colDiv">
+                                Fab
+                                <apex:image value="data:image/gif;base64,R0lGODlhAQABAID/AMDAwAAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==" styleClass="sortASC" rendered="{!IF(AND(sortField == 'fab', sortType == 'ASC'), true, false)}" />
+                                <apex:image value="data:image/gif;base64,R0lGODlhAQABAID/AMDAwAAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==" styleClass="sortDESC" rendered="{!IF(AND(sortField == 'fab', sortType == 'DESC'), true, false)}" />
+                            </apex:outputLabel>
+                        </apex:facet>
+                        <apex:outputText value="{!m.fab}" />
+                    </apex:column>
+                    <apex:column headerClass="{!IF(sortField == 'reservationOpenDate', 'TableTitle', '')}">
+                        <apex:facet name="header">
+                            <apex:outputLabel onclick="sortRecords('reservationOpenDate');" styleClass="hand colDiv">
+                                Reservation <br/> Open Date
+                                <apex:image value="data:image/gif;base64,R0lGODlhAQABAID/AMDAwAAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==" styleClass="sortASC" rendered="{!IF(AND(sortField == 'reservationOpenDate', sortType == 'ASC'), true, false)}" />
+                                <apex:image value="data:image/gif;base64,R0lGODlhAQABAID/AMDAwAAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==" styleClass="sortDESC" rendered="{!IF(AND(sortField == 'reservationOpenDate', sortType == 'DESC'), true, false)}" />
+                            </apex:outputLabel>
+                        </apex:facet>
+                        <apex:outputText value="{!MONTH(DATEVALUE(m.reservationOpenDate))}/{!DAY(DATEVALUE(m.reservationOpenDate))}/{!YEAR(DATEVALUE(m.reservationOpenDate))}" rendered="{!IF(NOT(ISBLANK(m.reservationOpenDate)), true, false)}" />
+                    </apex:column>
+                    <apex:column headerClass="{!IF(sortField == 'reservationCloseDate', 'TableTitle', '')}">
+                        <apex:facet name="header">
+                            <apex:outputLabel onclick="sortRecords('reservationCloseDate');" styleClass="hand colDiv">
+                                Reservation <br/> Close Date
+                                <apex:image value="data:image/gif;base64,R0lGODlhAQABAID/AMDAwAAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==" styleClass="sortASC" rendered="{!IF(AND(sortField == 'reservationCloseDate', sortType == 'ASC'), true, false)}" />
+                                <apex:image value="data:image/gif;base64,R0lGODlhAQABAID/AMDAwAAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==" styleClass="sortDESC" rendered="{!IF(AND(sortField == 'reservationCloseDate', sortType == 'DESC'), true, false)}" />
+                            </apex:outputLabel>
+                        </apex:facet>
+                        <apex:outputText value="{!MONTH(DATEVALUE(m.reservationCloseDate))}/{!DAY(DATEVALUE(m.reservationCloseDate))}/{!YEAR(DATEVALUE(m.reservationCloseDate))}" rendered="{!IF(NOT(ISBLANK(m.reservationCloseDate)), true, false)}" />
+                    </apex:column>
+                    <apex:column headerClass="{!IF(sortField == 'cancellationDate', 'TableTitle', '')}">
+                        <apex:facet name="header">
+                            <apex:outputLabel onclick="sortRecords('cancellationDate');" styleClass="hand colDiv">
+                                Cancellation <br/> Date
+                                <apex:image value="data:image/gif;base64,R0lGODlhAQABAID/AMDAwAAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==" styleClass="sortASC" rendered="{!IF(AND(sortField == 'cancellationDate', sortType == 'ASC'), true, false)}" />
+                                <apex:image value="data:image/gif;base64,R0lGODlhAQABAID/AMDAwAAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==" styleClass="sortDESC" rendered="{!IF(AND(sortField == 'cancellationDate', sortType == 'DESC'), true, false)}" />
+                            </apex:outputLabel>
+                        </apex:facet>
+                        <apex:outputText value="{!MONTH(DATEVALUE(m.cancellationDate))}/{!DAY(DATEVALUE(m.cancellationDate))}/{!YEAR(DATEVALUE(m.cancellationDate))}" rendered="{!IF(NOT(ISBLANK(m.cancellationDate)), true, false)}" />
+                    </apex:column>
+                    <apex:column headerClass="{!IF(sortField == 'othersPartTapeoutDate', 'TableTitle', '')}">
+                        <apex:facet name="header">
+                            <apex:outputLabel onclick="sortRecords('othersPartTapeoutDate');" styleClass="hand colDiv">
+                                Others Particiation <br/> Tapeout Date
+                                <apex:image value="data:image/gif;base64,R0lGODlhAQABAID/AMDAwAAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==" styleClass="sortASC" rendered="{!IF(AND(sortField == 'othersPartTapeoutDate', sortType == 'ASC'), true, false)}" />
+                                <apex:image value="data:image/gif;base64,R0lGODlhAQABAID/AMDAwAAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==" styleClass="sortDESC" rendered="{!IF(AND(sortField == 'othersPartTapeoutDate', sortType == 'DESC'), true, false)}" />
+                            </apex:outputLabel>
+                        </apex:facet>
+                        <apex:outputText value="{!MONTH(DATEVALUE(m.othersPartTapeoutDate))}/{!DAY(DATEVALUE(m.othersPartTapeoutDate))}/{!YEAR(DATEVALUE(m.othersPartTapeoutDate))}" rendered="{!IF(NOT(ISBLANK(m.othersPartTapeoutDate)), true, false)}" />
+                    </apex:column>
+                    <apex:column headerClass="{!IF(sortField == 'customerTapeoutDate', 'TableTitle', '')}">
+                        <apex:facet name="header">
+                            <apex:outputLabel onclick="sortRecords('customerTapeoutDate');" styleClass="hand colDiv">
+                                Customer <br/> Tapeout Date
+                                <apex:image value="data:image/gif;base64,R0lGODlhAQABAID/AMDAwAAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==" styleClass="sortASC" rendered="{!IF(AND(sortField == 'customerTapeoutDate', sortType == 'ASC'), true, false)}" />
+                                <apex:image value="data:image/gif;base64,R0lGODlhAQABAID/AMDAwAAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==" styleClass="sortDESC" rendered="{!IF(AND(sortField == 'customerTapeoutDate', sortType == 'DESC'), true, false)}" />
+                            </apex:outputLabel>
+                        </apex:facet>
+                        <apex:outputText value="{!MONTH(DATEVALUE(m.customerTapeoutDate))}/{!DAY(DATEVALUE(m.customerTapeoutDate))}/{!YEAR(DATEVALUE(m.customerTapeoutDate))}" rendered="{!IF(NOT(ISBLANK(m.customerTapeoutDate)), true, false)}" />
+                    </apex:column>
+                    <apex:column headerClass="{!IF(sortField == 'firstBatchShipDateStart', 'TableTitle', '')}">
+                        <apex:facet name="header">
+                            <apex:outputLabel onclick="sortRecords('firstBatchShipDateStart');" styleClass="hand colDiv">
+                                1st Bare Die <br/> Ship Date
+                                <apex:image value="data:image/gif;base64,R0lGODlhAQABAID/AMDAwAAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==" styleClass="sortASC" rendered="{!IF(AND(sortField == 'firstBatchShipDateStart', sortType == 'ASC'), true, false)}" />
+                                <apex:image value="data:image/gif;base64,R0lGODlhAQABAID/AMDAwAAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==" styleClass="sortDESC" rendered="{!IF(AND(sortField == 'firstBatchShipDateStart', sortType == 'DESC'), true, false)}" />
+                            </apex:outputLabel>
+                        </apex:facet>
+                        <apex:outputText value="{!MONTH(DATEVALUE(m.firstBatchShipDateStart))}/{!DAY(DATEVALUE(m.firstBatchShipDateStart))}/{!YEAR(DATEVALUE(m.firstBatchShipDateStart))}" rendered="{!IF(AND(NOT(ISBLANK(m.firstBatchShipDateStart)), DATEVALUE(m.firstBatchShipDateStart) == DATEVALUE(m.firstBatchShipDateEnd)), true, false)}" />
+                        <apex:outputText value="{!MONTH(DATEVALUE(m.firstBatchShipDateStart))}/{!DAY(DATEVALUE(m.firstBatchShipDateStart))}/{!YEAR(DATEVALUE(m.firstBatchShipDateStart))} to {!MONTH(DATEVALUE(m.firstBatchShipDateEnd))}/{!DAY(DATEVALUE(m.firstBatchShipDateEnd))}/{!YEAR(DATEVALUE(m.firstBatchShipDateEnd))}" rendered="{!IF(AND(NOT(ISBLANK(m.firstBatchShipDateStart)), DATEVALUE(m.firstBatchShipDateStart) != DATEVALUE(m.firstBatchShipDateEnd)), true, false)}" />
+                    </apex:column>
+                    <apex:column headerClass="{!IF(sortField == 'secondBatchShipDateStart', 'TableTitle', '')}">
+                        <apex:facet name="header">
+                            <apex:outputLabel onclick="sortRecords('secondBatchShipDateStart');" styleClass="hand colDiv">
+                                2nd Bare Die <br/> Ship Date
+                                <apex:image value="data:image/gif;base64,R0lGODlhAQABAID/AMDAwAAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==" styleClass="sortASC" rendered="{!IF(AND(sortField == 'secondBatchShipDateStart', sortType == 'ASC'), true, false)}" />
+                                <apex:image value="data:image/gif;base64,R0lGODlhAQABAID/AMDAwAAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==" styleClass="sortDESC" rendered="{!IF(AND(sortField == 'secondBatchShipDateStart', sortType == 'DESC'), true, false)}" />
+                            </apex:outputLabel>
+                        </apex:facet>
+                        <apex:outputText value="{!MONTH(DATEVALUE(m.secondBatchShipDateStart))}/{!DAY(DATEVALUE(m.secondBatchShipDateStart))}/{!YEAR(DATEVALUE(m.secondBatchShipDateStart))}" rendered="{!IF(AND(NOT(ISBLANK(m.secondBatchShipDateStart)), DATEVALUE(m.secondBatchShipDateStart) == DATEVALUE(m.secondBatchShipDateEnd)), true, false)}" />
+                        <apex:outputText value="{!MONTH(DATEVALUE(m.secondBatchShipDateStart))}/{!DAY(DATEVALUE(m.secondBatchShipDateStart))}/{!YEAR(DATEVALUE(m.secondBatchShipDateStart))} to {!MONTH(DATEVALUE(m.secondBatchShipDateEnd))}/{!DAY(DATEVALUE(m.secondBatchShipDateEnd))}/{!YEAR(DATEVALUE(m.secondBatchShipDateEnd))}" rendered="{!IF(AND(NOT(ISBLANK(m.secondBatchShipDateStart)), DATEVALUE(m.secondBatchShipDateStart) != DATEVALUE(m.secondBatchShipDateEnd)), true, false)}" />
+                    </apex:column>
+                    <apex:facet name="footer">Showing Page {!currentPageNo} of {!totalNoOfPages} ({!totalNoOfRecords} Records)</apex:facet>
+                </apex:pageBlockTable>
+                <apex:outputText value="No records found." rendered="{!IF(MyMPWRecords.size == 0, true, false)}" />
+                
+                <!-- Pagination Controls -->
+                <br/>
+                <apex:outputPanel id="controlPanel" layout="block" style="margin: 0; white-space: nowrap; align: center; position: relative;" rendered="{!IF(MyMPWRecords.size > 0, true, false)}">
+                    <center>
+                        <apex:commandLink action="{!first}" style="text-decoration: none;" rendered="{!IF(HasPrevious, true, false)}" rerender="myMPWTable, controlPanel" status="loadStatus">
+                            <apex:image value="/s.gif" styleClass="first1" alt="First Page" />
+                        </apex:commandLink>
+                        <apex:outputPanel rendered="{!IF(NOT(HasPrevious), true, false)}">
+                            <apex:image value="/s.gif" styleClass="firstoff1" alt="First Page" />
+                        </apex:outputPanel>
+                        &nbsp;
+                        <apex:commandLink action="{!previous}" style="text-decoration: none;" rendered="{!IF(HasPrevious, true, false)}" rerender="myMPWTable, controlPanel" status="loadStatus">
+                            <apex:image value="/s.gif" styleClass="prev1" alt="Previous" /><span class="prevtext">Previous</span>
+                        </apex:commandLink>
+                        <apex:outputPanel rendered="{!IF(NOT(HasPrevious), true, false)}">
+                            <apex:image value="/s.gif" styleClass="prevoff1" alt="Previous" /><span class="prevtextoff1">Previous</span>
+                        </apex:outputPanel>
+                        &nbsp;&nbsp;
+                        <apex:commandLink action="{!next}" style="text-decoration: none;" rendered="{!IF(HasNext, true, false)}" rerender="myMPWTable, controlPanel" status="loadStatus">
+                            <span class="nexttext">Next</span><apex:image value="/s.gif" styleClass="next1" alt="Next" />
+                        </apex:commandLink>
+                        <apex:outputPanel rendered="{!IF(NOT(HasNext), true, false)}">
+                            <span class="nexttextoff1">Next</span><apex:image value="/s.gif" styleClass="nextoff1" alt="Next" />
+                        </apex:outputPanel>
+                        &nbsp;
+                        <apex:commandLink action="{!last}" style="text-decoration: none;" rendered="{!IF(HasNext, true, false)}" rerender="myMPWTable, controlPanel" status="loadStatus">
+                            <apex:image value="/s.gif" styleClass="last1" alt="Last Page" />
+                        </apex:commandLink>
+                        <apex:outputPanel rendered="{!IF(NOT(HasNext), true, false)}">
+                            <apex:image value="/s.gif" styleClass="lastoff1" alt="Last Page" />
+                        </apex:outputPanel>
+                    </center>
+                </apex:outputPanel>
+            </apex:pageBlockSection>
+        </apex:pageBlock>
+        
+        <apex:actionfunction name="sortRecords" action="{!sortRecords}" rerender="myMPWTable, errorSection" status="loadStatus">     
+            <apex:param name="sortField" value="" />           
+        </apex:actionfunction>
+        
+        <apex:actionStatus onstart="startLoading();" onstop="endLoading();" id="loadStatus"/>
+        <div id="load_scrl" class="loadingBox loader" style="display: none" />
+        <div class="loadingBox overlay" />
+    </apex:form>
+</apex:page>

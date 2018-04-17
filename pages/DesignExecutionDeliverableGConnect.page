@@ -1,0 +1,350 @@
+<!--
+* Author: Sandesh
+* Project: Global Foundries 
+* Description: Page is created for creating google docs for design deliverable.
+* History:
+*    Abhishek/Sandesh 01/09/2016 
+-->
+<apex:page controller="DesignExecutionDeliverableController">
+<head>
+<apex:stylesheet value="{!URLFOR($Resource.GConnect, 'lightbox.css')}"/>
+<apex:stylesheet value="{!URLFOR($Resource.GConnect, 'google-drive.css')}"/>
+
+<apex:includeScript value="//ajax.googleapis.com/ajax/libs/jquery/2.1.4/jquery.min.js" />
+<apex:includeScript value="{!URLFOR($Resource.GConnect, 'date.js')}"/>
+<apex:includeScript value="{!URLFOR($Resource.GConnect, 'lightbox.min.js')}"/>
+<apex:includeScript value="{!URLFOR($Resource.GConnect, 'upload.js')}"/>
+</head>
+    <div id="login-box" >
+        <p>Please login on your google account.</p>
+        <button id="btnLogin" onclick="handleAuthClick(event)" class="button">Login</button>
+    </div>
+    <div id="status-message" class="flash hidden"></div>
+    <script src="https://apis.google.com/js/api.js"></script>
+    <script type="text/javascript">
+    
+/******************** GLOBAL VARIABLES ********************/
+var SCOPES = ['https://www.googleapis.com/auth/drive','profile'];
+var CLIENT_ID = '{!$Label.DIW_Google_Client_ID}';
+//var CLIENT_ID = '864123372693-ito0kj3qh5tat94rusn5v74olv92fo5n.apps.googleusercontent.com'; 
+var API_Key = '{!$Label.DIW_Google_API_Key}'; 
+var DEID='{!DEID}';
+var DEName='{!DEName}';
+var GoogleSheetID ='{!GoogleSheetID}';
+var FOLDER_NAME = "";
+var FOLDER_ID = "0BxFuktT2XiEJTl9yTUVnM3kzQTg";
+var FOLDER_PERMISSION = true;
+var FOLDER_LEVEL = 0;
+var NO_OF_FILES = 1000;
+var DRIVE_FILES = [];
+var FILE_COUNTER = 0;
+var FOLDER_ARRAY = [];
+var sheetJson=JSON.parse('[{"properties": {"title": "RTA"}},{"properties": {"title": "RTF"}},{"properties": {"title": "RTP"}},{"properties": {"title": "RTL"}}]');
+var sheetName='';
+var reqInfoID='';
+var rfqRouteId='';
+var pfolderId='';
+/******************** AUTHENTICATION ********************/
+    function checkAuth() {
+    gapi.auth.authorize({
+        'client_id': CLIENT_ID,
+        'scope': SCOPES.join(' '),
+        'immediate': true
+    }, handleAuthResult);
+}
+    var deliverableList = '{"title":"ddList", "color": "red", "value": "#f00"}';
+    
+    //var deliverableList = ""//"{!designDeliverableData}";
+    var sheetName='DesignDeliverableSheet'+DEName;  
+    function handleAuthClick(event) {
+        
+        gapi.auth.authorize(
+              { client_id: CLIENT_ID, scope: SCOPES, immediate: false },
+              handleAuthResult);
+        return false;
+    }
+    
+    function handleAuthResult(authResult) {
+        if (authResult && !authResult.error) {
+            $("#login-box").hide();
+            console.log('calling createsheet');
+            //addFolder();
+            title ='DesignDeliverableSheet'+DEName;
+            loadSheetsApi();
+            if(GoogleSheetID!= ''){
+               openSpreadSheet(GoogleSheetID); 
+            }else{
+              createSheet(title, sheetJson); 
+              }
+        } else {
+            $("#login-box").show();
+            //$("#drive-box").hide();
+        }
+    }
+/******************** END AUTHENTICATION ********************/   
+
+     function createSheet(title,taskList) {
+            var sheetId;
+            var access_token =  gapi.auth.getToken().access_token;
+            console.log('called createsheet'+access_token );
+            var request = gapi.client.request({
+              // 'path': 'https://sheets.googleapis.com/v4/spreadsheets?key=AIzaSyCuWk8GJbBWpHGK-7_bcOslHqWdldVPQ5g',
+               'path': 'https://sheets.googleapis.com/v4/spreadsheets?key=' + API_Key,
+               'method': 'POST',
+               'headers': {
+                   'Content-Type': 'application/json',
+                   'Authorization': 'Bearer ' + access_token,             
+               },
+               'body':{
+                     "properties": {
+                      "title": title
+                     },
+                     "sheets": taskList
+                    }
+               
+            });
+            console.log('Resquest'+ request.statusText+' '+request.body);
+            var oldSheetId;
+            request.execute(function(resp) { 
+                console.log('response:**'+resp);
+                if (!resp.error) {
+                   console.log('SPREADSHEETiD'+resp.spreadsheetId);
+                   oldSheetId=resp.spreadsheetId;
+                    showStatus("Creating sheet");
+                    var request1 = gapi.client.request({
+                       'path': 'https://www.googleapis.com/drive/v3/files/'+resp.spreadsheetId+'/copy?key=' + API_Key,
+                       'method': 'POST',
+                       'headers': {
+                           'Content-Type': 'application/json',
+                           'Authorization': 'Bearer ' + access_token,             
+                       },
+                       'body':{                                    
+                            "name": sheetName,
+                             "parents": [
+                              FOLDER_ID
+                            ]
+                        }
+
+                    });
+                    request1.execute(function(resp) { 
+                        if (!resp.error) {
+                           console.log('SPREADSHEETiD'+resp.id);
+                            //update file id to rfq
+                            sheetId = resp.id;
+                            var json = JSON.parse('{!designDeliveryJson}');
+                            console.log('json'+'{!designDeliveryJson}');
+                            console.log('taskList'+taskList);
+                             Visualforce.remoting.Manager.invokeAction(
+                            '{!$RemoteAction.DesignExecutionDeliverableController.updateDE}',
+                            DEID,sheetId,
+                            function handleResult(result, event) {
+                            
+                            
+                            
+                            });
+                            for(var j=0;j<taskList.length;j++){
+                                var temp = 1;
+                                var prop = taskList[j].properties.title
+                                console.log('json[j]'+json[prop]);
+                                var records = json[prop]
+                                if(records != undefined){
+                                    var request1 = gapi.client.request({
+                                    
+                                        'path': 'https://sheets.googleapis.com/v4/spreadsheets/'+resp.id+'/values/'+taskList[j].properties.title+'!A1?valueInputOption=RAW&key=' + API_Key,
+                                        'method': 'PUT',
+                                        'headers': {
+                                           'Content-Type': 'application/json',
+                                           'Authorization': 'Bearer ' + access_token,             
+                                        },
+                                        'body':{"range":taskList[j].properties.title+"!A1","values":[["Design Deliverable Questions Name","Deliverables","Delivered Date","Comments","Order"]]}
+                                    
+
+                                        });
+                                        
+                                        request1.execute(function(resp) { 
+                                           
+                                            console.log('response'+resp);
+                                           
+                                            //hideStatus();
+                                            //hideLoading();
+                                            //store the id of sheet in request information
+                                            
+                                            //showErrorMessage("Error: " + resp.error.message);
+                                        
+                                        });
+                                    for(var i=0; i<json[prop].length;i++){
+                                        temp++;
+                                        console.log('records'+records[i].Name+' '+records[i].Deliverables__c);
+                                        var request2 = gapi.client.request({
+                                            
+                                            'path': 'https://sheets.googleapis.com/v4/spreadsheets/'+resp.id+'/values/'+taskList[j].properties.title+'!A'+temp+'?valueInputOption=RAW&key=' + API_Key,
+                                            'method': 'PUT',
+                                            'headers': {
+                                               'Content-Type': 'application/json',
+                                               'Authorization': 'Bearer ' + access_token,             
+                                            },
+                                            'body':{"range":taskList[j].properties.title+"!A"+temp,"values":[[records[i].Name,records[i].Deliverables__c,records[i].Delivered_Date__c,records[i].Comments__c,records[i].Order__c]]}
+                                    
+
+                                        });
+                                        
+                                        request2.execute(function(resp) { 
+                                           
+                                            console.log('response'+resp);
+                                           
+                                            //hideStatus();
+                                            //hideLoading();
+                                            //store the id of sheet in request information
+                                            
+                                            //showErrorMessage("Error: " + resp.error.message);
+                                        
+                                       });
+                                           
+                                    }
+                                }
+                            }
+                            
+                        }
+                        else{
+                            //hideStatus();
+                            //hideLoading();
+                            //showErrorMessage("Error: " + resp.error.message);
+                        }
+                   });
+               
+                    myVar = setInterval(function(){
+                        if(sheetId != undefined){
+                            console.log("completed pavan");
+                            openSpreadSheet(sheetId);
+                            clearInterval(myVar);
+                        }
+                    }, 1000);
+                        
+              
+               
+               
+                }else{
+                   
+               }
+            });
+    }
+    
+    function updateSheet(title, taskList){
+        var access_token =  gapi.auth.getToken().access_token;
+        console.log('json'+'{!designDeliveryJson}');
+        var json = JSON.parse('{!designDeliveryJson}');
+        console.log('taskList'+taskList);
+        var sheetId = '1XZle7tpVkH-fkAfnysMxs6iiOqAgW-rhqFaL0lauRoM';
+        //var sheetId = '{!$Label.Design_Execution_Google_Sheet_Id}';
+        for(var j=0;j<taskList.length;j++){
+            var temp = 1;
+            var prop = taskList[j].properties.title
+            console.log('json[j]'+json[prop]);
+            var records = json[prop]
+            if(records != undefined){
+                var request1 = gapi.client.request({
+                
+                    'path': 'https://sheets.googleapis.com/v4/spreadsheets/'+sheetId+'/values/'+taskList[j].properties.title+'!A1?valueInputOption=RAW&key=' + API_Key,
+                    'method': 'PUT',
+                    'headers': {
+                       'Content-Type': 'application/json',
+                       'Authorization': 'Bearer ' + access_token,             
+                    },
+                    'body':{"range":taskList[j].properties.title+"!A1","values":[["Design Deliverable Questions Name","Deliverables","Delivered Date","Comments","Order"]]}
+                
+
+                    });
+                    
+                    request1.execute(function(resp) { 
+                       
+                        console.log('response'+resp);
+                       
+                    
+                    });
+                for(var i=0; i<json[prop].length;i++){
+                    temp++;
+                    console.log('records'+records[i].Name+' '+records[i].Deliverables__c);
+                    var request2 = gapi.client.request({
+                        
+                        'path': 'https://sheets.googleapis.com/v4/spreadsheets/'+sheetId+'/values/'+taskList[j].properties.title+'!A'+temp+'?valueInputOption=RAW&key=' + API_Key,
+                        'method': 'PUT',
+                        'headers': {
+                           'Content-Type': 'application/json',
+                           'Authorization': 'Bearer ' + access_token,             
+                        },
+                        'body':{"range":taskList[j].properties.title+"!A"+temp,"values":[[records[i].Name,records[i].Deliverables__c,records[i].Delivered_Date__c,records[i].Comments__c,records[i].Order__c]]}
+                
+
+                    });
+                    
+                    request2.execute(function(resp) { 
+                       
+                        console.log('response'+resp);
+                       
+                        //hideStatus();
+                        //hideLoading();
+                        //store the id of sheet in request information
+                        
+                        //showErrorMessage("Error: " + resp.error.message);
+                    
+                   });
+                       
+                }
+            }
+        }
+        openSpreadSheet(sheetId);
+    }
+    
+    
+    function addFolder(){
+        console.log('creating folder');
+        //showLoading();
+        //showStatus("Creating folder in progress...");
+        var access_token =  gapi.auth.getToken().access_token;
+        var request = gapi.client.request({
+           'path': '/drive/v2/files/',
+           'method': 'POST',
+           'headers': {
+               'Content-Type': 'application/json',
+               'Authorization': 'Bearer ' + access_token,             
+           },
+           'body':{
+               "title" : 'DDeliverable',
+               "mimeType" : "application/vnd.google-apps.folder",
+               "parents": [{
+                    "kind": "drive#file",
+                    "id": FOLDER_ID
+                }]
+           }
+        });
+   }
+       
+    //show status message
+    function showStatus(text) {
+        $("#status-message").show();
+        $("#status-message").html(text);
+    }
+    function decodeHtml(html) {
+        var txt = document.createElement("textarea");
+        txt.innerHTML = html;
+        return txt.value;
+    }
+    function loadSheetsApi() {
+        console.log('sheetload');
+        var discoveryUrl = 'https://sheets.googleapis.com/$discovery/rest?version=v4';
+        gapi.client.load(discoveryUrl);
+    }
+    function openSpreadSheet(spId){
+        
+        setTimeout(function(){
+           // var URL = "https://docs.google.com/spreadsheets/d/1XZle7tpVkH-fkAfnysMxs6iiOqAgW-rhqFaL0lauRoM";
+            var URL = "https://docs.google.com/spreadsheets/d/"+spId;
+            console.log('Opening spreadsheet'+URL);
+            
+            window.parent.location.href="https://docs.google.com/spreadsheets/d/"+spId;
+        }, 3000);
+        
+    }
+    </script>
+    <script src="https://apis.google.com/js/client.js?onload=checkAuth"></script>
+</apex:page>

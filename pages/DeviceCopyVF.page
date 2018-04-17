@@ -1,0 +1,196 @@
+<!--
+    Author: Zymark Ambat
+    Description: This serves as the Page for the Copy Device (Clone) functionality.
+    History: 
+        ZAmbat      02262013    - Page creation.
+        ZAmbat      03312013    - Added Original Forecasted Tapeout Date field.
+        ZAmbat      07032013    - Created separate Device Id/Name fields for Revise and Copy Devices.
+        ZAmbat      10032013    - updated page as per TASK-355.
+        Vijay       11262014    - added Enabled via previous MPW field and MPW Train Number and set default Stage as Design In and displayed as 
+                                  a readOnly
+        Vijay       02022015    - added Internal Device related fields and fields will be shown based on the Device type (Customer Device or
+                                  Internal Device)
+        Devendra    19042016    - Added new field Generate standard frame. 
+        Pradosh     01302018    - Case#00084211. Adding Iot Application field in VF 
+		Devendra    08022018    - Added new field Tapeout Process.                   
+                                  
+-->
+<apex:page controller="DeviceCopyController" id="DeviceCloneVF" sidebar="true" showHeader="true" tabStyle="Device__c">
+    <apex:form id="form1">
+        <apex:sectionHeader title="Device Edit" subtitle="New Device" help="https://help.salesforce.com/htviewhelpdoc?id=co_edit.htm&siteLang=en_US" />
+        
+        <apex:pageMessages rendered="{!AND(isValidForCopy, isValidForRevision)}" />
+        
+        <apex:pageBlock title="Device Edit" mode="Edit" rendered="{!AND(isValidForCopy, isValidForRevision)}">
+            <apex:pageBlockButtons >
+                <apex:commandButton value=" Save " action="{!save}" />
+                <apex:commandButton value="Cancel" action="{!cancel}" immediate="true" />
+            </apex:pageBlockButtons>
+            <apex:outputpanel style="display:none;visibility:hidden"  >
+                    <apex:inputField value="{!device.Stage__c}"  />
+            </apex:outputpanel>
+            <apex:pageBlockSection title="Information" columns="2" collapsible="false">
+                <apex:pageBlockSectionItem helpText="{!$ObjectType.Device__c.fields.CRMDID__c.inlineHelpText}">
+                    <apex:outputLabel for="crmdid" value="{!$ObjectType.Device__c.fields.CRMDID__c.label}" />
+                    <apex:outputText id="crmdid" value="" />
+                </apex:pageBlockSectionItem>
+                <apex:pageBlockSectionItem >
+                    <apex:outputLabel for="deviceOwner" value="Owner" />
+                    <apex:outputField id="deviceOwner" value="{!device.OwnerId}" />
+                </apex:pageBlockSectionItem>
+                
+                <!-- apex:inputField value="{!device.Name}" required="true" / -->
+                <!-- Copy Device -->
+                <!-- apex:inputField value="{!device.Name}" required="true" rendered="{!IF(mode != 'Revise', true, false)}" / -->
+                <apex:inputField value="{!device.Name}" required="true" />
+                <!-- Copy Device -->
+                
+                <!-- Revise Device -->
+                <!--  apex:pageBlockSectionItem rendered="{!IF(mode == 'Revise', true, false)}">
+                    <apex:outputLabel for="deviceId" value="{!$ObjectType.Device__c.fields.Device_ID__c.label}" />
+                    <apex:outputText id="deviceId" value="{!device.Name}" />
+                </apex:pageBlockSectionItem>
+                <!-- Revise Device -->
+                <apex:outputField value="{!device.Stage__c}" />
+                
+                <apex:pageBlockSectionItem helpText="{!$ObjectType.Device__c.fields.Account__c.inlineHelpText}" rendered="{!!isInternalDevice}">
+                    <apex:outputLabel for="account" value="{!$ObjectType.Device__c.fields.Account__c.label}" />
+                    <apex:outputText id="account" value="" />
+                </apex:pageBlockSectionItem>
+                <apex:inputField value="{!device.Account__c}" required="true" rendered="{!isInternalDevice}"/>
+                <apex:inputField value="{!device.Status__c}" required="true" />
+                <apex:inputField value="{!device.Design_Partner__c}"/>
+                
+                <apex:pageBlockSectionItem helpText="{!$ObjectType.Device__c.fields.Opportunity2__c.inlineHelpText}" rendered="{!!isInternalDevice}">
+                    <apex:outputLabel for="opportunity" value="{!$ObjectType.Device__c.fields.Opportunity2__c.label}" />
+                    <apex:outputText id="opportunity" value="" />
+                </apex:pageBlockSectionItem>
+                <apex:inputField value="{!device.Market_Segment__c}" required="true" rendered="{!!isInternalDevice}"/>
+                
+                <apex:inputField value="{!device.Opportunity_Program__c}" required="true" rendered="{!!isInternalDevice}"/>
+                <apex:inputField value="{!device.End_Application__c}" required="true" rendered="{!!isInternalDevice}"/>
+                
+                
+                <apex:inputField value="{!device.Device_Sourcing__c}" required="true" rendered="{!!isInternalDevice}"/>
+                <apex:inputField value="{!device.Iot_Application__c}" required="true" rendered="{!!isInternalDevice}"/>
+                <apex:inputField value="{!device.Semiconductor_Device__c}" required="true" rendered="{!!isInternalDevice}"/>
+                
+                <apex:inputField value="{!device.Fab__c}" required="true" />
+                <apex:inputField value="{!device.End_Customer__c}" rendered="{!!isInternalDevice}" />
+                <apex:inputField value="{!device.Internal_Device_Geometry__c}" required="true" rendered="{!isInternalDevice}" />
+                
+                <apex:inputField value="{!device.Confidence_Level_Tapeout__c}" required="true" />
+                <apex:inputField value="{!device.Internal_Device_Process_Family__c}" required="true" rendered="{!isInternalDevice}" />
+                <apex:inputField value="{!device.Project_Name__c}" />
+                
+                <apex:inputField value="{!device.Confidence_Level_Volume__c}"  rendered="{!!isInternalDevice}"/>
+                <apex:inputField value="{!device.Device_Purpose__c}" />
+                
+                <apex:inputField value="{!device.GSOP_Assignment_Tapeout_Plan__c}" />
+                <apex:inputField value="{!device.Enabled_via_previous_MPW_1__c}" rendered="{!!isInternalDevice}"/>
+                
+                <apex:inputField value="{!device.Tapeout_Type__c}" required="true" />
+                <apex:inputField value="{!device.Previous_Enabling_Devices_MPW__c}" rendered="{!!isInternalDevice}"/>
+                
+                <apex:inputField value="{!device.Device_Description__c}" />
+                <apex:inputField value="{!device.MPW_Train_Number__c}" />
+                <!-- added as part of SFFG -->
+                <apex:pageblocksectionitem />
+                <apex:inputField value="{!device.Generate_Standard_Frame__c}" />
+				<apex:inputField value="{!device.Tapeout_Process__c}" />
+                
+            </apex:pageBlockSection>
+            
+            
+            
+            <apex:pageBlockSection title="Milestones" columns="2" collapsible="false">
+                <!-- ZAmbat 05312013 Start -->
+                <apex:inputField value="{!device.Original_Forecasted_Tapeout_Date__c}" required="true" />
+                <!-- ZAmbat 05312013 End -->
+                <apex:pageBlockSectionItem helpText="{!$ObjectType.Device__c.fields.Prototype_Date__c.inlineHelpText}">
+                    <apex:outputLabel for="pd" value="{!$ObjectType.Device__c.fields.Prototype_Date__c.label}" />
+                    <apex:outputText id="pd" value="" />
+                </apex:pageBlockSectionItem>
+                
+                <apex:inputField value="{!device.Current_Forecast_Tapeout_Date__c}" />
+                <apex:pageBlockSectionItem helpText="{!$ObjectType.Device__c.fields.Forecasted_Lot_Start_Date__c.inlineHelpText}">
+                    <apex:outputLabel for="rd" value="{!$ObjectType.Device__c.fields.Forecasted_Lot_Start_Date__c.label}" />
+                    <apex:outputText id="flsd" value="" />
+                </apex:pageBlockSectionItem>
+                
+                <apex:pageBlockSectionItem helpText="{!$ObjectType.Device__c.fields.Actual_Tapeout_Date_GMT__c.inlineHelpText}">
+                    <apex:outputLabel for="atd" value="{!$ObjectType.Device__c.fields.Actual_Tapeout_Date_GMT__c.label}" />
+                    <apex:outputText id="atd" value="" />
+                </apex:pageBlockSectionItem>
+                <apex:pageBlockSectionItem helpText="{!$ObjectType.Device__c.fields.RTR_Date__c.inlineHelpText}" rendered="{!!isInternalDevice}">
+                    <apex:outputLabel for="rd" value="{!$ObjectType.Device__c.fields.RTR_Date__c.label}" />
+                    <apex:outputText id="rd" value="" />
+                </apex:pageBlockSectionItem>
+                
+                <apex:pageBlockSectionItem helpText="{!$ObjectType.Device__c.fields.Production_Date__c.inlineHelpText}" rendered="{!!isInternalDevice}">
+                    <apex:outputLabel for="prd" value="{!$ObjectType.Device__c.fields.Production_Date__c.label}" />
+                    <apex:outputText id="prd" value="" />
+                </apex:pageBlockSectionItem>
+                <apex:pageBlockSectionItem helpText="{!$ObjectType.Device__c.fields.EOL_Date__c.inlineHelpText}">
+                    <apex:outputLabel for="eold" value="{!$ObjectType.Device__c.fields.EOL_Date__c.label}" />
+                    <apex:outputText id="eold" value="" />
+                </apex:pageBlockSectionItem>
+            </apex:pageBlockSection>
+            
+            <apex:pageBlockSection title="Tapeout Information" columns="1" collapsible="false">
+                <apex:inputField value="{!device.Reticle_Type__c}" />
+            </apex:pageBlockSection>
+            
+            <apex:pageBlockSection title="FoundryView Online Forms" columns="2" collapsible="false">
+                <apex:pageBlockSectionItem helpText="{!$ObjectType.Device__c.fields.Export_Control_Status__c.inlineHelpText}">
+                    <apex:outputLabel for="ecs" value="{!$ObjectType.Device__c.fields.Export_Control_Status__c.label}" />
+                    <apex:outputText id="ecs" value="" />
+                </apex:pageBlockSectionItem>
+                <apex:pageBlockSectionItem helpText="{!$ObjectType.Device__c.fields.IP_Declaration_Status__c.inlineHelpText}">
+                    <apex:outputLabel for="ids" value="{!$ObjectType.Device__c.fields.IP_Declaration_Status__c.label}" />
+                    <apex:outputText id="ids" value="" />
+                </apex:pageBlockSectionItem>
+                
+                <apex:pageBlockSectionItem helpText="{!$ObjectType.Device__c.fields.D1_National_Access_Allowed__c.inlineHelpText}">
+                    <apex:outputLabel for="dnaa" value="{!$ObjectType.Device__c.fields.D1_National_Access_Allowed__c.label}" />
+                    <apex:outputText id="dnaa" value="" />
+                </apex:pageBlockSectionItem>
+                <apex:pageBlockSectionItem />
+            </apex:pageBlockSection>
+                
+            <apex:pageBlockSection title="PROCESS & Tapeout Readiness" columns="2" collapsible="false">
+                <apex:pageBlockSectionItem helpText="{!$ObjectType.Device__c.fields.BX041_Status__c.inlineHelpText}">
+                    <apex:outputLabel for="bx041" value="{!$ObjectType.Device__c.fields.BX041_Status__c.label}" />
+                    <apex:outputText id="bx041" value="" />
+                </apex:pageBlockSectionItem>
+                <apex:pageBlockSectionItem />
+            </apex:pageBlockSection>
+            
+            <apex:pageBlockSection title="PROCESS & Retrofit" columns="1" collapsible="false">
+                <apex:pageBlockSectionItem helpText="{!$ObjectType.Device__c.fields.Pre_PTRF_Validation_Status__c.inlineHelpText}">
+                    <apex:outputLabel for="ppvs" value="{!$ObjectType.Device__c.fields.Pre_PTRF_Validation_Status__c.label}" />
+                    <apex:outputText id="ppvs" value="" />
+                </apex:pageBlockSectionItem>
+            </apex:pageBlockSection>
+            
+            <apex:pageBlockSection title="Prototype & Production Information" columns="2" collapsible="false">
+                <apex:pageBlockSectionItem helpText="{!$ObjectType.Device__c.fields.PLM_Device_ID__c.inlineHelpText}">
+                    <apex:outputLabel for="plm" value="{!$ObjectType.Device__c.fields.PLM_Device_ID__c.label}" />
+                    <apex:outputText id="plm" value="" />
+                </apex:pageBlockSectionItem>
+                <apex:pageBlockSectionItem helpText="{!$ObjectType.Device__c.fields.STF_Process_ID__c.inlineHelpText}">
+                    <apex:outputLabel for="stf" value="{!$ObjectType.Device__c.fields.STF_Process_ID__c.label}" />
+                    <apex:outputText id="stf" value="" />
+                </apex:pageBlockSectionItem>
+            </apex:pageBlockSection>    
+        </apex:pageBlock>
+        
+        <apex:pageBlock title="Device Edit" mode="Edit" rendered="{!OR(NOT(isValidForCopy), NOT(isValidForRevision))}">
+            <apex:pageMessage detail="{!$Label.Originating_Device_Inactive}" severity="info" strength="3" title="{!$Label.Originating_Device_Inactive_Label}" rendered="{!NOT(isValidForCopy)}" />
+            <apex:pageMessage summary="{!$Label.IP_Declaration_Incomplete_Label}" severity="info" strength="3" rendered="{!NOT(isValidForRevision)}" />
+            <apex:pageBlockButtons location="bottom">
+                <apex:commandButton value="Cancel" action="{!cancel}" immediate="true" />
+            </apex:pageBlockButtons>
+        </apex:pageBlock>
+    </apex:form>
+</apex:page>

@@ -1,0 +1,161 @@
+<!-- 
+    Type Name:  CaseAlert.page
+    Author: Cognizant 
+    Created Date:  14th-June-2014
+    Reason: 
+    Change History:
+    Author: 
+    Modified Date: 
+    Reason: 
+-->
+<apex:page standardController="Case" sidebar="false" showChat="false" showHeader="false" >
+    
+    <script type="text/javascript" src="/soap/ajax/29.0/connection.js"></script>
+    <script type="text/javascript" language="javascript">        
+        
+       
+        window.onload=function()
+        { 
+            try {                                
+                var recordType = "{!Case.Case_Record_Type_API__c}";                                
+                var isUpdate = true;   
+				sforce.connection.sessionId = '{!$Api.Session_ID}';
+                if (recordType == 'TechnicalPDK') {
+                    isUpdate = validate_Specification();
+                }                
+                if (isUpdate != false) {
+                    var currentUser = sforce.connection.getUserInfo();                    
+                    var userType = currentUser.userType;
+                    var userId = currentUser.userId;
+                    var ownerId = "{!Case.OwnerId}";
+                    var createdById = "{!Case.CreatedById}";
+                    var strStatus = "{!Case.Status}";
+                    var strStatus = "{!Case.Status}"; 
+                    if( userType == 'Standard' && strStatus =='New' && createdById != userId){
+                        if (userId == ownerId) {
+                            update_Status();                                              
+                        }else if (ownerId.substring(0,3) == "00G") {
+                            check_Group();                                           
+                        }
+                    }
+                }
+            }
+            catch (error)
+            {
+                 alert('You do not have the level of access necessary to perform the operation you requested. Please contact the owner of the record or your administrator if access is necessary.');
+            }
+        };
+        
+        function check_Group() {
+            var currentUser = sforce.connection.getUserInfo();                    
+            var userType = currentUser.userType;
+            var userId = currentUser.userId;
+            var ownerId = "{!Case.OwnerId}";            
+            var myquery = "Select Id, GroupId, UserOrGroupId From GroupMember Where GroupId = '" + ownerId + "' limit 20";
+            var result = sforce.connection.query(myquery);
+            var records = result.getArray("records");            
+            for (var i=0; i<records.length; i++) {
+                 var userGroupId = records[i].UserOrGroupId;
+                 if (userGroupId == userId) {
+                     update_Status();
+                     break;
+                 }else if(userGroupId.substring(0,3) == "00G"){
+                     var countQuery = "Select count() From GroupMember Where GroupId = '" + userGroupId + "' And UserOrGroupId = '" + userId + "' Limit 1";
+                     var count = sforce.connection.query(countQuery);
+                     if(count.size == 1){
+                         update_Status(); 
+                         break;
+                     }
+                 }               
+            }            
+        }
+        
+        function update_Status() {
+                var myquery = "SELECT Id,Status FROM Case WHERE Id = '{!Case.Id}' limit 1";
+                var result = sforce.connection.query(myquery);
+                var records = result.getArray("records");
+                if (!window.location.origin) {
+                    window.location.origin = window.location.protocol + "//" + window.location.hostname + (window.location.port ? ':' + window.location.port : '');
+                }            
+                var caseurl = window.location.origin;
+                caseurl = caseurl + '/' + '{!Case.Id}';                
+                if (records[0]) {
+                    var caseObj = records[0];  
+                    caseObj.Status = '{!$Label.Case_Status_Acknowledged}';
+                    var update = sforce.connection.update([caseObj]);                                    
+                    if (update[0].getBoolean("success")) {
+                        window.open(caseurl, target = '_top');
+                        return false;
+                    }                
+                }
+        }
+      
+        function validate_Specification() {        
+            var myquery = "SELECT Id,Geometry__c  FROM Case WHERE Id = '{!Case.Id}' limit 1";
+            var result = sforce.connection.query(myquery);
+            var records = result.getArray("records");            
+            if (!window.location.origin) {
+                window.location.origin = window.location.protocol + "//" + window.location.hostname + (window.location.port ? ':' + window.location.port : '');
+            }            
+            var caseurl = window.location.origin;            
+            var currentUser = sforce.connection.getUserInfo();
+            var userType = currentUser.userType;            
+            if (userType == 'Standard') {
+                caseurl = caseurl + '/' + '{!Case.Id}';
+            } else {
+                caseurl = caseurl + '/GlobalfoundryView/' + '{!Case.Id}';
+            }            
+            var specification = "{!Case.Specification__c}";
+            var geometrySpec = "{!Case.Specification_Geometry__c}";
+            var geometry = "{!Case.Geometry__c}";            
+            if (records[0]) {            
+                var caseObj = records[0];
+                if (specification.length > 0) {
+                    if (geometry.length > 0) {                        
+                        if (geometrySpec.length > 0 && geometry != geometrySpec) {
+                            if (confirm("{!$Label.Case_Alert_Geometry_Message}")) {
+                                <!-- Update geometry based on the selected Spec-->
+                                caseObj.Geometry__c = "{!Case.Specification_Geometry__c}";
+                                var update = sforce.connection.update([caseObj]);            
+                                if (update[0].getBoolean("success")) {
+                                    window.open(caseurl, target = '_top');
+                                    return false;
+                                }
+                            } else {                                
+                                caseObj.Specification__c = null;
+                                var update = sforce.connection.update([caseObj]);            
+                                if (update[0].getBoolean("success")) {
+                                    window.open(caseurl, target = '_top');
+                                    return false;
+                                }
+                            }
+                        }
+                    } else {
+                        if (geometrySpec.length > 0 && geometry != geometrySpec) {            
+                            <!-- Update geometry based on the selected Spec-->
+                            caseObj.Geometry__c = "{!Case.Specification_Geometry__c}";
+                            var update = sforce.connection.update([caseObj]);            
+                            if (update[0].getBoolean("success")) {
+                                window.open(caseurl, target = '_top');
+                                return false;
+                            }            
+                        }            
+                    }
+                }
+            }
+        };
+             
+    </script> 
+    <apex:form id="formId">
+        <!--  Page layout   -->
+        <apex:outputPanel rendered="{!NOT(ISPICKVAL($User.UserType,'Standard'))}" >
+            <apex:pageblock id="pgBlock1" mode="maindetail"  >
+                <apex:pageblocksection columns="2" showHeader="false" title="Case Information">
+                    <apex:repeat value="{!$ObjectType.Case.fieldsets.CaseAdditionalInfoPortal}" var="fieldValue">
+                        <apex:outputfield value="{!Case[fieldValue]}" rendered="{!Case[fieldValue]!=''}" />
+                    </apex:repeat>
+                </apex:pageblocksection>
+            </apex:pageblock>
+        </apex:outputPanel>
+        </apex:form>
+</apex:page>

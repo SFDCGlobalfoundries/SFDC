@@ -1,0 +1,81 @@
+<apex:page sidebar="false" controller="UserAccountTeamMemberController">
+    <apex:sectionHeader title="{!AccountName}" subtitle="New Account Team Proxy"/>
+    <c:loadingPanel ></c:loadingPanel>
+    <style>
+        .hideDropdown select{
+            visibility: hidden !important;
+            display: none;
+        }
+    </style>
+    <apex:form id="frm">
+        <apex:actionFunction reRender="pb" name="addNewRowCall" action="{!addNewRow}"/>
+        
+        <apex:pageBlock mode="Edit" id="pb">
+            <apex:pageblockButtons >
+                <apex:commandButton action="{!Save}" value="Save"/>
+                <apex:commandButton onclick="addNewRowCall();return false;"  value="Add New Member" />
+                <apex:commandButton onclick="window.open('/{!contentIds}','_parent');return false;" value="Cancel" />
+            </apex:pageblockButtons>
+            <apex:pageMessages />
+     
+            <apex:pageBlockSection columns="1" title="Information"/>
+            <apex:pageBlockTable value="{!AccountTeamProxyList}" var="atpModel" id="pbTable">
+                <apex:column >
+                    <apex:facet name="header">Team Member</apex:facet>
+                    <apex:outputLabel value="{!atpModel.atpObj.User__r.Name}" rendered="{!atpModel.atpObj.id!=''}"/>
+                    <apex:inputField styleClass="hideDropdown" value="{!atpModel.atpObj.User__c}" rendered="{!atpModel.atpObj.id=''}"/>
+                </apex:column>
+                <apex:column >
+                    <apex:facet name="header">Account Access</apex:facet>
+                    <apex:outputLabel value="{!atpModel.atpObj.Account_Access__c}" rendered="{!atpModel.readonly}"/>
+                    <apex:inputField value="{!atpModel.atpObj.Account_Access__c}" rendered="{!Not(atpModel.readonly)}"/>
+                </apex:column>
+                <apex:column >
+                    <apex:facet name="header">Opportunity Access</apex:facet>
+                    <apex:outputLabel value="{!atpModel.atpObj.Opportunity_Access__c}" rendered="{!atpModel.readonly}"/>
+                    <apex:inputField value="{!atpModel.atpObj.Opportunity_Access__c}" rendered="{!Not(atpModel.readonly)}"/>
+                </apex:column>
+                <apex:column >
+                    <apex:facet name="header">Team Role</apex:facet>
+                    <apex:outputLabel value="{!atpModel.atpObj.Team_Role__c}" rendered="{!atpModel.readonly}"/>
+                    <apex:inputField id="test1" value="{!atpModel.atpObj.Team_Role__c}" rendered="{!Not(atpModel.readonly)}">
+                        <apex:actionSupport event="onchange" reRender="isFAEcolumn,pbTable" status="LoadingStatusSpinner"/>
+                    </apex:inputField>
+                </apex:column>
+                <apex:column id="fabAssignColumn">
+                    <apex:facet name="header">Fab Assignment</apex:facet>
+                    <apex:inputField value="{!atpModel.atpObj.Fab_Assignment__c}"
+                        rendered="{!atpModel.atpObj.Team_Role__c=='Customer Engineer'||atpModel.atpObj.Team_Role__c='Fab Planner'}"/>
+                </apex:column>
+                <apex:column id="isFAEcolumn">
+                    <apex:facet name="header">Enable FAE Tools</apex:facet><!--updated by jabee for the case#00065409-->
+                    <apex:inputCheckbox id="faeCheckbox" value="{!atpModel.atpObj.Is_FAE__c}" 
+                        rendered="{!atpModel.atpObj.Team_Role__c == 'Account Manager' || atpModel.atpObj.Team_Role__c == 'Primary Account Manager'}"/>
+                </apex:column>
+                <apex:column >
+                    <apex:facet name="header">Flag for Delete</apex:facet>
+                    <apex:outputText rendered="{!(atpModel.atpObj.id!='')}">
+                        <apex:inputCheckbox value="{!atpModel.atpObj.Flag_for_Delete__c}" disabled="{!atpModel.readonly}"/>
+                    </apex:outputText>
+                </apex:column>
+            </apex:pageBlockTable>
+            
+            <script>
+                function removeOption(){
+                   var select = document.getElementsByTagName('select');
+                   for(var j=0;j<select.length;j++){
+                       for (var i=0;i<select[j].length;  i++) {
+                          if (select[j].options[i].value=='CustomerSuccessUserLookup') {
+                            select[j].remove(i);
+                          }
+                       }
+                   }
+                }
+                window.onload=removeOption();    
+            </script>  
+            
+        </apex:pageblock>
+        
+    </apex:form>
+    
+</apex:page>

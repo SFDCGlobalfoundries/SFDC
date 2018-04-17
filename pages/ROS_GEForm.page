@@ -1,0 +1,219 @@
+<apex:page controller="ROS_ControllerSearchReticleGFForm" id="mainPage" showHeader="true" sidebar="false">
+<apex:includeScript value="{!URLFOR($Resource.JSCalendar,'calendar.js')}"/>
+<apex:stylesheet value="{!URLFOR($Resource.JSCalendar,'calendar_blue.css')}" />
+<apex:includeScript value="{!URLFOR($Resource.ROS_JQuery_Deafult, '/jquery-ui-1.10.3.custom/js/jquery-1.9.1.js')}"/>
+<apex:includeScript value="{!URLFOR($Resource.ROS_JQuery_Deafult, '/jquery-ui-1.10.3.custom/js/jquery-ui-1.10.3.custom.js')}"/>
+<apex:stylesheet value="{!URLFOR($Resource.ROS_JQuery_Deafult, '/jquery-ui-1.10.3.custom/css/smoothness/jquery-ui-1.10.3.custom.css')}"/>
+    
+    <apex:stylesheet value="{!$Resource.jquerystyle19}"/>
+    <script>
+    $(function() {
+    $( "#datepicker" ).datepicker({
+      showOn: "button",
+      buttonImage: "{!URLFOR($Resource.ROS_JQuery_Deafult, '/images/calendar.gif')}",
+      buttonImageOnly: true
+    });
+  });
+    function getStatus(){
+             $( "#ipDialog" ).dialog( "close" );
+    }
+   
+    function ShowMap(){
+
+                 $("#ipDialog").dialog({
+                 height:"auto",
+                 width:500,      
+                 modal: true,
+                 position: ['Top', 'center'],
+                 autoOpen: false,  
+                 resizable: true,
+                 closeOnEscape: true, 
+                 draggable : true,
+                 title: "Shipping Address",
+                 show: {
+                     effect: "blind",
+                     duration: 1000
+                 },
+                 hide: {
+                     effect: "explode",
+                     duration: 1000
+                 },
+        });
+         $( "#ipDialog" ).dialog( "open" );
+             return false;     
+         }
+         function myFunc(a,obj){
+            document.getElementById(obj).value = a;
+            
+         }
+function fnSetDateFormat(oDateFormat)
+{
+ oDateFormat['FullYear'];  
+ oDateFormat['Year'];   
+ oDateFormat['FullMonthName'];
+ oDateFormat['MonthName'];  
+ oDateFormat['Month'];  
+ oDateFormat['Date'];  
+ oDateFormat['FullDay'];   
+ oDateFormat['Day'];    
+ oDateFormat['Hours'];  
+ oDateFormat['Minutes'];  
+ oDateFormat['Seconds'];   
+  
+ var sDateString;
+  
+ // Using yyyy-mm-dd format
+ sDateString = oDateFormat['FullYear']+"-"+oDateFormat['Month'] +"-"+oDateFormat['Date']; 
+ return sDateString;
+}
+   
+     
+function initialiseCalendar(obj, eleId) 
+{
+ var element=document.getElementById(eleId);
+ var params='close=true';
+ if (null!=element)
+ {
+  if (element.value.length>0)
+  {
+   // date is formatted dd/mm/yyyy - pull out the month and year
+   var month=element.value.substr(3,2);
+   var year=element.value.substr(6,4);
+   params+=',month='+month;
+   params+=',year='+year;
+  }
+ }
+ fnInitCalendar(obj, eleId, params);
+}
+ </script>
+ <apex:form id="GEform">
+   
+     <apex:PageMessages id="messages"/>
+     <div style="width:100%">
+         <apex:pageBlock id="GEpageBlk1" title="GE Form Search">
+            <apex:pageBlockButtons location="bottom">
+                 <apex:commandButton id="formCmd" action="{!formSearch}" value="Search" status="LoadingStatusSpinner" rerender="messages,Formsresults,GEpageBlk1"/> 
+                 <apex:commandButton id="Cancel" action="{!Cancel}" value="Cancel" rerender=""/>
+                 <apex:commandButton id="ApplyForm" action="{!applyGEForm}" value="Apply Form" rendered="{!GEFormResults}"/>
+            </apex:pageBlockButtons>
+            <apex:pageBlockSection columns="2" id="Formsresults">
+            <apex:pageBlockSectionItem >
+                    <apex:outputLabel >Customer Name </apex:outputLabel>
+                    <apex:panelGroup >
+                        <apex:inputText id="formTxt" value="{!GEFormRequest.ShipToCompany}"/>    
+                    </apex:panelGroup>
+                </apex:pageBlockSectionItem>
+                <apex:pageBlockSectionItem >
+                    <apex:outputLabel >GE Form number</apex:outputLabel>
+                    <apex:panelGroup >
+                        <apex:inputText id="formTxt" value="{!GEFormRequest.RequestNo}"/>    
+                    </apex:panelGroup>
+                </apex:pageBlockSectionItem>
+                <apex:pageBlockSectionItem >
+                    <apex:outputLabel >FAB</apex:outputLabel>
+                    <apex:panelGroup >
+                        <apex:inputText id="formTxt" value="{!GEFormRequest.Fab}"/>    
+                    </apex:panelGroup>
+                </apex:pageBlockSectionItem>
+                     <apex:pageBlockSectionItem >
+                    <apex:outputLabel >Raise Date</apex:outputLabel>
+                    <apex:panelGroup >
+                        <apex:inputText id="formDate" size="10" value="{!GEFormRequest.RaiseDate}" onmouseover="initialiseCalendar(this, '{!$Component.formDate}')"/> 
+                     
+                    </apex:panelGroup>
+                </apex:pageBlockSectionItem>
+                <apex:pageBlockSectionItem >
+                    <apex:outputLabel >Originator Name </apex:outputLabel>
+                    <apex:inputText id="formTxt" value="{!GEFormrequest.EmployeeID}"/>    
+                </apex:pageBlockSectionItem>
+                <apex:pageBlockSectionItem >
+                    <apex:outputLabel value="Select Form Id" rendered="{!GEFormResults}"/>  
+                    <apex:selectList id="Forms" value="{!SelectedFormId}" size="1" rendered="{!GEFormResults}" readonly="false">
+                        <apex:selectOptions value="{!AllForms}"/>
+                    </apex:selectList>
+                </apex:pageblocksectionItem>
+            </apex:pageBlockSection>
+        </apex:pageBlock>
+        <apex:pageBlock title="Selected Reticles">
+            <apex:pageBlockTable value="{!SelectedReticles}" var="a">
+                <apex:column headervalue="Reticle Name">
+                    <apex:outputField value="{!a.Name}"/>
+                </apex:column> 
+                <apex:column headervalue="Reticle Name">
+                    <apex:outputField value="{!a.Reticle_Type__c}"/>
+                </apex:column>
+                <apex:column headervalue="GF Device Id">
+                    <apex:outputField value="{!a.GlobalFoundries_Device_ID__c}" />
+                </apex:column>
+                <apex:column headervalue="Device Type">
+                    <apex:outputField value="{!a.Device_Type__c}" />
+                </apex:column>
+                <apex:column headervalue="FAB">
+                    <apex:outputField value="{!a.FabStr__c}"/>
+                </apex:column>
+                <apex:column headervalue="Day Inactive">        
+                    <apex:outputField value="{!a.Day_Inactive_Formula__c}"/>         
+                </apex:column>
+                <apex:column headervalue="Item#">        
+                    <apex:outputField value="{!a.Item__c}"/>         
+                </apex:column>
+                 <apex:column headervalue="HS Code">        
+                    <apex:outputField value="{!a.HS_Code__c}"/>         
+                </apex:column>
+                <apex:column headervalue="Shipping Adress"> 
+                      <apex:outputLabel onclick="methodOneInJavascript('{!a.Shipping_Address__c}');ShowMap()" style="cursor:pointer">{!a.Shipping_Address__r.Name}</apex:outputLabel> 
+                </apex:column>
+            </apex:pageBlockTable>
+    </apex:pageBlock>
+   
+       <!-- <apex:pageBlock id="result" title="Search Results">
+            <apex:pageBlocktable value="{!LWrapper}" var="eachWrapper">
+            
+                <apex:column headerValue="Select" rendered="{!GEFormResults}">
+                <input type="radio" id="plans" name="plans" value="{!eachWrapper.isSelected}" >   
+                <apex:actionsupport event="onselect" rerender="">
+                <apex:param value="{!eachWrapper.Formid}" name="FormId" assignTo="{!SelectedFormId}"/>
+                </apex:actionsupport></input>
+                </apex:column>
+                <apex:column headervalue="Action">
+                <apex:commandButton value="Apply" action="{!applyGEForm}" rerender="result">
+                <apex:param value="{!eachWrapper.Formid}" name="FormId" assignTo="{!SelectedFormId}"/>
+                </apex:commandButton>
+                </apex:column>
+                <apex:column headervalue="FormId" value="{!eachWrapper.formId}" rendered="{!GEFormResults}"/>
+            
+            </apex:pageBlocktable>
+        </apex:pageBlock>-->
+        </div>
+        <c:LoadingStatusSpinner />
+         <div id="ipDialog" style="display:none">
+            <apex:pageBlock id="shipAddress">
+                <apex:pageBlockSection columns="1">
+                    <apex:pageBlockSectionItem >
+                         <apex:outputLabel >Account</apex:outputLabel>
+                         <apex:outputField value="{!Shipaddress_1.Account__r.Name}"/>
+                    </apex:pageBlockSectionItem>
+                    <apex:pageBlockSectionItem >
+                         <apex:outputLabel >Address 1</apex:outputLabel>
+                         <apex:outputField value="{!Shipaddress_1.Address1__c}"/>
+                    </apex:pageBlockSectionItem>
+                    <apex:pageBlockSectionItem >
+                          <apex:outputLabel >Address 2</apex:outputLabel>
+                          <apex:outputField value="{!Shipaddress_1.Address2__c}"/>
+                    </apex:pageBlockSectionItem>
+                    <apex:pageBlockSectionItem >
+                          <apex:outputLabel >Shipping State</apex:outputLabel>
+                          <apex:outputField value="{!Shipaddress_1.Shipping_State__c}"/>
+                    </apex:pageBlockSectionItem>
+                     <apex:pageBlockSectionItem >
+                          <apex:outputLabel >Zip Code</apex:outputLabel>
+                          <apex:outputField value="{!Shipaddress_1.zip_code__c}"/>
+                    </apex:pageBlockSectionItem>
+                </apex:pageBlockSection>
+            </apex:pageBlock>
+        </div>
+         <apex:actionFunction action="{!ShowAddressAccount}" name="methodOneInJavascript" rerender="shipAddress">
+                <apex:param name="addressId " assignTo="{!addressId}" value="" />
+        </apex:actionFunction>
+    </apex:form>
+</apex:page>

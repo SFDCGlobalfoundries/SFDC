@@ -1,0 +1,64 @@
+<!--
+    Author: Zymark Ambat
+    Description: This serves as the Add, Edit, and View page for MPW Process and MPW Process DM.
+    History: 
+        ZAmbat    05042015    - page creation.
+-->
+<apex:page id="MPWConfigSettingsTranxVF" standardController="MPW_Config_Settings__c" extensions="MPWConfigSettingsTranxController" showHeader="true" sidebar="true"  cache="false">
+    <style>
+        .backLink {
+            font-family: 'Verdana','Geneva',sans-serif;
+            font-size: 91.3%;
+            vertical-align: middle;
+            height: auto;
+            margin-top: 3px;
+            margin-bottom: 0;
+            text-decoration: none;
+            color: #015ba7;
+        }
+        
+        .backLink:hover {
+            text-decoration: none;
+        }
+    </style>
+    
+    <apex:sectionHeader title="{!IF(selectedTab == 'MPWProcess', 'MPW Process', 'MPW Process DM')}" subtitle="{!tranx}" help="https://help.salesforce.com/htviewhelpdoc?id=co_edit.htm&siteLang=en_US" />
+    <apex:pageMessages id="errorSection" />
+    
+    <apex:form id="form1">
+        <apex:commandLink action="{!backToList}" value="« Back to {!selectedTab}" styleClass="backLink" rendered="{!IF(tranx != 'Add', true, false)}"/>
+        <br/>
+        &nbsp; 
+        <apex:pageBlock >                 
+            <apex:pageBlockButtons location="both">
+                <apex:commandButton value="Edit" action="{!edit}" rendered="{!ShowEdit}" />
+                <apex:commandButton value="Save" action="{!save}" rendered="{!ShowSave}" />
+                <apex:commandButton value="Cancel" action="{!cancel}" rendered="{!ShowCancel}" />
+            </apex:pageBlockButtons>
+            
+            <apex:pageBlockSection title="{!IF(selectedTab == 'MPWProcess', 'MPW Process', 'MPW Process DM')}" columns="2" collapsible="false">
+                <apex:inputField value="{!mpwcs.Active__c}" rendered="{!EditActive}" />
+                <apex:outputField value="{!mpwcs.Active__c}" rendered="{!NOT(EditActive)}" />
+                
+                <apex:pageBlockSectionItem rendered="{!EditGeometry}">
+                    <apex:outputLabel value="Geometry" />
+                    <apex:actionRegion >
+                        <apex:inputField value="{!mpwcs.Geometry__c}" required="true">
+                            <apex:actionSupport event="onchange" reRender="processPicklist" />
+                        </apex:inputField>
+                    </apex:actionRegion>
+                </apex:pageBlockSectionItem>
+                <apex:outputField value="{!mpwcs.Geometry__c}" rendered="{!NOT(EditGeometry)}" />
+                
+                <apex:inputField value="{!mpwcs.Name}" rendered="{!AND(EditProcess, selectedTab == 'MPWProcess')}" required="true" />
+                <apex:selectList id="processPicklist" value="{!mpwcs.Name}" size="1" rendered="{!AND(EditProcess, selectedTab == 'MPWProcessDM')}" required="true">
+                    <apex:selectOptions value="{!ProcessTypes}"/>
+                </apex:selectList>
+                <apex:outputField value="{!mpwcs.Name}" rendered="{!NOT(EditProcess)}" />
+                
+                <apex:inputField value="{!mpwcs.Rule__c}" rendered="{!AND(EditRule, selectedTab == 'MPWProcessDM')}" required="true" />
+                <apex:outputField value="{!mpwcs.Rule__c}" rendered="{!AND(NOT(EditRule), selectedTab == 'MPWProcessDM')}" />
+            </apex:pageBlockSection>
+        </apex:pageBlock>
+    </apex:form>
+</apex:page>

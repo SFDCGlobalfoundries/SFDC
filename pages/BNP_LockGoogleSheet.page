@@ -1,0 +1,403 @@
+<!--
+    Author: Deepti Narayan Biswal
+    Project Name: DIW Step Down Track 2 (BnP) 
+    Created Date: 08232016
+    Description: This serves as the Google Sheets locking page.
+    History: 
+-->
+<apex:page id="glock" controller="BNP_LockGoogleSheetCtrl" sidebar="false" showheader="false">
+<head>
+<apex:stylesheet value="{!URLFOR($Resource.GConnect, 'lightbox.css')}"/>
+<apex:stylesheet value="{!URLFOR($Resource.GConnect, 'google-drive.css')}"/>
+</head>
+<body>
+<div id="transparent-wrapper"></div>
+<div id="login-box" class="hide">
+    <p>Please login on your google account.</p>
+    <button id="btnLogin" onclick="handleAuthClick(event)" class="button">Login</button>
+</div>
+<div id="drive-box" class="hide">
+    <div id="drive-breadcrumb" class="hide">
+        <span class='breadcrumb-arrow'></span> <a data-id='root' data-level='0'>Home</a>
+        <span id="span-navigation"></span>
+    </div>
+    The file is being locked now. Please close this tab and go to RFQ detail page to open the spreadsheet. 
+    <div id="drive-info" class="hide" >
+        <div class="user-item">Welcome <span id="span-name"></span></div>
+        <div class="user-item">Total Quota: <span id="span-totalQuota"></span></div>
+        <div class="user-item">Used Quota: <span id="span-usedQuota"></span></div>
+        <div class="user-item">Share Mode: <span id="span-sharemode">OFF</span></div>
+        <div class="user-item"><a id="link-logout" class="logout-link">Logout</a></div>
+    </div>
+    
+    <div id="drive-menu" class="hide">
+        <!-- button id="btnAddSheet" style="display:none;" onclick="createSheet('testSheet1',sheetJson);" value="Save" class="button">Add Sheet</button>
+        
+        <div id="button-addfolder"  style="display:none;"  onclick="addFolder('oppName');" title="Add Folder" class="button-opt"></div -->
+        
+    </div>
+    <div id="drive-content"></div>
+    <div id="error-message" class="flash hidden"></div>
+    <div id="status-message" class="flash hidden"></div>
+</div>
+
+<div id="float-box-info" class="float-box">
+    <div class="info-form">
+        <div class="close-x"><img id="imgCloseInfo" class="imgClose" src="images/button_close.png" alt="close" /></div>
+        <h3 class="clear">File information</h3>
+        <table cellpadding="0" cellspacing="0" class="tbl-info">
+            <tr>
+                <td class="label">Created Date</td>
+                <td><span id="spanCreatedDate"></span></td>
+            </tr>
+            <tr>
+                <td class="label">Modified Date</td>
+                <td><span id="spanModifiedDate"></span></td>
+            </tr>
+            <tr>
+                <td class="label">Owner</td>
+                <td><span id="spanOwner"></span></td>
+            </tr>
+            <tr>
+                <td class="label">Title</td>
+                <td><span id="spanTitle"></span></td>
+            </tr>
+            <tr>
+                <td class="label">Size</td>
+                <td><span id="spanSize"></span></td>
+            </tr>
+            <tr>
+                <td class="label">Extension</td>
+                <td><span id="spanExtension"></span></td>
+            </tr>
+        </table>
+        <button id="btnCloseInfo" value="Close" class="button btnClose">Close</button>
+    </div>
+</div>
+<div id="float-box-text" class="float-box">
+    <div class="info-form">
+        <div class="close-x"><img id="imgCloseText" class="imgClose" src="images/button_close.png" alt="close" /></div>
+        <h3 class="clear">Text Content</h3>
+        <div id="text-content"></div>
+        <button id="btnCloseText" value="Close" class="button btnClose">Close</button>
+    </div>
+</div>
+
+
+<apex:includeScript value="//ajax.googleapis.com/ajax/libs/jquery/2.1.4/jquery.min.js" />
+<apex:includeScript value="{!URLFOR($Resource.GConnect, 'date.js')}"/>
+<apex:includeScript value="{!URLFOR($Resource.GConnect, 'lightbox.min.js')}"/>
+<apex:includeScript value="{!URLFOR($Resource.GConnect, 'upload.js')}"/>
+
+<script>
+
+/******************** GLOBAL VARIABLES ********************/
+var SCOPES = ['https://www.googleapis.com/auth/drive','profile'];
+var CLIENT_ID = "{!$Label.Google_drive_Client_ID}";
+var API_KEY = 'AIzaSyCuWk8GJbBWpHGK-7_bcOslHqWdldVPQ5g';
+var FOLDER_NAME = "";
+//var FOLDER_ID = "0BxFuktT2XiEJTl9yTUVnM3kzQTg";
+var FOLDER_ID = "root";
+var FOLDER_PERMISSION = true;
+var FOLDER_LEVEL = 0;
+var NO_OF_FILES = 1000;
+var DRIVE_FILES = [];
+var FILE_COUNTER = 0;
+var FOLDER_ARRAY = [];
+var sheetJson=JSON.parse('[{"properties": {"title": "sheet1"}},{"properties": {"title": "sheet2"}}]');
+var sheetName='';
+var reqInfoID='';
+var rfqRouteId='';
+var pfolderId='';
+var fileid='';
+/******************** AUTHENTICATION ********************/
+
+function checkAuth() {
+    gapi.auth.authorize({
+        'client_id': CLIENT_ID,
+        'scope': SCOPES.join(' '),
+        'immediate': true
+    }, handleAuthResult);
+}
+
+//authorize apps
+function handleAuthClick(event) {
+    gapi.auth.authorize(
+          { client_id: CLIENT_ID, scope: SCOPES, immediate: false },
+          handleAuthResult);
+    return false;
+}
+
+
+function decodeHtml(html) {
+    var txt = document.createElement("textarea");
+    txt.innerHTML = html;
+    return txt.value;
+}
+var routingInfo;
+//check the return authentication of the login is successful, we display the drive box and hide the login box.
+function handleAuthResult(authResult) {
+    if (authResult && !authResult.error) {
+        $("#drive-box").show();
+        $("#drive-box").css("display","inline-block");
+        $("#login-box").hide();
+        loadSheetsApi();
+        var access_token = gapi.auth.getToken().access_token;
+        var RIid=getUrlVars()["id"];
+        Visualforce.remoting.Manager.invokeAction(
+            '{!$RemoteAction.BNP_LockGoogleSheetCtrl.getRFQDetail}',
+            RIid,
+            function handleResult(result, event) {
+                routingInfo=result;
+                var jsonString='';
+                fileid=result.routing.FileId__c;
+                var emailId = result.mail;
+                console.log('fileid1 '+fileid+'***'+emailId);
+                var req = gapi.client.request({
+                   'path': 'https://www.googleapis.com/drive/v3/files/'+ fileid +'/permissions?sendNotificationEmail=false&key='+ API_KEY,
+                   'method': 'POST',
+                   'headers': {
+                       'Content-Type': 'application/json',
+                       'Authorization': 'Bearer ' + access_token,             
+                   },
+                   'body': {
+                        "role": "writer",
+                        "type": "user",
+                        "emailAddress": emailId
+                    }
+                });
+                
+                req.execute(function(resp) { 
+                   if (!resp.error) {
+                        console.log('success: '+resp);                                
+                   }else{
+                        hideStatus();
+                        hideLoading();
+                        showErrorMessage("Error: " + resp.error.message);
+                   }
+                });
+                
+                var request1 = gapi.client.request({
+                   'path': 'https://www.googleapis.com/drive/v3/files/'+ fileid +'/permissions?fields=permissions&key='+ API_KEY,
+                   'method': 'GET',
+                   'headers': {
+                       'Content-Type': 'application/json',
+                       'Authorization': 'Bearer ' + access_token,             
+                   },
+                   'body':{}               
+                });
+                
+                var idtoupdate;
+                var idstodelete = [];
+                request1.execute(function(resp1) { 
+                   if (!resp1.error) {
+                        for(var i=0;i<resp1.permissions.length;i++){
+                            if(resp1.permissions[i].role == 'writer' && resp1.permissions[i].type == 'domain'){
+                                idtoupdate = resp1.permissions[i].id;
+                            }
+                            if(resp1.permissions[i].role == 'writer' && resp1.permissions[i].type != 'domain'){
+                                idstodelete.push(resp1.permissions[i].id);;
+                            }
+                        }
+                        showStatus("Changing permissions of Google Drive files...");
+                   }else{
+                        hideStatus();
+                        hideLoading();
+                        showErrorMessage("Error: " + resp1.error.message);
+                   }
+                   
+                   if(idtoupdate != null && idtoupdate != ''){
+                       var request2 = gapi.client.request({
+                           'path': 'https://www.googleapis.com/drive/v3/files/'+ fileid +'/permissions/'+ idtoupdate +'?key='+ API_KEY,
+                           'method': 'PATCH',
+                           'headers': {
+                               'Content-Type': 'application/json',
+                               'Authorization': 'Bearer ' + access_token,             
+                           },
+                           'body':{
+                             "role": "reader"
+                            }               
+                        });
+                        
+                        request2.execute(function(resp2) { 
+                           if (!resp2.error) {
+                                console.log(resp2);                                
+                           }else{
+                                hideStatus();
+                                hideLoading();
+                                showErrorMessage("Error: " + resp2.error.message);
+                           }
+                        });
+                    }
+                    console.log('%%% '+idstodelete);
+                    if(idstodelete.length > 0){
+                        for(var j=0;j<idstodelete.length;j++){
+                            removewriteAccess(idstodelete[j]);
+                        }
+                    }
+                });
+                
+                
+            });
+        
+        
+    } else {
+        $("#login-box").show();
+        $("#drive-box").hide();
+    }
+}
+/******************** END AUTHENTICATION ********************/
+
+function asycronouseProcess(val){
+var s = val;
+console.log('x '+s);
+return s;
+}
+
+function loadSheetsApi() {
+    var discoveryUrl = 'https://sheets.googleapis.com/$discovery/rest?version=v4';
+    gapi.client.load(discoveryUrl);
+}
+
+var removewriteAccess = function(eachid){
+    var access_token = gapi.auth.getToken().access_token;
+    var request3 = gapi.client.request({
+       'path': 'https://www.googleapis.com/drive/v3/files/'+ fileid +'/permissions/'+ eachid +'?key='+ API_KEY,
+       'method': 'PATCH',
+       'headers': {
+           'Content-Type': 'application/json',
+           'Authorization': 'Bearer ' + access_token,             
+       },
+       'body':{
+         "role": "reader"
+        }               
+    });
+    
+    request3.execute(function(resp3){ 
+       if (!resp3.error) {
+            console.log(resp3);
+       }else{
+            hideStatus();
+            hideLoading();
+            showErrorMessage("Error: " + resp3.error.message);
+       }
+    });
+}
+    
+function getBaseURL () {
+   return location.protocol + "//" + location.hostname+"/";
+}
+
+/******************** PAGE LOAD ********************/
+$(function(){
+    hideLoading();
+
+});
+
+function getUrlVars() {
+    var vars = {};
+    var parts = window.location.href.replace(/[?&]+([^=&]+)=([^&]*)/gi,    
+    function(m,key,value) {
+      vars[key] = value;
+    });
+    return vars;
+  }
+
+/******************** END PAGE LOAD ********************/
+
+/******************** DRIVER API ********************/
+
+function showUserInfo(){
+    var request = gapi.client.drive.about.get();
+    var obj = {};
+    request.execute(function(resp) { 
+       if (!resp.error) {
+            $("#drive-info").show();
+            $("#span-name").html(resp.name);
+            $("#span-totalQuota").html(formatBytes(resp.quotaBytesTotal));
+            $("#span-usedQuota").html(formatBytes(resp.quotaBytesUsed));
+       }else{
+            showErrorMessage("Error: " + resp.error.message);
+       }
+   });
+}
+
+function buildFiles(){
+    
+}
+
+//Initialize the click button for each individual drive file/folder
+//this need to be recalled everytime the Google Drive data is generated
+function initDriveButtons(){
+    
+}
+
+
+
+//call back function for getting text
+function callBackGetText(response){
+    if(response == null){
+         showErrorMessage("Error getting text content.");
+    }else{
+        hideLoading();
+        hideStatus();
+        $("#transparent-wrapper").show();
+        $("#float-box-text").show();
+        $("#text-content").html(response.replace(/(\r\n|\n|\r)/gm, "<br>"));
+    }
+}
+
+//function to clone an object
+function cloneObject(obj) {
+    if (obj === null || typeof obj !== 'object') {
+        return obj;
+    }
+    var temp = obj.constructor(); 
+    for (var key in obj) {
+        temp[key] = cloneObject(obj[key]);
+    }
+    return temp;
+}
+
+
+/******************** NOTIFICATION ********************/
+//show loading animation
+function showLoading() {
+    if ($("#drive-box-loading").length === 0) {
+        $("#drive-box").prepend("<div id='drive-box-loading'></div>");
+    }
+    $("#drive-box-loading").html("<div id='loading-wrapper'><div id='loading'><img src='images/loading-bubble.gif'></div></div>");
+}
+
+//hide loading animation
+function hideLoading() {
+    $("#drive-box-loading").html("");
+}
+
+//show status message
+function showStatus(text) {
+    $("#status-message").show();
+    $("#status-message").html(text);
+}
+
+//hide status message
+function hideStatus() {
+    $("#status-message").hide();
+    $("#status-message").html("");
+}
+
+//show error message
+function showErrorMessage(errorMessage) {
+    $("#error-message").html(errorMessage);
+    $("#error-message").show(100);
+    setTimeout(function () {
+        $("#error-message").hide(100);
+    }, 3000);
+}
+
+/******************** END NOTIFICATION ********************/
+
+</script>
+<script src="https://apis.google.com/js/client.js?onload=checkAuth"></script>
+</body>
+</apex:page>

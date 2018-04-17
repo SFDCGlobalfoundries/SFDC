@@ -1,0 +1,121 @@
+<!--
+ Page:          IPApprovalSectionExport
+ -------------------------------------------------------------------------------------------------------------------------------------
+ Author:        Prosenjit Saha
+ Created Date:  08/25/2014
+ Reason:        export PDF/excel file for IP Section. 
+-->
+
+<apex:page standardController="Apttus_Proposal__Proposal__c"
+           extensions="CPQIPSectionController" 
+           showHeader="false" 
+           sidebar="false"  
+           renderAs="{!GenerateType}" 
+           cache="true"
+           contentType="application/vnd.ms-excel#IPConfiguration.xls">  
+    <apex:stylesheet value="{!URLFOR($Resource.Configurator, 'Configurator/cssfiles/Configurator.css')}" /> 
+    <head>
+        <style type="text/css">            
+             @page{
+                size: landscape;        
+             }
+             tr {
+                 page-break-inside:avoid; 
+                 page-break-after:auto;
+             }
+        </style>
+    </head>    
+    <table width="100%">
+        <tr>
+            <td align="center">    
+                <apex:image value="{!URLFOR($Resource.GFLogo)}" width="50%" height="50%" style="position:relative;background-repeat:repeat-x;left: 0cm; top:0cm;" rendered="{!GenerateType == 'pdf'}"/>
+            </td>        
+        </tr>   
+         
+    </table> 
+    <apex:pageBlock mode="maindetail" 
+                    id="DisplayIP"
+                    rendered="{!ProposalLineItems.size != 0}">
+                <apex:pageBlockSection columns="1" >
+                <b>Configuration Details:</b>
+                     <apex:outputPanel style="margin-top:10px;margin-bottom:25px"> 
+                         <apex:repeat value="{!$ObjectType.Apttus_Proposal__Proposal__c.FieldSets.Related_List_Column_for_Team_Room}" var="f">
+                             <apex:outputText value="{!f.Label} :  {!ConfigurationDetails[f.fieldPath]}" style="font-weight:bold;font-size:16px" rendered="{!f.Label != 'Account'}"/> 
+                             <apex:outputText value="{!f.Label} :  {!ConfigurationDetails.Apttus_Proposal__Account__r.name}" style="font-weight:bold;font-size:16px" rendered="{!f.Label == 'Account'}"/><br></br>
+                         </apex:repeat>
+                     </apex:outputPanel>
+                </apex:pageBlockSection> <br></br><br></br><br></br>        
+                <div style='display: block; overflow-y:auto;height: 190px;width: 99%;' id="tableSection">
+                    <div class='datagrid'>
+                        <table>
+                            
+                            <thead>
+                               <tr>
+                                   <apex:repeat value="{!ColumnList}" 
+                                                var="f">
+                                         <th rowspan="2" style="{!IF(f !='Approved' && f!='Change IP DK Ver', '','display:none;')}">{!f}</th>
+                                     </apex:repeat>
+                               </tr>
+                             
+                            </thead>  
+                            <apex:outputPanel rendered="{!GenerateType != 'pdf'}">
+                            <tr></tr>
+                            </apex:outputPanel>
+                            <apex:repeat value="{!MapIPnamesLink}"
+                                         var="IPname">
+                                <tr class="dataRow">
+                                    
+                                    <apex:repeat value="{!ColumnList}" 
+                                                 var="f">
+                                        <td class="dataCell"
+                                            style="{!IF(f ='IP Lifecycle Stage',
+                                                        IF(CONTAINS(IPValueMap [IPname+ColumnValues [f]],'Silicon Char Report Qualified'),
+                                                              'background-color:#00ff80 ; width:50px; ', 
+                                                              IF(CONTAINS(IPValueMap [IPname+ColumnValues [f]],'Full Design Kit Qualified'),
+                                                                  'background-color:#009d28 ; width:50px;' , 
+                                                                  ''
+                                                              )
+                                                        ), 
+                                                        IF(f ='Approval Status',
+                                                            IF(CONTAINS(IPValueMap [IPname+ColumnValues [f]],'Pending'), 
+                                                                'background-color:#fff312 ; width:50px; ',
+                                                                IF(CONTAINS(IPValueMap [IPname+ColumnValues [f]],'Rejected'),
+                                                                    'background-color:#ff3636 ; width:50px; ', 
+                                                                    IF(CONTAINS(IPValueMap [IPname+ColumnValues [f]],'Approved'),
+                                                                        'background-color:#00ff80 ; width:50px; ',
+                                                                        ''
+                                                                    )
+                                                                )    
+                                                            ), ''
+                                                           )
+                                                        )}">
+                                            <apex:outputPanel rendered="{!f == 'IP Design Kit'}">
+                                                    {!IPValueMap [IPname+f]} 
+                                                    
+                                            </apex:outputPanel>
+                                            <apex:outputText value="{!IPValueMap [IPname+ColumnValues [f]]}" rendered="{!f != 'IP Design Kit' && f !='Approved' && f!='Change IP DK Ver' && f != 'Customization' && f != 'Accepted'}" ></apex:outputText>    
+                                            
+                                            <apex:outputPanel rendered="{! f != 'IP Design Kit' && f =='Approved' && f!='Change IP DK Ver' && f != 'Customization' && f != 'Accepted'}" >
+                                                <apex:outputText value="{!IPValueMap [IPname+ColumnValues [f]]}" />                                                
+                                            </apex:outputPanel>
+                                            <apex:outputPanel rendered="{!f == 'Customization'}">                                                
+                                                <apex:outputText label="IP Customization" value="{!IPValueMap [IPname+ColumnValues [f]]}" />
+                                            </apex:outputPanel>
+                                            
+                                            <apex:outputPanel rendered="{!f == 'Accepted'}">                                                
+                                                <apex:outputText value="{!IF(CONTAINS(IPValueMap [IPname+ColumnValues [f]], 'flag_green'),True, False)}" />
+                                            </apex:outputPanel>
+                                            
+                                            <!--<apex:outputPanel rendered="{!f == 'Customization Reviewed'}">                                                
+                                                <apex:outputText value="{!IF(CONTAINS(IPValueMap [IPname+ColumnValues [f]], 'flag_green'),True, False)}" />
+                                            </apex:outputPanel>-->                                               
+                                        </td>
+                                    </apex:repeat>
+                                </tr>
+                            </apex:repeat>
+                     
+                        </table>
+                    </div>
+                </div>
+            </apex:pageblock>  
+</apex:page>

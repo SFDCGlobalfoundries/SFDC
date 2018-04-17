@@ -1,0 +1,122 @@
+<!--
+    Author: Anirban Roy
+    Description: This is the visualforce page for config IP Design Kit customization.
+    History:
+        ARoy    09162015    - code creation.
+-->
+
+<apex:page controller="CPIPDesignCustomController" tabStyle="Apttus_Proposal__Proposal__c" renderAs="{!pageType}">
+  <apex:form id="form1">
+      <!--IP Design Kit Customization page-->
+      <apex:pageBlock id="ipDesKitPageBlock" title="Configurator Plus IP Design Kit Customization" rendered="{!pageType!='PDF'}">      
+          <apex:pageBlockButtons >
+              <apex:commandButton title="Save" value="Save" action="{!save}"/>
+              <apex:commandButton title="Cancel" value="Cancel" action="{!cancel}"/>
+              <apex:commandButton title="Generate PDF" value="Generate PDF" action="{!printPage}"/>
+          </apex:pageBlockButtons>
+          <apex:pageBlockSection title="IP Details" columns="2">
+              <apex:selectList label="IP Design Kit" value="{!ipDesKitName}" size="1" multiselect="false">
+                  <apex:selectOptions value="{!iPDesignKitVersions}" />
+              </apex:selectList>
+              <apex:outputField value="{!baseIp.Ip_Vendor__c}"/>
+              <apex:outputField value="{!baseIp.Ip_Type__c}"/>
+              <apex:outputField value="{!baseIp.Lifecycle__c}"/>
+              <apex:selectList label="IP Version Change Request Status" value="{!ipCustomStatus}" size="1" multiselect="false" rendered="{!userChk}">
+                  <apex:selectOptions value="{!iPDesignKitStatus}" />
+              </apex:selectList>
+              <apex:outputText label="IP Version Change Request Status" value="{!ipCustomStatus}" rendered="{!NOT(userChk)}"/>
+              <apex:inputcheckbox label="IP Customization" value="{!ipCustomAccptd}" disabled="true"/>
+              <apex:outputText label="IP Customization Accepted Flag">
+                  <apex:image title="IP Customization Accepted Flag" value="IP Customization Accepted Flag" url="/img/samples/flag_green.gif" rendered="{!ipCustomStatus == 'Approved'}"/>
+                  <apex:image title="IP Customization Accepted Flag" value="IP Customization Accepted Flag" url="/img/samples/flag_red.gif" rendered="{!ipCustomStatus != 'Approved'}"/>
+              </apex:outputText>
+          </apex:pageBlockSection>
+          <apex:pageBlockSection title="Additional Question List" columns="2">
+              <apex:repeat value="{!configPlusIPResList}" var="configPlusRes">
+                  <apex:inputText label="{!configPlusRes.configQuesName}" value="{!configPlusRes.configRes}" />
+              </apex:repeat>
+          </apex:pageBlockSection>   
+      </apex:pageBlock>
+  
+  <!--IP Design Kit Customization PDF page-->
+  <apex:outputPanel rendered="{!pageType=='PDF'}">
+        <h3 style="font-family: Arial,Helvetica,sans-serif;font-size:16px;">Configurator Plus IP Design Kit Customization</h3>
+        <table style="font-family: Arial,Helvetica,sans-serif;font-size:12px;">
+            <tbody>
+                <tr><td width="100%" colspan="5">&nbsp;</td></tr>
+                <tr><td width="100%" colspan="5" style="font-weight:bold;font-size:14px;background-color:#8e9dbe">IP Details</td></tr>
+                <tr><td width="100%" colspan="5">&nbsp;</td></tr>
+                <tr>
+                    <td style="width:20%;font-weight:bold" colspan="1">
+                       <apex:outputLabel value="IP Design Kit"/> 
+                    </td>
+                    <td style="width:10%;text-align:right;" colspan="1">
+                        <apex:outputtext value="{!ipDesKitName}" />                                                    
+                    </td>
+                    <td colspan="1" style="width:5%">&nbsp;</td>
+                    <td style="width:20%;font-weight:bold" colspan="1">
+                        <apex:outputLabel value="IP Vendor"/>
+                    </td>
+                    <td style="width:10%;text-align:right;" colspan="1">
+                        <apex:outputtext value="{!baseIp.Ip_Vendor__c}"/> 
+                    </td>
+                </tr>
+                <tr>
+                    <td style="width:20%;font-weight:bold" colspan="1">
+                       <apex:outputLabel value="IP Type"/> 
+                    </td>
+                    <td style="width:10%;text-align:right;" colspan="1">
+                        <apex:outputtext value="{!baseIp.Ip_Type__c}" />                                                    
+                    </td>
+                    <td colspan="1" style="width:5%">&nbsp;</td>
+                    <td style="width:20%;font-weight:bold" colspan="1">
+                        <apex:outputLabel value="IP Lifecycle Stage"/>
+                    </td>
+                    <td style="width:10%;text-align:right;" colspan="1">
+                        <apex:outputtext value="{!baseIp.Lifecycle__c}"/> 
+                    </td>
+                </tr>
+                <tr>
+                    <td style="width:20%;font-weight:bold" colspan="1">
+                       <apex:outputLabel value="IP Version Change Request Status"/> 
+                    </td>
+                    <td style="width:10%;text-align:right;" colspan="1">
+                        <apex:outputtext value="{!ipCustomStatus}" />                                                    
+                    </td>
+                    <td colspan="1" style="width:5%">&nbsp;</td>
+                    <td style="width:20%;font-weight:bold" colspan="1">
+                        <apex:outputLabel value="IP Customization"/>
+                    </td>
+                    <td style="width:10%;text-align:right;" colspan="1">
+                        <apex:outputtext value="{!ipCustomAccptd}" />
+                    </td>
+                </tr>
+                <tr>
+                    <td style="width:20%;font-weight:bold" colspan="1">
+                       <apex:outputLabel value="IP Customization Accepted Flag"/> 
+                    </td>
+                    <td style="width:10%;text-align:right;" colspan="1">
+                        <apex:image title="IP Customization Accepted Flag" value="IP Customization Accepted Flag" url="/img/samples/flag_green.gif" rendered="{!ipCustomStatus == 'Approved'}"/>
+                        <apex:image title="IP Customization Accepted Flag" value="IP Customization Accepted Flag" url="/img/samples/flag_red.gif" rendered="{!ipCustomStatus != 'Approved'}"/>                                                    
+                    </td>
+                    <td colspan="3" style="width:10%">&nbsp;</td>                    
+                </tr>
+                <tr><td width="100%" colspan="5">&nbsp;</td></tr>
+                <tr><td width="100%" colspan="5" style="font-weight:bold;font-size:14px;background-color:#8e9dbe">Additional Question List</td></tr>
+                <tr><td width="100%" colspan="5">&nbsp;</td></tr>
+                <apex:repeat value="{!configPlusIPResList}" var="configPlusRes">
+                    <tr>
+                        <td style="width:20%;font-weight:bold" colspan="1">
+                           <apex:outputLabel value="{!configPlusRes.configQuesName}"/> 
+                        </td>
+                        <td style="width:10%;text-align:right;" colspan="1">                            
+                            <apex:outputtext value="{!configPlusRes.configRes}" />
+                        </td>
+                        <td colspan="3" style="width:10%">&nbsp;</td>
+                    </tr>
+                </apex:repeat>
+            </tbody>
+        </table>      
+  </apex:outputPanel>
+  </apex:form>
+</apex:page>

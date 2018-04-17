@@ -1,0 +1,292 @@
+<apex:page standardController="CPK_Report__c" extensions="ClsNewCPKReport"  action="{!resetAccount}" id="pageId">
+    <script>
+        function CallWebService_JS(isErrorVal){       
+            if(isErrorVal != null && isErrorVal == 'false'){
+                CallWebService();
+            }
+        }
+        
+    </script>
+    <c:loadingPanel />
+    <apex:sectionHeader title="New CPK Report" subtitle="New CPK Report" />
+    <apex:form id="theForm">
+
+        <apex:actionFunction action="{!Saving}" name="InsertRecord_JS"  status="LoadingStatusSpinner" rerender="theform,messages,standrdmessages" oncomplete="CallWebService_JS('{!isError}');">
+            <apex:param assignTo="{!SaveAndNew}" value="" name="SaveAndNew"/>
+        </apex:actionFunction>
+        <apex:actionFunction name="CallWebService" action="{!Createfolder}" status="LoadingStatusSpinner" reRender="theform,messages,standrdmessages"/>    
+         <apex:pageMessages id="messages"/>
+         <!--<apex:messages id="standrdmessages"/>-->
+        <apex:pageBlock title="CPK Report" id="block">
+            <apex:pageBlockButtons >
+                <!--<apex:commandButton value="Save"  onclick="InsertRecord_JS;return false;" rerender="theForm"/>-->
+                <input name="Save" class="btn" type="button" value="Save" onclick="InsertRecord_JS('false');return false;"/>
+                <input name="Save and New" class="btn" type="button" value="Save and New" onclick="InsertRecord_JS('true');return false;"/>
+                <!-- <apex:commandButton value="Save & New" action="{!saveNew}"/> -->
+                <apex:commandButton value="Cancel" action="{!cancel}"/>
+            </apex:pageBlockButtons>
+            <apex:pageBlockSection title="Basic Info" collapsible="true" columns="2" id="blockSection1"> 
+                <apex:pageBlockSectionItem >
+                    <apex:outputPanel >
+                        <div align="left"> 
+                            <apex:outputText value="{!$ObjectType.CPK_Report__c.fields.FABS__c.label}" />
+                        </div>
+                    </apex:outputPanel>
+                    <apex:outputPanel styleClass="requiredInput" layout="block">
+                        <apex:outputPanel styleClass="requiredBlock" layout="block"/>
+                        <apex:inputField value="{!cpkReport.FABS__c}" id="fabId" required="false">
+                       <!-- <apex:actionSupport event="onchange" action="{!ShowAsicCustomer}" reRender="out1"/> -->
+                        </apex:inputField>
+                    </apex:outputPanel>
+                </apex:pageBlockSectionItem>
+     
+                <apex:pageBlockSectionItem >
+                    <apex:outputPanel >
+                        <div align="left"> 
+                            <apex:outputText value="{!$ObjectType.CPK_Report__c.fields.Technology__c.label}" />
+                        </div>
+                    </apex:outputPanel>
+                    <apex:outputPanel styleClass="requiredInput" layout="block">
+                        <apex:outputPanel styleClass="requiredBlock" layout="block"/>
+                        <div align="left">
+                            <apex:inputField value="{!cpkReport.Technology__c}" required="false" id="technologyId"/>
+                        </div>
+                    </apex:outputPanel> 
+                </apex:pageBlockSectionItem>
+       
+                <apex:pageBlockSectionItem >
+                    <apex:outputPanel >
+                        <div align="left"> 
+                        <apex:outputText value="{!$ObjectType.CPK_Report__c.fields.Geometry__c.label}" />
+                        </div>
+                    </apex:outputPanel>
+                     <apex:outputPanel styleClass="requiredInput" layout="block">
+                    <apex:outputPanel styleClass="requiredBlock" layout="block"/>
+					<apex:actionRegion >
+						<apex:inputField value="{!cpkReport.Geometry__c }" required="false" id="geometryId">
+							<apex:actionSupport event="onchange" action="{!clickbtn}" reRender="outp3,outp4" />
+                        </apex:inputField>
+					</apex:actionRegion> 
+                    </apex:outputPanel> 
+                </apex:pageBlockSectionItem>        
+                
+                 <apex:pageBlockSectionItem >
+                    <apex:outputPanel >
+                        <div align="left"> 
+                        <apex:outputText value="{!$ObjectType.CPK_Report__c.fields.Reminder__c.label}" />
+                        </div>
+                    </apex:outputPanel>
+                     <apex:outputPanel styleClass="requiredInput" layout="block">
+                    <apex:outputPanel styleClass="requiredBlock" layout="block"/>
+                    <apex:inputField value="{!cpkReport.Reminder__c}" required="false" id="reminderId"/>
+                    </apex:outputPanel> 
+                </apex:pageBlockSectionItem>
+     
+                <apex:pageBlockSectionItem >
+                    <apex:outputPanel >
+                        <div align="left"> 
+                        <apex:outputText value="{!$ObjectType.CPK_Report__c.fields.Report_Cycle__c.label}" />
+                        </div>
+                    </apex:outputPanel>
+                     <apex:outputPanel styleClass="requiredInput" layout="block">
+                    <apex:outputPanel styleClass="requiredBlock" layout="block"/>
+                    <apex:inputField value="{!cpkReport.Report_Cycle__c}" required="false" id="reportCycleId"/>
+                    </apex:outputpanel>
+                </apex:pageBlockSectionItem>
+     
+     
+                <!--   <apex:pageBlockSectionItem id="pgSectionItem1" >
+                  <apex:outputPanel >
+                        <div align="left"> 
+                        <apex:outputText value="{!$ObjectType.CPK_Report__c.fields.Global_Report_Cycle_Day__c.label}"  />
+                        </div>
+                    </apex:outputPanel>
+                    <apex:inputField value="{!cpkReport.Global_Report_Cycle_Day__c}" id="GRCId" onclick="btnDisabled()"/>
+                </apex:pageBlockSectionItem>-->
+
+                <apex:pageBlockSectionItem id="pgSectionItem2">
+                    <apex:outputPanel >
+                        <div align="left"> 
+                        <apex:outputText value="{!$ObjectType.CPK_Report__c.fields.Report_Cycle_Day__c.label}" />
+                        </div>
+                    </apex:outputPanel>
+                    <apex:inputField value="{!cpkReport.Report_Cycle_Day__c}"  id="RCDayId"/>
+                </apex:pageBlockSectionItem>
+               
+               
+            </apex:pageBlockSection>
+            <apex:pageBlockSection >
+           
+            <apex:pageBlockSectionItem >
+           <apex:outputPanel >
+                        <div align="left"> 
+                         <apex:outputText value="Select Type" escape="true" />
+                        </div>
+                    </apex:outputPanel>
+            
+                                
+                            
+                        <apex:selectList size="1" value="{!category}" id="Category">
+                            <apex:selectOption itemLabel="---Select---" itemValue="None"></apex:selectOption>
+                            <apex:selectOption itemLabel="Authorized Customer" itemValue="Auth Customer" ></apex:selectOption>
+                            <apex:selectOption itemLabel="Qualified Customer" itemValue="Qual Customer" ></apex:selectOption>
+                            <apex:selectOption itemLabel="Enablement" itemValue="Enablement Partner" ></apex:selectOption>
+                            <apex:selectOption itemLabel="Reseller" itemValue="Reseller" ></apex:selectOption>
+                            <apex:actionSupport event="onchange" action="{!resetAccount}" reRender="pgbscust,ceOwner" status="LoadingStatusSpinner"/>
+                            
+                        </apex:selectList>  
+            
+            </apex:pageBlockSectionItem>
+            
+            <!-- DBiswal 02102015 -->
+            <apex:pageBlockSectionItem >
+                    <apex:outputPanel >
+                        <div align="left"> 
+                        <apex:outputText value="{!$ObjectType.CPK_Report__c.fields.Active__c.label}" />
+                        </div>
+                    </apex:outputPanel>
+                    <apex:inputField value="{!cpkReport.Active__c}"  id="active"/>
+            </apex:pageBlockSectionItem>
+                
+            </apex:pageBlockSection>
+            <!-- ASPattanaik 06132016 -->
+            <apex:outputPanel id="out1">
+            <apex:pageBlockSection columns="2" id="ASICcust">
+                <apex:pageBlockSectionItem >
+                <apex:outputPanel >
+                        <div align="left"> 
+                        <apex:outputText value="{!$ObjectType.CPK_Report__c.fields.ASIC_Report__c.label}" />
+                        </div>
+                    </apex:outputPanel>
+                    <apex:actionRegion >
+                    <apex:inputField value="{!cpkReport.ASIC_Report__c}" id="asicreport">
+                        <apex:actionSupport event="onchange" action="{!clickbtn}" reRender="outp3,outp4"/>
+                    </apex:inputField>
+                    </apex:actionRegion>
+                </apex:pageBlockSectionItem>
+                <apex:pageBlockSectionItem > 
+                    <apex:outputPanel id="outp4">
+                        <div align="left"> 
+                        <apex:outputText value="{!$ObjectType.CPK_Report__c.fields.For_All_ASIC_Customers__c.label}" />
+                        </div>
+                    </apex:outputPanel> 
+                    <apex:inputField value="{!cpkReport.For_All_ASIC_Customers__c}" id="allasiccust" required="true">
+                   <apex:actionSupport event="onchange" action="{!populateSelectList}" reRender="outp2"/>
+                    </apex:inputField> 
+                </apex:pageBlockSectionItem>
+            </apex:pageBlockSection>
+            </apex:outputPanel>
+            
+            <apex:outputPanel id="outp3" >
+            <apex:outputPanel id="outp2"> 
+            <apex:pageBlockSection columns="3" id="pgbscust" rendered="{!fabAllASICCust}">
+                <apex:pageBlockSectionItem >
+                    <apex:outputPanel >
+                        <div align="left"> 
+                            <apex:outputText value="Customer" />
+                        </div> 
+                    </apex:outputPanel>
+                    <apex:outputPanel styleClass="requiredInput" layout="block">
+                        <apex:outputPanel styleClass="requiredBlock" layout="block"/>
+                        <apex:panelGrid columns="3" id="ceOwner" width="80%">
+                            <apex:selectList id="sel1" value="{!leftselected}" multiselect="true"  style="width:350px" size="7">
+                                <apex:actionSupport event="ondblclick"  action="{!selectclick}" status="LoadingStatusSpinner" reRender="ceOwner"/>
+                                <apex:selectOptions value="{!PopulateCustomerSelectOption}" />
+                            </apex:selectList>
+                            <apex:panelGroup >
+                                &nbsp;&nbsp;&nbsp;<apex:commandButton value="Add All" action="{!selectallclick}" status="LoadingStatusSpinner" rerender="ceOwner"/>
+                                <br/>
+                                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<apex:image value="{!$Resource.multiselected}">
+                                    <apex:actionSupport event="onclick" status="LoadingStatusSpinner" action="{!selectclick}" reRender="ceOwner"/>
+                                </apex:image>
+                                <br/>
+                                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<apex:image value="{!$Resource.multiunselected}">
+                                    <apex:actionSupport event="onclick" status="LoadingStatusSpinner" action="{!unselectclick}" reRender="ceOwner"/>
+                                </apex:image>
+                                <br/>
+                                <apex:commandButton value="Remove All" action="{!unselectallClick}" status="LoadingStatusSpinner" rerender="ceOwner"/>
+                            </apex:panelGroup>
+                            <apex:selectList id="sel2" value="{!rightselected}" multiselect="true" style="width:350px" size="7">
+                                <apex:actionSupport event="ondblclick"  action="{!unselectclick}" status="LoadingStatusSpinner" reRender="ceOwner"/>
+                                <apex:selectOptions value="{!PopulateCustomerUnSelectOption}" />
+                            </apex:selectList>
+                        </apex:panelGrid>
+                    </apex:outputPanel>
+                </apex:pageBlockSectionItem>
+            </apex:pageBlockSection>
+            </apex:outputPanel> 
+            </apex:outputPanel>
+            
+            <apex:pageBlockSection columns="1" title="PI Info" collapsible="true" id="blockSection2" rendered="{!IF(renderIfQA,true,false)}" >
+                <apex:pageBlockSectionItem id="PI1" >
+                    <apex:outputPanel >
+                        <div align="left"> 
+                        <apex:outputText value="{!$ObjectType.CPK_Report__c.fields.PI_Owner_1__c.label}" />
+                        </div>
+                    </apex:outputPanel>
+                    <apex:outputPanel styleClass="requiredInput" layout="block">
+                    <apex:outputPanel styleClass="requiredBlock" layout="block"/>
+                    <apex:inputField value="{!cpkReport.PI_Owner_1__c}" id="piOwner1Id" />
+                    </apex:outputPanel>
+                </apex:pageBlockSectionItem>
+                <apex:pageBlockSectionItem id="PI2">
+                    <apex:outputPanel >
+                    <div align="left"> 
+                    <apex:outputText value="{!$ObjectType.CPK_Report__c.fields.PI_Owner_2__c.label}" />
+                    </div>
+                    </apex:outputPanel>
+                    <apex:inputField value="{!cpkReport.PI_Owner_2__c}" id="piOwner2Id"/> 
+                </apex:pageBlockSectionItem>
+                <apex:pageBlockSectionItem id="PI3">
+                    <apex:outputPanel >
+                        <div align="left"> 
+                        <apex:outputText value="{!$ObjectType.CPK_Report__c.fields.PI_Owner_3__c.label}" />
+                        </div>
+                    </apex:outputPanel>
+                <apex:inputField value="{!cpkReport.PI_Owner_3__c}" id="piOwner3Id" /> 
+                </apex:pageBlockSectionItem>
+            </apex:pageBlockSection>  
+            
+            <apex:pageBlockSection columns="1" title="PI Info" collapsible="true" id="blockSection3" rendered="{!IF(renderIfQA,false,True)}">
+                <apex:pageBlockSectionItem id="PI1t" >
+                    <apex:outputPanel >
+                        <div align="left"> 
+                        <apex:outputText value="{!$ObjectType.CPK_Report__c.fields.PI_Owner_1__c.label}" />
+                        </div>
+                    </apex:outputPanel>
+
+                    <apex:inputText value="{!cpkReport.PI_Owner_1__c}" id="piOwner1Idt" required="false" disabled="true" />
+                  
+                </apex:pageBlockSectionItem>
+                <apex:pageBlockSectionItem id="PI2t">
+                    <apex:outputPanel >
+                    <div align="left"> 
+                    <apex:outputText value="{!$ObjectType.CPK_Report__c.fields.PI_Owner_2__c.label}" />
+                    </div>
+                    </apex:outputPanel>
+                    <apex:inputText value="{!cpkReport.PI_Owner_2__c}" id="piOwner2Idt" disabled="true"/> 
+                </apex:pageBlockSectionItem>
+                <apex:pageBlockSectionItem id="PI3t">
+                    <apex:outputPanel >
+                        <div align="left"> 
+                        <apex:outputText value="{!$ObjectType.CPK_Report__c.fields.PI_Owner_3__c.label}" />
+                        </div>
+                    </apex:outputPanel>
+                <apex:inputText value="{!cpkReport.PI_Owner_3__c}" id="piOwner3Idt" disabled="true" /> 
+                </apex:pageBlockSectionItem>
+            </apex:pageBlockSection>  
+        </apex:pageBlock>
+    </apex:form>
+    <!--<script>
+    btnDisabled();
+    function btnDisabled(){
+        if(document.getElementById('pageId:theForm:block:blockSection1:pgSectionItem1:GRCId').checked)
+        {
+            document.getElementById('pageId:theForm:block:blockSection1:pgSectionItem2:RCDayId').disabled=true;
+            document.getElementById('pageId:theForm:block:blockSection1:pgSectionItem2:RCDayId').value={!fixedCycleDay};
+        }
+        if(!document.getElementById('pageId:theForm:block:blockSection1:pgSectionItem1:GRCId').checked)
+            document.getElementById('pageId:theForm:block:blockSection1:pgSectionItem2:RCDayId').disabled= false;
+        }
+    </script>-->
+ </apex:page>

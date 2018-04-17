@@ -1,0 +1,119 @@
+<!--
+ Type Name: PCNEOL_GFViewPage
+ Author: Dinesh Suggala
+ Created Date: 11/7/2016
+ Reason: It Contains GFV View Content
+ 
+ Author: Cognizant
+ Modified Date: 21-Feb-2017
+ Reason: To add sorting of PCNEOL table and release date new field 
+
+ …….. 
+ ……..
+-->
+
+
+
+<apex:page Controller="PCNEOL_GFViewController" sidebar="false" docType="html-5.0" showHeader="false" showChat="false">
+     <apex:includeScript value="{!URLFOR($Resource.jQuerysorter, '/jquery-latest.js')}"/>
+     <apex:includeScript value="{!URLFOR($Resource.jQuerysorter, '/jquery-1.6.min.js')}"/>
+     <apex:includeScript value="{!URLFOR($Resource.jQuerysorter, '/jquery.tablesorter.min.js')}"/>
+     
+  <apex:form >
+       <apex:image value="{!$Resource.GFLogo}" />
+        <apex:pageBlock title="Product Change Notification End of Life(EOL)" id="pbTitle" >
+    <apex:pageBlockSection title="Welcome to End of Life Product Change Notification"  columns="1">
+     <apex:outputtext >{!CustomLabelValue}</apex:outputtext>
+     <br/><br/>
+     </apex:pageBlockSection>
+  </apex:pageBlock>
+  <apex:pageBlock id="pb">
+ 
+  <apex:pageBlockSection title="Product End of Life Notification">
+  </apex:pageBlockSection>
+  
+  <apex:pageBlockSection columns="4">
+   
+    <apex:outputPanel >
+    <apex:selectList value="{!ACPCN}" size="1"  id="acepcn" > PCN Stages Values 
+    <apex:actionSupport event="onchange"  /> 
+     <apex:selectOptions value="{!stagePCN}" />
+     </apex:selectList>
+    </apex:outputPanel>
+   
+   <apex:outputPanel >
+    <apex:outputtext >By Date:</apex:outputtext>
+    <apex:input type="date" value="{!eDate}" id="date" onfocus="DatePicker.pickDate(false, this , false);" />
+    
+   </apex:outputPanel>
+   
+   <apex:outputPanel >
+    <apex:outputtext >Part Number</apex:outputtext>
+      <apex:inputText id="searchBox" value="{!searchValue}"/>
+   </apex:outputPanel>
+      
+    <apex:commandButton value="Search" action="{!refresh}" id="refresh" reRender="message2,pb1,pb,msg"/>
+   </apex:pageBlockSection>
+   
+    <script>
+      $(document).ready(function() { 
+                $(".pcnTable").tablesorter(); 
+                $("[id$=sortDiv]").click(function() {
+                // alert('clicked yes');
+                });
+      });  
+      </script> 
+   <apex:pageBlockTable value="{!listpcn}" var="pcn" columns="5" id="pb1" styleClass="pcnTable">
+   
+    <apex:column >
+     <apex:facet name="header">
+     <apex:outputLabel >
+     PCN Number&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+     <apex:image url="/img/arrowDown.gif"/>
+     </apex:outputlabel>
+     </apex:facet>
+     
+    <apex:outputlink value="/{!pcn.pcnWrapper.Id}" target="_top">{!pcn.pcnWrapper.PCN_Numbers__c}</apex:outputlink>
+    </apex:column>
+    
+    <apex:column >
+    <apex:facet name="header">
+     <apex:outputLabel >
+     Title&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+     <apex:image url="/img/arrowDown.gif"/>
+     </apex:outputlabel>
+    </apex:facet>
+     <apex:outputlink value="/{!pcn.pcnWrapper.Id}" target="_top">{!pcn.pcnWrapper.Name}</apex:outputlink>
+    </apex:column>
+   
+    <apex:column >
+    <apex:facet name="header">
+     <apex:outputLabel >
+     Status&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+     <apex:image url="/img/arrowDown.gif"/>
+     </apex:outputlabel>
+    </apex:facet>
+     <apex:outputText value="{!pcn.Opened}"/>
+    </apex:column>
+   
+    <apex:column >
+     <apex:facet name="header">
+     <apex:outputLabel >
+     Originator&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+     <apex:image url="/img/arrowDown.gif"/>
+     </apex:outputlabel>
+     </apex:facet>
+     <apex:outputField value="{!pcn.pcnWrapper.Owner.Name}"/>
+    </apex:column>
+   </apex:pageBlockTable>
+   <apex:outputPanel id="message2">
+   <apex:pageMessages id="msg" />
+   </apex:outputPanel>
+   <apex:commandButton value="first" action="{!first}" disabled="{!!setCon.hasPrevious}"/>
+    <apex:commandButton value="next" action="{!next}" disabled="{!!setCon.hasNext}"/> 
+    <apex:commandButton value="previous" action="{!previous}" disabled="{!!setCon.hasPrevious}"/>
+    <apex:commandButton value="last" action="{!last}" disabled="{!!setCon.hasNext}"/>
+    Total Number of Records: {!setCon.resultSize}
+     </apex:pageBlock>  
+ </apex:form>
+</apex:page>

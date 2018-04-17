@@ -1,0 +1,83 @@
+<!--
+    Label:  ROSVF_eucConLookup
+    Author: Deepti Narayan Biswal
+    Description: This page has Functionality to select contacts to send euc form to.
+    History:
+    DBiswal         12152015    Created.
+-->
+<apex:page title="Contact Lookup" controller="ROS_ControllerSearchReticleGFForm" action="{!euclookupinit}" showChat="false" showHeader="false" sidebar="false" tabStyle="Contact">
+<apex:includeScript value="{!$Resource.JS_ROSVF_eucConLookup}"/>
+    <script>
+        //added as page unable to access javascript from static resource
+        function sendemailIds(){
+            var tableval = document.getElementById('{!$Component.eucConform:eucConpb1:eucContable}');
+            var emailstoSend = '';
+            var unselectedmails = '';
+            for (var i = 1; row = tableval.rows[i]; i++) {
+                row = tableval.rows[i];
+                var checkerbox = row.cells[0].firstChild;
+                var unformemail_1 = '';
+                var unformemail_2 = '';
+                if(checkerbox.checked == true){
+                    var unformemail1 = row.cells[5].lastChild.innerHTML;
+                    if(unformemail1 != ''){
+                        unformemail_1 = unformemail1.split(">")[1];
+                    }
+                    if(unformemail_1 != ''){
+                        unformemail_1 = unformemail_1.slice(0, -3);  
+                    }
+                } else {
+                    var unformemail2 = row.cells[5].lastChild.innerHTML;
+                    if(unformemail2 != ''){
+                        unformemail_2 = unformemail2.split(">")[1];
+                    }
+                    if(unformemail_2 != ''){
+                        unformemail_2 = unformemail_2.slice(0, -3);  
+                    }
+                }
+                if(unformemail_1 != ''){
+                    if(emailstoSend == ''){
+                        emailstoSend = unformemail_1;
+                    } else {
+                        emailstoSend += ';' + unformemail_1;
+                    }
+                }
+                if(unformemail_2 != ''){
+                    if(unselectedmails == ''){
+                        unselectedmails = unformemail_2;
+                    } else {
+                        unselectedmails += ';' + unformemail_2;
+                    }
+                }
+            }
+            if(emailstoSend != ''){
+                top.window.opener.callParent(emailstoSend,unselectedmails);
+                top.close();
+            } else {
+                alert("Please select at least one Contact");
+            }
+        }
+    </script>
+    <apex:form id="eucConform">
+        <apex:pageBlock title="Contacts" tabStyle="Contact" id="eucConpb1">
+            <apex:pageblockButtons location="top">
+                <apex:commandButton value="Select" onclick="sendemailIds();"/>
+            </apex:pageblockButtons>
+            <apex:pageMessages />
+            <apex:pageblockTable value="{!listeucConWrapper}" var="conwrap" id="eucContable">
+                <apex:column >
+                    <apex:facet name="header">
+                        <apex:inputCheckbox value="{!Allselected}" onclick="checkAll(this,'eucconcheckedone')">
+                        </apex:inputCheckbox>
+                    </apex:facet>
+                    <apex:inputCheckbox value="{!conwrap.isSelected}" id="eucconcheckedone"/>
+                </apex:column>
+                <apex:column value="{!conwrap.eachCon.Name}" headerValue="Contact Name"/>
+                <apex:column value="{!conwrap.eachCon.Role__c}" headerValue="Role"/>
+                <apex:column value="{!conwrap.eachCon.Account.Name}" headerValue="Account Name"/>
+                <apex:column value="{!conwrap.eachCon.Phone}" headerValue="Phone"/>
+                <apex:column value="{!conwrap.eachCon.Email}" headerValue="Email"/>
+            </apex:pageblockTable>            
+        </apex:pageBlock>
+    </apex:form>
+</apex:page>

@@ -1,0 +1,143 @@
+<!-----------------------------------------------------------------------------------------------------------------------------------
+    Page:          CPQConfigurationApprovalVF
+    -------------------------------------------------------------------------------------------------------------------------------------
+    Author:        Monalisa Mohapatra.
+    Created Date:  02/10/2015
+    Reason:        Display the error message for entry criteria after submitting the Configuration for approval.
+    History:       ARoy  09242015  - Added new validations on submission. 
+                   ARoy  12152015  - Added new IP Status validation on submission.
+                   Karna Shiva     Sprint II   - Added Justification for Retrofit for FAE USer(Apr-01-2016).
+                   Shivam Sharma   04262016    - Added Device purpose validation for 0.014UM Geometries for Wirebond
+                   Karna Shiva     08232016    - Added Outputpanel to avoid device validations for external customers
+				   Shivam Sharma   06302017    - Moved apex:pagemessages outside pageblock section Case#00072890
+------------------------------------------------------------------------------------------------------------------------------------->
+<apex:page standardController="Apttus_Proposal__Proposal__c"   
+              extensions="CPQConfigurationapprovalController"
+              sidebar="true"
+              showHeader="true"
+              docType="html-5.0"
+              applyHtmlTag="true"
+              id="pg" action="{!init}">
+    <style>
+        body {
+            background-color: #d0e4fe;
+        }
+
+        h1 {
+            color: orange;
+            text-align: center;
+        }
+
+        p {
+            font-family: "Times New Roman";
+            font-size: 20px;
+        }
+    </style>
+    <apex:form id="form1">  
+        <table width="100%">
+            <tr>
+                <td align="center">    
+                </td>        
+            </tr>   
+        </table>        
+        <apex:pageBlock id="mainBlock" mode="detail">
+            <apex:pageBlockSection columns="1" >
+                <b>Configuration Details:</b>
+                     <apex:outputPanel style="margin-top:10px;margin-bottom:25px"> 
+                         <b>Configuration Name: </b><apex:outputText value="{!configuration.Name}"/><br></br>   
+                     </apex:outputPanel>
+            </apex:pageBlockSection> <br></br>
+            <apex:pageBlockSection id="entryCriteria" title="Entry Criteria" collapsible="false" columns="1" rendered="{!entryFlag}">
+                <apex:outputPanel style="margin-top:10px;margin-bottom:25px" rendered="true">
+                    <apex:outputText value="You have to configure "/><br></br>                      
+                    <apex:image value="/img/permissions_confirm16.gif" rendered="{! !acntFlag}"/>
+                    <apex:image value="/img/permissions_deny16.gif" rendered="{!acntFlag}"/>  
+                    <apex:outputText value="Account is configured" rendered="{! !acntFlag}"/>
+                    <apex:outputText value="Account is not configured" rendered="{!acntFlag}"/>
+
+                    
+                    <br></br> 
+                    <apex:image value="/img/permissions_confirm16.gif" rendered="{! !ptFlag}"/> 
+                    <apex:image value="/img/permissions_deny16.gif" rendered="{!ptFlag}"/>  
+                    <apex:outputText value="Process Technology is configured" rendered="{! !ptFlag}"/>         
+                    <apex:outputText value="Process Technology is not configured" rendered="{!ptFlag}"/>         
+        
+                    <br></br>  
+                    <apex:image value="/img/permissions_confirm16.gif" rendered="{! !posFlag}"/> 
+                    <apex:image value="/img/permissions_deny16.gif" rendered="{!posFlag}"/>  
+                    
+                    <apex:outputText value="PolyOrientation Status is Green"  rendered="{! !posFlag}"/>                    
+                    <apex:outputText value="PolyOrientation is not in Green Status"  rendered="{!posFlag}"/>                   
+                    <!------ARoy  09242015 : Start of Validation of the Configuration----------->
+                    <br></br>  
+                    <apex:image value="/img/permissions_confirm16.gif" rendered="{! !pocFlag}"/> 
+                    <apex:image value="/img/permissions_deny16.gif" rendered="{!pocFlag}"/>  
+                    <apex:outputText value="Purpose of the Configuration is populated"  rendered="{! !pocFlag}"/>
+                    <apex:outputText value="Purpose of the Configuration is not populated"  rendered="{!pocFlag}"/>
+                    
+                    <br></br>  
+                    <apex:image value="/img/permissions_confirm16.gif" rendered="{! !ptnFlag}"/> 
+                    <apex:image value="/img/permissions_deny16.gif" rendered="{!ptnFlag}"/>  
+                    <apex:outputText value="Process Technology Name is populated"  rendered="{! !ptnFlag}"/>
+                    <apex:outputText value="Process Technology Name is not populated"  rendered="{!ptnFlag}"/>
+                    
+                    <br></br>
+                    <apex:image value="/img/permissions_confirm16.gif" rendered="{! !metalOptionFlag}"/> 
+                    <apex:image value="/img/permissions_deny16.gif" rendered="{!metalOptionFlag}"/>  
+                    <apex:outputText value="Please specify the No of Metal Layers and Additional Information on Metal Stack. These fields cannot be left blank when Metal Option is not Listed."  rendered="{!metalOptionFlag}"/>
+                    <apex:outputText value="Metal Layers and Additional Information specified on Metal Stack. "  rendered="{! !metalOptionFlag}"/>
+                   
+                    <br></br>  
+                    <!------ARoy  09242015 : End of the Validation of the Configuration----------->
+                    <br></br> 
+                    
+                    <!-- Karna Shiva 08-23-2016 Sprint IV - Device validations are required for external customers - start -->
+                    <apex:outputPanel rendered="{!if($Profile.Name == 'Overage Customer Portal Admin' || $Profile.Name == 'Customer Portal Admin' || $Profile.Name == 'Customer Portal Manager Custom' || $Profile.Name == 'Customer Portal Profile' 
+						|| $Profile.Name == 'Enablement Partner Portal Admin' || $Profile.Name == 'Enablement Partner Portal Profile' || $Profile.Name == 'Overage Customer Portal Manager Custom' || $Profile.Name == 'Overage Customer Portal Profile' 
+						|| $Profile.Name == 'Overage Enablement Partner Portal Admin' || $Profile.Name == 'Overage Enablement Partner Portal Profile' || $Profile.Name == 'Overage Reseller Portal Admin' || $Profile.Name == 'Overage Reseller Portal Profile' 
+						|| $Profile.Name == 'Overage Supplier Portal Admin' || $Profile.Name == 'Overage Supplier Portal Profile' || $Profile.Name == 'Reseller Portal Admin' || $Profile.Name == 'Reseller Portal Profile' || $Profile.Name == 'Supplier Portal Admin' 
+						|| $Profile.Name == 'Supplier Portal Profile',false,true)}">
+                    <apex:image value="/img/permissions_confirm16.gif" rendered="{! If((!devFlag && ddDisableFlag), true, false)}"/> 
+                    <apex:image value="/img/permissions_deny16.gif" rendered="{! If((devFlag && ddDisableFlag), true, false)}"/>  
+                    <apex:outputText value="Device is populated</br>" escape="false" rendered="{! If((!devFlag && ddDisableFlag), true, false)}" /> 
+                    <apex:outputText value="Device is not populated</br>" escape="false"  rendered="{! If((devFlag && ddDisableFlag), true, false)}"/>                     
+  
+                    <apex:image value="/img/permissions_confirm16.gif" rendered="{! !deviceFlag}"/> 
+                    <apex:image value="/img/permissions_deny16.gif" rendered="{!deviceFlag}"/>  
+                    <apex:outputText value="Devices are populated" rendered="{! !deviceFlag}" />
+                    <apex:outputText value="Devices are not populated from Catalog page" rendered="{!deviceFlag}"/>
+                    
+                    <br></br> 
+                    <apex:image value="/img/permissions_confirm16.gif" rendered="{! If((!devFabFlag && ddDisableFlag), true, false)}"/> 
+                    <apex:image value="/img/permissions_deny16.gif" rendered="{! If((devFabFlag && ddDisableFlag), true, false)}"/>  
+                    <apex:outputText value="Device FAB is Populated</br>" escape="false" rendered="{! If((!devFabFlag && ddDisableFlag), true, false)}"/>
+                    <apex:outputText value="Device FAB is not Populated</br>" escape="false"  rendered="{! If((devFabFlag && ddDisableFlag), true, false)}"/>
+
+                    </apex:outputPanel>
+                   <!-- Karna Shiva 08-23-2016 Sprint IV - Device validations are required for external customers - end -->
+                                         
+                    <apex:image value="/img/permissions_confirm16.gif" rendered="{! If((!conIpStatus && ddDisableFlag), true, false)}" /> 
+                    <apex:image value="/img/permissions_deny16.gif" rendered="{! If((conIpStatus && ddDisableFlag), true, false)}" />  
+                    <apex:outputText value="Consolidated IP Status is approved</br>" escape="false" rendered="{! If(ddDisableFlag == true, true,false)}"/>
+                    <apex:outputText value="Consolidated IP Status is not approved</br>" escape="false" rendered="{! If((conIpStatus && ddDisableFlag), true, false)}"/>
+
+                    <!-- Justification for Retrofit code is created for Sprint II  -->
+                    <apex:image value="/img/permissions_confirm16.gif" rendered="{! !JustRetrofit}" /> 
+                    <apex:image value="/img/permissions_deny16.gif" rendered="{!JustRetrofit}" />  
+                    <apex:outputText value="Justification of Retrofit is populated</br>" escape="false" rendered="{! !JustRetrofit}"/>
+                    <apex:outputText value="Justification of Retrofit is not populated</br>" escape="false" rendered="{!JustRetrofit}"/>
+                    
+                    <apex:image value="/img/permissions_confirm16.gif" rendered="{!packagingDetailsFor14nmCompleted && configuration.Process_Technology_Geometry__c == '0.014UM'}" /> 
+                    <apex:image value="/img/permissions_deny16.gif" rendered="{! !packagingDetailsFor14nmCompleted && configuration.Process_Technology_Geometry__c == '0.014UM'}" />  
+                    <apex:outputText value="Packaging details have been filled. </br>" escape="false" rendered="{!packagingDetailsFor14nmCompleted && configuration.Process_Technology_Geometry__c == '0.014UM'}"/>
+                    <apex:outputText value="Packaging details have not been filled. </br>" escape="false"  rendered="{! !packagingDetailsFor14nmCompleted && configuration.Process_Technology_Geometry__c == '0.014UM'}" />
+                    
+                </apex:outputPanel>
+            </apex:pageBlockSection>
+			<apex:pageMessages id="ErrorMessage" rendered="{!errorFlag}" />
+            <apex:pageBlockButtons >
+                <apex:commandButton value="Go Back" action="{!Back}"/>
+            </apex:pageBlockButtons>
+        </apex:pageBlock>        
+    </apex:form>
+</apex:page>

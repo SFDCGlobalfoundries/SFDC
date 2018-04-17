@@ -1,0 +1,1279 @@
+<!--
+* @ Author :- Anil Kumar Reddy L
+* @ Description :- FMS MAin form Edit/input page 5
+* @ Date :- 04/08/2016
+* @ Change History :-
+*   Date             Name             Comment
+* 22-Sep-2016      Inshu Misra     Modified Cancel button call
+* 13-10-2016       Inshu Misra     modified the Save button action...#IM
+* 18-Oct-2016      Ashwin Dash     Added validation checks for number fields - Invalid Input check
+* 22-Nov-2016      Anil Kumar Reddy L  Modified the logics and error messages.
+* 19-Apr-2017      Anirban Roy        Modified from line 89-316 for the field validation.
+-->
+<apex:page standardController="Form_Management_System__c"  extensions="FMSmainFormEditController" action="{!init}" showHeader="true" sidebar="true" id="FMSpg5" >
+    <apex:includeScript value="{!URLFOR($Resource.jquery, 'js/jquery-1.8.3.min.js')}"/>
+    <apex:includeScript value="{!URLFOR($Resource.jquery, 'js/jquery-ui-1.9.2.custom.js')}"/>
+    <apex:includeScript value="{!URLFOR($Resource.jqPlugin, '/jquery.blockUI.js')}"/>
+    <apex:outputPanel id="nonePanel">
+        <script type="text/javascript">
+             $j = jQuery.noConflict();
+            //Remove None from picklist **** Added By Abhita for replacing None with Select a value
+            $j(function() {        
+                $j('select.RemoveNone option[value=]').remove();       
+            });
+            $j(function() {        
+                $j("select.ReplaceNone option[value='']").text("=== Select a Value ===");       
+            }); 
+        </script>
+    </apex:outputPanel>
+    <script>  
+        //function to block the whole page
+        function blockPage(){ 
+        $j.blockUI({ message: '<img src="/img/loading32.gif" /><h1> Refreshing...</h1>', 
+            css: { 
+             border: 'none', 
+             padding: '15px',  
+             '-webkit-border-radius': '10px', 
+             '-moz-border-radius': '10px', 
+             opacity: .9
+            } 
+            }); 
+            return false;
+        }
+        //function to unblock the page
+        function unblockPage(){
+            $j.unblockUI();
+        }
+        
+        function showDialogforCancel(){
+    
+            var sd = new SimpleDialog("Test"+Dialogs.getNextId(), true);    
+            sd.createDialog(); 
+            sd.setWidth(400);               
+            window.parent.sd = sd;
+            var ex = sd.setContentInnerHTML("<img src='/img/msg_icons/warning24.png'/> <b>Warning!</b> <br/><br/>Are you sure you want to Cancel your changes?<br/> Any changes that you made to this form since the last Save will be lost. <br/><br/><p align='center'><button class='btn' onclick='cancelFormFunction(); window.parent.sd.hide(); return true;'>Confirm</button>&nbsp; &nbsp; &nbsp; &nbsp; <button class='btn' onclick='window.parent.sd.hide(); return false;'>Cancel</button></p>"); 
+            sd.show();   
+            return ex;
+        }
+        
+    </script>
+    <style>  
+        .bPageBlock .requiredInput .requiredBlock{background-color: #F6FBF6;}  
+        .requiredInput .requiredBlock::before { display: block; content: "*"; font-size: 1.5em; font-weight: bold; color: #c00; margin-left: -8px; margin-top: -2px; }  
+        p{
+            color:brown;
+        }
+        <!--Added below style to make all pages consistent -- Ashwin Dash -->
+        a{
+            text-decoration: none;
+        }
+    </style>
+    
+    <!--START - Added JQuery for InputField check -- Ashwin Dash-->
+    <script>
+        $j = jQuery.noConflict();
+        
+        function initialise(){  
+            //Start - Anil Kumar - 17-2-2017 - Commented funtion as validation not required
+            $j('.CrossFlowIFPMClass').on('change',function() {
+                var v = $j(this).val().replace(/,/g,'');
+                console.info('### '+v);         
+                if(v !=null && v != '' && v <= 0){
+                    console.log('Not Match!!..');
+                    //$j('.item1').text('Please enter value greater than 0.');
+                    $j('.item1').text('Cross Flow (feet/min) should be numeric greater than 0.');
+                    invalidInput('true001','CrossFlowIFPM__c');
+                }else{
+                    console.log('Matched!!..');
+                    $j('.item1').text('');
+                    invalidInput('false001','CrossFlowIFPM__c');
+                }
+            });
+            $j(".NoOfPowerSuppliesClass").on("keypress paste", function(event) {
+                var that = this;
+                
+                //paste event 
+                if (event.type == "paste") {
+                    setTimeout(function() {
+                        if(that.value.indexOf('.')!=-1 || that.value.replace(/,/g,"").length>18){
+                            console.info('1');
+                            that.value = that.value.replace(/,/g,"").substr(0, 17);
+                        }
+                    }, 100);
+                } else {
+            
+                    if (event.which < 48 || event.which > 57 || this.value.replace(/,/g,"").length>=18) {                       
+                        event.preventDefault();
+                    }
+                }                               
+            
+            });
+            $j(".ModulePinsBallsTotalClass").on("keypress paste", function(event) {
+                var that = this;
+                
+                //paste event 
+                if (event.type == "paste") {
+                    setTimeout(function() {
+                        if(that.value.indexOf('.')!=-1 || that.value.replace(/,/g,"").length>18){
+                            console.info('1');
+                            that.value = that.value.replace(/,/g,"").substr(0, 17);
+                        }
+                    }, 100);
+                } else {
+            
+                    if (event.which < 48 || event.which > 57 || this.value.replace(/,/g,"").length>=18) {                       
+                        event.preventDefault();
+                    }
+                }
+            
+            });
+            $j(".ModulePinsBallsTotalClass1").on("keypress paste", function(event) {
+                var that = this;
+                
+                //paste event 
+                if (event.type == "paste") {
+                    setTimeout(function() {
+                        if(that.value.indexOf('.')!=-1 || that.value.replace(/,/g,"").length>18){
+                            console.info('1');
+                            that.value = that.value.replace(/,/g,"").substr(0, 17);
+                        }
+                    }, 100);
+                } else {
+            
+                    if (event.which < 48 || event.which > 57 || this.value.replace(/,/g,"").length>=18) {                       
+                        event.preventDefault();
+                    }
+                }
+            
+            });
+            $j(".ModulePinsBallsSignalClass").on("keypress paste", function(event) {
+                var that = this;
+                
+                //paste event 
+                if (event.type == "paste") {
+                    setTimeout(function() {
+                        if(that.value.indexOf('.')!=-1 || that.value.replace(/,/g,"").length>18){
+                            console.info('1');
+                            that.value = that.value.replace(/,/g,"").substr(0, 17);
+                        }
+                    }, 100);
+                } else {
+            
+                    if (event.which < 48 || event.which > 57 || this.value.replace(/,/g,"").length>=18) {                       
+                        event.preventDefault();
+                    }
+                }
+            
+            });
+            $j(".ModulePinsBallsSignalClass1").on("keypress paste", function(event) {
+                var that = this;
+                
+                //paste event 
+                if (event.type == "paste") {
+                    setTimeout(function() {
+                        if(that.value.indexOf('.')!=-1 || that.value.replace(/,/g,"").length>18){
+                            console.info('1');
+                            that.value = that.value.replace(/,/g,"").substr(0, 17);
+                        }
+                    }, 100);
+                } else {
+            
+                    if (event.which < 48 || event.which > 57 || this.value.replace(/,/g,"").length>=18) {                       
+                        event.preventDefault();
+                    }
+                }
+            
+            });
+            $j(".ModulePinsBallsPowerClass").on("keypress paste", function(event) {
+                var that = this;
+                
+                //paste event 
+                if (event.type == "paste") {
+                    setTimeout(function() {
+                        if(that.value.indexOf('.')!=-1 || that.value.replace(/,/g,"").length>18){
+                            console.info('1');
+                            that.value = that.value.replace(/,/g,"").substr(0, 17);
+                        }
+                    }, 100);
+                } else {
+            
+                    if (event.which < 48 || event.which > 57 || this.value.replace(/,/g,"").length>=18) {                       
+                        event.preventDefault();
+                    }
+                }
+            
+            });
+            $j(".ModulePinsBallsPowerClass1").on("keypress paste", function(event) {
+                var that = this;
+                
+                //paste event 
+                if (event.type == "paste") {
+                    setTimeout(function() {
+                        if(that.value.indexOf('.')!=-1 || that.value.replace(/,/g,"").length>18){
+                            console.info('1');
+                            that.value = that.value.replace(/,/g,"").substr(0, 17);
+                        }
+                    }, 100);
+                } else {
+            
+                    if (event.which < 48 || event.which > 57 || this.value.replace(/,/g,"").length>=18) {                       
+                        event.preventDefault();
+                    }
+                }
+            
+            });
+            $j(".ModulePinsBallsGroundClass").on("keypress paste", function(event) {
+                var that = this;
+                
+                //paste event 
+                if (event.type == "paste") {
+                    setTimeout(function() {
+                        if(that.value.indexOf('.')!=-1 || that.value.replace(/,/g,"").length>18){
+                            console.info('1');
+                            that.value = that.value.replace(/,/g,"").substr(0, 17);
+                        }
+                    }, 100);
+                } else {
+            
+                    if (event.which < 48 || event.which > 57 || this.value.replace(/,/g,"").length>=18) {                       
+                        event.preventDefault();
+                    }
+                }
+            
+            });
+            $j(".ModulePinsBallsGroundClass1").on("keypress paste", function(event) {
+                var that = this;
+                
+                //paste event 
+                if (event.type == "paste") {
+                    setTimeout(function() {
+                        if(that.value.indexOf('.')!=-1 || that.value.replace(/,/g,"").length>18){
+                            console.info('1');
+                            that.value = that.value.replace(/,/g,"").substr(0, 17);
+                        }
+                    }, 100);
+                } else {
+            
+                    if (event.which < 48 || event.which > 57 || this.value.replace(/,/g,"").length>=18) {                       
+                        event.preventDefault();
+                    }
+                }
+            
+            });
+            $j(".ModulePinsBallsUnusedClass").on("keypress paste", function(event) {
+                var that = this;
+                
+                //paste event 
+                if (event.type == "paste") {
+                    setTimeout(function() {
+                        if(that.value.indexOf('.')!=-1 || that.value.replace(/,/g,"").length>18){
+                            console.info('1');
+                            that.value = that.value.replace(/,/g,"").substr(0, 17);
+                        }
+                    }, 100);
+                } else {
+            
+                    if (event.which < 48 || event.which > 57 || this.value.replace(/,/g,"").length>=18) {                       
+                        event.preventDefault();
+                    }
+                }
+            
+            });
+            $j(".ModulePinsBallsUnusedClass1").on("keypress paste", function(event) {
+                var that = this;
+                
+                //paste event 
+                if (event.type == "paste") {
+                    setTimeout(function() {
+                        if(that.value.indexOf('.')!=-1 || that.value.replace(/,/g,"").length>18){
+                            console.info('1');
+                            that.value = that.value.replace(/,/g,"").substr(0, 17);
+                        }
+                    }, 100);
+                } else {
+            
+                    if (event.which < 48 || event.which > 57 || this.value.replace(/,/g,"").length>=18) {                       
+                        event.preventDefault();
+                    }
+                }
+            
+            });
+            $j(".ModDecouplingCapClass").on("keypress paste", function(event) {
+                var that = this;
+                
+                //paste event 
+                if (event.type == "paste") {
+                    setTimeout(function() {
+                        if(that.value.indexOf('.')!=-1 || that.value.replace(/,/g,"").length>18){
+                            console.info('1');
+                            that.value = that.value.replace(/,/g,"").substr(0, 17);
+                        }
+                    }, 100);
+                } else {
+            
+                    if (event.which < 48 || event.which > 57 || this.value.replace(/,/g,"").length>=18) {                       
+                        event.preventDefault();
+                    }
+                }
+            
+            });
+            /*$j('.CrossFlowIFPMClass').on('change',function() {
+                var v = $j(this).val().replace(/,/g,'');         
+                if((!v.match(/^0*([1-9]\d{2,17}|[1-9]\d{0,1})$/)) && v !=null && v != ''){
+                    console.log('Not Match!!..');
+                    //$j('.item1').text('Please enter value greater than 0 and max 18 digits long with no decimal digits');
+                    $j('.item1').text('Cross Flow (feet/min) should be numeric greater than 0.');
+                    invalidInput('true001','CrossFlowIFPM__c');
+                }else if(v.match(/^0*([1-9]\d{2,17}|[1-9]\d{0,1})$/)){
+                    console.log('Matched!!..');
+                    $j('.item1').text('');
+                    invalidInput('false001','CrossFlowIFPM__c');
+                }
+                else if(v ==null || v == ''){
+                    console.log('Matched!!..');
+                    $j('.item1').text('');
+                    invalidInput('false001','CrossFlowIFPM__c');
+                }
+            });
+            $j('.NoOfPowerSuppliesClass').on('change',function() {
+                var v = $j(this).val().replace(/,/g,'');            
+                if((!v.match(/^0*([0-9]\d{2,17}|[0-9]\d{0,1})$/)) && v !=null && v != ''){
+                    console.log('Not Match!!..');
+                    //$j('.item2').text('Please enter value greater than or equal to 0 and max 2 digits long with no decimal digits');
+                    $j('.item2').text('Number of Power Supplies should be 0 or greater than 0.');
+                    invalidInput('true002','NoOfPowerSupplies__c');
+                }else if(v.match(/^0*([0-9]\d{2,17}|[0-9]\d{0,1})$/)){
+                    console.log('Matched!!..');
+                    $j('.item2').text('');
+                    invalidInput('false002','NoOfPowerSupplies__c');
+                }
+                else if(v ==null || v == ''){
+                    console.log('Matched!!..');
+                    $j('.item2').text('');
+                    invalidInput('false002','NoOfPowerSupplies__c');
+                }
+            });
+            $j('.ModulePinsBallsTotalClass').on('change', function() {
+                var v = $j(this).val().replace(/,/g,''); 
+                
+                if((!v.match(/^0*([0-9]\d{0,3})$/))&& v !=null && v != ''){
+                    
+                    console.log('Not Match!!..');
+                    //$j('.item3').text('Number of Total Pins/Balls should be an Interger, 0 or greater');
+                    $j('.item3').text('Number of Total Pins/Balls should be an Interger, 0 or greater');
+                    invalidInput('true003','ModulePinsBallsTotal__c');
+                }else if(v.match(/^0*([0-9]\d{0,3})$/)){
+                    
+                    console.log('Matched!!..');
+                    $j('.item3').text('');
+                    invalidInput('false003','ModulePinsBallsTotal__c');
+                }
+                else if(v ==null || v == ''){
+                    
+                    console.log('Matched!!..');
+                    $j('.item3').text('');
+                    invalidInput('false003','ModulePinsBallsTotal__c');
+                }
+            });
+            $j('.ModulePinsBallsTotalClass1').on('change',function() {
+                var v = $j(this).val().replace(/,/g,'');            
+                if((!v.match(/^0*([0-9]\d{0,3})$/)) && v !=null && v != '' ){
+                    console.log('Not Match!!..');
+                    //$j('.item3').text('Please enter value greater than or equal to 0 and max 4 digits long with no decimal digits');
+                    $j('.item3').text('Number of Total Pins/Balls should be an Interger, 0 or greater');
+                    invalidInput('true004','ModulePinsBallsTotal__c');
+                }else if(v.match(/^0*([0-9]\d{0,3})$/)){
+                    console.log('Matched!!..');
+                    $j('.item3').text('');
+                    invalidInput('false004','ModulePinsBallsTotal__c');
+                }
+                else if(v ==null || v == ''){
+                    console.log('Matched!!..');
+                    $j('.item3').text('');
+                    invalidInput('false004','ModulePinsBallsTotal__c');
+                }
+            });
+            $j('.ModulePinsBallsSignalClass').on('change',function() {
+                var v = $j(this).val().replace(/,/g,'');            
+                if((!v.match(/^0*([0-9]\d{0,2})$/))&& v !=null && v != ''){
+                    console.log('Not Match!!..');
+                    //$j('.item4').text('Please enter value greater than or equal to 0 and max 3 digits long with no decimal digits');
+                    $j('.item4').text('Number of Signal Pins/Balls should be an Interger, 0 or greater');
+                    invalidInput('true005','ModulePinsBallsSignal__c');
+                }else if(v.match(/^0*([0-9]\d{0,2})$/)){
+                    console.log('Matched!!..');
+                    $j('.item4').text('');
+                    invalidInput('false005','ModulePinsBallsSignal__c');
+                }
+                else if(v ==null || v == ''){
+                    console.log('Matched!!..');
+                    $j('.item4').text('');
+                    invalidInput('false005','ModulePinsBallsSignal__c');
+                }
+            });
+            $j('.ModulePinsBallsSignalClass1').on('change',function() {
+                var v = $j(this).val().replace(/,/g,'');            
+                if((!v.match(/^0*([0-9]\d{0,2})$/)) && v !=null && v != '' ){
+                    console.log('Not Match!!..');
+                    //$j('.item4').text('Please enter value greater than or equal to 0 and max 3 digits long with no decimal digits');
+                    $j('.item4').text('Number of Signal Pins/Balls should be an Interger, 0 or greater');
+                    invalidInput('true006','ModulePinsBallsSignal__c');
+                }else if(v.match(/^0*([0-9]\d{0,2})$/)){
+                    console.log('Matched!!..');
+                    $j('.item4').text('');
+                    invalidInput('false006','ModulePinsBallsSignal__c');
+                }
+                else if(v ==null || v == ''){
+                    console.log('Matched!!..');
+                    $j('.item4').text('');
+                    invalidInput('false006','ModulePinsBallsSignal__c');
+                }
+            });
+            $j('.ModulePinsBallsPowerClass').on('change',function() {
+                var v = $j(this).val().replace(/,/g,'');            
+                if((!v.match(/^0*([0-9]\d{0,2})$/)) && v !=null && v != '' ){
+                    console.log('Not Match!!..');
+                    //$j('.item5').text('Please enter value greater than or equal to 0 and max 3 digits long with no decimal digits');
+                    $j('.item5').text('Number of Power Pins/Balls should be an Interger, 0 or greater');
+                    invalidInput('true007','ModulePinsBallsPower__c');
+                }else if(v.match(/^0*([0-9]\d{0,2})$/)){
+                    console.log('Matched!!..');
+                    $j('.item5').text('');
+                    invalidInput('false007','ModulePinsBallsPower__c');
+                }
+                else if(v ==null || v == ''){
+                    console.log('Matched!!..');
+                    $j('.item5').text('');
+                    invalidInput('false007','ModulePinsBallsPower__c');
+                }
+            });
+            $j('.ModulePinsBallsPowerClass1').on('change',function() {
+                var v = $j(this).val().replace(/,/g,'');            
+                if((!v.match(/^0*([0-9]\d{0,2})$/))&& v !=null && v != ''){
+                    console.log('Not Match!!..');
+                    //$j('.item5').text('Please enter value greater than or equal to 0 and max 3 digits long with no decimal digits');
+                    $j('.item5').text('Number of Power Pins/Balls should be an Interger, 0 or greater');
+                    invalidInput('true008','ModulePinsBallsPower__c');
+                }else if(v.match(/^0*([0-9]\d{0,2})$/)){
+                    console.log('Matched!!..');
+                    $j('.item5').text('');
+                    invalidInput('false008','ModulePinsBallsPower__c');
+                }
+                else if(v ==null || v == ''){
+                    console.log('Matched!!..');
+                    $j('.item5').text('');
+                    invalidInput('false008','ModulePinsBallsPower__c');
+                }
+            });
+            $j('.ModulePinsBallsGroundClass').on('change',function() {
+                var v = $j(this).val().replace(/,/g,'');            
+                if((!v.match(/^0*([0-9]\d{0,2})$/)) && v !=null && v != '' ){
+                    console.log('Not Match!!..');
+                    //$j('.item6').text('Please enter value greater than or equal to 0 and max 3 digits long with no decimal digits');
+                    $j('.item6').text('Number of Ground Pins/Balls should be an Interger, 0 or greater');
+                    invalidInput('true009','ModulePinsBallsGround__c');
+                }else if(v.match(/^0*([0-9]\d{0,2})$/)){
+                    console.log('Matched!!..');
+                    $j('.item6').text('');
+                    invalidInput('false009','ModulePinsBallsGround__c');
+                }
+                else if(v ==null || v == ''){
+                    console.log('Matched!!..');
+                    $j('.item6').text('');
+                    invalidInput('false009','ModulePinsBallsGround__c');
+                }
+            });
+            $j('.ModulePinsBallsGroundClass1').on('change',function() {
+                var v = $j(this).val().replace(/,/g,'');            
+                if((!v.match(/^0*([0-9]\d{0,2})$/))&& v !=null && v != ''){
+                    console.log('Not Match!!..');
+                    //$j('.item6').text('Please enter value greater than or equal to 0 and max 3 digits long with no decimal digits');
+                    $j('.item6').text('Number of Ground Pins/Balls should be an Interger, 0 or greater');
+                    invalidInput('true010','ModulePinsBallsGround__c');
+                }else if(v.match(/^0*([0-9]\d{0,2})$/)){
+                    console.log('Matched!!..');
+                    $j('.item6').text('');
+                    invalidInput('false010','ModulePinsBallsGround__c');
+                }
+                else if(v ==null || v == ''){
+                    console.log('Matched!!..');
+                    $j('.item6').text('');
+                    invalidInput('false010','ModulePinsBallsGround__c');
+                }
+            });
+            
+            $j('.ModulePinsBallsUnusedClass').on('change',function() {
+                var v = $j(this).val().replace(/,/g,'');            
+                if((!v.match(/^0*([0-9]\d{0,2})$/))&& v !=null && v != ''){
+                    console.log('Not Match!!..');
+                   // $j('.item7').text('Please enter value greater than or equal to 0 and max 3 digits long with no decimal digits');
+                   $j('.item7').text('Number of Unused Pins/Balls should be an Interger, 0 or greater');
+                    invalidInput('true011','ModulePinsBallsUnused__c');
+                }else if(v.match(/^0*([0-9]\d{0,2})$/)){
+                    console.log('Matched!!..');
+                    $j('.item7').text('');
+                    invalidInput('false011','ModulePinsBallsUnused__c');
+                }
+                else if(v ==null || v == ''){
+                    console.log('Matched!!..');
+                    $j('.item6').text('');
+                    invalidInput('false011','ModulePinsBallsUnused__c');
+                }
+            });
+            $j('.ModulePinsBallsUnusedClass1').on('change',function() {
+                var v = $j(this).val().replace(/,/g,'');            
+                if((!v.match(/^0*([0-9]\d{0,2})$/))&& v !=null && v != ''){
+                    console.log('Not Match!!..');
+                    //$j('.item7').text('Please enter value greater than or equal to 0 and max 3 digits long with no decimal digits');
+                    $j('.item7').text('Number of Unused Pins/Balls should be an Interger, 0 or greater');
+                    invalidInput('true012','ModulePinsBallsUnused__c');
+                }else if(v.match(/^0*([0-9]\d{0,2})$/)){
+                    console.log('Matched!!..');
+                    $j('.item7').text('');
+                    invalidInput('false012','ModulePinsBallsUnused__c');
+                }
+                else if(v ==null || v == ''){
+                    console.log('Matched!!..');
+                    $j('.item7').text('');
+                    invalidInput('false012','ModulePinsBallsUnused__c');
+                }
+            });
+            
+            $j('.ModDecouplingCapClass').on('change',function() {
+                var v = $j(this).val().replace(/,/g,'');            
+                if((!v.match(/^0*([1-9]\d{0,49})$/))&& v !=null && v != ''){
+                    console.log('Not Match!!..');
+                    //$j('.item8').text('Please enter value greater than 0 and max 3 digits long with no decimal digits');
+                    $j('.item8').text('Number of Decoupling Capacitors should be greater than 0');
+                    invalidInput('true013','NumberModuleDecouplingCapacitors__c');
+                }else if(v.match(/^0*([1-9]\d{0,2})$/)){
+                    console.log('Matched!!..');
+                    $j('.item8').text('');
+                    invalidInput('false013','NumberModuleDecouplingCapacitors__c');
+                }
+                else if(v ==null || v == ''){
+                    console.log('Matched!!..');
+                    $j('.item8').text('');
+                    invalidInput('false013','NumberModuleDecouplingCapacitors__c');
+                }
+            });*/
+            //End - Anil Kumar - 17-2-2017 - Commented funtion as validation not required
+            $j('.NoOfDiffPairsClass').on('change',function() {
+                var v = $j(this).val().replace(/,/g,'');            
+                if((!v.match(/^0*([1-9]\d{0,17})$/))&& v !=null && v != ''){
+                    console.log('Not Match!!..');
+                    //$j('.item9').text('Please enter value greater than 0 and max 18 digits long with no decimal digits');
+                    $j('.item9').text('Number of differential pairs should be an integer greater than 0');
+                    invalidInput('true014','NoOfDiffPairs__c');
+                }else if(v.match(/^0*([1-9]\d{0,17})$/)){
+                    console.log('Matched!!..');
+                    $j('.item9').text('');
+                    invalidInput('false014','NoOfDiffPairs__c');
+                }
+                else if(v ==null || v == ''){
+                    console.log('Matched!!..');
+                    $j('.item9').text('');
+                    invalidInput('false014','NoOfDiffPairs__c');
+                }
+                
+            });
+        };
+        $j(document).ready(function () {  
+            initialise();
+        });
+        $j(document).ajaxComplete(function () {
+            initialise();
+        });
+    </script>
+    <script type="text/javascript">
+        
+        /*function getLicenseDetails(){
+            Visualforce.remoting.Manager.invokeAction(
+                    '{!$RemoteAction.FMSmainFormEditController.checkLicense}',                
+                    function(result, event){
+                        if (result != null) {                                           
+                            alert(result);                        
+                        } 
+                        else{                                               
+                            GoToConfig();
+                        }                                  
+                    }
+                );
+        }*/
+        
+        function showSimpleDialog(){    
+           var sd = new SimpleDialog("Test"+Dialogs.getNextId(), true);    
+           sd.setTitle("Warning");   
+           sd.createDialog();   
+           window.parent.sd = sd;   
+           var ex = sd.setContentInnerHTML("<p align='center' ><img src='/img/msg_icons/warning24.png'/> <b>Warning!</b> <br/></p><p align='center'>The data you are attempting to save is either incomplete or has errors. <br/> <br/> You can either go back and correct the errors, or proceed to save this form anyway (this will save only the fields with valid data).</p><p align='center'><br /><button class='btn' onclick='window.parent.sd.hide(); return false;'>Back to the form</button> &nbsp; &nbsp; &nbsp; &nbsp; <button class='btn' onclick='saveandExit(\"page5\"); return true;'>Save Anyway</button></p>"); 
+           sd.show();   
+           return ex;
+        }  
+        //Added Check for input only numbers - Ashwin Dash 
+        function inputLimiter(e,allow) {
+            var AllowableCharacters = '';
+
+            if (allow == 'Letters'){AllowableCharacters=' ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';}
+            if (allow == 'Numbers'){AllowableCharacters='1234567890.';} //Added exception for decimal point InputField check -- Ashwin Dash
+            if (allow == 'NameCharacters'){AllowableCharacters=' ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz-.\'';}
+            if (allow == 'NameCharactersAndNumbers'){AllowableCharacters='1234567890 ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz-\'';}
+            if (allow == 'Currency'){AllowableCharacters='1234567890.';}
+
+            var k = document.all?parseInt(e.keyCode): parseInt(e.which);
+            if (k!=13 && k!=8 && k!=0){
+                if ((e.ctrlKey==false) && (e.altKey==false)) {
+                return (AllowableCharacters.indexOf(String.fromCharCode(k))!=-1);
+                } else {
+                return true;
+                }
+            } else {
+                return true;
+            }
+        } 
+         //Remove None from picklist
+        $j(function() {        
+            $j('select.RemoveNone option[value=]').remove();       
+        });     
+    </script>
+    <br/>
+    <apex:pageMessages id="errorMsg" />
+    
+    <apex:form id="fmsFormPage5">
+    
+        <c:FMSNameDesc ></c:FMSNameDesc>
+        
+        <apex:actionFunction name="saveandExit" action="{!saveandExit}" immediate="true">
+            <apex:param assignTo="{!pageN}" name="page" value=""/>
+        </apex:actionFunction>
+        <!--START - Added Function for InputField check -- Ashwin Dash-->
+        <apex:actionFunction name="invalidInput" action="{!invInput}" reRender="false"> 
+            <apex:param id="aname" name="inpVal" value="" />
+            <apex:param id="fname" name="fieldName" value=""/>
+        </apex:actionFunction>
+        
+        <apex:actionFunction name="cancelFormFunction" action="{!cancelForm}" status="blockUI"/>
+        <apex:actionStatus onstart="blockPage()" onstop="unblockPage()" id="blockUI"/>
+        <!--END - Added Function for InputField check -- Ashwin Dash-->
+        <apex:pageBlock title="Form Page {!pageNum}" id="fmspg5blk"> <!-- Added the title for showing the Form Page Number -- Added by Ashwin -->
+            <apex:pageblockSection title="Requested Package" columns="1" id="pageBlockSec1" collapsible="false">
+                <apex:actionRegion >
+                    <apex:outputPanel id="pbsi1" >
+                        <apex:pageblockSection rendered="{!formObj.Packaging_Services__c== 'Yes'}" id="pkgReq">
+                            <apex:pageblockSectionItem >
+                                <apex:outputLabel value="Package Requirements:"/>
+                                <apex:outputPanel >
+                                    <div class = "requiredInput">
+                                        <div class = "requiredBlock"></div>
+                                        <apex:actionRegion >
+                                            <apex:inputField id="postDesing" value="{!formObj.PackageRequirement__c}" styleClass="ReplaceNone">
+                                                <apex:actionSupport status="refresh" event="onchange" rerender="outPannel2,outPannel3 ,pckgTypeNeedSec , outPannel4 , outPannel5 , outPannel6,modulePinsPnl,SidPnl,mdulPwrNmlsec,mdulPwrMaxsec"  oncomplete="initialise();"/><!-- Added onComplete attribute to refresh the jquery initialization for Invalid format check -- Ashwin Dash -->
+                                            </apex:inputField>
+                                        </apex:actionRegion>
+                                    </div>
+                                    <apex:actionStatus id="refresh" startText="Refreshing..." stopText="" ></apex:actionStatus>
+                                </apex:outputPanel>
+                            </apex:pageblockSectionItem>
+                        </apex:pageblockSection>
+                    </apex:outputPanel>
+                    <apex:outputPanel id="pckgTypeNeedSec">
+                        <apex:pageblockSection id="pckgTypeNeed" columns="1" >
+                            <apex:pageblockSectionItem rendered="{!(formObj.Packaging_Services__c== 'Yes' && formObj.PackageRequirement__c == 'Customer Existing Package')}">
+                                <apex:outputLabel value="Package Type needed (Click the Help icon to view the descriptions):"/>
+                                <apex:outputPanel id="outPannel2" >
+                                    <div class = "requiredInput" >
+                                        <div class = "requiredBlock"></div>
+                                       <!-- <apex:actionRegion >
+                                             <apex:inputField id="postDesing" value="{!formObj.PackageType__c}"> -->
+                                            <apex:selectList value="{!formObj.PackageType__c}" multiselect="false" size="1">
+                                                <apex:selectOptions value="{!pacTypeList}"/>
+                                            </apex:selectList>
+                                            <apex:actionSupport status="refresh11" event="onchange" rerender="outPannel3" action="{!resetDependentFields}">
+                                                <apex:param assignTo="{!fieldAPI}" name="fieldAPI" value="PackageType__c"/>
+                                            </apex:actionSupport>
+                                           <!--   </apex:inputField>-->
+                                          <!--  <a href="{!FMSdocuments['FMSMainFormPage5'].FMSRefDocURL__c}" target="_blank">
+                                                <img src="/img/alohaSkin/help_orange.png" height="13" width="13" />
+                                            </a>-->
+                                            <apex:actionStatus id="refresh11" startText="Refreshing...." stopText="" ></apex:actionStatus>
+                                        <!-- </apex:actionRegion> -->
+                                    </div>
+                                </apex:outputPanel>
+                            </apex:pageblockSectionItem>
+                            <apex:pageblockSectionItem rendered="{!(formObj.Packaging_Services__c== 'Yes' && formObj.PackageRequirement__c != 'Customer Existing Package')}" >
+                                <apex:outputLabel value="Package Type needed (Click the Help icon to view the descriptions):" />
+                                <apex:outputPanel id="outPannel2" >
+                                    <div>
+                                        <!-- <apex:inputField value="{!formObj.PackageType__c}"> -->
+                                        <apex:selectList value="{!formObj.PackageType__c}" multiselect="false" size="1">
+                                            <apex:selectOptions value="{!pacTypeList}"/>
+                                        </apex:selectList>
+                                        <apex:actionSupport status="refresh1" event="onchange" rerender="outPannel3" action="{!resetDependentFields}">
+                                            <apex:param assignTo="{!fieldAPI}" name="fieldAPI" value="PackageType__c"/>
+                                        </apex:actionSupport>
+                                        <!-- </apex:inputField> -->
+                                       <!-- <a href="{!FMSdocuments['FMSMainFormPage5'].FMSRefDocURL__c}" target="_blank">
+                                                <img src="/img/alohaSkin/help_orange.png" height="13" width="13" />
+                                        </a>-->
+                                        <apex:actionStatus id="refresh1" startText="Refreshing..." stopText="" ></apex:actionStatus>
+                                    </div>
+                                </apex:outputPanel>
+                            </apex:pageblockSectionItem>
+                        </apex:pageblockSection>
+                    </apex:outputPanel>
+                    <apex:outputPanel id="outPannel3">
+                        <apex:pageblockSection >
+                            <apex:pageblockSectionItem rendered="{!(formObj.Packaging_Services__c== 'Yes'  && (formObj.PackageType__c == 'Other' || formObj.Chip_Interconnect__c == 'WLCSP-RDL' || formObj.Chip_Interconnect__c == 'WLCSP-BoP') && formObj.PackageRequirement__c == 'Customer Existing Package' )}">
+                                <apex:outputLabel value="Other:"/>
+                                <apex:outputPanel >
+                                    <div class = "requiredInput" >
+                                        <div class = "requiredBlock"></div>
+                                        <apex:inputField value="{!formObj.PackageTypeOther__c}">
+                                        </apex:inputField>
+                                    </div>
+                                </apex:outputPanel>
+                            </apex:pageblockSectionItem>
+                        </apex:pageblockSection>
+                        <apex:pageblockSection >
+                            <apex:pageBlockSectionItem rendered="{!(formObj.Packaging_Services__c== 'Yes'  && (formObj.PackageType__c == 'Other' || formObj.Chip_Interconnect__c == 'WLCSP-RDL' || formObj.Chip_Interconnect__c == 'WLCSP-BoP') && formObj.PackageRequirement__c != 'Customer Existing Package' )}">
+                                <apex:outputLabel value="Other:"/> <!--Added for the visibility of the label for the defect raised - 27-Oct-2016    -- Ashwin Dash-->
+                                <apex:outputPanel >
+                                    <div >
+                                        <apex:inputField value="{!formObj.PackageTypeOther__c}">
+                                        </apex:inputField>
+                                    </div>
+                                </apex:outputPanel>
+                            </apex:pageBlockSectionItem>
+                        </apex:pageblockSection>
+                    </apex:outputPanel>
+                    <apex:outputPanel id="SidPnl">
+                        <apex:pageblockSection >
+                            <apex:pageblockSectionItem rendered="{!(formObj.Packaging_Services__c== 'Yes' && formObj.PackageRequirement__c == 'Customer Existing Package')}">
+                                <apex:outputLabel value="SID or IBM Part Number:"/>
+                                <apex:outputPanel id="outPannel4"  >
+                                    <div class = "requiredInput" >
+                                        <div class = "requiredBlock"></div>
+                                        <apex:inputField id="Sidfld" value="{!formObj.SID__c}">
+                                        </apex:inputField>
+                                    </div>
+                                </apex:outputPanel>
+                            </apex:pageblockSectionItem>
+                        </apex:pageblockSection>
+                        <apex:pageblockSection >
+                            <apex:pageblockSectionItem rendered="{!(formObj.Packaging_Services__c== 'Yes' && formObj.PackageRequirement__c != 'Customer Existing Package')}">
+                                <apex:outputLabel value="SID or IBM Part Number:"/>
+                                <apex:outputPanel id="outPannel4"  >
+                                    <div >
+                                        <apex:inputField value="{!formObj.SID__c}"/>
+                                    </div>
+                                </apex:outputPanel>
+                            </apex:pageblockSectionItem>
+                        </apex:pageblockSection>
+                    </apex:outputPanel>
+                    <apex:outputPanel id="mdulPwrNmlsec">
+                        <apex:pageblockSection >
+                            <!--<apex:pageblockSectionItem rendered="{!(formObj.Packaging_Services__c== 'Yes' && formObj.PackageRequirement__c == 'Customer Existing Package')}">
+                                <apex:outputLabel value="Module Power (Nominal):"/>
+                                <apex:outputPanel id="outPannel5"  >
+                                    <div class = "requiredInput" >
+                                        <div class = "requiredBlock"></div>
+                                        <apex:inputField id="mdulPwrnml" value="{!formObj.ModulePowerNominal__c}">
+                                        </apex:inputField>
+                                    </div>
+                                </apex:outputPanel>
+                            </apex:pageblockSectionItem>-->
+                            <apex:pageblockSectionItem rendered="{!formObj.Packaging_Services__c == 'Yes'}">
+                                <apex:outputLabel value="Module Power (Nominal):"/>
+                                <apex:outputPanel id="outPannel5"  >
+                                    <div>
+                                        <apex:inputField value="{!formObj.ModulePowerNominal__c}"/>
+                                    </div>
+                                </apex:outputPanel>
+                            </apex:pageblockSectionItem>
+                        </apex:pageblockSection>
+                    </apex:outputPanel>
+                    <apex:outputPanel id="mdulPwrMaxsec" rendered="{!(formObj.Packaging_Services__c== 'Yes')}">
+                        <!--<apex:pageblockSection >
+                            <apex:pageblockSectionItem rendered="{!(formObj.Packaging_Services__c== 'Yes' && formObj.PackageRequirement__c == 'Customer Existing Package')}">
+                                <apex:outputLabel value="Module Power (Max):"/>
+                                <apex:outputPanel id="outPannel6">
+                                    <div class = "requiredInput">
+                                        <div class = "requiredBlock"></div>
+                                        <apex:inputField id="MdulpwrMax" value="{!formObj.ModulePowerMax__c}">
+                                        </apex:inputField>
+                                    </div>
+                                </apex:outputPanel>
+                            </apex:pageblockSectionItem>
+                            <apex:pageblockSectionItem rendered="{!(formObj.Packaging_Services__c== 'Yes' && formObj.PackageRequirement__c != 'Customer Existing Package')}">
+                                <apex:outputLabel value="Module Power (Max):"/>                   
+                                <apex:inputField id="MdulpwrMax1" value="{!formObj.ModulePowerMax__c}"></apex:inputField>
+                            </apex:pageblockSectionItem>
+                        </apex:pageblockSection>-->
+                        <apex:pageblockSection >
+                            <apex:pageblockSectionItem >
+                                <apex:outputLabel value="Module Power (Max):"/>
+                                <apex:outputPanel id="outPannel6">
+                                    <div class = "requiredInput">
+                                        <div class = "requiredBlock"></div>
+                                        <apex:inputField id="MdulpwrMax" value="{!formObj.ModulePowerMax__c}">
+                                        </apex:inputField>
+                                    </div>
+                                </apex:outputPanel>
+                            </apex:pageblockSectionItem>
+                        </apex:pageblockSection>
+                    </apex:outputPanel>
+                </apex:actionRegion>
+            </apex:pageblockSection>
+            <!--<apex:pageblockSection title="Ambient Temperature" columns="1" id="pageBlockSec2">-->
+            <apex:pageblockSection columns="1" id="pageBlockSec2" collapsible="false">
+                <hr style ="border-color: #b4c374;"/>
+                <h1>Ambient Temperature</h1>
+            
+                <apex:actionRegion >
+                    <apex:outputPanel >
+                        <apex:pageBlockSection >
+                            <apex:pageBlockSectionItem rendered="{!(formObj.Packaging_Services__c== 'Yes')}">
+                                <apex:outputLabel value="Maximum Ambient Temperature:"/>
+                                <apex:outputPanel >
+                                    <apex:inputField value="{!formObj.MaxAmbientTemp__c}" />
+                                </apex:outputPanel>
+                            </apex:pageBlockSectionItem>
+                        </apex:pageBlockSection>
+                    </apex:outputPanel>
+                    <apex:outputPanel >
+                        <apex:pageBlockSection >
+                            <apex:pageBlockSectionItem rendered="{!(formObj.Packaging_Services__c== 'Yes')}">
+                                <apex:outputLabel value="Maximum air temperature rise from machine to module:"/>
+                                <apex:outputPanel >
+                                    <apex:inputField value="{!formObj.MaxAirTemp__c}" />
+                                </apex:outputPanel>
+                            </apex:pageBlockSectionItem>
+                        </apex:pageBlockSection>
+                    </apex:outputPanel>
+                    <!--</apex:pageblockSection>
+                        <apex:pageblockSection title="" columns="1" id="pageBlockSec3">-->
+                    <hr style ="border-color: #b4c374;"/>
+                    <!--<apex:inputField label="Cooling:" value="{!formObj.Cooling__c }" required="true" rendered="{!(formObj.Packaging_Services__c== 'Yes')}"/>
+                        <apex:inputField label="Other:" value="{!formObj.CoolingOther__c }" required="true" rendered="{!(formObj.Packaging_Services__c== 'Yes' && formObj.Cooling__c == 'Other')}"/>-->
+                    <apex:outputPanel id="coolingsec" >
+                        <apex:pageblockSection >
+                            <apex:pageblockSectionItem rendered="{!(formObj.Packaging_Services__c== 'Yes')}">
+                                <apex:outputLabel value="Cooling:"/>
+                                <apex:outputPanel id="CoolingPnl" >
+                                    <div class = "requiredInput">
+                                        <div class = "requiredBlock"></div>
+                                        <apex:inputField id="coolingFld" value="{!formObj.Cooling__c }" styleClass="ReplaceNone">
+                                            <!-- Added onComplete attribute to refresh the jquery initialization for Invalid format check -- Ashwin Dash -->
+                                            <apex:actionSupport status="refresh2" event="onchange" rerender="coolingOtherPnl, crssflwsec, crossFlwPnl" oncomplete="initialise();" action="{!resetDependentFields}">
+                                                <apex:param assignTo="{!fieldAPI}" name="fieldAPI" value="Cooling__c"/>
+                                            </apex:actionSupport>
+                                        </apex:inputField>
+                                        <apex:actionStatus id="refresh2" startText="Refreshing..." stopText="" ></apex:actionStatus>
+                                    </div>
+                                </apex:outputPanel>
+                            </apex:pageblockSectionItem>
+                        </apex:pageblockSection>
+                    </apex:outputPanel>
+                    <apex:outputPanel id="coolingOtherPnl">
+                        <apex:pageblockSection >
+                            <apex:pageblockSectionItem rendered="{!(formObj.Packaging_Services__c== 'Yes'  && formObj.Cooling__c == 'Other')}">
+                                <apex:outputLabel value="Other:"/>
+                                <apex:outputPanel >
+                                    <div class = "requiredInput">
+                                        <div class = "requiredBlock"></div>
+                                        <apex:inputField value="{!formObj.CoolingOther__c}" id="coolingOthers">
+                                        </apex:inputField>
+                                    </div>
+                                </apex:outputPanel>
+                            </apex:pageblockSectionItem>
+                        </apex:pageblockSection>
+                    </apex:outputPanel>
+                    <apex:outputPanel id="crssflwsec">
+                        <apex:pageblockSection >
+                            <apex:pageblockSectionItem rendered="{!(formObj.Packaging_Services__c== 'Yes'  && formObj.Cooling__c == 'Cross Flow')}">
+                                <apex:outputLabel value="Cross Flow (feet/min):"/>
+                                <apex:outputPanel id="crossFlwPnl" >
+                                    <div class = "requiredInput">
+                                        <div class = "requiredBlock"></div>
+                                        <apex:inputField id="crsFlwIFPM" onkeypress="return inputLimiter(event,'Numbers');" value="{!formObj.CrossFlowIFPM__c}" styleClass="CrossFlowIFPMClass"/> <!--Added class name for InputField check -- Ashwin Dash-->
+                                    </div>    
+                                    <label id="msg1" class="item1" style="color:red;"> </label>  <!-- Added label for error message -- Ashwin Dash -->
+                                </apex:outputPanel>
+                            </apex:pageblockSectionItem>
+                        </apex:pageblockSection>
+                    </apex:outputPanel>
+                    <apex:pageblockSection >
+                        <apex:pageblockSectionItem rendered="{!(formObj.Packaging_Services__c== 'Yes')}">
+                            <apex:outputLabel value="Number of Power Supplies to Support:"/>
+                            <apex:outputPanel id="crossFlwPnl" >
+                                <div>
+                                    <apex:inputField id="noOfPowerSupplies" onkeypress="return inputLimiter(event,'Numbers');" value="{!formObj.NoOfPowerSupplies__c}" styleClass="NoOfPowerSuppliesClass" /> 
+                                </div><!--Added class name for InputField check -- Ashwin Dash-->
+                                <label id="msg2" class="item2" style="color:red;"> </label>  <!-- Added label for error message -- Ashwin Dash -->
+                            </apex:outputPanel>
+                            <!--<apex:inputField label="Lifetime Power On Hours:" value="{!formObj.LifetimePOH__c}" required="true" rendered="{!(formObj.Packaging_Services__c== 'Yes')}"/>-->
+                        </apex:pageblockSectionItem>
+                    </apex:pageblockSection>
+                    <apex:outputPanel id="pcksrvSec">
+                        <apex:pageblockSection >
+                            <apex:pageblockSectionItem rendered="{!(formObj.Packaging_Services__c== 'Yes')}">
+                                <apex:outputLabel value="Lifetime Power On Hours:"/>
+                                <apex:outputPanel id="pckgSerpnl" >
+                                    <div class = "requiredInput">
+                                        <div class = "requiredBlock"></div>
+                                        <apex:inputField id="pckgSerFld" value="{!formObj.LifetimePOH__c}" styleClass="ReplaceNone">
+                                            <apex:actionSupport status="refresh3" event="onchange" rerender="lifetimepohPnl" action="{!resetDependentFields}">
+                                                <apex:param assignTo="{!fieldAPI}" name="fieldAPI" value="LifetimePOH__c"/>
+                                            </apex:actionSupport>
+                                        </apex:inputField>
+                                        <apex:actionStatus id="refresh3" startText="Refreshing..." stopText="" ></apex:actionStatus>
+                                    </div>
+                                </apex:outputPanel>
+                            </apex:pageblockSectionItem>
+                        </apex:pageblockSection>
+                    </apex:outputPanel>
+                    <apex:outputPanel id="lifetimepohPnl">
+                        <apex:pageblockSection >
+                            <apex:pageblockSectionItem rendered="{!(formObj.Packaging_Services__c== 'Yes'  && formObj.LifetimePOH__c == 'Other')}">
+                                <apex:outputLabel value="Other:"/>
+                                <apex:outputPanel >
+                                    <div class = "requiredInput">
+                                        <div class = "requiredBlock"></div>
+                                        <apex:inputField value="{!formObj.LifetimePOHOther__c}" id="lifeTimePOH" />
+                                    </div>
+                                </apex:outputPanel>
+                            </apex:pageblockSectionItem>
+                        </apex:pageblockSection>
+                    </apex:outputPanel>
+                    <apex:pageblockSection >
+                        <apex:pageblockSectionItem rendered="{!(formObj.Packaging_Services__c== 'Yes')}">
+                            <apex:outputLabel value="Are differential pairs required?:"/>
+                            <apex:outputPanel id="diffPairReqpnl" >
+                                <apex:actionRegion >
+                                    <apex:inputField id="diffPairReqFld" value="{!formObj.DiffPairRequired__c }" styleClass="ReplaceNone">
+                                        <apex:actionSupport status="refresh4" event="onchange" rerender="howManyPnl" oncomplete="initialise();" action="{!resetDependentFields}">
+                                            <apex:param assignTo="{!fieldAPI}" name="fieldAPI" value="DiffPairRequired__c"/>
+                                        </apex:actionSupport>
+                                    </apex:inputField>
+                                    <apex:actionStatus id="refresh4" startText="Refreshing..." stopText="" ></apex:actionStatus>
+                                </apex:actionRegion>
+                            </apex:outputPanel>
+                        </apex:pageblockSectionItem>
+                    </apex:pageblockSection>
+                    <apex:outputPanel id="howManyPnl">
+                        <apex:pageblockSection >
+                            <apex:pageblockSectionItem rendered="{!(formObj.Packaging_Services__c== 'Yes'  && formObj.DiffPairRequired__c == 'Yes')}">
+                                <apex:outputLabel value="How many:"/>
+                                <apex:outputPanel >
+                                    <div class = "requiredInput">
+                                        <div class = "requiredBlock"></div>
+                                        <apex:inputField value="{!formObj.NoOfDiffPairs__c}" onkeypress="return inputLimiter(event,'Numbers');" id="noOfDiff" styleClass="NoOfDiffPairsClass"/> <!--Added class name for InputField check -- Ashwin Dash-->
+                                    </div>
+                                    <label id="msg9" class="item9" style="color:red;"> </label>  <!-- Added label for error message -- Ashwin Dash -->
+                                </apex:outputPanel>
+                            </apex:pageblockSectionItem>
+                        </apex:pageblockSection>
+                    </apex:outputPanel>
+                    <!--<apex:inputField label="Are differential pairs required?:" value="{!formObj.DiffPairRequired__c }" rendered="{!(formObj.Packaging_Services__c== 'Yes')}"/>
+                        <apex:inputField label="How many:" value="{!formObj.NoOfDiffPairs__c }" required="true"/>-->
+                    <apex:outputPanel >
+                        <apex:pageblockSection >
+                            <apex:pageblockSectionItem rendered="{!(formObj.Packaging_Services__c== 'Yes')}">
+                                <apex:outputLabel value="Is the package a single chip module or a multi-chip module?:"/>
+                                <apex:outputPanel id="pkgchiptypepnl" >
+                                    <div class = "requiredInput">
+                                        <div class = "requiredBlock"></div>
+                                        <apex:inputField id="diffPairReqFld" value="{!formObj.ModuleType__c }" styleClass="ReplaceNone">
+                                            <apex:actionSupport status="refresh5" event="onchange" rerender="multichipdetailspnl,chipFormpnl,chipFormId" action="{!resetDependentFields}">
+                                                <apex:param assignTo="{!fieldAPI}" name="fieldAPI" value="ModuleType__c"/>
+                                            </apex:actionSupport>
+                                        </apex:inputField>
+                                        <apex:actionStatus id="refresh5" startText="Refreshing..." stopText="" ></apex:actionStatus>
+                                    </div>
+                                </apex:outputPanel>
+                            </apex:pageblockSectionItem>
+                        </apex:pageblockSection>
+                    </apex:outputPanel>
+                    <apex:outputPanel id="multichipdetailspnl">
+                        <apex:pageblockSection >
+                            <apex:pageblockSectionItem rendered="{!(formObj.Packaging_Services__c== 'Yes'  && formObj.ModuleType__c == 'Multi-Chip Module')}">
+                                <apex:outputLabel value="If multi-chip, provide additional details:"/>
+                                <apex:outputPanel >
+                                    <div class = "requiredInput">
+                                        <div class = "requiredBlock"></div>
+                                        <apex:inputField id="multChpDetails" value="{!formObj.MultiChipDetails__c}" >
+                                        </apex:inputField>
+                                    </div>
+                                </apex:outputPanel>
+                            </apex:pageblockSectionItem>
+                        </apex:pageblockSection>
+                    </apex:outputPanel>
+                    <apex:outputPanel id="chipFormId">
+                        <apex:pageblockSection >
+                            <apex:pageblockSectionItem rendered="{!(formObj.Packaging_Services__c== 'Yes'  && formObj.ModuleType__c == 'Multi-Chip Module')}">
+                                <apex:outputLabel value="If multi-chip, list form IDs for other chips in this same package:"/>
+                                <apex:outputPanel id="chipFormpnl">
+                                    <apex:inputField value="{!formObj.ChipFormIDs__c}" />
+                                </apex:outputPanel>
+                            </apex:pageblockSectionItem>
+                        </apex:pageblockSection>
+                    </apex:outputPanel>
+                    <!--<apex:inputField label="Is the package a single chip module or a multichip module?:" value="{!formObj.ModuleType__c }" required="true"/>
+                        <apex:inputField label="If multi-chip, provide additional details:*" value="{!formObj.MultiChipDetails__c}" required="true"/>
+                        <apex:inputField label="If multichip, list form IDs for other chips in this same package:" value="{!formObj.ChipFormIDs__c}" />-->
+                </apex:actionRegion>
+            </apex:pageblockSection>
+            <apex:outputPanel id="modulePinsPnl" rendered="{!(formObj.Packaging_Services__c == 'Yes')}">
+                <!--<apex:pageblockSection title="# of Module Pins/Balls" columns="1" collapsible="false">-->
+                <apex:pageblockSection columns="1" collapsible="false">
+                    <hr style ="border-color: #b4c374;"/>
+                    <h1># of Module Pins/Balls</h1>
+                    <apex:pageBlockSectionItem rendered="{!(formObj.PackageRequirement__c == 'Customer Existing Package')}">
+                        <apex:outputLabel value="Total:"/>
+                        <apex:outputPanel >
+                            <div class = "requiredInput">
+                                <div class = "requiredBlock"></div>
+                                <apex:inputField id="total" label="Total:" onkeypress="return inputLimiter(event,'Numbers');" value="{!formObj.ModulePinsBallsTotal__c}" styleClass="ModulePinsBallsTotalClass1"/> <!--Added class name for InputField check -- Ashwin Dash-->
+                            </div>
+                            <label id="msg3" class="item3" style="color:red;"> </label>  <!-- Added label for error message -- Ashwin Dash -->
+                        </apex:outputPanel>
+                    </apex:pageBlockSectionItem>
+                    <apex:pageBlockSectionItem rendered="{!(formObj.PackageRequirement__c != 'Customer Existing Package')}">
+                        <apex:outputLabel value="Total:"/>
+                        <apex:outputPanel >
+                            <div>
+                                <apex:inputField label="Total:" onkeypress="return inputLimiter(event,'Numbers');" value="{!formObj.ModulePinsBallsTotal__c}" styleClass="ModulePinsBallsTotalClass"/> <!--Added class name for InputField check -- Ashwin Dash-->
+                            </div>
+                            <label id="msg3" class="item3" style="color:red;"> </label>  <!-- Added label for error message -- Ashwin Dash -->
+                        </apex:outputPanel>
+                    </apex:pageBlockSectionItem>
+                    
+                    <apex:pageBlockSectionItem rendered="{!(formObj.PackageRequirement__c == 'Customer Existing Package')}">
+                        <apex:outputLabel value="Signal:"/>
+                        <apex:outputPanel >
+                            <div class = "requiredInput">
+                                <div class = "requiredBlock"></div>
+                                <apex:inputField id="label" label="Signal:" onkeypress="return inputLimiter(event,'Numbers');" value="{!formObj.ModulePinsBallsSignal__c}" styleClass="ModulePinsBallsSignalClass"/> <!--Added class name for InputField check -- Ashwin Dash-->
+                            </div>
+                            <label id="msg4" class="item4" style="color:red;"> </label>  <!-- Added label for error message -- Ashwin Dash -->
+                        </apex:outputPanel>
+                    </apex:pageBlockSectionItem>
+                    <apex:pageBlockSectionItem rendered="{!(formObj.PackageRequirement__c != 'Customer Existing Package')}">
+                        <apex:outputLabel value="Signal:"/>
+                        <apex:outputPanel >
+                            <div>
+                                <apex:inputField label="Signal:" onkeypress="return inputLimiter(event,'Numbers');" value="{!formObj.ModulePinsBallsSignal__c}" styleClass="ModulePinsBallsSignalClass1"/> <!--Added class name for InputField check -- Ashwin Dash-->
+                            </div>
+                            <label id="msg4" class="item4" style="color:red;"> </label>  <!-- Added label for error message -- Ashwin Dash -->
+                        </apex:outputPanel>
+                    </apex:pageBlockSectionItem>
+                    <apex:pageBlockSectionItem rendered="{!(formObj.PackageRequirement__c == 'Customer Existing Package')}">
+                        <apex:outputLabel value="Power:"/>
+                        <apex:outputPanel >
+                            <div class = "requiredInput">
+                                <div class = "requiredBlock"></div>
+                                <apex:inputField id="power" label="Power:" onkeypress="return inputLimiter(event,'Numbers');" value="{!formObj.ModulePinsBallsPower__c}"  styleClass="ModulePinsBallsPowerClass"/> <!--Added class name for InputField check -- Ashwin Dash-->
+                            </div>
+                            <label id="msg5" class="item5" style="color:red;"> </label>  <!-- Added label for error message -- Ashwin Dash -->
+                        </apex:outputPanel>
+                    </apex:pageBlockSectionItem>
+                    <apex:pageBlockSectionItem rendered="{!(formObj.PackageRequirement__c != 'Customer Existing Package')}">
+                        <apex:outputLabel value="Power:"/>
+                        <apex:outputPanel >
+                            <div>
+                                <apex:inputField label="Power:" onkeypress="return inputLimiter(event,'Numbers');" value="{!formObj.ModulePinsBallsPower__c}"  styleClass="ModulePinsBallsPowerClass1"/> <!--Added class name for InputField check -- Ashwin Dash-->
+                            </div>
+                            <label id="msg5" class="item5" style="color:red;"> </label>  <!-- Added label for error message -- Ashwin Dash -->
+                        </apex:outputPanel>
+                    </apex:pageBlockSectionItem>
+                    <apex:pageBlockSectionItem rendered="{!(formObj.PackageRequirement__c == 'Customer Existing Package')}">
+                        <apex:outputLabel value="Ground:"/>
+                        <apex:outputPanel >
+                            <div class = "requiredInput">
+                                <div class = "requiredBlock"></div>
+                                <apex:inputField id="Ground" label="Ground:" onkeypress="return inputLimiter(event,'Numbers');" value="{!formObj.ModulePinsBallsGround__c}" styleClass="ModulePinsBallsGroundClass"/> <!--Added class name for InputField check -- Ashwin Dash-->
+                            </div>
+                            <label id="msg6" class="item6" style="color:red;"> </label>  <!-- Added label for error message -- Ashwin Dash -->
+                        </apex:outputPanel>
+                    </apex:pageBlockSectionItem>
+                    <apex:pageBlockSectionItem rendered="{!(formObj.PackageRequirement__c != 'Customer Existing Package')}">
+                        <apex:outputLabel value="Ground:"/>
+                        <apex:outputPanel >
+                            <div>
+                                <apex:inputField label="Ground:" onkeypress="return inputLimiter(event,'Numbers');" value="{!formObj.ModulePinsBallsGround__c}" styleClass="ModulePinsBallsGroundClass1"/> <!--Added class name for InputField check -- Ashwin Dash-->
+                            </div>
+                            <label id="msg6" class="item6" style="color:red;"> </label>  <!-- Added label for error message -- Ashwin Dash -->
+                        </apex:outputPanel>
+                    </apex:pageBlockSectionItem>
+                    <apex:pageBlockSectionItem rendered="{!(formObj.PackageRequirement__c == 'Customer Existing Package')}">
+                        <apex:outputLabel value="Unused:"/>
+                        <apex:outputPanel >
+                            <div class = "requiredInput">
+                                <div class = "requiredBlock"></div>
+                                <apex:inputField id="unused" label="Unused:" onkeypress="return inputLimiter(event,'Numbers');" value="{!formObj.ModulePinsBallsUnused__c}" styleClass="ModulePinsBallsUnusedClass"/> <!--Added class name for InputField check -- Ashwin Dash-->
+                            </div>
+                            <label id="msg7" class="item7" style="color:red;"> </label>  <!-- Added label for error message -- Ashwin Dash -->
+                        </apex:outputPanel>
+                    </apex:pageBlockSectionItem>
+                    <apex:pageBlockSectionItem rendered="{!(formObj.PackageRequirement__c != 'Customer Existing Package')}">
+                        <apex:outputLabel value="Unused:"/>
+                        <apex:outputPanel >
+                            <div>
+                                <apex:inputField label="Unused:" onkeypress="return inputLimiter(event,'Numbers');" value="{!formObj.ModulePinsBallsUnused__c }" styleClass="ModulePinsBallsUnusedClass1"/> <!--Added class name for InputField check -- Ashwin Dash-->
+                            </div>
+                            <label id="msg7" class="item7" style="color:red;"> </label>  <!-- Added label for error message -- Ashwin Dash -->
+                        </apex:outputPanel>
+                    </apex:pageBlockSectionItem>
+                    <hr style ="border-color: #b4c374;"/>
+                    <apex:actionRegion >
+                        <script type="text/javascript">
+    
+                             //Remove None from picklist
+                            $j(function() {        
+                                $j('select.RemoveNone option[value=]').remove();       
+							});
+                            $j(function() {        
+                                $j("select.ReplaceNone option[value='']").text("=== Select a Value ===");       
+                            });     
+                        </script>
+                        <apex:outputPanel >
+                            <apex:pageBlockSection >
+                                <apex:pageblockSectionItem id="moduleDecoupleSec" rendered="{!(formObj.Packaging_Services__c== 'Yes')}">
+                                    <apex:outputLabel value="Module Decoupling Capacitors:"/>
+                                    <apex:outputPanel id="moduleDecouplepnl" >
+                                        <apex:actionRegion >
+                                            <apex:inputField id="moduleDecoupleFld" value="{!formObj.ModuleDecouplingCapacitors__c }" styleClass="ReplaceNone">
+                                                <!-- Added onComplete attribute to refresh the jquery initialization for Invalid format check -- Ashwin Dash -->
+                                                <apex:actionSupport status="refresh6" event="onchange" rerender="totalQuanDecoupPnl , capacitanceValpnl, nonePanel" onComplete="initialise();" action="{!resetDependentFields}">
+                                                    <apex:param assignTo="{!fieldAPI}" name="fieldAPI" value="ModuleDecouplingCapacitors__c"/>
+                                                </apex:actionSupport>
+                                            </apex:inputField>
+                                            <apex:actionStatus id="refresh6" startText="Refreshing..." stopText="" ></apex:actionStatus>
+                                        </apex:actionRegion>
+                                    </apex:outputPanel>
+                                </apex:pageblockSectionItem>
+                            </apex:pageBlockSection>
+                        </apex:outputPanel>
+                        <apex:outputPanel id="totalQuanDecoupPnl">
+                            <apex:pageBlockSection >
+                                <apex:pageblockSectionItem rendered="{!(formObj.Packaging_Services__c== 'Yes'  && formObj.ModuleDecouplingCapacitors__c == 'Yes')}">
+                                    <apex:outputLabel value="Total quantity of module decoupling capacitors:"/>
+                                    <apex:outputPanel >
+                                        <div>
+                                            <apex:inputField onkeypress="return inputLimiter(event,'Numbers');" value="{!formObj.NumberModuleDecouplingCapacitors__c}" styleClass="ModDecouplingCapClass"/> 
+                                        </div>
+                                        
+                                    </apex:outputPanel>
+                                </apex:pageblockSectionItem>
+                            </apex:pageBlockSection>
+                        </apex:outputPanel>
+                        <apex:outputPanel id="capacitanceValpnl" >
+                            <apex:pageBlockSection columns="1">
+                                <apex:pageblockSectionItem id="capacitanceValSec" rendered="{!(formObj.Packaging_Services__c== 'Yes' && formObj.ModuleDecouplingCapacitors__c== 'Yes')}">
+                                    <apex:outputLabel value="Capacitance Value:"/>
+                                    <apex:outputPanel id="capacitanceValpnl1" >
+                                        <apex:actionRegion >
+                                            <apex:inputField id="capacitanceValFld" value="{!formObj.CapacitanceValue__c}"  styleClass="ReplaceNone">
+                                                <apex:actionSupport status="refresh7" event="onchange" rerender="cptcvalOtherPnl" action="{!resetDependentFields}">
+                                                    <apex:param assignTo="{!fieldAPI}" name="fieldAPI" value="CapacitanceValue__c"/>
+                                                </apex:actionSupport>
+                                            </apex:inputField>
+                                            <apex:actionStatus id="refresh7" startText="Refreshing..." stopText="" ></apex:actionStatus>
+                                        </apex:actionRegion>
+                                    </apex:outputPanel>
+                                </apex:pageblockSectionItem>
+                            </apex:pageBlockSection>
+                            <apex:outputPanel id="cptcvalOtherPnl" >
+                                <apex:pageBlockSection >
+                                    <apex:pageblockSectionItem id="cptcvalOtherSec" rendered="{!(formObj.Packaging_Services__c== 'Yes'  && formObj.ModuleDecouplingCapacitors__c == 'Yes' && formObj.CapacitanceValue__c == 'Other')}">
+                                        <apex:outputLabel value="Other:"/>
+                                        <apex:outputPanel >
+                                            <div class = "requiredInput">
+                                                <div class = "requiredBlock"></div>
+                                                <apex:inputField id="cptcvalOtherFld" value="{!formObj.CapacitanceValueOther__c}" />
+                                            </div>
+                                        </apex:outputPanel>
+                                    </apex:pageblockSectionItem>
+                                </apex:pageBlockSection>
+                            </apex:outputPanel>
+                        </apex:outputPanel>
+                        <!--<apex:inputField label="Module Decoupling Capacitors:" value="{!formObj.ModuleDecouplingCapacitors__c}" />
+                            <apex:inputField label="Total quantity of module decoupling capacitors:" value="{!formObj.NumberModuleDecouplingCapacitors__c }" />
+                            <apex:inputField label="Capacitance Value:" value="{!formObj.CapacitanceValue__c }" />
+                            <apex:inputField label="Other:" value="{!formObj.CapacitanceValueOther__c }"  required="true"/>-->
+                        <apex:outputPanel >
+                            <apex:pageBlockSection >
+                                <apex:pageblockSectionItem id="prodShipsec" rendered="{!(formObj.Packaging_Services__c== 'Yes')}">
+                                    <apex:outputLabel value="Production Shipping Requirements:"/>
+                                    <apex:outputPanel id="prodShippnl" >
+                                        <apex:actionRegion >
+                                            <apex:inputField id="prodShipFld" value="{!formObj.ProductShipReq__c }" styleClass="ReplaceNone">
+                                                <apex:actionSupport status="refresh8" event="onchange" rerender="prodShipmentOtherPnl" action="{!resetDependentFields}">
+                                                    <apex:param assignTo="{!fieldAPI}" name="fieldAPI" value="ProductShipReq__c"/>
+                                                </apex:actionSupport>
+                                            </apex:inputField>
+                                            <apex:actionStatus id="refresh8" startText="Refreshing..." stopText="" ></apex:actionStatus>
+                                        </apex:actionRegion>
+                                    </apex:outputPanel>
+                                </apex:pageblockSectionItem>
+                            </apex:pageBlockSection>
+                        </apex:outputPanel>
+                        <apex:outputPanel id="prodShipmentOtherPnl" >
+                            <apex:pageBlockSection >
+                                <apex:pageblockSectionItem id="prodShipmentOtherSec"  rendered="{!(formObj.Packaging_Services__c== 'Yes'  && formObj.ProductShipReq__c == 'Other')}">
+                                    <apex:outputLabel value="Other:"/>
+                                    <apex:outputPanel >
+                                        <div class = "requiredInput">
+                                            <div class = "requiredBlock"></div>
+                                            <apex:inputField id="prodShipothfld" value="{!formObj.ProductShipReqOther__c}" />
+                                        </div>
+                                    </apex:outputPanel>
+                                </apex:pageblockSectionItem>
+                            </apex:pageBlockSection>
+                        </apex:outputPanel>
+                        <!--<apex:inputField label="Production Shipping Requirements:" value="{!formObj.ProductShipReq__c}" />
+                            <apex:inputField label="Other:" value="{!formObj.ProductShipReqOther__c }" required="true"/>-->
+                    </apex:actionRegion>
+                    <apex:inputField label="Comments:" value="{!formObj.Comments__c}" rendered="{!(formObj.Packaging_Services__c == 'Yes')}"/>
+                </apex:pageblockSection>
+            </apex:outputPanel>
+            <!--Commented Changed to configurator button - 20-Oct-2016 -- Ashwin Dash-->
+            <!--<apex:outputPanel rendered="{!formObj.TestServices__c == 'Yes' && formObj.Packaging_Services__c == 'Yes'}">
+                <p style="color:brown;font-size: 120%;">Click this link to go configurator for entering technical features information </p><br/>             
+                <apex:commandlink style="font-size: 100%; text-decoration:none;" styleClass="btn" value="Configurator" immediate="true" action="{!redirectConfig}" target="_blank"/>
+            </apex:outputPanel>-->
+         
+            <br/> 
+                   <p style="color:black;font-weight: bold;">Use Next / Previous to navigate through the form. Use 'Save' or 'Save and Exit' to permanently save your edits. </p>
+            <br/><!--Added 'Save' or to the above text - 23-Nov-2016    -- Ashwin Dash -->
+            <apex:outputPanel id="totPage">
+                <!-- <apex:outputText >Page &nbsp;{!pageNum}  of  {!totalPageNums} &nbsp; </apex:outputText> -->
+                <apex:commandlink value="Previous" immediate="true" action="{!prev}" style="color:blue;">
+                    <apex:param assignTo="{!pageN}" name="page" value="page5"/>
+                </apex:commandlink>
+                &nbsp; <!-- 01-Aug-2016    Added link to Previous Page     Ashwin dash -->
+                <!--<apex:outputText >Page 5  of  5 &nbsp; </apex:outputText>--> <!-- Commented this line as it is not including any rendering and added the below line for total pages -- Added by Ashwin -->
+                <apex:outputText >Page &nbsp;{!pageNum}  of  {!totalPageNums} &nbsp; </apex:outputText> &nbsp;
+                <!--<apex:commandlink value="Next" action="{!nextPage}"/>-->
+                <!-- Added By Abhita --> <!--Changed configurator link to button only -->
+                <!--<apex:commandlink value="Save and go to configurator" onClick="getLicenseDetails();return false;" styleClass="btn" style="color:blue;" rendered="{!AND(pageNum == totalPageNums, formObj.ReleaseProcessFlow__c == 'Original Flow')}" >
+                    <apex:param assignTo="{!pageN}" name="page" value="page5"/>
+                </apex:commandlink>&nbsp;
+                <apex:actionFunction name="GoToConfig" action="{!configPage}" oncomplete="window.scrollTo(0,0);" reRender="errorMsg" />-->        
+                <!-- Ended Abhita Code here --><!--Changed to Save and go to configurator from Click here to go to configurator Page for Business Issue #11 - Ashwin Dash-->
+            </apex:outputPanel>
+            <apex:pageBlockButtons location="bottom">
+                <!-- <apex:commandButton action="{!saveForm}" value="Save" id="saveForm" />
+                    <apex:commandButton action="{!saveandExit}" value="Save and Exit"  />-->
+                <apex:commandButton action="{!validateSave}" value="Save and Exit" reRender="errorMsg" oncomplete="window.scrollTo(0,0);showSimpleDialog();" >
+                    <apex:param assignTo="{!pageN}" name="page" value="page5"/>
+                </apex:commandButton>
+                <apex:commandButton action="{!saveForm}" value="Save" id="saveForm" reRender="errorMsg" oncomplete="window.scrollTo(0,0);">
+                    <apex:param assignTo="{!pageN}" name="page" value="page5"/>
+                </apex:commandButton>
+                <!--<apex:commandButton value="Cancel" action="{!cancelForm}" onclick="if(!confirm('Are you sure you want to Cancel your changes? Any changes that you made to this form since the last Save will be lost.')){return false;}"/>-->
+                <apex:commandButton value="Cancel" onclick="showDialogforCancel(); window.scrollTo(0,0); return false;" />
+            </apex:pageBlockButtons>
+        </apex:pageBlock>
+    </apex:form>
+</apex:page>

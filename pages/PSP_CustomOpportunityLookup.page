@@ -1,0 +1,45 @@
+<apex:page controller="PSP_CustomOpportunityLookupController" title="Search" showHeader="false" sideBar="false" tabStyle="Opportunity" id="pg"> 
+    <apex:form >       
+        <apex:outputPanel id="page" layout="block" style="margin:5px;padding:10px;padding-top:2px;">
+            <apex:image url="{!$Resource.Image_Lookup}" width="100%"/>
+            <apex:actionRegion >  
+                <apex:outputPanel id="top" layout="block" style="margin:5px;padding:10px;padding-top:2px;">
+                    <apex:outputLabel value="Search" style="font-weight:Bold;padding-right:10px;" for="txtSearch"/>
+                    <apex:inputText id="txtSearch" value="{!searchString}" />
+                    <span style="padding-left:5px"><apex:commandButton id="btnGo" value="Go" action="{!Search}" rerender="searchResults"></apex:commandButton></span>
+                </apex:outputPanel>                  
+                <apex:outputPanel id="pnlSearchResults" style="margin:10px;height:350px;overflow-Y:auto;" layout="block">
+                  <apex:pageBlock id="searchResults"> 
+                      <apex:pageBlockTable value="{!results}" var="a" id="tblResults">
+                          <apex:column >
+                              <apex:facet name="header">
+                                  <apex:outputPanel >Name</apex:outputPanel>
+                              </apex:facet>
+                              <apex:outputLink id="outputLinkId1" value="javascript:callJSfunction('{!a.Id}','{!a.Name}');" onclick="if(navigator.userAgent.toLowerCase().indexOf('firefox') <= -1){window.close();}" rendered="{!NOT(ISNULL(a.Id))}">{!a.Name}</apex:outputLink>
+                              <script>
+                              function callJSfunction(id,name){
+                                  var recId = id;
+                                  var recName = name;
+                                  if(navigator.userAgent.toLowerCase().indexOf('firefox') > -1){
+                                      top.opener.document.getElementById('Page:theForm:pageBlockId:inputOppIdHidden').value= recId ; 
+                                      top.opener.document.getElementById('Page:theForm:pageBlockId:searchSection:pbSectionItem2:oppLookupField').value= recName;
+                                      window.close();
+                                  }else{
+                                      top.window.opener.lookupPick2('{!FormTag}','Page:theForm:pageBlockId:inputOppIdHidden','{!TextBox}',recId,recName, false);
+                                      self.close();
+                                  }
+                                  
+                              }
+                              </script>
+                          </apex:column>
+                          <apex:column value="{!a.Market_Segment__c}"/>
+                          <apex:column value="{!a.Opportunity_Health__c}"/>
+                          <apex:column value="{!a.Process_Geometry__c}"/>
+                          <apex:column value="{!a.Process_Family__c}"/>
+                      </apex:pageBlockTable>
+                  </apex:pageBlock>
+                </apex:outputPanel>
+            </apex:actionRegion>
+        </apex:outputPanel>        
+    </apex:form>
+</apex:page>

@@ -1,0 +1,243 @@
+<!-- 
+    Needed
+-->
+<apex:page standardController="Checklist_Container__c" extensions="DeviceChecklistReportsCtrlExt" docType="html-5.0" sideBar="false" tabStyle="DeviceChecklist__tab" standardStylesheets="true" title="DeviceChecklist Reports">
+
+    <head>
+<meta charset="utf-8" />
+<apex:stylesheet value="{!URLFOR($Resource.ChecklistResouces, 'ChecklistResouces/css/npi.css')}" />
+<apex:stylesheet value="{!URLFOR($Resource.ChecklistResouces, 'ChecklistResouces/css/DeviceChecklistReport.css')}" />
+<apex:includeScript value="{!URLFOR($Resource.ChecklistResouces, 'ChecklistResouces/js/jquery-1.10.2.min.js')}" />
+<style>
+    
+
+</style>
+<script>
+$().ready(function(){
+  $('.opptyReportButton').click(toggleButtons);
+  $('.checklistReportButton').click(toggleButtons);
+});
+function toggleButtons(){
+  $('.opptyReportButton').parent().toggle();
+  $('.checklistReportButton').parent().toggle();
+}
+
+</script>
+    </head>
+    <body class='pagelevel'>
+    <div id='wholepage'>
+         <div style='display:block; background-color: #FC8744;'>
+            <apex:pageBlock >
+                <apex:pageBlockSection columns="2" collapsible="true" title="Checklist Details">
+                    <apex:pageBlockSectionItem >
+                        <apex:outputLabel value="Checklist Name" for="programName"/>
+                        <a id='programName' href='/{!programDetails.id}'>{!programDetails.Name}</a>
+                    </apex:pageBlockSectionItem>
+                    <apex:outputField value="{!programDetails.Device__c}"/>
+                    <apex:outputField value="{!programDetails.Account__c}"/>
+                    <apex:outputField value="{!programDetails.Opportunity_Program__c}"/>
+                    <apex:outputField value="{!programDetails.Opportunity__c}"/>
+                    <apex:outputField value="{!programDetails.OwnerId}"/>
+                </apex:pageBlockSection>
+            </apex:pageBlock>
+        </div>
+        <apex:form >
+       <div id='statsPage'>
+        <div id='statsArea'>
+            <div id='toolBar'>
+              <div style="margin: 0px auto !important; text-align: center;">
+                <div style='display: inline-block;'>
+                    <a value="Reports" href='/apex/DeviceChecklistHierarchyView?Id={!programDetails.id}' class='showReports saveButton statsButton'  style="width:auto; padding:10px;">&lt; Back to  Checklist</a>
+                </div>
+                <div style='display: inline-block; width:300px;'></div>
+                  <div style='display: inline-block;' class='optyReportButtonContainer'>
+                      <apex:commandLink styleClass="showReports saveButton statsButton opptyReportButton" action="{!switchToReportToOpptyReport}" value="Opportunity Report >" reRender="reportArea" status="reportGenerate"/>
+                  </div>
+                  <div style='display:none;' class='checklistReportButtonContainer'>
+                      <apex:commandLink styleClass="showReports saveButton statsButton checklistReportButton" action="{!switchToReportToChecklistReport}" value="Checklist Report >" reRender="reportArea" status="reportGenerate"/>
+                  </div>
+                  <div style="clear: both"></div>
+                </div>
+            </div>
+            <br/>
+            <apex:outputPanel id="reportArea">
+              <apex:outputPanel id="checklistReportPanel" rendered="{!checklistReportView}">
+               <div style='text-align: center; font-weight: bolder; font-size: large;'>
+                    <label for="opptyLink">Device Checklist Report: </label> <a id="opptyLink" href="/apex/DeviceChecklistHierarchyView?Id={!programDetails.id}">{!programDetails.Name}</a><br/>
+                    <label for="reportTime" style='text-align: center; font-weight: normal; font-size: small;'>Report  Generated: </label> <span id='reportTime' style='text-align: center; font-weight: normal; font-size: small;'>
+                    </span><script>var td = new Date(); $('#reportTime').append(td.toLocaleString())</script>
+                </div>
+              <div class='tableHolder'>
+                <apex:outputPanel id="deviceChecklistReport">
+                <div class='datagrid'>
+                 <table>
+                    <thead>
+                       <tr>
+                         <th rowspan="2">Name</th>         
+                         <th colspan = "3" style='border-bottom: 1px solid #ececec;'>Open</th>
+                         <th rowspan="2">Closed</th>
+                         <th rowspan="2">Red Flags</th>
+                         <th rowspan="2">Progress</th>
+                         <th rowspan="2">Total</th>
+                       </tr>
+                      <tr>
+                        <th>Due</th>
+                        <th>Due Soon</th>
+                        <th>Overdue</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                    <tr>
+                      <td> <a href="/apex/DeviceChecklistHierarchyView?Id={!programTree.pid}">{!programTree.name}</a></td>
+                      <td style='width: 100px;' class='emph'>{!programTree.status.due}</td>
+                      <td class="{!IF(programTree.status.dueSoon > 0, 'orange','')} emph" style='width: 100px;'>{!programTree.status.dueSoon}</td>
+                      <td class="{!IF(programTree.status.overdue > 0, 'lightred','')} emph" style='width: 100px;'>{!programTree.status.overdue}</td>
+                      <td style='width: 120px;background:green;' class='emph'>{!programTree.status.closed}</td>
+                      <td class="{!IF(programTree.status.flagged > 0, 'red','')} emph" style='width: 10px;'>{!programTree.status.flagged}</td>
+                      <td style='width: 120px;' class='emph'>{!programTree.status.progress}%</td>
+                      <td style='width: 100px;' class='emph'>{!programTree.status.total}</td>
+                    </tr>
+                    <apex:repeat value="{!programTree.children}" var="child">
+                        <tr>
+                          <td style='padding-left:30px;' class='emph'>{!child.name}</td>
+                          <td style='width: 100px;' class='emph'>{!child.status.due}</td>
+                          <td class="{!IF(child.status.dueSoon > 0, 'orange','')} emph" style='width: 100px;'>{!child.status.dueSoon}</td>
+                          <td class="{!IF(child.status.overdue > 0, 'lightred','')} emph" style='width: 100px;'>{!child.status.overdue}</td>
+                          <td style='width: 120px;background:green;' class='emph'>{!child.status.closed}</td>
+                          <td class="{!IF(child.status.flagged > 0, 'red','')} emph" style='width: 100px;'>{!child.status.flagged}</td>
+                          <td style='width: 120px;' class='emph'>{!child.status.progress}%</td>
+                          <td style='width: 100px;' class='emph'>{!child.status.total}</td>
+                        </tr>
+                      </apex:repeat>
+                    </tbody>
+                  </table>
+                 </div>
+                 <br/>
+            </apex:outputPanel>
+          </div>
+
+          <div  id="userReport">
+            <apex:outputPanel >
+                <div style='text-align: center; font-weight: bolder; font-size: large;'>
+                    <label for="opptyLink">User Status Report</label> <!-- <a id="opptyLink" href="/{!programDetails.opportunity__c}">{!programDetails.Opportunity__r.Name}</a> -->
+                </div>
+                <br/>
+                <div class='tableHolder'>
+                <div class='datagrid'>
+                 <table>
+                    <thead>
+                       <tr>
+                         <th rowspan="2">User Name</th>
+                         <!-- <th rowspan="2">Device Name</th> -->       
+                         <th colspan = "3" style='border-bottom: 1px solid #ececec;'>Open</th>
+                         <th rowspan="2">Closed</th>
+                         <th rowspan="2">Red Flags</th>
+                         <!-- <th rowspan="2">Progress</th> -->
+                         <th rowspan="2">Total</th>
+                         <th rowspan="2">#Missed Deadline</th>
+                         <th rowspan="2">Avg. Late</th>
+                       </tr>
+                      <tr>
+                        <th>Due</th>
+                        <th>Due Soon</th>
+                        <th>Overdue</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+
+                    <apex:repeat value="{!userStatsMap}" var="userStat">
+                        <tr>
+                          <td>
+                          <a href="/{!userStat}"> {!userStatsMap[userStat].userName}</a></td>
+                          <!-- <td style='padding-left:30px;' class='emph'>{!allOpportunityDeviceChecklists[chklst.pid].Device__r.Name}</td> -->
+                          <td style='width: 100px;' class='emph'>{!userStatsMap[userStat].noOfdue}</td>
+                          <td  class="{!IF(userStatsMap[userStat].noOfDueSoon > 0, 'orange','')} emph" style='width: 100px;'>{!userStatsMap[userStat].noOfDueSoon}</td>
+                          <td class="{!IF(userStatsMap[userStat].noOfOverdue > 0, 'lightred','')} emph" style='width: 100px;'>{!userStatsMap[userStat].noOfoverdue}</td>
+                          <td style='width: 100px;'>{!userStatsMap[userStat].noOfClosed}</td>
+                          <td class="{!IF(userStatsMap[userStat].noOfFlagedOpen > 0, 'red','')} emph" style='width: 100px;' >{!userStatsMap[userStat].noOfFlagedOpen}</td>
+                          <!-- <td class='emph'>{!chklst.progress}%</td> -->
+                          <td style='width: 100px;' class='emph'>{!userStatsMap[userStat].total}</td>
+                          <td style='width: 100px;' class='emph'>{!userStatsMap[userStat].totalMissedDeadline}</td>
+                          <td style='width: 100px;' class='emph'>{!userStatsMap[userStat].avgLate}</td>
+                        </tr>
+                      </apex:repeat>
+                    </tbody>
+                  </table>
+                 </div>
+                </div>
+            </apex:outputPanel>
+          </div>
+        </apex:outputPanel>
+            <apex:outputPanel id="opportunityReportPanel" rendered="{!!checklistReportView}">
+                <div style='text-align: center; font-weight: bolder; font-size: large;'>
+                    <label for="opptyLink">Opportunity Report: </label> <a id="opptyLink" href="/{!programDetails.opportunity__c}">{!programDetails.Opportunity__r.Name}</a>
+                </div>
+                <br/>
+                <div class='tableHolder'>
+                <div class='datagrid'>
+                 <table>
+                    <thead>
+                       <tr>
+                         <th rowspan="2">Checklist Name</th>
+                         <th rowspan="2">Device Name</th>         
+                         <th colspan = "3" style='border-bottom: 1px solid #ececec;'>Open</th>
+                         <th rowspan="2">Closed</th>
+                         <th rowspan="2">Red Flags</th>
+                         <th rowspan="2">Progress</th>
+                         <th rowspan="2">Total</th>
+                       </tr>
+                      <tr>
+                        <th>Due</th>
+                        <th>Due Soon</th>
+                        <th>Overdue</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                    <apex:repeat value="{!OpportunityChecklistsStatus}" var="chklst">
+                        <tr>
+                          <td>
+                          <a href="/apex/DeviceChecklistHierarchyView?Id={!chklst.pid}"> {!allOpportunityDeviceChecklists[chklst.pid].Name}</a></td>
+                          <td style='padding-left:30px;' class='emph'><a href="/{!allOpportunityDeviceChecklists[chklst.pid].Device__r.Id}">{!allOpportunityDeviceChecklists[chklst.pid].Device__r.Name}</a></td>
+                          <td style='width: 100px;' class='emph'>{!chklst.due}</td>
+                          <td  class="{!IF(chklst.dueSoon > 0, 'orange','')} emph" style='width: 100px;'>{!chklst.dueSoon}</td>
+                          <td class="{!IF(chklst.overdue > 0, 'lightred','')} emph" style='width: 100px;'>{!chklst.overdue}</td>
+                          <td style='width: 100px;'>{!chklst.closed}</td>
+                          <td class="{!IF(chklst.flagged > 0, 'red','')} emph" style='width: 100px;' >{!chklst.flagged}</td>
+                          <td class='emph' style='width: 150px;'>{!chklst.progress}%</td>
+                          <td style='width: 100px;' class='emph'>{!chklst.total}</td>
+                        </tr>
+                      </apex:repeat>
+                    </tbody>
+                  </table>
+                 </div>
+                </div>
+            </apex:outputPanel>
+        </apex:outputPanel>
+        </div>
+      </div>
+        <apex:actionStatus id="reportGenerate" stopText="">
+          <apex:facet name="start">
+              <div>
+                  <div class="popupBackground" />
+                  <div class="PopupPanel">
+                      <table border="0" width="100%" height="100%">
+                          <tr>
+                              <td align="center"><b>Please Wait...</b></td>
+                          </tr>
+                          <tr>
+                              <td align="center"><img src="{!URLFOR($Resource.ChecklistResouces, 'ChecklistResouces/Processing.gif')}"/></td>
+                          </tr>
+                      </table>
+                  </div>
+              </div>
+          </apex:facet>
+      </apex:actionStatus>
+        </apex:form>
+    </div>
+    <div>
+        
+    </div>
+
+    </body>
+
+</apex:page>

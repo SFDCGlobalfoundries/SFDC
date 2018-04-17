@@ -1,0 +1,328 @@
+<!--
+    @ Author :- Ashwin Dash
+    @ History: 
+        *06-Mar-2017        Abhita Bansal       Changed the logic in component for #DEF 257, 381
+        24-May-2017         Anirban Roy         Added jQuery to limit the Form Name to 100 characters.
+        10-July-2017        Ram Rai             Added the Display message for Copy Forms in RIT and DDR #Issue 352 499 498
+        11-July-2017        Anirban Roy         Modified for Issue 276 : IMC message while form copy : line no : 267-273
+        13-July-2017        Akash             Removed script to show addendum in the hierarchy 
+-->
+
+<apex:page standardcontroller="Form_Management_System__c" extensions="FMSChildCreationController" showHeader="true" sidebar="true"> 
+    <apex:includeScript value="{!URLFOR($Resource.jquery, 'js/jquery-1.8.3.min.js')}"/>
+    <apex:includeScript value="{!URLFOR($Resource.jquery, 'js/jquery-ui-1.9.2.custom.js')}"/>
+    <apex:includeScript value="{!URLFOR($Resource.jqPlugin, '/jquery.blockUI.js')}"/>
+    <apex:stylesheet value="{!URLFOR($Resource.jquery, 'css/ui-lightness/jquery-ui-1.9.2.custom.css')}"/>
+    
+    <style>  
+        .bPageBlock .requiredInput .requiredBlock{background-color: #F6FBF6;}  
+        .requiredInput .requiredBlock::before { display: block; content: "*"; font-size: 1.5em; font-weight: bold; color: #c00; margin-left: -12px; margin-top: -3px; }  
+    
+        p{
+           color:brown;
+        }   
+
+    </style>
+
+    <apex:pagemessages id="errMsg"/>
+
+    <c:loadingPanel ></c:loadingPanel>
+
+    <apex:form id="fmsForm"> 
+        <c:FMSNameDesc ></c:FMSNameDesc>
+        <c:FMSHierarchy formId="{!formId}" rendered="{!formType != 'Main'}"></c:FMSHierarchy>
+        <!-- <c:FMSNameDescComp_Abhita formID="{!formId}" formType="{!formType}" parentId="{!parentId}" accId="{!deviceAccId}" rendered="{!formType == 'Main'}"></c:FMSNameDescComp_Abhita>-->
+        
+        
+        <apex:pageBlock rendered="{!IF(AND(tranx == 'Create', formType == 'Main'), true, false)}">
+            <apex:pageBlockSection columns="1" collapsible="false">
+                <h1><u>New Form Creation</u></h1><br/><br/>
+                Create a new form from the selected form type. Fill out the fields below and select the Continue button.<br/><br/>
+                <apex:outputPanel rendered="{!$User.ContactId == '' && !isDMEA}">
+                    Your ID is enabled to create forms for multiple customers. Please select the appropriate target customer below.<br/> <br/>
+                </apex:outputPanel> 
+                 <!--Visible to Customer as per Ravindra Mail-->
+                <apex:outPutText label="Target Customer" value="{!targCustomerPortUser}" rendered="{!$User.ContactId <> '' && !isDMEA}"/>
+                <apex:pageblockSectionItem rendered="{!$User.ContactId == '' && !isDMEA}">                
+                    <apex:outputLabel value="Target Customer:"/>                
+                    <apex:outputPanel >
+                        <div class = "requiredInput">
+                            <div class = "requiredBlock"></div>
+                            <apex:inputField value="{!formObj.Customer_Name__c}"/>
+                        </div>
+                    </apex:outputPanel>          
+                </apex:pageblockSectionItem>
+                <!--START 21-Oct-2016  -  Adding picklist to be visible for DMEA users  -- Ashwin Dash-->
+                <apex:pageblockSectionItem rendered="{!isDMEA}">                
+                    <apex:outputLabel value="Target Customer:"/>                
+                    <apex:outputPanel >
+                        <div class = "requiredInput">
+                            <div class = "requiredBlock"></div>
+                            <apex:outPutText value="{!selDMEAAccountName}"/>
+                            <!--<apex:selectList id="dmeaSelected" value="{!selDMEAAccount}" multiselect="false" size="1" >
+                                <apex:selectOptions value="{!DMEAAccountList}"/>
+                            </apex:selectList>-->                                  
+                        </div>
+                    </apex:outputPanel>          
+                </apex:pageblockSectionItem>
+                <!--END 21-Oct-2016  -  Adding picklist to be visible for DMEA users  -- Ashwin Dash-->
+                <apex:pageBlockSectionItem >
+                    <apex:outputLabel value="Form Name: "/>
+                    <apex:outputPanel >
+                        <div class = "requiredInput">
+                            <div class = "requiredBlock"></div>
+                            <apex:inputField value="{!formObj.Form_Name__c}" styleClass="formName"/>
+                            <!--<textarea value="{!formObj.Form_Name__c}" onchange="textChange"></textarea>-->
+                            <script>
+                                $j = jQuery.noConflict();
+                                /*$j(".formName").onChange(function() {
+                                    $j(this).val($j(this).val().substring(0,100));                                   
+                                 });*/
+                                var oldVal = "";
+                                $j(".formName").on("change keyup paste", function() {
+                                    /*var currentVal = $j(this).val();
+                                    if(currentVal == oldVal) {
+                                        return; //check to prevent multiple simultaneous triggers
+                                    }
+                                    
+                                    oldVal = currentVal;*/
+                                    //action to be performed on textarea changed
+                                    if($j(this).val().length>100){
+                                        $j(this).val($j(this).val().substring(0,100));
+                                    }
+                                });
+                            </script>
+                        </div>
+                     </apex:outputPanel>  
+                </apex:pageBlockSectionItem>
+                <apex:inputTextArea label="Brief form description:" value="{!formObj.Form_Description__c}" style="width: 300px;height: 100px" html-maxlength="200"/>                
+            </apex:pageBlockSection><!-- Changed by Abhita for new UAT Issue #379 -->
+            <apex:pageblockButtons location="bottom">
+                <apex:commandButton title="Continue" value="Continue" action="{!continueCheck}" reRender="errMsg" status="LoadingStatusSpinner"/>
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                <apex:commandButton title="Cancel" value="Cancel" action="{!cancelRecord}" reRender="errMsg"/>
+            </apex:pageblockButtons>   
+        </apex:pageBlock>
+        
+        <apex:pageBlock rendered="{!IF(AND(tranx == 'Create', formType != 'Main'), true, false)}" id="pbBlock1">      
+            <apex:pageBlockSection columns="1" collapsible="false">
+                <h1><u>New Addendum Form Creation</u></h1><br/><br/>
+                Please verify you are placing your addendum in the correct place, then select an addendum type below in order to proceed.
+                <br/><br/> 
+                The addendum form being created will be associated with the customer {!custName}.
+                <br/><br/>
+                <apex:pageBlockSectionItem >
+                    <apex:outputLabel value="Select new addendum form type: "/>
+                    <apex:outputPanel >
+                        <div class = "requiredInput">
+                            <div class = "requiredBlock"></div>
+                            <apex:selectList id="relguide" value="{!selAddendum}" multiselect="false" size="1" >
+                                <apex:selectOptions value="{!addendumList}"/>
+                            </apex:selectList>
+                            <apex:actionSupport event="onchange" reRender="formMessage, pbBlock1" /> <!--please do not rerender form/Heirchy component--> 
+                        </div>
+                     </apex:outputPanel>  
+                </apex:pageBlockSectionItem>
+                
+                <apex:outputPanel id="formMessage">
+                    <!--Added message for Export Control Issue-->
+                    <apex:outputpanel rendered="{!!isRITAllowed && formType != 'RIT' && formType != 'IMC'}">
+                        <p>RIT form creation is unavailable until after an export control form has been submitted and subsequent approval is granted by GF Global Trade Compliance</p>
+                    </apex:outputpanel>
+                    
+                <!-- Added the Message for Issue #393 499 498 -->
+                    <apex:outputpanel rendered="{!selAddendum == 'IMC'}">
+                        <p>Please review the form hierarchy above and ensure you are adding your addendum form to the correct parent. Placing an Incremental Mask Change (IMC) 
+                            form in the wrong place could lead to the wrong masks being used for your product and/or delays in your release. To change where you are placing your 
+                            addendum, click "Cancel", navigate to your desired parent form, and select to add an addendum. To proceed, enter a form name, an optional 
+                            description, and click "Continue". If you are unsure, please consult your Foundry Technical Representative.</p>
+                    </apex:outputpanel>
+                    
+                    <apex:outputpanel rendered="{!selAddendum == 'RIT'}">
+                        <p>IMPORTANT: Please ensure that you are attaching this RIT addendum to the correct parent form to avoid delays in design data processing. 
+                            The form hierarchy above must display a direct connection from this RIT to the parent form (Main or IMC) applicable to this tapeout. 
+                            If you are unsure of the correct placement, please consult your Foundry Technical Representative. 
+                            <br/><br/>
+                            To change your addendum placement, click "Cancel", navigate to the desired parent form, and select "Create an addendum". 
+                            To proceed with your current placement, enter a form name, an optional description, and click "Continue".</p>
+                    </apex:outputpanel>
+                    
+                    <apex:outputpanel rendered="{!selAddendum == 'DDR'}">
+                        <p>Please review the form hierarchy above and ensure you are adding your addendum form to the correct RIT form. 
+                            Placing a Design Data Return (DDR) form in the wrong place could lead to the wrong design data being 
+                            returned to you. To change where you are placing your addendum, click "Cancel", navigate to your desired 
+                            parent RIT form, and select to add an addendum. To proceed, enter a form name, an optional description, 
+                            and click "Continue". If you are unsure, please consult your Foundry Technical Representative.</p>
+                    </apex:outputpanel> 
+                    
+                    <br/><br/>
+                    
+                    <apex:outputpanel rendered="{!selAddendum != ''}">
+                        <apex:pageblockSection >
+                            <apex:pageBlockSectionItem >
+                                <apex:outputLabel value="Form Name: "/>
+                                <apex:outputPanel >
+                                    <div class = "requiredInput">
+                                        <div class = "requiredBlock"></div>
+                                        <apex:inputField value="{!formObj.Form_Name__c}" styleClass="formName1"/>
+                                        <script>
+                                            $j = jQuery.noConflict();
+                                            /*$j(".formName").onChange(function() {
+                                                $j(this).val($j(this).val().substring(0,100));                                   
+                                             });*/
+                                            var oldVal = "";
+                                            $j(".formName1").on("change keyup paste", function() {
+                                                /*var currentVal = $j(this).val();
+                                                if(currentVal == oldVal) {
+                                                    return; //check to prevent multiple simultaneous triggers
+                                                }
+                                                
+                                                oldVal = currentVal;*/
+                                                //action to be performed on textarea changed
+                                                if($j(this).val().length>100){
+                                                    $j(this).val($j(this).val().substring(0,100));
+                                                }
+                                            });
+                                        </script>
+                                    </div>
+                                 </apex:outputPanel>  
+                            </apex:pageBlockSectionItem>
+                            <br/><br/>
+                            <apex:inputTextArea label="Brief form description:" value="{!formObj.Form_Description__c}" style="width: 300px;height: 100px" html-maxlength="200"/>                                
+                        </apex:pageblockSection><!-- Changed by Abhita for new UAT Issue #379 -->
+                    </apex:outputpanel>                 
+                </apex:outputPanel>  
+            </apex:pageBlockSection>
+            
+            <apex:pageblockButtons location="bottom" id="pageBtn">
+                <apex:commandButton title="Continue" value="Continue" action="{!continueCheck}" reRender="errMsg" disabled="{!IF(selAddendum == '', true,false)}" status="LoadingStatusSpinner"/>
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                <apex:commandButton title="Cancel" value="Cancel" action="{!cancelRecord}" reRender="errMsg"/>
+            </apex:pageblockButtons> 
+        </apex:pageBlock>
+        
+        <apex:pageBlock rendered="{!IF(AND(tranx == 'Edit'), true, false)}">
+            <apex:pageBlockSection columns="1" collapsible="false">
+                <h1><u>Form Information Update</u></h1><br/><br/>
+                Update the descriptive information for this form. 
+                <!-- Updated By Abhita for DEF #477-->
+                <!--Since your ID has administrator privileges, you can also choose to change the customer affiliation for this form (this is NOT a typical action, but MAY be
+                needed when mergers and acquisitions occur).
+                 <a href="/apex/FMSmainFormCreation?id=aEWp00000004Db6GAE&tranx=Edit&Type=Main" onclick="paraFunction(); return false;" style="color:blue;"> -->
+                <br/><br/>
+                <apex:pageBlockSectionItem >
+                    <apex:outputLabel value="Form Name: "/>
+                    <apex:outputPanel >
+                        <div class = "requiredInput">
+                            <div class = "requiredBlock"></div>
+                            <apex:inputField value="{!formObj.Form_Name__c}" styleClass="formName2"/>
+                            <script>
+                                $j = jQuery.noConflict();
+                                /*$j(".formName").onChange(function() {
+                                    $j(this).val($j(this).val().substring(0,100));                                   
+                                 });*/
+                                var oldVal = "";
+                                $j(".formName2").on("change keyup paste", function() {
+                                    /*var currentVal = $j(this).val();
+                                    if(currentVal == oldVal) {
+                                        return; //check to prevent multiple simultaneous triggers
+                                    }
+                                    
+                                    oldVal = currentVal;*/
+                                    //action to be performed on textarea changed
+                                    if($j(this).val().length>100){
+                                        $j(this).val($j(this).val().substring(0,100));
+                                    }
+                                });
+                            </script>
+                        </div>
+                     </apex:outputPanel>  
+                </apex:pageBlockSectionItem>
+                <apex:inputTextArea label="Brief form description:" value="{!formObj.Form_Description__c}" style="width: 300px;height: 100px" html-maxlength="200"/>                
+            </apex:pageBlockSection><!-- Changed by Abhita for new UAT Issue #379 -->
+            <apex:pageblockButtons location="bottom">
+                <apex:commandButton title="Continue" value="Save" action="{!continueCheck}" reRender="errMsg" status="LoadingStatusSpinner"/>
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                <apex:commandButton title="Cancel" value="Cancel" action="{!cancelRecord}" reRender="errMsg"/>
+            </apex:pageblockButtons>   
+        </apex:pageBlock>
+    
+        <apex:pageBlock rendered="{!tranx == 'Copy' && (formType == 'Main' || formType == 'RIT' || formType == 'IMC' || formType == 'DDR')}">
+            <!-- To add form hierarchy code  -->
+            <apex:pageBlockSection columns="1" collapsible="false">
+                <h1><u style="color:black;">Create a new form, copying data from selected form</u></h1><br/><br/>
+                <!--<apex:outputPanel rendered="{!formType == 'Main'}">-->
+                
+                 <p style="color:black;">This feature allows you to copy the values from the existing form that you selected into a new form. The new form may be created on an updated form type from the original form. It is therefore not guaranteed that 100% of the values will copy. You must still review the new form entirely before submitting. </p>
+                <br/>
+                <apex:outputText > <p style="color:black;">The form being created will be associated with the customer &nbsp;  {!formObj.Customer__c} </p></apex:outputText>
+                
+                <!--</apex:outputPanel>-->
+                
+                <apex:outputPanel rendered="{!(formType == 'RIT' )}">
+                  <p>IMPORTANT: Please ensure that you are attaching this RIT addendum to the correct parent form to avoid delays in design data processing. The form hierarchy above must display a direct connection from this RIT to the parent form (Main or IMC) applicable to this tapeout. If you are unsure of the correct placement, please consult your Foundry Technical Representative.</p>
+                   
+                <p>To change your addendum placement, click "Cancel", navigate to the desired parent form, and select "Create an addendum". To proceed with your current placement, enter a form name, an optional description, and click "Continue". </p>
+                </apex:outputPanel>
+                
+               <apex:outputPanel rendered="{!(formType == 'IMC' )}">
+                  <p>Please review the form hierarchy above and ensure you are adding your addendum form to the correct parent. 
+                Placing an Incremental Mask Change (IMC) form in the wrong place could lead to the wrong masks being used for your product and/or delays in your release. 
+                To change where you are placing your addendum, click "Cancel", navigate to your desired parent form, and select to add an addendum. 
+                To proceed, enter a form name, an optional description, and click "Continue". 
+                If you are unsure, please consult your Foundry Technical Representative.</p>
+                </apex:outputPanel>
+                
+                <apex:outputPanel rendered="{!(formType == 'DDR')}">
+                  <p> 
+                   Please review the form hierarchy above and ensure you are adding your addendum form to the correct RIT form. 
+                   Placing a Design Data Return (DDR) form in the wrong place could lead to the wrong design data being returned to you.
+                   To change where you are placing your addendum, click "Cancel", navigate to your desired parent RIT form, 
+                   and select to add an addendum. To proceed, enter a form name, an optional description, and click "Continue". 
+                   If you are unsure, please consult your Foundry Technical Representative. </p>
+                </apex:outputPanel>
+                <!--<p>This feature allows you to copy the values from the existing form that you selected into a new form. The new form may be created on an updated form type from the original form. It is therefore not guaranteed that 100% of the values will copy. You must still review the new form entirely before submitting. </p>
+                <br/>
+                <apex:outputText > The form being created will be associated with the customer &nbsp;  {!formObj.Customer__c} </apex:outputText>-->
+              
+                <br/><hr style ="border-color: #b4c374;"/><br/>
+                 <apex:pageBlockSectionItem >
+                    <apex:outputPanel ><div> <apex:outputLabel value="Form Name: "/> </div> </apex:outputPanel>
+                    <apex:outputPanel >
+                        <div class = "requiredInput">
+                            <div class = "requiredBlock"></div>
+                            <apex:inputText value="{!fromNameCopy}" styleClass="formName3"/>
+                            <script>
+                                $j = jQuery.noConflict();
+                                /*$j(".formName").onChange(function() {
+                                    $j(this).val($j(this).val().substring(0,100));                                   
+                                 });*/
+                                var oldVal = "";
+                                $j(".formName3").on("change keyup paste", function() {
+                                    /*var currentVal = $j(this).val();
+                                    if(currentVal == oldVal) {
+                                        return; //check to prevent multiple simultaneous triggers
+                                    }
+                                    
+                                    oldVal = currentVal;*/
+                                    //action to be performed on textarea changed
+                                    if($j(this).val().length>100){
+                                        $j(this).val($j(this).val().substring(0,100));
+                                    }
+                                });
+                            </script>
+                        </div>
+                    </apex:outputPanel>
+                </apex:pageBlockSectionItem>
+                <apex:inputTextArea label="Brief form description:" value="{!formDescriptionCopy}" style="width: 300px;height: 100px" html-maxlength="200"/>
+            </apex:pageBlockSection><!-- Changed by Abhita for new UAT Issue #379 -->
+            <apex:pageblockButtons location="bottom" style="float:left;margin-left:-200px;">
+                <apex:commandButton title="Continue" value="Continue" action="{!continueCheck}" reRender="errMsg" status="LoadingStatusSpinner"/>
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                <apex:commandButton title="Cancel" value="Cancel" action="{!cancelRecord}" reRender="errMsg"/>
+            </apex:pageblockButtons>
+        </apex:pageBlock>
+        
+    </apex:form>
+
+</apex:page>

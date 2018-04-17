@@ -1,0 +1,562 @@
+<apex:page standardController="DRT__c" extensions="DRTCreateExtn" showHeader="false" sideBar="false" standardStylesheets="false" id="mypage" cache="true">
+    <apex:stylesheet value="{!URLFOR($Resource.Swift_DRT,'css/jquery.scombobox.min.css')}"/>    
+    <apex:stylesheet value="{!URLFOR($Resource.Swift_DRT,'css/jquery.loader.min.css')}"/>
+    <apex:stylesheet value="{!URLFOR($Resource.Swift_DRT,'css/style.css')}"/>
+    <apex:stylesheet value="{!URLFOR($Resource.Swift_DRT,'css/jquery-ui.css')}"/>
+    <!--[if IE]>
+    <link rel="stylesheet" type="text/css" href="{!URLFOR($Resource.Swift_DRT, 'css/styleIE.css')}" />
+    <![endif]-->
+   
+    <apex:form id="createDrtForm">
+    <!--Wrapper Div Starts-->
+    <div id="wrapper">
+            <!--Breadcrumb Starts-->
+           <apex:outputPanel rendered="{!NOT(internalView)}">
+            <div class="breadcrumb" id="breadcrumbDiv">
+                    <label><a href="javascript:void(0);" onclick="openMyDevices();"><u>My Devices</u></a></label> &gt;
+                    <label>Tapeout</label> &gt;
+                    <label>DRT</label> &gt;
+                    <label>Create</label>
+            </div>
+           </apex:outputPanel>
+           <apex:outputPanel rendered="{!internalView}">
+            <div class="breadcrumb" id="breadcrumbDiv">
+                    <label>DRT</label> &gt;
+                    <label>Create</label>
+            </div>
+           </apex:outputPanel>
+            <!--Breadcrumb Ends-->
+            <div id="createDRT" class="right-panel-section">
+                <!-- Start DRT Right side Header-->
+                <apex:outputPanel id="drtNameHeader">
+                    <apex:outputPanel rendered="{!NOT(showAsLabel)}">
+                        <h3 id="hDRTName">Create DRT</h3> 
+                    </apex:outputPanel>
+                    <apex:outputPanel rendered="{!showAsLabel}">
+                        <h3 id="hDRTName">{!drtName}</h3> 
+                    </apex:outputPanel>
+                </apex:outputPanel>
+                <!-- End Right side Header-->  
+                               
+                <div class="quicklinks">                  
+                  <a href="#"><img src="{!URLFOR($Resource.Swift_DRT,'images/help-icon.png')}" width="23" height="23" alt="Help" title="Help" /></a>
+                </div>
+            
+                <!-- --------------- First Row Starts --------------- -->
+                <div id="firstRowContentDiv" class="right-section-row right-section-row-borderbottom">                        
+                        <apex:outputPanel id="customerPanel">                            
+                            <dl>
+                                <dt class="bold-font min-width-inputLabel">Customer Name:<span class="red-font">*</span></dt>
+                                <dd class="pading-left">
+                                    <apex:outputPanel id="custDropdownWrapper" rendered="{!NOT(showAsLabel) && (accountOptions.size!=2)}">
+                                        <div class="dropdown-size-customer" id="divCustdropdown">
+                                        <select id="custdropdown" class="combo-01 dropdown-size-customer" onchange="loadMSTDropdown();">
+                                            <apex:repeat var="acct" value="{!accountOptions}">
+                                                <option value="{!acct.value}">{!acct.label}</option>
+                                            </apex:repeat>                                            
+                                        </select>
+                                        </div>                                        
+                                    </apex:outputPanel>
+                                    <input type="hidden" id="hiddenSelectedAccountName" value="{!selectedAccountName}" />                                  
+                                    <apex:outputText id="customer" value="{!selectedAccountName}" rendered="{!showAsLabel || (accountOptions.size==2)}"></apex:outputText>
+                                </dd>
+                            </dl>                            
+                        </apex:outputPanel>
+                        <dl>
+                            <apex:outputPanel id="filterPanel">                                
+                                    <dt class="bold-font min-width-inputLabel">Mask Set Title:<span class="red-font">*</span></dt>
+                                    <dd id="ddMST" class="pading-left">
+                                    <apex:outputPanel id="mstdropdownWrapper" rendered="{!NOT(showAsLabel)}">
+                                        <div class="dropdown-size-second-row" id="divMSTDropdown">
+                                        <select id="mstdropdown" class="combo-01 dropdown-size-second-row" onchange="acfn_loadDRTTypeDropdown();">
+                                            <apex:repeat var="mst" value="{!mstOptions}">
+                                                <option value="{!mst.value}">{!mst.label}</option>                                        
+                                            </apex:repeat>
+                                        </select>
+                                        </div>
+                                        </apex:outputPanel>
+                                        <input type="hidden" id="hiddenBaseMSTName" value="{!baseMSTName}" />                             
+                                        <apex:outputText id="baseMSTLabel" rendered="{!showAsLabel}" value="{!baseMSTName}"/>                        
+                                    </dd>
+                                    <apex:outputPanel id="drtTypePanel">
+                                        <dt class="dt-style-margin bold-font">DRT Type:<span class="red-font">*</span></dt>
+                                        <dd id="ddDRTType" class="no-padding">
+                                        <apex:outputPanel id="drtdropdownWrapper" rendered="{!NOT(showAsLabel)}">
+                                            <div class="dropdown-size-second-row" id="divDrtdropdown">                              
+                                             <select id="drtdropdown" class="combo-01 dropdown-size" onchange="loadTechGeoDropdown();">
+                                                    <apex:repeat var="type" value="{!drtTypeOptions}">
+                                                        <option value="{!type.value}">{!type.label}</option>                                        
+                                                    </apex:repeat>
+                                                </select>                                   
+                                            </div>                                    
+                                        </apex:outputPanel>
+                                        <apex:outputText id="drttype" rendered="{!showAsLabel}" value="{!selectedDrtType}"/>
+                                        </dd>
+                                    </apex:outputPanel>
+                                    <apex:outputPanel rendered="{!showTechGeo && showAsLabel}">
+                                        <dt class="dt-style-margin bold-font min-width-inputLabel" style="width:70px;">Tech Geo:<span class="red-font">*</span></dt>                            
+                                        <dd id="ddTechGeo" class="pading-left">                                                                            
+                                            <apex:outputText id="techGeo" value="{!selectedTechGeo}"/>                      
+                                        </dd>
+                                    </apex:outputPanel>       
+                            </apex:outputPanel> 
+                            <dd>
+                                <input type="button" value="Proceed"  class="dt-style-margin" id="proceedButton" onclick="proceed();"/>
+                            </dd>
+                        </dl>
+                        <apex:outputPanel id="techGeoPanel">
+                            <apex:outputPanel rendered="{!showTechGeo && NOT(showAsLabel)}">
+                                <dl>
+                                    <dt class="bold-font min-width-inputLabel">Tech Geo:<span class="red-font">*</span></dt>                            
+                                    <dd id="ddTechGeo" class="pading-left">                                                                            
+                                        <div class="dropdown-size-second-row" id="divTechGeoDropdown">                                                     
+                                        <select id="techgeodropdown" class="combo-01 dropdown-size-second-row" onchange="removeCreateError();">
+                                            <apex:repeat var="techgeo" value="{!techGeoList}">
+                                                <option value="{!techgeo}">{!techgeo}</option>                                        
+                                            </apex:repeat>
+                                        </select>
+                                        </div>                       
+                                    </dd>
+                                </dl>
+                            </apex:outputPanel>
+                        </apex:outputPanel>
+                        <apex:outputPanel id="drtCreateErrorPanel">
+                            <input type="hidden" id="error" value="{!NOT(proceedActionValid)}"/>                            
+                            <apex:outputPanel id="errorDivPanel" rendered="{!NOT(proceedActionValid)}">
+                                <div class="messages error">{!drtCreateErrorMsg}</div>        
+                            </apex:outputPanel>
+                        </apex:outputPanel>
+                        <div class="clear"></div>
+                    </div>
+                    <!-- --------------- First Row Ends --------------- -->
+                
+                <!-- --------------- Second Row Starts --------------- -->
+                
+                <div id="secondRowContentDiv" class="right-section-row display-none no-padding-top">
+                        <dl id="secondcreatedrt">
+                                <dt class="full-width no-margin-top bold-font">Description:</dt>
+                                <dd class="full-width no-margin-top"><textarea id="description"></textarea></dd> 
+                                <dd class="full-width">
+                                    <input type="button" id="retrofitButton" value="Add Retrofit Layer" class="no-margin"/>
+                                </dd>           
+                        </dl> 
+                        
+                        <!--Start of Error ,warning successfull message section-->
+                        <apex:outputPanel id="errorPanel">
+                            <apex:repeat var="error" value="{!lstDRTErrorMessage}" rendered="{!lstDRTErrorMessage.size>0}">
+                                <div class="messages error">{!error}</div>
+                                <div class="clear"/>
+                            </apex:repeat>
+                        </apex:outputPanel>
+                        <!--End of Error ,warning successfull message section-->
+                        <apex:pageMessages id="drtMessage"/>
+                    
+                        <!--Start of Tables-->
+              <!---- Start of Prime Type Table ----->
+              <apex:outputPanel id="primeDrtPanel">
+                  <div class="advance-datagrid" id="primeTable">
+                    <div class="add-row-container">
+                        <div class="mask-scrooler" id="scroller">
+                           <div class="dummy-cont"></div>
+                        </div>
+                        <div class="main-tbl-wrapper">
+                            <div class="tabl-header-wrapper">
+                      <table class="gen-table main-Tbl header-tbl">
+                           <tbody>
+                               <tr>
+                                <td class="tcell_width_40 no-border-left">Action<input type="checkbox" class="select-all select_all_margin_left"/>
+                                <a href="javascript:void(0);" class="del-tbl-row" id="del-tbl-row">
+                                    <img src="{!URLFOR($Resource.Swift_DRT,'images/Bin.png')}" class="del-img" heigth="14" title="Delete"/>
+                                </a>
+                                </td>
+                                 <td class="tcell-width-20">No.</td>
+                                 <td class="tcell-width-83">Mask Set Title</td>
+                                 <td class="tcell-width-141">Prime Die/<br/>Scribeline Drop-in</td>
+                               </tr>
+                           </tbody>
+                       </table> 
+                            </div>
+                            <div class="clear"></div>
+                                <apex:outputPanel id="mainTablePanel">
+                   <div class="tbl-content-wrapper min-height300">
+                       <table class="gen-table main-Tbl border-bottom" id="main-tbl-content">
+                            <tbody>
+                            <apex:repeat value="{!mainTableList}" var="mainTableRow" rendered="{!mainTableListVisible}">
+                                <apex:outputLabel rendered="{!mainTableRow.isEven}">                            
+                                        <tr class="tcell-height-30" >
+                                            <td class="tcell_width_40 no-border-left"><input type="checkbox" class="float-left"/>
+                                                <input type="hidden" value="{!mainTableRow.PTRFId}"/>
+                                            </td>
+                                            <td class="tcell-width-20 text-align-centre">{!mainTableRow.no}</td>
+                                            <td class="tcell-width-83"><input type="hidden" value="{!baseMST}"/>{!mainTableRow.mst}</td>
+                                            <td class="tcell-width-141">{!mainTableRow.chipName}</td>
+                                        </tr>
+                                </apex:outputLabel>
+                                <apex:outputLabel rendered="{!NOT(mainTableRow.isEven)}">                            
+                                        <tr class="tcell-height-30 alt-row-bgcolor" >
+                                            <td class="tcell_width_40 no-border-left"><input type="checkbox" class="float-left"/></td>
+                                            <td class="tcell-width-20 text-align-centre">{!mainTableRow.no}</td>
+                                            <td class="tcell_width_50"><input type="hidden" value="{!baseMST}"/>{!mainTableRow.mst}</td>
+                                            <td class="tcell-width-141">{!mainTableRow.chipName}</td>
+                                        </tr>
+                                </apex:outputLabel>   
+                                    
+                            </apex:repeat>                          
+                            </tbody>
+                       </table>
+                   </div>
+                            </apex:outputPanel>
+                            <div class="clear"></div>
+                            <div class="spacer"></div>
+                        </div>
+              <div class="mask-layer-tbl-wrapper">                  
+                <div class="mask-tbl-hdr-cont" id="mask-tbl-hdr-contId">
+                </div>
+                <div class="clear"></div>
+                <div class="mask-tbl-btm-container min-height300" id="mask-tbl-btm-containerId">
+                </div>
+              </div>
+                </div>
+            </div>
+        </apex:outputPanel>
+        <div class="table-footer" id="prime-footer">
+            <a href="javascript:void(0);" class="add-row-btn"><img src="{!URLFOR($Resource.Swift_DRT,'images/Addrow.png')}" align="absmiddle"/>Add Row</a>
+        </div>
+            <div class="clear"></div>
+        <!--Start of Frame Layer Table-->
+        <div id="frameLayerTable">              
+            <table class="data-table" id="frameDRTTable">   
+                <thead class="thead_height_68"></thead>     
+                    <tbody>             
+                    </tbody>                
+            </table>
+        </div>  
+        <div class="table-footer" id="frame-footer">
+            <a href="javascript:void(0);" class="add-row-btn">
+            <img src="{!URLFOR($Resource.Swift_DRT,'images/Addrow.png')}" align="absmiddle"/>Add Row</a>
+        </div>
+        <!--End of Frame Layer Table-->
+        <!--End of Tables-->                 
+        <!--Start of Buttons-->
+        <div class="button-holder">
+            <input id="saveDraftButton" type="button"  value="Save as Draft" onClick="prepareFormData('Create','saveAsDraft');"/>
+            <input id="saveActiveButton" type="button"  value="Save & Activate" onClick="prepareFormData('Create','saveAndActivate');"/>
+            <input class="inputDiscardButton" type="button"  value="Discard" onclick="customAlert('Confirm discard?','createDiscard');" />
+        </div>
+        <!--End of Buttons-->             
+    </div>
+    <!-- --------------- Second Row Ends --------------- -->        
+                    
+    <!-- --------------- Add Retrofit Layer Starts --------------- -->
+    <div id="retrofitContentDiv" class="right-section-row display-none">
+        <apex:outputPanel id="maskLayerPanel">
+            <apex:outputPanel rendered="{!maskLayerList.size>0}">
+                <div class="block-element">          
+                    <table class="data-table" id="retrofitTable">
+                    <thead>
+                      <tr>
+                        <th class="tcell_width_25 checkboxCheck" id="retrofitCheckbox"><input type="checkbox"/></th>
+                        <th class="tcell_width_50">No</th>
+                        <th class="tcell_width_85"><span>Mask Layer</span><span class="sorter"><a href="javascript:void(0);" title="Sort in ascending order" class="sortArrow upArrow"></a><a href="javascript:void(0);" title="Sort in descending order" class="sortArrow downArrow"></a></span></th>
+                        <th class="tcell_width_172"><span>Past Tapeout Mask Rev</span><span class="sorter"><a href="javascript:void(0);" title="Sort in ascending order" class="sortArrow upArrow"></a><a href="javascript:void(0);" title="Sort in descending order" class="sortArrow downArrow"></a></span></th>
+                        <th class="tcell_width_180"><span>Past Tapeout ROM Code</span><span class="sorter"><a href="javascript:void(0);" title="Sort in ascending order" class="sortArrow upArrow"></a><a href="javascript:void(0);" title="Sort in descending order" class="sortArrow downArrow"></a></span></th>  
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <apex:variable var="color" value="{!1}"/>
+                      <apex:repeat value="{!maskLayerList}" var="maskLayer">
+                          <apex:outputLabel rendered="{!mod(color,2)!=0}">
+                              <tr>
+                                <td><input type="checkbox" /></td>
+                                <td>{!maskLayer.no}</td>
+                                <td>{!maskLayer.layerNo}</td>
+                                <td>{!maskLayer.pastMaskRev}</td>
+                                <td>{!maskLayer.pastROMCode}</td>
+                              </tr>
+                          </apex:outputLabel>
+                          <apex:outputLabel rendered="{!mod(color,2)==0}">
+                              <tr class="alt-row-bgcolor">
+                                <td><input type="checkbox" /></td>
+                                <td>{!maskLayer.no}</td>
+                                <td>{!maskLayer.layerNo}</td>
+                                <td>{!maskLayer.pastMaskRev}</td>
+                                <td>{!maskLayer.pastROMCode}</td>
+                              </tr>
+                          </apex:outputLabel>
+                          <apex:variable var="color" value="{!color+1}"/>
+                      </apex:repeat>
+                    </tbody>
+                  </table>                      
+                </div>
+                <input type="button" value="Add" name="retrofit_btn" class="button-style" id="retroAddButton"/> 
+                <input type="button"  value="Discard" onclick="discardRetroTable();"/>
+            </apex:outputPanel>
+            <apex:outputPanel rendered="{!maskLayerList.size==0}">
+                <div class="messages error">{!noLayerAvailableErrorMsg}</div>
+                <br/>
+                <br/>
+                <input type="button"  value="Discard" onclick="discardRetroTable();"/>
+            </apex:outputPanel>            
+        </apex:outputPanel>                              
+    </div>
+    <!-- --------------- Add Retrofit Layer Ends --------------- -->
+        <div class="clear"></div>                 
+        </div>
+        <div class="clear"></div> 
+    </div>
+    <!--End of Wrapper div-->
+    <div id="maskLayerHeaderHiddenWrapper" style="display:none;">    
+    <apex:outputPanel id="maskLayerHeaderPanel">
+                <apex:repeat value="{!lstSelectedMaskLayer}" var="m">
+                <div class="mask-tbl-header-wrapper">
+                    <table class="gen-table mask-tbl header-tbl table-height-74">
+                        <tbody>
+                            <tr >
+                                <td colspan="2" class="tcell-width-150">
+                                    <span class="table-lable"><strong> Mask Layer : {!m.layerNo}</strong></span>
+                                    <a class="del-mask-layer" href="javascript:void(0);">
+                                        <img height="14" class="delImg" src="{!URLFOR($Resource.Swift_DRT,'images/Bin.png')}"/>
+                                    </a>
+                                    <input type="hidden"  id="hiddenLayerNo" value="{!m.layerNo}"/>                                    
+                                </td>
+                            </tr>                            
+                            <tr>
+                                <td class="tcell_width_75 no-padding text-align-centre">
+                                    <input type="text"  id="" maxlength="2" class="tbl-txt-box maskRevTxt display-none"  value=""/>
+                                    <a id="rm-{!m.htmlId}" class="combo-anchor float-none label-anchor" href="javascript:void(0);">---</a>
+                                    <input type="hidden"  id="hiddenMaskRev" value="{!m.maskRev}"/>
+                                    <a href="javascript:void(0);" class="float-right undoAnchorLable display-none" id="">
+                                        <img src="{!URLFOR($Resource.Swift_DRT,'images/undo.gif')}" title="undo" class="undoImg"/>
+                                    </a>
+                                         <a class="copy-btn" href="javascript:void(0);">
+                                            <img class="copy-img" src="{!URLFOR($Resource.Swift_DRT,'images/copy.png')}"/>
+                                        </a>
+                                </td>
+                                <td class="tcell_width_75 no-padding text-align-centre">
+                                    <input type="text" id="" maxlength="5" class="tbl-txt-box romCodeTxt display-none" value=""/>
+                                    <a id="rr-{!m.htmlId}" class="combo-anchor float-none label-anchor" href="javascript:void(0);">---</a>
+                                    <input type="hidden"  id="hiddenROMCode" value="{!m.romCode}"/>
+                                    <a href="javascript:void(0);" class="float-right undoAnchorLable display-none" id="">
+                                        <img src="{!URLFOR($Resource.Swift_DRT,'images/undo.gif')}" title="undo" class="undoImg"/>
+                                    </a>
+                                        <a class="copy-btn" href="javascript:void(0);">
+                                            <img class="copy-img" src="{!URLFOR($Resource.Swift_DRT,'images/copy.png')}"/>
+                                        </a>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="tcell_width_75" style="text-align:left;">Mask Rev</td>
+                                <td class="tcell_width_75" style="text-align:left;">ROM Code</td>
+                            </tr>
+                       
+                        </tbody>
+                    </table>
+                </div>
+                </apex:repeat>                
+            </apex:outputPanel>
+    
+        </div>
+    <div id="maskLayerContentHiddenWrapper" style="display:none;">
+        <apex:outputPanel id="maskLayerContentPanel"> 
+                <apex:repeat value="{!lstSelectedMaskLayer}" var="layer" >        
+                    <div class="mask-tbl-content-wrapper min-height300">
+                        <table class="gen-table mask-tbl border-bottom">
+                            <tbody>                            
+                                <apex:repeat value="{!mainTableChipList}" var="chip" >
+                                        <apex:variable var="keyChip" value="{!chip['chipName']+'-'+chip['mst']}"/>
+                                        <apex:variable var="cell" value="{!mapDisplayedMaskLayerData[layer.layerNo+'-'+layer.maskRev+'-'+layer.romCode][keyChip]}"/>
+                                        <tr class="tcell-height-30 {!cell['colorClass']}">
+                                            <td class="tcell_width_75">
+                                                <a href="javascript:void(0);" onclick="showCombobox(this,'m-{!cell['htmlId']}',event);" class="combo-anchor">{!cell['MaskRev']}</a>                                    
+                                            </td>
+                                            <td class="tcell_width_75">
+                                                <a href="javascript:void(0);" onclick="showCombobox(this,'r-{!cell['htmlId']}',event);" class="combo-anchor">{!cell['RomCode']}</a>
+                                            </td>
+                                         </tr>
+                             </apex:repeat>
+                             </tbody>
+                        </table>
+                    </div>
+                </apex:repeat> 
+            </apex:outputPanel>
+    </div>
+    <apex:outputPanel id="hiddenNewRowPanel">
+        <div id="hiddenNewRow" class="display-none">
+            <div id="mainTableRow">
+                <table>
+                    <tbody>
+                        <tr class="tcell-height-30">
+                            <td class="tcell_width_40"><input type="checkbox" class="float-left"/></td>
+                            <td class="tcell-width-20 text-align-centre"></td>
+                            <td class="tcell-width-83">
+                                <select class="dropdown-size add-row-mst">
+                                    <apex:repeat var="mst" value="{!mstOptions}">
+                                        <option value="{!mst.value}">{!mst.label}</option>
+                                    </apex:repeat>
+                                </select>
+                            </td>
+                            <td class="tcell-width-141">
+                                <div class="add-row-chip"><select class="combo-01 width-chip"></select></div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div id="retroTableRow">
+                <table>
+                    <tbody>
+                        <tr class="tcell-height-30">
+                            <td class="tcell_width_75">
+                                <a href="javascript:void(0);" class="combo-anchor">---</a>
+                            </td>
+                            <td class="tcell_width_75">
+                                <a href="javascript:void(0);" class="combo-anchor">---</a>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </apex:outputPanel>
+    <input type="hidden" id="hiddenMaskLayerJSON" value=""/>
+    <apex:outputPanel id="hiddenMSTPanel">    
+        <input type="hidden" id="hiddenMSTsAddRow" value="{!addRowMSTString}"/>
+    </apex:outputPanel>
+  
+    <apex:inputHidden id="hiddenSelectedAccount" value="{!selectedAccount}"/>
+    <apex:inputHidden id="hiddenSelectedDrtType" value="{!selectedDrtType}"/>
+    <apex:inputHidden id="hiddenDescription" value="{!description}"/>
+    <apex:inputHidden id="hiddenBaseMST" value="{!baseMST}"/>
+    <apex:inputHidden id="hiddenTechGeo" value="{!selectedTechGeo}"/>
+        
+    <apex:inputHidden id="hiddenMainTableJSON" value="{!mainTableJSON}"/>
+    <apex:inputHidden id="hiddenMaskLayerHeaderJSON" value="{!maskLayerHeaderJSON}"/>
+    <apex:inputHidden id="hiddenMaskLayerContentJSON" value="{!maskLayerContentJSON}"/>
+    
+    <apex:inputHidden id="hiddenFrameTableJSON" value="{!frameTableJSON}"/>
+        
+    <!-- error json -->
+    <apex:outputPanel id="errorJSON">
+        <apex:inputHidden id="mainTableErrorJSON" value="{!mainTableErrorJSON}"/>
+        <apex:inputHidden id="maskLayerErrorJSON" value="{!maskLayerErrorJSON}"/>
+        <apex:inputHidden id="maskLayerContentErrorJSON" value="{!maskLayerContentErrorJSON}"/>
+        <apex:inputHidden id="frameTableErrorJSON" value="{!frameTableErrorJSON}"/>
+    </apex:outputPanel>
+    <script src="{!URLFOR($Resource.Swift_DRT,'js/jquery.min.js')}"></script>
+        
+    <apex:inputCheckbox id="hiddenNotSendEmail" value="{!notSendEmail}" style="display:none;"/>
+    
+    <script>      
+        copyImgUrl = "{!URLFOR($Resource.Swift_DRT,'images/copy.png')}";
+        binImgUrl = "{!URLFOR($Resource.Swift_DRT,'images/Bin.png')}";
+        undoImgUrl= "{!URLFOR($Resource.Swift_DRT,'images/undo.gif')}";
+        var swiftCommunityUrl = "{!$label.SWIFT_COMMUNITY_URL}";
+        
+        paramFetchChipNames = "DRTCreateExtn.fetchChipNames";
+        paramloadLayerDropdownRemoteAction = "DRTCreateExtn.fetchLayerNos";
+        paramloadMaskRevROMCodeDropdownRemoteAction = "DRTCreateExtn.fetchMaskRevROMCode";
+        paramChipLayerComboRemoteFunction = "DRTCreateExtn.fetchChipLayerComboData";
+        paramNewChipLayerRowRemoteFunction = "DRTCreateExtn.fetchNewChipLayerData";
+        
+        function removeCreateError() {
+            jQuery('#error').val(false);
+            jQuery('[id$=errorDivPanel] div').html("");
+        }
+        function removeTechGeoPanel() {
+            jQuery('[id$=techGeoPanel]').html("");
+            loadTechGeoDropdown();
+        }
+        /*
+        var mHeaderSpanId = jQuery('#maskLayerHeaderHiddenWrapper span').prop('id');
+        var mContentSpanId = jQuery('#maskLayerContentHiddenWrapper span').prop('id');
+        var target1 = '<span id="'+mHeaderSpanId+'"></span>';
+        var target2 = '<span id="'+mContentSpanId+'"></span>';
+        jQuery('#maskLayerHeaderHiddenWrapper span').prop('id',mHeaderSpanId+1);
+        jQuery('#maskLayerContentHiddenWrapper span').prop('id',mContentSpanId+1);
+        var spanIdCounter = 1;*/
+        function setRefreshTarget() {
+            jQuery('#mask-tbl-hdr-contId span:last-child').prop('id',mHeaderSpanId+spanIdCounter);
+            jQuery('#mask-tbl-btm-containerId span:last-child').prop('id',mContentSpanId+spanIdCounter);          
+            jQuery('#mask-tbl-hdr-contId').append(target1);
+            jQuery('#mask-tbl-btm-containerId').append(target2); 
+            spanIdCounter++;           
+        }
+        function finishMaskLayerAddition1() {
+            /*
+            var maskLayerHeaderHTML = jQuery('#maskLayerHeaderHiddenWrapper span').html();
+            var maskLayerContentHTML = jQuery('#maskLayerContentHiddenWrapper span').html();
+            jQuery('#mask-tbl-hdr-contId').append(maskLayerHeaderHTML);
+            jQuery('#mask-tbl-btm-containerId').append(maskLayerContentHTML);
+            */
+            
+            SwiftGen.maskTblHdrWidth=jQuery(".mask-tbl-header-wrapper").width();
+            SwiftGen.totHdrCuount=jQuery(".mask-tbl-hdr-cont .mask-tbl-header-wrapper").length;
+            SwiftGen.modifyTableFooter();
+            SwiftGen.init();            
+            if (jQuery(".mask-layer-tbl-wrapper").css("visibility")=="hidden") {
+                jQuery(".mask-layer-tbl-wrapper").css("visibility","visible");
+            }
+            SwiftGen.rowHover();                        
+            SwiftGen.removeLeftBorder();           
+            jQuery(".mask-layer-tbl-wrapper").css("height","auto");
+            if(jQuery.browser.msie) {
+                jQuery(".tbl-txt-box").css("height","17px");
+            }                        
+            try {parent.iframeLoaded();}catch(e){};
+        }
+        
+        //This function is called from drt.js in Swift_DRT static resource - after user clicks 'Save & Activate' button
+        function acfn_saveAndActivate(){
+            if('{!isGFEmployee}'=='true'){
+                customAlertExt(
+                    'Do you want to send email to customers?', 
+                    'hiddenNotSendEmail',
+                    function(){//Send email
+                        jQuery("[id$=hiddenNotSendEmail]").attr('checked',false);
+                        acfn_saveAndActivate2();
+                    }, 
+                    function(){//Do not send email
+                        jQuery("[id$=hiddenNotSendEmail]").attr('checked',true);
+                        acfn_saveAndActivate2();
+                    }
+                );
+            }else{
+                acfn_saveAndActivate2();
+            }
+        }
+        
+        var isShipped = {!hasShippedLayer};//swgp-269
+        
+    </script>    
+    <script src="{!URLFOR($Resource.Swift_DRT,'js/jquery.scombobox.min.js')}"></script>
+    <script src="{!URLFOR($Resource.Swift_DRT,'js/jquery.loader.min.js')}"></script>
+    <script src="{!URLFOR($Resource.Swift_DRT,'js/advancedDataGrid.js')}"></script>
+    <script src="{!URLFOR($Resource.Swift_DRT,'js/common-script.js')}"></script>
+    <script src="{!URLFOR($Resource.Swift_DRT,'js/drt.js')}"></script> 
+    <script src="{!URLFOR($Resource.Swift_DRT,'js/sort.js')}"></script>
+    <script src="{!URLFOR($Resource.Swift_DRT,'js/jquery-ui.min.js')}"></script>
+    <script src="{!URLFOR($Resource.Swift_Common_Functions)}"></script>
+    
+    <apex:actionStatus id="loadMSTDropdownStatus"  onstart="showLoader('gf-bigcircle');" />
+    <apex:actionStatus id="loadDRTTypeDropdownStatus"  onstart="showLoader('gf-bigcircle');" />
+    <apex:actionStatus id="loadTechGeoDropdownStatus"  onstart="showLoader('gf-bigcircle');" />
+    <apex:actionStatus id="proceedStatus"  onstart="showLoader('gf-bigcircle');" onstop="hideLoader();" />
+    <apex:actionStatus id="getMaskLayerStatus"  onstart="showLoader('gf-bigcircle');" onstop="hideLoader();" />
+    <apex:actionStatus id="addMaskLayerStatus" onstart="showLoader('gf-bigcircle');"></apex:actionStatus>
+    <apex:actionStatus id="saveDraftStatus"  onstart="showLoader('gf-savedraft');" onstop="hideLoader();enableSaveButton('saveDraftButton');" />
+    <apex:actionStatus id="saveActiveStatus" onstart="showLoader('gf-saveactivate');" onstop="hideLoader();enableSaveButton('saveActiveButton');" />
+    
+    <apex:actionFunction name="acfn_loadMSTDropdown" action="{!populateMSTOptions}" status="loadMSTDropdownStatus" reRender="mstdropdownWrapper" oncomplete="SwiftGen.includeCustomCombo('mstdropdown');removeTechGeoPanel();removeCreateError();hideLoader();"/> 
+    <apex:actionFunction name="acfn_loadDRTTypeDropdown" action="{!populateDrtTypeOptions}" status="loadDRTTypeDropdownStatus" reRender="drtTypePanel" oncomplete="SwiftGen.includeCustomCombo('drtdropdown');removeTechGeoPanel();removeCreateError();hideLoader();"/> 
+    <apex:actionFunction name="acfn_loadTechGeoDropdown" action="{!popuateTechGeoOptions}" status="loadTechGeoDropdownStatus" reRender="techGeoPanel" oncomplete="SwiftGen.includeCustomCombo('techgeodropdown');removeCreateError();hideLoader();"/> 
+    <apex:actionFunction name="acfn_refreshTables" action="{!populateChipDetails}" status="proceedStatus" reRender="drtNameHeader,customerPanel,filterPanel,techGeoPanel,mainTablePanel,hiddenMSTPanel,hiddenNewRowPanel,drtCreateErrorPanel,drtMessage" oncomplete="renderSecondRowDiv();SwiftGen.rowHover();SwiftGen.setInitialVScroll();"/>
+    <apex:actionFunction name="acfn_getMaskLayers" action="{!populateMaskLayers}" status="getMaskLayerStatus" reRender="maskLayerPanel" oncomplete="bindSort();showRetroTable();SwiftGen.rowHover();parent.iframeLoaded();"/>
+    <apex:actionFunction name="acfn_saveAsDraft" action="{!saveAsDraft}" oncomplete="highlightError();parent.iframeLoaded();SwiftGen.setHorzScrollBar();" status="saveDraftStatus" reRender="errorJSON,errorPanel,drtMessage,drtNameHeader" />
+    <apex:actionFunction name="acfn_saveAndActivate2" action="{!saveAsActivate}" oncomplete="highlightError();parent.iframeLoaded();SwiftGen.setHorzScrollBar();" status="saveActiveStatus" reRender="errorJSON,errorPanel,drtMessage,drtNameHeader"/>  
+    <apex:actionFunction name="redirectToCreate" action="{!refreshPage}" onbeforedomupdate="hideLoader();"/>    
+    <apex:actionFunction name="acfn_addMaskLayers" action="{!addMaskLayers}" reRender="maskLayerHeaderPanel,maskLayerContentPanel"  status="addMaskLayerStatus" oncomplete="finishMaskLayerAddition();hideLoader();" immediate="true">
+        <apex:param name="paramSelectedMaskLayer" value="" assignTo="{!selectedMaskLayerJSON}"/>
+        <apex:param name="paramChipList" value="" assignTo="{!mainTableChipListJSON}"/>
+    </apex:actionFunction>
+</apex:form>  
+</apex:page>

@@ -1,0 +1,136 @@
+<!--
+ Type Name: VFSplitPageofSalesOrderSchedule
+ Author: Cognizant Technology Solutions
+ Created Date: 3-Nov-2016
+ Reason: This page is used for splitting the sales order schedule records and creating early warning
+ Change History: 
+ -->
+
+
+<apex:page tabStyle="Sales_Order_Schedule__c" controller="ClsSplitSalesOrderSchedule">
+    <script>
+        function JS_FindExtReason(arg)
+        {
+            var i = arg.split('ewtable:')[1].split(':internalReason')[0];
+            AF_findExternalReasonCode(i);
+        }
+        
+        function JS_DelRow(arg)
+        {
+            var i = arg.split('ewtable:')[1].split(':delrow')[0];
+            AF_DelRow(i);
+        }
+    </script>
+    <apex:form >
+        <apex:actionfunction name="AF_findExternalReasonCode" action="{!findExternalReasonCode}" rerender="pbEWS">
+            <apex:param name="index" value=""/>
+        </apex:actionfunction>
+        <apex:actionfunction name="AF_DelRow" action="{!DelRow}" rerender="pbEWS" immediate="true">
+            <apex:param name="index" value=""/>
+        </apex:actionfunction>
+        <apex:pageBlock title="{!salesOrder.Name}">
+            <apex:pageMessages id="showmsg"></apex:pageMessages>
+            <apex:pageBlockButtons >
+                <apex:commandButton action="{!AddRow}" value="Add Row" rendered="{!isEditable}"/>
+                <apex:commandButton action="{!save}" value="Save" rendered="{!isEditable}"/>
+                <apex:commandButton value="Cancel" action="{!cancel}" immediate="true"/>
+            </apex:pageBlockButtons>
+            
+            <apex:pageBlockSection >
+                <apex:outputField value="{!salesOrder.Name}"/>
+                <apex:outputField value="{!salesOrder.SalesOrder_Account__c}"/>
+                <apex:outputField value="{!salesOrder.Confirmed_Date__c}"/>
+                <apex:outputField value="{!salesOrder.Cum_Cf_Qty__c}"/>
+                <apex:outputField value="{!salesOrder.EWS_FLAG__c}"/>
+            </apex:pageBlockSection> 
+            
+            <apex:pageBlock title="Early Warning Status" id="pbEWS">  
+                 <apex:pageBlockSection title="Edit Section">
+                     <apex:outputPanel rendered="{!isEditable}">
+                         <apex:pageBlockTable value="{!Earlywarninglist}" var="ew" id="ewtable">
+                             <apex:column value="{!ew.Sales_Order1__c}" headerValue="Sales Order" />
+                             <apex:column headerValue="Available Quantity"> 
+                                <apex:inputField value="{!ew.Available_Quantity__c}" style="width:30px" rendered="{!If(ew.Is_Delivered__c ==false,true,false)}"/>
+                                <apex:outputField value="{!ew.Available_Quantity__c}" style="width:30px" rendered="{!If(ew.Is_Delivered__c ==True,true,false)}"/>
+                              </apex:column>
+                              <apex:column headerValue="Available Date" >
+                                <apex:inputField value="{!ew.AVAIL_DATE__c }" rendered="{! If(ew.Is_Delivered__c ==false,true,false)}"/>
+                                <apex:outputField value="{!ew.AVAIL_DATE__c }" rendered="{!If(ew.Is_Delivered__c ==True,true,false)}"/>
+                              </apex:column>
+                              
+                              <!--<apex:column headerValue="Is Delivered">
+                                <apex:outputField value="{!ew.Is_Delivered__c}"/>
+                              </apex:column>-->
+                              <apex:column headerValue="EWS Flag">
+                                <apex:inputField value="{!ew.EWS_FLAG__c}" rendered="{! If(ew.Is_Delivered__c ==false,true,false)}"/>
+                               <apex:outputField value="{!ew.EWS_FLAG__c}" rendered="{!If(ew.Is_Delivered__c ==True,true,false)}"/>
+                              </apex:column>
+                              <apex:column headerValue="Internal Reason Code">
+                              
+                               <apex:selectList value="{!ew.Internal_Reason_Code__c}" multiselect="false"  size="1" id="internalReason" onchange="JS_FindExtReason(this.id);">
+                                    <apex:selectOptions value="{!InternalComments}" />
+                               </apex:selectList>
+                              </apex:column>
+                              
+                              <apex:column headerValue="External Reason code">
+                                    <apex:outputtext value="{!ew.Extrnal_Reason_Code__c}"/>
+                              </apex:column>
+                              
+                              <apex:column headerValue="Internal Comments">
+                                <apex:inputText value="{!ew.Internal_Comments__c}" rendered="{! If(ew.Is_Delivered__c ==false,true,false)}"/>
+                                <apex:outputField value="{!ew.Internal_Comments__c}" rendered="{!If(ew.Is_Delivered__c ==True,true,false)}"/>
+                              </apex:column>
+                              <apex:column headerValue="External Comments">
+                                <apex:inputText value="{!ew.External_Comments__c}" rendered="{! If(ew.Is_Delivered__c ==false,true,false)}"/>
+                                <apex:outputField value="{!ew.External_Comments__c}" rendered="{!If(ew.Is_Delivered__c ==True,true,false)}"/>
+                              </apex:column>
+                             
+                              <apex:column headervalue="Action">
+                                  <apex:outputPanel rendered="{! If(ew.Is_Delivered__c ==false,true,false)}" id="delrow" onclick="JS_DelRow(this.id);">
+                                      <a style="cursor:pointer;">Del Row</a>
+                                  </apex:outputPanel>
+                               </apex:column> 
+                           
+                         </apex:pageBlockTable>
+                     </apex:outputPanel>
+                     <apex:outputPanel rendered="{!!isEditable}">
+                        <apex:pageBlockTable value="{!Earlywarninglist}" var="ew">
+                             <apex:column value="{!ew.Sales_Order1__c}" headerValue="Sales Order" />
+                             <apex:column headerValue="Available Quantity"> 
+                                <apex:outputField value="{!ew.Available_Quantity__c}" style="width:30px" />
+                              </apex:column>
+                              <apex:column headerValue="Available Date" >
+                                <apex:outputField value="{!ew.AVAIL_DATE__c }" />
+                              </apex:column>
+                              
+                              <!--<apex:column headerValue="Is Delivered">
+                                <apex:outputField value="{!ew.Is_Delivered__c}"/>
+                              </apex:column>-->
+                              <apex:column headerValue="EWS Flag">
+                               <apex:outputField value="{!ew.EWS_FLAG__c}"/>
+                              </apex:column>
+                              <apex:column headerValue="Internal Reason Code">
+                              
+                               {!ew.Internal_Reason_Code__c}
+                               
+                              </apex:column>
+                              
+                              <apex:column headerValue="External Reason code">
+                                    <apex:outputtext value="{!ew.Extrnal_Reason_Code__c}"/>
+                              </apex:column>
+                              
+                              <apex:column headerValue="Internal Comments">
+                                <apex:outputField value="{!ew.Internal_Comments__c}" />
+                              </apex:column>
+                              <apex:column headerValue="External Comments">
+                                <apex:outputField value="{!ew.External_Comments__c}" />
+                              </apex:column>
+                         </apex:pageBlockTable>    
+                     </apex:outputPanel>
+               </apex:pageBlockSection>
+              </apex:pageBlock>   
+            
+           
+           </apex:pageBlock>
+    </apex:form>
+</apex:page>

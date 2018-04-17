@@ -1,0 +1,143 @@
+<apex:page controller="ROS_DisposalZipExportController" showHeader="true" sidebar="true">
+    <c:LoadingStatusSpinner />
+    
+    <head>
+        <script type="text/javascript" src="/soap/ajax/26.0/connection.js"> </script>
+        <apex:includeScript value="{!URLFOR($Resource.jquery, '/js/jquery-1.8.3.min.js')}"/>
+        <apex:includeScript value="{!URLFOR($Resource.JS_ZIP, '/jszip.js')}"/>
+        <apex:includeScript value="{!URLFOR($Resource.JS_ZIP, '/jszip-load.js')}"/>
+        <apex:includeScript value="{!URLFOR($Resource.JS_ZIP, '/jszip-deflate.js')}"/>
+        <apex:includeScript value="{!URLFOR($Resource.JS_ZIP, '/jszip-inflate.js')}"/>
+
+        <script type="text/javascript">
+            var j$ = jQuery.noConflict();
+
+            j$(document).ready(function() {
+                //Hide upload button
+                var uploadZipButton = j$('input[id$=uploadZipButton]');
+                uploadZipButton.css('display', 'none');
+                
+                //Instantiate JSZip
+                var zipFile = new JSZip();
+    
+                //Intercept click event
+                j$('a[id=generateZipLink]').click(function() {
+                    
+                    var showLoadingPanel = j$('#loadingDivNew');
+                    showLoadingPanel.css('display', 'block');
+                
+                    var checkedSize = j$("input[name='att_ids_group[]']:checked").size();
+                    var count = 0;
+        
+                    //Iterate over each selected file               
+                    j$("input[name='att_ids_group[]']:checked").each(function() {
+                    //Refresh zip process status
+                    j$('span[id$=zipStatus]').text('Getting file...');
+        
+                    //Get file using javascript remoting
+                    Visualforce.remoting.Manager.invokeAction(
+                    '{!$RemoteAction.ROS_DisposalZipExportController.getAttachment}',
+                    j$(this).val(),
+                    function(result, event){
+                    if (event.status) {
+                    //Refresh zip process status
+                    j$('span[id$=zipStatus]').text('Compressing file "' + result.attName + '"...');
+        
+                    count++;
+        
+                    //Add the file
+                    compressFile(zipFile, result.attName, result.attEncodedBody);
+        
+                    //Once all the selected files have been compressed
+                    if (count == checkedSize) {
+                    //Refresh zip process status
+                    j$('span[id$=zipStatus]').text('Generating zip file...');
+        
+                    //Send form
+                    sendZip(zipFile);
+                    }
+                    } else if (event.type === 'exception') {
+                    alert('Exception: ' + event.message);
+                    } else {
+                    alert('Message: ' + event.message);
+                    }
+                    }, 
+                    {escape: true}
+                    );//End getAttachment
+        
+                    });//end each selected attId
+                });//end click
+    
+                //Compress one single file
+                function compressFile(zipFile, name, data) {
+                    zipFile.file(name, data, {base64:true});
+                }
+    
+                //Generate and upload zip file
+                function sendZip(zipFile) {
+                    var data = zipFile.generate();
+        
+                    var zipContent = j$('input[id$=zipContent]');
+                    zipContent.val(data);
+        
+                    //Refresh zip process status
+                    j$('span[id$=zipStatus]').text('Uploading zip file...');
+        
+                    var uploadZipButton = j$('input[id$=uploadZipButton]');
+                    uploadZipButton.trigger('click');
+                }
+            });
+             
+             function selectAllCheckboxes(obj,receivedInputID){
+            var inputCheckBox = document.getElementsByTagName("input");
+            for(var i=0; i<inputCheckBox.length; i++){
+                if(inputCheckBox[i].id.indexOf(receivedInputID)!=-1){
+                    inputCheckBox[i].checked = obj.checked;
+                }
+            }
+        }
+        </script>
+    </head>
+    
+    <div id="loadingDivNew" class="loadingDiv" style="display:none;">
+        <span id="loadingHolder" class="loadingHolder">
+            <img class="loadingImage" title="Loading...Data...." alt="Loading... " src="{!$Resource.SFDC_Loading}"/>
+            <span class="loadingDescription">Loading...</span>
+        </span>
+    </div>
+
+    <apex:form id="uploadZipForm" enctype="multipart/form-data">
+        <apex:pageMessages ></apex:pageMessages>
+        <apex:inputHidden id="zipContent" value="{!zipContent}" />
+
+        <apex:commandButton id="uploadZipButton" value="Upload" action="{!uploadZip}" reRender="thePageBlock" />
+
+        <apex:pageBlock id="thePageBlock" title="Disposal Certificates">
+            <apex:pageBlockTable value="{!attachments}" var="att">
+                <apex:column >
+                  <apex:facet name="header">     
+                          <apex:inputCheckbox onclick="selectAllCheckboxes(this,'inputId')"/>
+                        </apex:facet>
+                    <input type="checkbox" name="att_ids_group[]" value="{!att.Id}" checked="true" id="inputId"/>
+                </apex:column>
+                <apex:column value="{!att.Name}"/>
+                <apex:column value="{!att.BodyLength} bytes" headerValue="Size"/>
+            </apex:pageBlockTable>
+        </apex:pageBlock>
+
+        <apex:outputPanel rendered="{!attachments.size>0}">
+            <apex:outputLabel for="zipFileName" value="File name: " />
+            <apex:inputText id="zipFileName" value="{!zipFileName}" />.zip        
+            <a id="generateZipLink" href="#" class="btn" style="text-decoration:none;padding:4px;">Generate Zip</a>
+            <apex:commandButton action="{!cancelReturn}" value="Delete and Return" status="LoadingStatusSpinner" rerender="dummy"/>
+            <apex:commandButton action="{!ReturnMethod}" value="Return" status="LoadingStatusSpinner" rerender="dummy"/>
+            
+            <p>
+                <span>Status: </span>
+                <span id="zipStatus"></span>
+            </p>
+        </apex:outputPanel>
+
+    </apex:form>
+
+</apex:page>

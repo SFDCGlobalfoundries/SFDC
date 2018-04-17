@@ -1,0 +1,130 @@
+<apex:page standardController="Escalation_Complaint__c" standardStylesheets="true" id="etpage" extensions="CXM_escalationTeamSelectController" showChat="false" showHeader="false">
+    <script>
+        window.onload = showHide;
+        function showHide(){
+            if( (typeof sforce != 'undefined') && (sforce != null) ) {
+                setUrl('sf1');
+            }
+            else {
+                setUrl('desktop');
+            }
+        }
+
+        function selectAll(cb,cbid){
+            var inputElem = document.getElementsByTagName("input");                    
+            for(var i=0; i<inputElem.length; i++)
+            {            
+                 if(inputElem[i].id.indexOf(cbid)!=-1){                                       
+                    inputElem[i].checked = cb.checked;
+                }
+            }
+        }
+    </script>
+    <apex:outputPanel id="scriptop" rendered="{!refreshFlag}">
+        <script>
+            var navigateURL = '/{!custReq.id}';
+            if( (typeof sforce != 'undefined') && (sforce != null) ) {
+                sforce.one.navigateToURL(navigateURL);
+            }
+            else {
+                window.top.location=navigateURL;
+            }
+        </script>
+    </apex:outputPanel>
+    <apex:form id="etform1">
+        <apex:pageMessages id="etmsg"/>
+        <apex:outputPanel id="mainpanel">
+        <apex:pageBlock title="Customer Action Team" tabStyle="Escalation_Complaint__c">
+            <apex:pageBlockButtons location="top">
+                <apex:commandButton value="Save" action="{!saveRecCustomers}"/>
+            </apex:pageBlockButtons>
+            <apex:outputPanel id="etop1" layout="block" style="overflow:auto;height:150px;">
+                <apex:pageBlockTable value="{!customerActionWrapperList}" var="dl" width="100%">
+                    <apex:column >
+                        <apex:facet name="header">
+                            <apex:inputCheckbox id="checkall" value="{!dl.allSelected}" onclick="selectAll(this,'checkone');"/>
+                        </apex:facet>
+                        <apex:inputcheckbox id="checkone" value="{!dl.isSelected}"/>
+                    </apex:column>
+                    <apex:column headerValue="Name" value="{!dl.con.Name}"/>
+                    <apex:column headerValue="Email" value="{!dl.con.Email}" />
+                    <apex:column headerValue="Manager" value="{!dl.con.ReportsTo.Name}" />
+                    <apex:column headerValue="Level">
+                        <apex:selectList value="{!dl.level}" size="1" >
+                            <apex:selectOptions value="{!dl.levelOptions}"/>
+                        </apex:selectList>
+                    </apex:column>
+                </apex:pageBlockTable>
+            </apex:outputPanel>
+        </apex:pageBlock>
+        
+        <apex:pageBlock id="intEscTeam" title="Internal Escalation Team" tabStyle="Escalation_Complaint__c">
+            <apex:pageblockButtons location="top">
+                <apex:commandButton value="Edit" action="{!editCXMteam}" rendered="{!NOT(teamEditFlag)}" status="escTeamstat" reRender="intEscTeam"/>
+                <apex:commandButton value="Save" action="{!saveCXMteam}" rendered="{!teamEditFlag}" status="escTeamstat" reRender="intEscTeam"/>
+                <apex:actionStatus id="escTeamstat" >
+                    <apex:facet name="start" >
+                      <img src="/img/loading.gif" />                    
+                    </apex:facet>
+                </apex:actionStatus>
+            </apex:pageblockButtons>
+            <apex:pageMessages id="teammsg"/>
+            <apex:outputPanel id="etop2" layout="block" style="overflow:auto;height:150px;">
+                <apex:variable value="{!0}" var="rowCount"/>
+                <apex:pageBlockTable value="{!internalActionWrapperList}" var="dl" width="100%">
+                    <apex:column headerValue="Action" rendered="{!teamEditFlag}">
+                        <apex:commandLink value="Remove" style="color:red" action="{!removeCXMteam}" immediate="true" reRender="intEscTeam">
+                            <apex:param value="{!rowCount}" name="teamRowremove" assignTo="{!teamRowremove}"/>
+                        </apex:commandLink>
+                        <apex:variable var="rowCount" value="{!rowCount + 1}"/>
+                    </apex:column>
+                    <apex:column headerValue="Name">
+                        <apex:outputText value="{!dl.cxmTeam.User__r.Name}" rendered="{!NOT(teamEditFlag)}"/>
+                        <apex:inputField value="{!dl.cxmTeam.User__c}" required="true" rendered="{!teamEditFlag}"/>
+                    </apex:column>
+                    <apex:column headerValue="Email" value="{!dl.cxmTeam.User__r.email}"/>
+                    <apex:column headerValue="Escalation Level">
+                        <apex:outputText value="{!dl.cxmTeam.Escalation_Level__c}" rendered="{!NOT(teamEditFlag)}"/>
+                        <apex:inputField value="{!dl.cxmTeam.Escalation_Level__c}" required="true" rendered="{!teamEditFlag}"/>
+                    </apex:column>
+                </apex:pageBlockTable>
+                <apex:commandButton value="Add Team" action="{!addCXMteam}" immediate="true" rendered="{!teamEditFlag}" reRender="intEscTeam"/>
+            </apex:outputPanel>
+        </apex:pageBlock>
+        
+        <div id="desktopblock">
+            <apex:pageBlock title="Other Action Owners" rendered="{!NOT(boxFlag)}">
+                <apex:pageBlockButtons location="top">
+                    <apex:commandButton value="Save" action="{!saveRecOthers}" />
+                </apex:pageBlockButtons>
+                <apex:pageBlockSection columns="1">
+                    <apex:inputField value="{!custReq.Escalation_User_1__c}" />
+                    <apex:inputField value="{!custReq.Escalation_User_2__c}" /> 
+                    <apex:inputField value="{!custReq.Escalation_User_3__c}" />
+                </apex:pageBlockSection>
+            </apex:pageBlock>
+        </div>
+        
+        <div id="sf1block">
+            <apex:pageBlock title="Other Action Owners" rendered="{!boxFlag}">
+                <apex:pageBlockButtons location="top">
+                    <apex:commandButton value="Save" action="{!saveRecOthers}" />
+                </apex:pageBlockButtons>
+                <center>
+                <div>
+                <h1>Action Owner 1</h1>
+                    <apex:inputField id="if1" value="{!custReq.Escalation_User_1__c}" />
+                <h1>Action Owner 2</h1>
+                    <apex:inputField value="{!custReq.Escalation_User_2__c}" />
+                <h1>Action Owner 3</h1>    
+                    <apex:inputField value="{!custReq.Escalation_User_3__c}" />
+                </div>
+                </center>
+            </apex:pageBlock>
+        </div>
+        <apex:actionFunction action="{!settheBox}" name="setUrl" reRender="mainpanel">
+            <apex:param name="url" value="url"/>
+        </apex:actionFunction>
+        </apex:outputPanel>       
+    </apex:form>
+</apex:page>

@@ -1,0 +1,163 @@
+<apex:page controller="VisitationMassUpdateController" sidebar="false" >
+    <apex:sectionHeader title="Search Visitation" />
+    <apex:form >
+     <apex:outputpanel id="searchCrt" style="overflow:auto; width:1280px" layout="block">
+            <apex:pageBlock title="Search Filter" >
+                <apex:pageBlockButtons location="bottom">
+                    <apex:commandbutton value="Search" status="LoadingStatusSpinner" action="{!searchVisitation}" rerender="myMsg,searchResult"/>
+                    <apex:commandbutton value="ClearFilter" status="LoadingStatusSpinner" action="{!clearSearch}" rerender="searchCrt,myMsg,searchResult" />
+                </apex:pageBlockButtons>
+            
+            
+             <apex:pageblocksection columns="3" >
+                    <apex:pageBlockSectionItem dataStyle="align:left">
+                        <apex:outputLabel value="Account"/>
+                        <apex:inputField value="{!dummyVR.Account__c}" />
+                    </apex:pageBlockSectionItem>
+                    
+                    <apex:pageBlockSectionItem dataStyle="align:left" >
+                        <apex:outputLabel value="Executives"/>
+                        <!-- <apex:inputField value="{!dummyVR.Requested_Executives__c}" /> -->
+                        <apex:selectList value="{!searchExe}" multiselect="true" size="3" style="width:150px">
+                            <apex:selectOptions value="{!executives}"  />
+                        </apex:selectList>
+                    </apex:pageBlockSectionItem>
+                     <apex:pageBlockSectionItem dataStyle="align:left">
+                        <apex:outputLabel value="Visit Type"/>
+                        <apex:inputField value="{!dummyVR.Visit_Type__c}" />
+                    </apex:pageBlockSectionItem>
+                   <apex:pageBlockSectionItem >
+                        <apex:outputLabel value="Stage"/>
+                        <!-- <apex:inputField value="{!dummyVR.Requested_Executives__c}" /> -->
+                        <apex:selectList value="{!searchStage}" multiselect="true" size="3">
+                            <apex:selectOptions value="{!stages}"  />
+                        </apex:selectList>
+                    </apex:pageBlockSectionItem>
+                    <apex:pageBlockSectionItem >
+                        <apex:outputLabel value="Sales Territory"/>
+                        <apex:selectList value="{!searchST}" multiselect="true" size="3" style="width:150px">
+                            <apex:selectOption itemLabel="---Select---" itemValue=""></apex:selectOption>
+                            <apex:selectOption itemLabel="US-West" itemValue="US-West"></apex:selectOption>
+                            <apex:selectOption itemLabel="US-East" itemValue="US-East"></apex:selectOption>
+                            <apex:selectOption itemLabel="QUALCOMM" itemValue="QUALCOMM"></apex:selectOption>
+                            <apex:selectOption itemLabel="EMEA-ROA" itemValue="EMEA-ROA"></apex:selectOption>
+                            <apex:selectOption itemLabel="Greater China" itemValue="Greater China"></apex:selectOption>
+                            <apex:selectOption itemLabel="Japan Korea" itemValue="Japan Korea"></apex:selectOption>
+                        </apex:selectList>
+                    </apex:pageBlockSectionItem>
+                    
+                    
+                    <apex:pageBlockSectionItem >
+                        <apex:outputLabel value="Location"/>
+                        <apex:inputField value="{!dummyVR.Visit_Location__c}" />
+                    </apex:pageBlockSectionItem>
+                    <apex:pageBlockSectionItem />
+                    <apex:pageBlockSectionItem />
+                    <apex:pageBlockSectionItem >
+                        <apex:outputLabel value="Fab"/>
+                        <apex:inputField value="{!dummyVR.Fab__c}" />
+                    </apex:pageBlockSectionItem>
+             </apex:pageblocksection>
+                    
+             </apex:pageBlock>
+      </apex:outputpanel>
+    <apex:pagemessages id="myMsg"/>
+    <apex:outputPanel id="searchResult" style="overflow:auto; width:1280px" layout="block" >
+    <apex:pageBlock title="Search Results" ><br></br>
+        <apex:pageBlockButtons location="top">
+            <apex:commandbutton value="MassUpdate" action="{!massUpdate}"  status="LoadingStatusSpinner" reRender="myMsg,searchResult"/>
+        </apex:pageBlockButtons>
+        
+         <apex:outputpanel id="myPanel">
+        <apex:pageBlockTable value="{!wrappers}" var="wrp"  width="80%" cellpadding="2" border="1"  >
+            <apex:column >
+                <apex:facet name="header">
+                    <apex:inputCheckbox value="{!allSelected}" onclick="checkAll(this,'checkedone')"/>
+                </apex:facet>
+                <apex:inputCheckbox value="{!wrp.isChecked}" id="checkedone" rendered="{!wrp.vstRec.Requested_Executives__c != ''}"/>
+            </apex:column>         
+            <apex:repeat value="{!vcslist }" var="vcs">
+                <apex:column headerValue="{!vcs.Header_Label__c}" rendered="{!vcs.Visible__c}" style="background-color:{!IF(vcs.Editable__c = true, vcs.BackgroundColor__c,'')}">
+                    <apex:outputLink value="/{!wrp.vstRec.id}" rendered="{!vcs.API_Name__c = 'Name'}">{!wrp.vstRec[vcs.API_Name__c]}</apex:outputLink>
+                    <apex:outputfield value="{!wrp.vstRec[vcs.API_Name__c]}" rendered="{!vcs.Editable__c = false && vcs.API_Name__c != 'Name'}"/>
+                   <!--   <apex:inputfield value="{!wrp.vstRec[vcs.API_Name__c]}" rendered="{!vcs.Editable__c = true && wrp.displayMap[vcs.API_Name__c]}"/> -->
+                   <apex:selectList value="{!wrp.vstRec[vcs.API_Name__c]}" size="1" rendered="{!vcs.Editable__c = true && wrp.displayMap[vcs.API_Name__c]}">
+                        <apex:selectOption itemLabel="-" itemValue=""></apex:selectOption>
+                        <apex:selectOption itemLabel="C" itemValue="C"></apex:selectOption>
+                        <apex:selectOption itemLabel="D" itemValue="D"></apex:selectOption>
+                        <apex:selectOption itemLabel="R" itemValue="R"></apex:selectOption>
+                   </apex:selectList>
+                    <apex:outputText value="-" rendered="{!vcs.Editable__c = true && wrp.displayMap[vcs.API_Name__c] = false}" />
+                </apex:column>
+            </apex:repeat>
+        </apex:pageBlockTable>
+        
+        <apex:outputPanel id="myButtonsbottom" >  
+                        <div class="bottomNav">
+                            <apex:panelGrid width="100%" columns="4" columnClasses="firstColumn, middleColumn, lastColumn">
+                                <apex:outputPanel > {!displayRecordStart} - {!displayRecordEnd} of {!totalRecords}</apex:outputPanel>
+                                <apex:outputPanel >Page {!pageNumber} of {!totalPages}</apex:outputPanel>
+                                
+                                <apex:panelGroup styleClass="prevNextLinks">
+                                    <!-- code for Previous OFF -->
+                                    <apex:outputPanel styleClass="prevNext" rendered="{!disablePrevious}">
+                                       <img class="firstoff" alt="First Page" src="/s.gif"></img>
+                                    </apex:outputPanel>
+                                    <apex:outputPanel styleClass="prevNext" rendered="{!disablePrevious}">
+                                      <img class="prevoff" alt="Previous" src="/s.gif"></img>
+                                      Previous
+                                    </apex:outputPanel>
+                                    <apex:outputPanel styleClass="prevNext" rendered="{!Not(disablePrevious)}">
+                                        <apex:commandLink action="{!beginning}" status="LoadingStatusSpinner" title="First" reRender="myMsg,searchResult">
+                                            <img src="/s.gif" title="First Page" alt="First Page" class="first1"/>
+                                        </apex:commandLink>
+                                    </apex:outputPanel>
+                                    <apex:outputPanel styleClass="prevNext" rendered="{!NOT(disablePrevious)}">
+                                        <apex:commandLink action="{!previous}" status="LoadingStatusSpinner" title="Previous" reRender="myMsg,searchResult">
+                                            <img src="/s.gif" title="Previous Page" alt="Previous" class="prev"/>
+                                            Previous
+                                        </apex:commandLink>
+                                    </apex:outputPanel>
+                                    <!--  code for Active Next ---->
+                                    <apex:outputPanel styleClass="prevNext" rendered="{!disableNext}">
+                                        Next
+                                       <img class="nextoff" alt="Next" src="/s.gif"></img>
+                                    </apex:outputPanel>
+                                    <apex:outputPanel styleClass="prevNext" rendered="{!disableNext}">
+                                      <img class="lastoff" alt="Last Page" src="/s.gif"></img>
+                                    </apex:outputPanel>
+                                    <apex:outputPanel styleClass="prevNext" rendered="{!Not(disableNext)}">
+                                       <apex:commandLink action="{!next}" status="LoadingStatusSpinner" title="Next" reRender="myMsg,searchResult">
+                                           Next <img src="/s.gif" title="Next" alt="Next" class="next"/>
+                                         </apex:commandLink>
+                                    </apex:outputPanel>
+                                    <apex:outputPanel styleClass="prevNext" rendered="{!NOT(disableNext)}">
+                                       <apex:commandLink action="{!end}" status="LoadingStatusSpinner" title="Next" reRender="myMsg,searchResult">
+                                            <img src="/s.gif" title="Last Page" alt="Last Page" class="last1"/>
+                                        </apex:commandLink>
+                                    </apex:outputPanel>
+                                </apex:panelGroup>
+                                <apex:outputPanel >Page {!pageNumber} of {!totalPages}</apex:outputPanel>
+                            </apex:panelGrid>
+                        </div>
+                    </apex:outputPanel>
+                    
+        </apex:outputpanel>
+    </apex:pageBlock>
+    </apex:outputPanel>
+    <c:LoadingStatusSpinner />
+    </apex:form>
+    <script type="text/javascript">
+        function checkAll(cb,cbid){
+            var inputElem = document.getElementsByTagName("input");                    
+            for(var i=0; i<inputElem.length; i++)
+            {            
+                 if(inputElem[i].id.indexOf(cbid)!=-1){                                       
+                    inputElem[i].checked = cb.checked;
+                }
+            }
+        }
+        
+       
+     </script>
+</apex:page>

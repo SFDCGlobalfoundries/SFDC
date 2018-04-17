@@ -1,0 +1,486 @@
+<!--
+    @ Author :- Cognizant
+    @ History:         
+        10-July-2017        Ram Rai            Added the Fix for the to Order the Button. Issue #480 and #412
+        15-July-2017        Ram Rai            Last Modified Date FieldChange.Issue #389
+        
+-->
+<apex:page standardController="Form_Management_System__c"  extensions="FMSStepPlanViewExt" showHeader="true" sidebar="true">
+
+<script>
+
+        function showDialogforDelete(){
+            var sd = new SimpleDialog("Test"+Dialogs.getNextId(), true);    
+            sd.setTitle("Warning");   
+            sd.createDialog(); 
+            sd.setWidth(400);               
+            window.parent.sd = sd;
+            var ex = sd.setContentInnerHTML("<img src='/img/msg_icons/warning24.png'/> <b>Warning!</b> <br/><br/>Are you sure you want to delete this form? <br/><br/> <b>The form will no longer be retrievable once deleted.</b> <br/><br/> Note: The form delete operation may take 1-2 minutes to complete. Please do not perform any other operations during this time. We appreciate your patience. <br/><br/><p align='center'><button class='btn' onclick='DeleteFormActionFunction(); window.parent.sd.hide(); return true;'>Confirm</button>&nbsp; &nbsp; &nbsp; &nbsp; <button class='btn' onclick='window.parent.sd.hide(); return false;'>Cancel</button></p>"); 
+                sd.show();   
+                return ex;
+        }
+
+</script>
+
+<apex:pagemessages id="errorMsg" />
+<apex:form id="stForm" >
+
+<apex:actionFunction name="DeleteFormActionFunction" action="{!deleteForm}" status="blockUI">       
+        </apex:actionFunction>
+        
+        
+<c:FMSNameDesc ></c:FMSNameDesc>
+     <c:FMSHierarchy formId="{!formId}"></c:FMSHierarchy>
+       <apex:actionFunction name="paraFunction" action="{!unlckStpPlan}" >
+            
+        </apex:actionFunction>
+       <apex:actionFunction name="paraFunction1" action="{!requnlckStpPlan}" >
+            
+        </apex:actionFunction>
+          
+    <apex:outputPanel >
+        <apex:pageBlock title="Possible form Actions" rendered="{!!popupVal}" id="stp1">
+                  
+        <apex:outputLabel style="font-style:italic;font-size:10pt;color:black;"> 
+        
+        The selected form may have one or more action paths available to you based on your granted permissions and the current state of the form. Select the
+        desired action to trigger that action, or select the Back to form select button to return to the form selection page
+            
+        </apex:outputLabel>
+        
+        <br/><br/>
+        
+        <apex:outputPanel >
+            <apex:pageblockSection columns="1">
+            <apex:outputText value="{!frmState}" Label="Current Form State:"/>
+            
+            </apex:pageblockSection>
+            <br/>
+       </apex:outputPanel>
+       
+          <apex:outputPanel >
+           <html>
+           <table class="list" style="width:1030px">
+           <tr class="headerRow" align="center">
+           <td style="font-size: 8pt;width:200px">Action</td>
+           <td style="font-size: 8pt;">Description</td>
+           </tr>
+           
+           
+        <apex:variable rendered="{!((frmState  == 'WaitingForReview' || frmState  == 'RequestToUnlockStepPlan' || frmState  == 'RequestToUnlockStepPlan' || frmState  == 'StepPlanUnlocked' ) && (selection == 'Approve Preliminary Step Plan'))}" value="" var="v">                                   
+        <tr class="datarow">
+        <td class="datacell">
+                                       
+        
+        <apex:commandLink style="width:120px;color:blue;" action="{!updateFormDetailApprove}">Submit Step Plan Approval</apex:commandLink>
+        </td>
+        
+        <td class="datacell">
+        <apex:outputLabel >
+        Selecting this option signifies that you approve the Preliminary Step Plan. This action will lock the form and signal GLOBALFOUNDRIES to publish the Final Step Plan and proceed with Mask Build. Once locked, you are no longer able to edit the form.
+        </apex:outputLabel>
+        </td>
+        </tr>   
+        </apex:variable>  
+
+            <apex:variable rendered="{!((frmState  == 'WaitingForReview' || frmState  == 'RequestToUnlockStepPlan' || frmState  == 'RequestToUnlockStepPlan' || frmState  == 'StepPlanUnlocked') && (selection =='Reject Preliminary Step Plan'))}" value="" var="v">                                   
+        <tr class="datarow">
+        <td class="datacell">
+        
+        <apex:commandLink style="width:120px;color:blue;" action="{!updateFormDetailReject}">Submit Step Plan Rejection</apex:commandLink>
+        
+        </td>
+        
+        <td class="datacell">
+        <apex:outputLabel >
+        Selecting this option signifies that you have rejected the Preliminary Step Plan. This action will lock the form and based upon your reason for rejection, GLOBALFOUNDRIES will determine subsequent actions. Once locked, you are no longer able to edit the form  
+        </apex:outputLabel>
+        </td>
+        </tr>   
+        </apex:variable>  
+
+           
+           
+           
+       <apex:variable rendered="{!((frmState  =='PrelimStepPlanApproved' || frmState  =='StepPlanComplete')  && isFMSAdmin ) || ((frmState  =='PrelimStepPlanRejected' || frmState  =='RequestToUnlockStepPlan') && ( !isPortalUser || isFMSAdmin  ))  }" value="" var="v">
+           <tr class="datarow">
+           <td class="datacell">
+                                                  
+           
+           <apex:commandLink style="width:120px;color:blue;" action="{!unlckStpPlan}">Unlock Step Plan</apex:commandLink> 
+           </td>
+           <td class="datacell">
+           
+           <apex:outputLabel >
+           Unlocking Step Plan addendum will allow editing again. Note: Before unlocking this addendum, you must confirm that there
+           are no Preliminary or Final Step Plans in the publishing queue.
+           </apex:outputLabel>
+           
+           </td>           
+           </tr>
+           
+           </apex:variable>    
+           
+              <apex:variable rendered="{!(frmState  =='PrelimStepPlanApproved'&& isFMSAdmin  )}" value="" var="v">
+           <tr class="datarow">
+           <td class="datacell">
+                                                  
+            
+            <apex:commandLink style="width:120px;color:blue;" action="{!spComplete}">Step Plan Complete</apex:commandLink>
+           </td>
+           <td class="datacell">
+           
+           <apex:outputLabel >
+          Complete.
+           </apex:outputLabel>
+           
+           </td>           
+           </tr>
+           
+           </apex:variable> 
+           
+           
+           
+               <apex:variable rendered="{!(frmState  =='PrelimStepPlanRejected')}" value="" var="v">
+           <tr class="datarow">
+           <td class="datacell">
+                                                  
+           <!-- <apex:commandLink style="width:120px;color:blue;" onclick="paraFunction1('Request to Unlock Step Plan'); return false;" rerender="stp1,stp2">Request to Unlock Step Plan</apex:commandLink>-->
+           <apex:commandLink style="width:120px;color:blue;" action="{!requnlckStpPlan}">Request to Unlock Step Plan</apex:commandLink>
+           </td>
+           <td class="datacell">
+           
+           <apex:outputLabel >
+          Unlocking the submitted Step Plan addendum will allow you to edit the form. GLOBALFOUNDRIES will stop any Step Plan work in process in order to determine what changes are required.
+           </apex:outputLabel>
+           
+           </td>           
+           </tr>
+           
+           </apex:variable> 
+  
+          <tr class="datarow">
+          <td class="datacell">
+                                        <!--<apex:commandLink style="width:120px;color:blue;" action="{!freezeForm}" onclick="if(!confirm('Warning: Are you sure...')){return false;}">Freeze Form</apex:commandLink>-->
+         <!-- <apex:commandLink style="width:120px;color:blue;" onclick="showDialogforActions('Freeze'); window.scrollTo(0,0); return false;">Browse change
+          history</apex:commandLink> -->
+          <apex:commandLink style="width:120px;color:blue;" action="{!chngHistory}" target="_blank">Browse change history</apex:commandLink>
+          </td>
+          
+          <td class="datacell">
+          <apex:outputLabel >
+          Browse the change history for this form.
+          </apex:outputLabel>
+          </td>
+          </tr> 
+               
+      
+          <apex:variable rendered="{!!subscribeFlag}" value="" var="v">                      
+          <tr class="datarow">
+          
+          <td class="datacell">
+                                        <!--<apex:commandLink style="width:120px;color:blue;" action="{!freezeForm}" onclick="if(!confirm('Warning: Are you sure...')){return false;}">Freeze Form</apex:commandLink>-->
+          <!--<apex:commandLink style="width:120px;color:blue;" onclick="showDialogforActions('Freeze'); window.scrollTo(0,0); return false;">Subscribe to this form</apex:commandLink>-->
+          <apex:commandLink style="width:120px;color:blue;" action="{!Subscribe}">Subscribe to this form</apex:commandLink>
+          </td>
+          
+          <td class="datacell">
+          <apex:outputLabel >
+          Subscribe to receive email notification for all events for this specific form
+          </apex:outputLabel>
+          </td>
+          </tr> 
+        </apex:variable> 
+        
+        <apex:variable rendered="{!subscribeFlag}" value="" var="v">
+  <tr class="datarow">
+  <td class="datacell">
+  <apex:commandLink style="width:120px;color:blue;" action="{!UnSubscribe}">Unsubscribe from this form</apex:commandLink>
+  </td>
+  <td class="datacell">
+  <apex:outputLabel >
+  Remove your existing individual subscription for this form.
+  </apex:outputLabel>
+  </td>
+  </tr>
+  </apex:variable>
+        
+   <apex:variable value="" var="v" rendered="{!(((frmState  == 'WaitingForReview' || frmState  == 'StepPlanUnlocked' ) && (selection =='' || selection =='=== Select a Value ===' || selection =='Reject Preliminary Step Plan' || selection =='Approve Preliminary Step Plan') ) || ((frmState   == 'PrelimStepPlanApproved' ||frmState   == 'PrelimStepPlanRejected' || frmState  == 'RequestToUnlockStepPlan' || frmState  == 'StepPlanComplete' ) && isFMSAdmin))}">
+  <tr class="datarow">
+  <td class="datacell">
+  <apex:commandLink style="width:120px;color:blue;" action="{!SubscribeUser}">Subscribe other users to this form</apex:commandLink>
+  </td>
+  <td class="datacell">
+  <apex:outputLabel >
+  Subscribe other users to receive email notifications for all events for this specific form.
+  </apex:outputLabel>
+  </td>
+  </tr>
+  </apex:variable>
+     
+        
+        
+         <apex:variable rendered="{!(((frmState  == 'WaitingForReview' || frmState  == 'StepPlanUnlocked'  ) && (selection =='' || selection =='=== Select a Value ===' || selection =='Reject Preliminary Step Plan' || selection =='Approve Preliminary Step Plan') ) || ((frmState   == 'PrelimStepPlanApproved' ||frmState   == 'PrelimStepPlanRejected' || frmState  == 'RequestToUnlockStepPlan' || frmState  == 'StepPlanComplete' ) && isFMSAdmin))}" value="" var="v">                       
+            <tr class="datarow">
+                                    <td class="datacell">
+                                        <apex:commandLink style="width:120px;color:blue;" action="{!editForm}">Edit</apex:commandLink>
+                                    </td>
+                                    <td class="datacell">
+                                        <apex:outputLabel >
+                                            Edit the form.
+                                        </apex:outputLabel>
+                                    </td>
+                                </tr>  
+         </apex:variable> 
+         
+                
+        <apex:variable rendered="{!(((frmState  == 'WaitingForReview' || frmState  == 'StepPlanUnlocked' ) && (selection =='' || selection =='=== Select a Value ===' || selection =='Reject Preliminary Step Plan' || selection =='Approve Preliminary Step Plan') ) || (( frmState  == 'RequestToUnlockStepPlan' || frmState  == 'StepPlanComplete' ) && isFMSAdmin))}" value="" var="v">                       
+        <tr class="datarow">
+        <td class="datacell">
+       <apex:commandLink style="width:120px;color:blue;" action="{!updateFormDetails}">Update Form Details</apex:commandLink>
+        </td>
+        
+        <td class="datacell">
+        <apex:outputLabel >
+        Modify the form name and description.
+        </apex:outputLabel>
+        </td>
+        </tr>   
+        </apex:variable>
+        
+        <!--<apex:variable rendered="{!((frmState  == 'WaitingForReview' ||frmState  == 'StepPlanComplete'||frmState  == 'StepPlanUnlocked' ) && (selection =='' ||selection ==' === Select a Value ===' || selection =='Reject Preliminary Step Plan' || selection =='Approve Preliminary Step Plan'  )&& isFMSAdmin)}" value="" var="v">                                   
+        <tr class="datarow">
+        <td class="datacell">
+        <apex:commandLink style="width:120px;color:blue;" onclick="showDialogforDelete(); window.scrollTo(0,0); return false;">Delete Form</apex:commandLink>
+        </td>
+        
+        <td class="datacell">
+        <apex:outputLabel >
+        Delete the form from the system. The form will no longer be retrievable once deleted.
+        </apex:outputLabel>
+        </td>
+        </tr>   
+        </apex:variable>-->   
+            
+        
+        
+        </table>
+        </html>
+        </apex:outputPanel>
+       
+                    
+    
+        </apex:pageBlock>
+              
+        <h1>View Form Data</h1>
+        </apex:outputPanel>
+        
+        <apex:pageBlock title="Step Plan 'Form State' Change" rendered="{!popupVal}" id="stp2">
+                    <apex:pageblockSection columns="1">
+                   
+                    <apex:pageBlockSectionItem >
+                    <apex:outputLabel value="Current Form State: "/>
+                    <apex:outputText value="{!frmState}"  />
+                    
+                    
+                </apex:pageblockSectionItem>
+                
+                <apex:pageBlockSectionItem rendered="{!!requnck}">
+                    <apex:outputLabel value="Changing to Form State: "/>
+                    <apex:outputText value="StepPlanUnlocked"  /> 
+                    
+                    
+                </apex:pageblockSectionItem>
+               
+                  <apex:pageBlockSectionItem rendered="{!requnck}" >
+                    <apex:outputLabel value="Changing to Form State: " />
+                    
+                    <apex:outputText value="RequestToUnlockStepPlan" /> 
+                    
+                </apex:pageblockSectionItem>
+               
+                
+                  <apex:outputPanel rendered="">
+                    <p style="color:black;margin-left: 10px">Please Note: Request for GLOBALFOUNDRIES to thaw (unfreeze) the form to allow editing. GLOBALFOUNDRIES will evaluate and allow editing only if possible, depending on the overall status of your release.</p>
+                </apex:outputPanel>
+                
+                 <apex:outputLabel value="Please provide brief description explaining the reason for this action:" style="font-weight:bold;"/>
+                    <apex:outputPanel >
+                       <div style="font-size: 1.5em; font-weight: bold; color: #c00;margin-left: 391px;width: 10px;margin-top: -28px; ">*</div>
+                    </apex:outputPanel>
+               
+                <apex:outputPanel >
+                    <apex:inputTextarea value="{!stateChangeComments}" style="height:150px; width:600px;" html-maxlength="500"/>
+                </apex:outputPanel>
+            </apex:pageblockSection>
+                
+            &nbsp;&nbsp;&nbsp;&nbsp;
+            <apex:commandButton value="Continue" action="{!conUnlcPlan}"  />
+            &nbsp;&nbsp;&nbsp;
+            <apex:commandButton value="Cancel" action="{!closePopup}" />        
+               
+        </apex:pageBlock>
+        
+        
+         <apex:pageBlock title="Form Page 1" id="pb1" rendered="{!!popupVal}" >
+        <h3> Step Plan Approval Form:</h3>
+        <p>This form is used to review, communicate your acceptance/rejection and store the final Step Plan. The published Step Plan is based upon inputs provided in the FMS Main Form.</p>
+     <br/>
+          <apex:pageBlock >
+          
+          <table class="list" border="0" cellpadding="0" cellspacing="0">
+        
+         <apex:repeat value="{!wrapperList}" var="row" >
+            
+         <tr>
+        
+                  <apex:repeat value="{!row}" var="value" rendered="{!(row.counterWrap!=1 && row.wrapFmObj.PrelimOrFinal__c =='Preliminary')}">
+           <td colspan="3"><h1> Preliminary Step Plan</h1>
+            <h1> {!value.counterWrap} </h1>
+           </td>
+          
+         </apex:repeat>
+         
+           <apex:repeat value="{!row}" var="value" rendered="{!(row.counterWrap==1 && row.wrapFmObj.PrelimOrFinal__c =='Preliminary')}">
+           <td ><h1> Preliminary Step Plan</h1>
+            
+           </td>
+          
+         </apex:repeat>
+       </tr>
+       
+       
+       <tr>
+        
+        <apex:repeat value="{!row}" var="value" rendered="{!row.wrapFmObj.PrelimOrFinal__c!='Preliminary'}">
+           
+        <td colspan="3"><h1> Final Step Plan</h1>
+            
+         </td>
+          
+         </apex:repeat>
+    
+       </tr>
+       <!--Corrected the Below text as per requirement -- Ram Rai -->
+       <tr>
+         <apex:repeat value="{!row.prelimPara}" var="value" rendered="{!row.wrapFmObj.PrelimOrFinal__c!='Preliminary'}">
+           <td colspan="3">
+             This represents the approved and finalized version of the layout for your wafers. To ensure that you have all required information for your dicing requirements,please download this finalized version, replacing your preliminary Step Plan.
+           </td>
+         </apex:repeat>
+         
+         <apex:repeat value="{!row.prelimPara}" var="value" rendered="{!row.wrapFmObj.PrelimOrFinal__c=='Preliminary'}">
+           <td colspan="3">
+           <p>  Please review the attached Preliminary Step Plan at your earliest convenience. In order to complete the approval or rejection of this Prelimnary Step Plan, <b>Save and Exit</b> the completed form, then select either <b>Submit Step Plan Approval</b> or <b>Step Plan Rejection</b> from the <b> Possible Form Actions  </b> menu. Please note that delayed approvals will affect the Release cycle times.</p>
+           </td>
+         </apex:repeat>
+       </tr>
+       <!--Published Date Fix StepPlan Issue 389-->
+       <tr> 
+         <apex:repeat value="{!row.wrapFmObj.createdDate  }" var="value">
+               <td colspan="1">
+           <h1>  Published:</h1>         </td><td>{!value}</td>
+         </apex:repeat>
+       </tr>       
+            
+      <tr> 
+        <apex:repeat value="{!row.wrapFmObj}" var="value" rendered="{!row.wrapFmObj.PrelimOrFinal__c=='Preliminary'}">
+               <td colspan="1">
+           <h1>  Step Plan for Review:</h1>
+           </td>
+         </apex:repeat>
+       </tr>   
+       
+           <tr> 
+        <apex:repeat value="{!row.wrapFmObj}" var="value">
+              
+          <!-- <td style="width: 232px;"></td>-->
+            <td colspan="1"> <h3>Step Plan File:</h3></td> <td><h3>Size:</h3> </td>
+         </apex:repeat>
+       </tr>  
+       
+       
+       
+             
+       <apex:repeat value="{!row.lstattch}" var="value" rendered="{!row.lstattch !=null}">
+        <tr> 
+        
+        <apex:outputPanel rendered="{!value.ContentType =='application/pdf'}">  <td><apex:outputlink value="/servlet/servlet.FileDownload?file={!value.id}" target="_blank">{!value.name }</apex:outputlink></td><td>{!value.BodyLength} KB</td></apex:outputPanel>
+        </tr>
+        
+     
+       </apex:repeat>
+       <tr>
+        <apex:repeat value="{!row.wrapFmObj}" var="value">
+             <!--<td style="width: 232px;"></td>  -->
+            <td colspan="1"> <h3>Reticle Layout File:</h3></td> 
+            <td><h3>Size:</h3> </td>
+         </apex:repeat>
+       </tr>  
+       
+        <apex:repeat value="{!row.lstattch}" var="value" rendered="{!row.lstattch !=null}">
+        <tr> 
+        
+        <apex:outputPanel rendered="{!value.ContentType =='text/xml'}">  <td><apex:outputlink value="/servlet/servlet.FileDownload?file={!value.id}" target="_blank">{!value.name }</apex:outputlink></td><td>{!value.BodyLength} KB</td></apex:outputPanel>
+        </tr>
+          
+       </apex:repeat>
+       
+      <apex:outputPanel rendered="{!row.wrapFmObj.PrelimOrFinal__c =='Preliminary'}">    
+      <tr> 
+        <apex:repeat value="{!row.wrapFmObj}" var="value">
+               <td colspan="1" style="width: 463px;">
+           <h1>  Select One:</h1>  
+           <apex:outputPanel ><div style="font-size: 1.5em; font-weight: bold; color: #c00;margin-left: 68px;width: 10px; margin-top: -17px; ">*</div>  
+               </apex:outputPanel>    
+            </td>   
+           <apex:outputPanel rendered="{!row.wrapFmObj.Selection__c != '=== Select a Value ===' }"> <td>{!row.wrapFmObj.Selection__c}</td>  </apex:outputPanel> 
+          
+             
+         </apex:repeat>
+       </tr> 
+       </apex:outputPanel>  
+       
+        <apex:outputPanel rendered="{!row.wrapFmObj.PrelimOrFinal__c =='Preliminary'}">  
+      <tr> 
+        <apex:repeat value="{!row.wrapFmObj}" var="value" rendered="{!row.wrapFmObj.Selection__c=='Reject Preliminary Step Plan'}">
+        <td colspan="1">
+           <h1>  Reason(s) for Rejection. Please enter specific changes required:<div style="font-size: 1.5em; font-weight: bold; color: #c00;margin-left: 68px;margin-left: 368px;width: 10px;margin-top: -21px; ">*</div></h1>         </td>
+         <td> <apex:outputtext value="{!value.RejectionReason__c}" /> </td>
+         </apex:repeat>
+       </tr> 
+       </apex:outputPanel>
+       
+      <tr style="height: 60px;"> 
+        <apex:repeat value="{!row}" var="value"  rendered="{!row.wrapFmObj.PrelimOrFinal__c !='Preliminary'}">
+               <td colspan="1" >
+           <h1> Approved By: </h1>  </td>
+           <apex:outputPanel >
+           <td><apex:outputText value="{!value.approvalName}"/>  </td></apex:outputPanel>
+         </apex:repeat>
+         
+                 <apex:repeat value="{!row.wrapFmObj}" var="value" rendered="{!row.wrapFmObj.PrelimOrFinal__c=='Preliminary'}">
+               <td colspan="1" >
+           <h1> Reviewed By: </h1>  </td>
+           <apex:outputPanel >
+           <td><apex:outputText value="{!value.Reviewed_By__c }"/>  </td></apex:outputPanel>
+         </apex:repeat>
+         
+         
+       </tr> 
+      
+    </apex:repeat>
+    
+  </table>
+</apex:pageBlock>
+               
+         <div style="float:left; margin-left:485px">
+          <apex:commandLink value="Form Selection" action="{!formSelection}" styleClass="btn" style="text-decoration:none;padding:4px;" />      
+          <apex:commandLink value="Print PDF" action="{!viewPdf}" styleClass="btn" style="text-decoration:none;padding:4px;" id="theButton" target="_blank"/>
+            
+        </div>
+         </apex:pageBlock> 
+        
+        </apex:form>
+
+</apex:page>

@@ -1,0 +1,128 @@
+<!--
+    Author: Anirban Roy
+    Description: This serves as the intermediate approval/rejection page for NPC. 
+    History: 
+        ARoy    01092014    - page creation.
+        ZAmbat  01152014    - Moved Comments to the bottom of the layout.
+        Sunil        04272015    - Updated code to add field PIYE_Approver_4__c for case # 40782
+-->
+<apex:page showHeader="true" sidebar="true" controller="NPCFormMultiApprProcessController" tabStyle="New_Part_Creation_Form__c">     
+ <apex:includeScript value="{!URLFOR($Resource.jquery, 'js/jquery-1.8.3.js')}" />   
+   <!-- Dipak 08092016 Start -->
+  <!-- <style type="text/css">
+.container {
+    overflow: auto;
+    width: 100%
+}
+.left-half {
+ 
+  float: left;
+  width: 50%;
+}
+.right-half {
+ 
+  float: left;
+  width: 50%;
+}     
+</style>-->
+  <!-- Dipak 08092016 End-->
+       
+    <apex:form id="theForm">
+        <apex:sectionHeader title="Approval Request" subtitle="NPC Form: {!npcForm.Name}" help="https://help.salesforce.com/htviewhelpdoc?id=co_edit.htm&siteLang=en_US" />
+        <apex:pagemessages />
+         <apex:pageBlock rendered="{!IF(npcForm.Reason_for_New_Part__c != 'Device Reactivation', true, false)}"  title="Approve/Reject Approval Request" >            
+            <apex:pageBlockSection columns="1" collapsible="false">
+                <apex:outputField value="{!npcForm.Name}"/>
+                <apex:outputField value="{!npcForm.Account_Name__c}"/>
+                <apex:outputField value="{!npcForm.Fab__c}"/>
+                <apex:outputField value="{!npcForm.New_Part_ID__c}"/>
+                <apex:outputField value="{!npcForm.Reason_for_New_Part__c}"/>
+                <apex:outputField value="{!npcForm.Tapeout_Required__c}"/>
+                <apex:inputField value="{!npcForm.PIYE_Approver_1__c}" label="PI/YE Approver 1" rendered="{!NOT(isPIYEApproval) && npcFabCheck}"/>
+                <apex:inputField value="{!npcForm.PIYE_Approver_2__c}" label="PI/YE Approver 2" rendered="{!NOT(isPIYEApproval) && npcFabCheck}"/>
+                <apex:inputField value="{!npcForm.PIYE_Approver_3__c}" label="PI/YE Approver 3" rendered="{!NOT(isPIYEApproval) && npcFabCheck}"/>
+                <apex:inputField value="{!npcForm.PIYE_Approver_4__c}" label="PI/YE Approver 4" rendered="{!NOT(isPIYEApproval) && npcFabCheck}"/>
+                <apex:inputTextarea value="{!comments}" label="Comments" style="width:50%" />
+            </apex:pageBlockSection>
+        
+            <apex:pageBlockButtons location="bottom" id="buttonsBlock">
+                <apex:commandButton value="Approve" action="{!approveNPC}" />
+                <apex:commandButton value="Reject" action="{!rejectNPC}" />
+                <apex:commandButton value="Cancel" action="{!cancelNPC}" />
+            </apex:pageBlockButtons>
+        </apex:pageBlock>
+                
+        <apex:pageBlock rendered="{!IF(npcForm.Reason_for_New_Part__c == 'Device Reactivation', true, false)}"  title="Approve/Reject Approval Request" id="thePageBlock">            
+            <apex:pageBlockSection columns="2" collapsible="false">
+                <apex:outputField value="{!npcForm.Name}"/><apex:pageBlockSectionItem ></apex:pageBlockSectionItem>
+                <apex:outputField value="{!npcForm.Account_Name__c}"/><apex:pageBlockSectionItem ></apex:pageBlockSectionItem>
+                <apex:outputField value="{!npcForm.Fab__c}"/><apex:pageBlockSectionItem ></apex:pageBlockSectionItem>
+                <apex:outputField value="{!npcForm.New_Part_ID__c}"/><apex:pageBlockSectionItem ></apex:pageBlockSectionItem>
+                <apex:outputField value="{!npcForm.Reason_for_New_Part__c}" id="reasonInput"/><apex:pageBlockSectionItem ></apex:pageBlockSectionItem>
+             </apex:pageBlockSection>               
+           <apex:pageBlockSection columns="2" collapsible="false">                  
+           
+                <apex:pageBlockSection columns="2" collapsible="false">     
+                       <apex:pageblockSectionItem >
+                             <apex:outputLabel >{!$ObjectType.New_Part_Creation_Form__c.fields.NRE_25K_USD_Is_Acknowledged_by_Customer__c.label}</apex:outputLabel>                                   
+                             <apex:inputField required="true" id="NRE_25K_USDInput" value="{!npcForm.NRE_25K_USD_Is_Acknowledged_by_Customer__c}" rendered="{!if(npcForm.Reason_for_New_Part__c='Device Reactivation', true, false)}" />                        
+                       </apex:pageblockSectionItem> 
+                       <apex:pageblockSectionItem >
+                         <apex:outputLabel value="{!$ObjectType.New_Part_Creation_Form__c.fields.NRE_Comments__c.label}" for="NRE_Comments_USDInput"/>                                                                        
+                         <apex:inputField required="true" id="NRE_Comments_USDInput" value="{!npcForm.NRE_Comments__c}"  rendered="{!if(npcForm.Reason_for_New_Part__c='Device Reactivation', true, false)}" />                                                        
+                       </apex:pageblockSectionItem>
+                                               
+               </apex:pageBlockSection>                               
+               
+            <apex:pageblockSectionItem >
+             <apex:outputPanel rendered="{!if(npcForm.Reason_for_New_Part__c='Device Reactivation', true, false)}">  
+                 <apex:repeat id="repeatAttach1" value="{!listAttachments}" var="a1">
+                            {!a1.label}   
+                            <apex:actionRegion id="attachRegion1">
+                                <input type="button" class="btn" value="Remove" onclick="clearInputFile('{!a1.Id}');" />
+                                <apex:inputFile value="{!a1.attachment.body}" filename="{!a1.attachment.name}" id="attach1"/><br/><br/>
+                            </apex:actionRegion>  
+                </apex:repeat>                    
+                        <span id="inputFileLocation"></span>
+             </apex:outputPanel>
+            </apex:pageblockSectionItem>               
+               
+                           
+               
+           </apex:pageBlockSection> 
+        <apex:pageBlockSection columns="2" dir="LTR" collapsible="false">               
+                <apex:inputField id="Risk_WaiverInput" required="true" value="{!npcForm.Risk_Waiver__c}" rendered="{!if(npcForm.Reason_for_New_Part__c='Device Reactivation', true, false)}"/>                                                
+                <apex:pageblockSectionItem />                                                                                                              
+                <apex:inputField required="true" id="minorqac" label="Min Order qty agreement with customer (Wafer)" value="{!npcForm.Min_Order_qty_agreement_with_customer__c}" rendered="{!if(npcForm.Reason_for_New_Part__c='Device Reactivation', true, false)}"/>
+                <apex:pageblocksectionItem >  
+                Min order quantity duration              
+                <apex:selectRadio id="Radiobutton" value="{!npcForm.Min_Order_Create__c}" rendered="{!if(npcForm.Reason_for_New_Part__c='Device Reactivation', true, false)}">
+                   <apex:selectoptions value="{!Types}"></apex:selectoptions>
+                </apex:selectRadio>
+                </apex:pageblocksectionItem>                                                            
+                <apex:inputTextarea value="{!comments}" label="Comments" style="width:50%" />
+                
+          </apex:pageBlockSection>
+            <apex:pageBlockButtons location="bottom" id="buttonsBlock">
+                <apex:commandButton value="Approve" action="{!approveNPC}" id="appreq"/>
+                <apex:commandButton value="Reject" action="{!rejectNPC}"/>
+                <apex:commandButton value="Cancel" action="{!cancelNPC}" immediate="true" html-formnovalidate="formnovalidate"/>
+            </apex:pageBlockButtons>
+        </apex:pageBlock>
+    </apex:form>
+    <script>
+        
+        function removeOption(){
+           var select = document.getElementsByTagName('select');
+           for(var j=0;j<select.length;j++){
+               for (var i=0;i<select[j].length;  i++) {
+                  if (select[j].options[i].value=='CustomerSuccessUserLookup') {
+                    select[j].remove(i);
+                  }
+               }
+           }
+        }
+                
+        window.onload = removeOption;
+    </script>
+</apex:page>

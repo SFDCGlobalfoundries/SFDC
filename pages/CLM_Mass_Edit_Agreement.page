@@ -1,0 +1,136 @@
+<!-- 
+   Type Name: CLM_Mass Edit Agreement.page
+   Author: Ruchi Talwaria
+   Purpose:- To alleviate the need to update bulk agreements manually for particular set of fields on click of Mass Edit button on list view page.
+
+   Change History: 
+   Author: 
+   Modified Date: 
+-->
+
+<apex:page standardController="Apttus__APTS_Agreement__c" extensions="CLM_AgreementMassEditCntrlExt" sidebar="false">
+    <apex:includeScript value="{!URLFOR($Resource.ROS_JQuery_Deafult, '/jquery-ui-1.10.3.custom/js/jquery-1.9.1.js')}"/>
+    <script type="text/javaScript">
+        callParent = function(selectedmails,styleclass) {
+            var existingIds = $('.'+styleclass).val();
+            
+            if(selectedmails.trim() != ''){
+                $('.'+styleclass).val(selectedmails);
+            } 
+        }
+            
+        function openLookup(classname){
+            var emails = $('.'+classname).val();
+            window.open('/apex/CLM_MassEditAgreement_EmailLookup?emailId=' + emails+'&sclass='+ classname,'_blank', 'scrollbars=yes, resizable=yes, top=250, left=400, width=600, height=350');
+        }
+    
+    	window.onload = setFocus
+        function setFocus() {
+		document.getElementById('hiddenElement').focus();
+		}
+    
+    </script>
+    
+    <style>
+        .headerRow .headerStyle{
+        font-size:13px !important;
+        }
+        
+        .panelWrapper .mainTitle{
+        font-size:18px !important;
+        }
+        
+        .message{
+        font-size:15px !important;
+        font-weight:Normal !important;
+        }  
+        
+        tr.dataRow td{
+        vertical-align:top !important;
+        } 
+        
+        .sfdc_richtext fieldset, .sfdc_richtext img {
+         border:0;
+         height:50px !important;
+         width:500px !important;               
+         }               
+        
+    </style>        
+    
+    <apex:form id="TheForm">
+        <apex:outputPanel styleClass="message" layout="block">
+            Note: This Mass editing is only applicable for 'Sales Agreement' Record Type. Records with other Record types wouldn't be displayed on this page for editing.                 
+        </apex:outputPanel>
+        <apex:outputPanel styleClass="panelWrapper" layout="block">
+            <apex:pageBlock title="Selected Agreements" mode="edit" id="pageblock">
+            <apex:pageMessages />
+            
+            <apex:pageBlockButtons > 
+                <apex:commandButton action="{!doSave}" value="Save"/>
+                <apex:commandButton action="{!doCancel}" value="Return"/>
+            </apex:pageBlockButtons>
+            <apex:outputPanel layout="block" style="overflow:auto;width:1300px;cursor:pointer;">
+                <apex:variable value="{!1}" var="rowno"/>
+            <apex:pageBlockTable value="{!agrList}"  var="agr" id="table" style="width:130%">
+                <apex:column headerValue="Name" headerClass="headerStyle" style="width:4%">
+                    <a id="{!agr.Id}"
+                        onmouseover="LookupHoverDetail.getHover('{!agr.Id}', '/{!agr.Id}/m?retURL={!agr.Id}&isAjaxRequest=1').show();"
+                        onmouseout="LookupHoverDetail.getHover('{!agr.Id}').hide();"
+                        onfocus="LookupHoverDetail.getHover('{!agr.Id}', '/{!agr.Id}/m?retURL={!agr.Id}&isAjaxRequest=1').show();"
+                        onblur="LookupHoverDetail.getHover('{!agr.Id}').hide();"
+                        href="/{!agr.Id}"> 
+                        <b> {!agr.Name} </b>
+                    </a>
+                </apex:column>
+                <apex:column headerClass="headerStyle">
+                    <apex:facet name="header">Agreement <br/> Number</apex:facet>
+                    <apex:outputField value="{!agr.Apttus__FF_Agreement_Number__c}"/>
+                </apex:column>
+                <apex:column headerValue="Contract Description" headerClass="headerStyle" style="width:8%">
+                    <apex:outputField value="{!agr.CLM_Contract_Description__c}"/>
+                </apex:column>
+                <apex:column headerValue="Status Category" headerClass="headerStyle">
+                    <apex:inputField value="{!agr.Apttus__Status_Category__c}"/>
+                </apex:column>
+                <apex:column headerValue="Status" headerClass="headerStyle">
+                    <apex:inputField value="{!agr.Apttus__Status__c}"/>
+                </apex:column>
+                <apex:column headerValue="Expiration Date" headerClass="headerStyle">
+                    <apex:inputField value="{!agr.GF_Contract_End_Date__c}" id="hiddenElement"/>
+                </apex:column>               
+                <apex:column headerClass="headerStyle" style="width:7%">
+                    <apex:facet name="header">Warning Notice <br/> Recipient 1</apex:facet>
+                    <apex:inputField styleClass="noticerecpt1style_{!rowno}" value="{!agr.Warning_Notice_Recipient_1__c}" style="width:70%"/>
+                    <apex:image value="{!$Resource.contact_lookup_icon}" onclick="openLookup('noticerecpt1style_'+'{!rowno}');" style="cursor:pointer;vertical-align: middle;" />
+                </apex:column>
+                <apex:column headerClass="headerStyle" style="width:7%">
+                    <apex:facet name="header">Warning Notice <br/> Recipient 2</apex:facet>
+                    <apex:inputField styleClass="noticerecpt2style_{!rowno}" value="{!agr.Warning_Notice_Recipient_2__c}" style="width:70%"/>
+                    <apex:image value="{!$Resource.contact_lookup_icon}" onclick="openLookup('noticerecpt2style_'+'{!rowno}');" style="cursor:pointer;vertical-align: middle;" />
+                </apex:column>
+                <apex:column headerClass="headerStyle" style="width:7%">
+                    <apex:facet name="header">Warning Notice <br/> Recipient 3</apex:facet>
+                    <apex:inputField styleClass="noticerecpt3style_{!rowno}" value="{!agr.Warning_Notice_Recipient_3__c}" style="width:70%"/>
+                    <apex:image value="{!$Resource.contact_lookup_icon}" onclick="openLookup('noticerecpt3style_'+'{!rowno}');" style="cursor:pointer;vertical-align: middle;" />
+                </apex:column>
+                <apex:column headerClass="headerStyle">
+                    <apex:facet name="header">Contract <br/> Administrator</apex:facet>
+                    <apex:variable var="rowno" value="{!rowno+1}"/>
+                    <apex:inputField value="{!agr.CLM_Contract_Administrator__c}"/>
+                </apex:column>
+				<apex:column headerValue="Renewal Notes" headerClass="headerStyle">
+                    <apex:inputField value="{!agr.CLM_Renewal_Notes__c}"/>
+                </apex:column>				                
+                <apex:column headerValue="Other Notes" headerClass="headerStyle">
+                    <!--<apex:inputField value="{!agr.CLM_Other_Notes__c}" id="inputnotes"/> -->
+                    <apex:inputtextarea richtext="true" value="{!agr.CLM_Other_Notes__c}" cols="80" rows="4"/>
+                </apex:column>                                
+            </apex:pageBlockTable>
+            </apex:outputPanel> 
+                
+        </apex:pageBlock>
+        </apex:outputPanel>        
+        
+    </apex:form> 
+    
+</apex:page>

@@ -1,0 +1,417 @@
+<!--
+* Author: Anil Kumar
+* Company: JK Technosoft
+* Project: MPW
+* Description: Used to display assigned WIP to Customer on Customer Portal
+* History:
+*    Anil Kumar 25/04/2016  - Created 
+-->
+<apex:page title="My MPW WIP" controller="MPWCustomerWIPController" showHeader="false" sidebar="false" >
+
+    <apex:stylesheet value="{!URLFOR($Resource.MPWRelatedCSS, '/MPWRelatedCSS/MPWMyDevicesVF.css')}" />
+    <apex:stylesheet value="/sCSS/21.0/sprites/1297816277000/Theme3/default/gc/versioning.css" />
+    
+    <apex:includeScript value="{!URLFOR($Resource.jQuery_1_11_3_min, '/jquery-1.11.3.min/jquery-1.11.3.min.js')}" />
+    
+    <style>
+        .mpw-bPageBlock {
+            background-color: #f8f8f8;
+            border-bottom: 1px solid #eaeaea;
+            border-left: 1px solid #eaeaea;
+            border-right: 1px solid #eaeaea;
+            -moz-border-radius: 4px;
+            -webkit-border-radius: 4px;
+            border-top: 3px solid #702342;
+            border-radius: 4px;
+            margin-top: 10px;
+        }
+        .mpw-bPageBlock .headerRow {
+            text-align: center;
+        }
+        .mpw-bPageBlock th.headerRow div label{
+            float: none;
+        }
+        .mpw-bPageBlock th.headerRow:first-child div label{
+            float: left;
+        }
+        .MPWCustomerLotAssignment .list {
+            width: 100%;
+            overflow: auto;
+            display: block;
+        }
+        .mpw-labelCol {
+            padding: 10px;
+            text-align: right;
+            font-size: 91%;
+            font-weight: bold;
+            color: #4a4a56;
+            width: 18%;
+        }
+        .mpw-granLeft {
+            padding-right: 13px;
+            width: 5%;
+            white-space: nowrap;
+        }
+        .mpw-granRight {
+            padding-bottom: 10px;
+            padding-top: 10px;
+            padding-left: 8px;
+            white-space: nowrap;
+            width: auto;
+        }
+        .mpw-dailyDiv0, .mpw-weeklyDiv0 {
+            display: block;
+            white-space: nowrap;
+            border: 1px solid rgb(204,204,204);
+            background-color: rgb(255,255,255);
+            float: left;
+            line-height: 2;
+            padding: 5px;
+        }
+        .mpw-dailyDiv0 fieldset, .mpw-weeklyDiv0 fieldset {
+            padding: 0px;
+        }
+    </style>
+    <script type="text/javascript">
+        function startLoading(){
+            $('#load_scrl').css('top', $(document).scrollTop() + 200);
+            $('.loadingBox').show(); 
+        }
+        function endLoading(){
+            $('.loadingBox').hide();
+        }
+    </script>
+
+    <apex:form id="frm" >
+        <apex:actionFunction name="renderFrequencyAF" action="{!renderFrequency}" rerender="opSchedule" oncomplete="alert('2');"/>
+        
+        <apex:outputpanel id="err" >
+            <apex:pageMessages />
+        </apex:outputpanel>
+        
+        <div class="MPWCustomerLotAssignment" >
+            <apex:outputpanel rendered="{!!isReportSchedule}" >
+                <table style="width: 100%;" border="0" >
+                    <tr>
+                        <td style="text-align: right; padding: 5px;font-weight: bold;" >Customer Tapeout Date</td>
+                        <td style="text-align: left; padding: 5px;width: 190px;" >
+                            From:&nbsp;<apex:inputfield value="{!oWIPDummy.Notification_Start_Date__c}" /> 
+                        </td>
+                        <td style="text-align: left; padding: 5px;width: 190px;" >
+                            To:&nbsp;<apex:inputfield value="{!oWIPDummy.Notification_End_Date__c}" /> 
+                        </td>
+                        <td style="width: 94px;padding: 5px 12px;" >
+                            <apex:commandButton action="{!filterWIP}" rerender="frm, err" value="Filter WIP" style="width: 94px;" />
+                        </td>
+                    </tr>
+                </table>
+            </apex:outputpanel>
+            
+            <apex:outputpanel id="opDummy" />
+            
+            <apex:outputpanel rendered="{!!isReportSchedule}" >
+                <apex:pageBlock title="My MPW WIP Lot" tabStyle="MPW_WIP_Lot__c" >
+                    <apex:pageBlockButtons location="top" style="float: right;" rendered="{!IF(MyMPWAssignments.size > 0, true, false)}" >
+                        <apex:commandButton action="{!exportToExcel}" rerender="opDummy, err" value="Export to Excel" /> 
+                        <apex:commandButton action="{!reportSchedule}" rerender="frm" value="Subscribe Report" 
+                        rendered="{!IF(oReportScheduleCS.Id != null, false, true)}" /> 
+                        <apex:commandButton action="{!editReportSchedule}" rerender="frm" value="Edit Subscribed Report" 
+                        rendered="{!IF(oReportScheduleCS.Id != null, true, false)}"/> 
+                    </apex:pageBlockButtons>
+                    
+                    <apex:pageBlockTable id="myAssignmentTable" value="{!MyMPWAssignments}" rendered="{!IF(MyMPWAssignments.size > 0, true, false)}" var="assign" >
+                        <apex:column headerClass="{!IF(strSortField == 'MPW_Form_Customer_Account_Name__c', 'TableTitle', '')}" >
+                            <apex:facet name="header">
+                                <apex:outputLabel onclick="sortRecordsAF('MPW_Form_Customer_Account_Name__c');" styleClass="hand colDiv">
+                                    Customer
+                                    <apex:image value="data:image/gif;base64,R0lGODlhAQABAID/AMDAwAAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==" styleClass="sortASC" rendered="{!IF(AND(strSortField == 'MPW_Form_Customer_Account_Name__c', strSortType == 'ASC'), true, false)}" />
+                                    <apex:image value="data:image/gif;base64,R0lGODlhAQABAID/AMDAwAAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==" styleClass="sortDESC" rendered="{!IF(AND(strSortField == 'MPW_Form_Customer_Account_Name__c', strSortType == 'DESC'), true, false)}" />
+                                </apex:outputLabel>
+                            </apex:facet>
+                            <apex:outputText value="{!assign.MPW_Form_Customer_Account_Name__c}" />
+                        </apex:column>
+                        <apex:column headerClass="{!IF(strSortField == 'MPW_Train_Name__c', 'TableTitle', '')}" >
+                            <apex:facet name="header">
+                                <apex:outputLabel onclick="sortRecordsAF('MPW_Train_Name__c');" styleClass="hand colDiv">
+                                    MPW Train
+                                    <apex:image value="data:image/gif;base64,R0lGODlhAQABAID/AMDAwAAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==" styleClass="sortASC" rendered="{!IF(AND(strSortField == 'MPW_Train_Name__c', strSortType == 'ASC'), true, false)}" />
+                                    <apex:image value="data:image/gif;base64,R0lGODlhAQABAID/AMDAwAAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==" styleClass="sortDESC" rendered="{!IF(AND(strSortField == 'MPW_Train_Name__c', strSortType == 'DESC'), true, false)}" />
+                                </apex:outputLabel>
+                            </apex:facet>
+                            <apex:outputText value="{!assign.MPW_Train_Name__c}" />
+                        </apex:column>
+                        <apex:column headerClass="{!IF(strSortField == 'Prime_Die_Name__c', 'TableTitle', '')}" >
+                            <apex:facet name="header">
+                                <apex:outputLabel onclick="sortRecordsAF('Prime_Die_Name__c');" styleClass="hand colDiv">
+                                    MPW Prime Die
+                                    <apex:image value="data:image/gif;base64,R0lGODlhAQABAID/AMDAwAAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==" styleClass="sortASC" rendered="{!IF(AND(strSortField == 'Prime_Die_Name__c', strSortType == 'ASC'), true, false)}" />
+                                    <apex:image value="data:image/gif;base64,R0lGODlhAQABAID/AMDAwAAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==" styleClass="sortDESC" rendered="{!IF(AND(strSortField == 'Prime_Die_Name__c', strSortType == 'DESC'), true, false)}" />
+                                </apex:outputLabel>
+                            </apex:facet>
+                            <apex:outputText value="{!assign.Prime_Die_Name__c}" />
+                        </apex:column>
+                        <apex:column headerClass="{!IF(strSortField == 'MPW_form__c', 'TableTitle', '')}" >
+                            <apex:facet name="header">
+                                <apex:outputLabel onclick="sortRecordsAF('MPW_form__c');" styleClass="hand colDiv">
+                                    MPW Form#
+                                    <apex:image value="data:image/gif;base64,R0lGODlhAQABAID/AMDAwAAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==" styleClass="sortASC" rendered="{!IF(AND(strSortField == 'MPW_form__c', strSortType == 'ASC'), true, false)}" />
+                                    <apex:image value="data:image/gif;base64,R0lGODlhAQABAID/AMDAwAAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==" styleClass="sortDESC" rendered="{!IF(AND(strSortField == 'MPW_form__c', strSortType == 'DESC'), true, false)}" />
+                                </apex:outputLabel>
+                            </apex:facet>
+                            <apex:outputText value="{!assign.MPW_form__c}" />
+                        </apex:column>
+                        <apex:column headerClass="{!IF(strSortField == 'Technology_Type__c', 'TableTitle', '')}" >
+                            <apex:facet name="header">
+                                <apex:outputLabel onclick="sortRecordsAF('Technology_Type__c');" styleClass="hand colDiv">
+                                    Technology Name
+                                    <apex:image value="data:image/gif;base64,R0lGODlhAQABAID/AMDAwAAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==" styleClass="sortASC" rendered="{!IF(AND(strSortField == 'Technology_Type__c', strSortType == 'ASC'), true, false)}" />
+                                    <apex:image value="data:image/gif;base64,R0lGODlhAQABAID/AMDAwAAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==" styleClass="sortDESC" rendered="{!IF(AND(strSortField == 'Technology_Type__c', strSortType == 'DESC'), true, false)}" />
+                                </apex:outputLabel>
+                            </apex:facet>
+                            <apex:outputText value="{!assign.Technology_Type__c}" />
+                        </apex:column>
+                        <apex:column headerClass="{!IF(strSortField == 'Sales_Order__c', 'TableTitle', '')}" >
+                            <apex:facet name="header">
+                                <apex:outputLabel onclick="sortRecordsAF('Sales_Order__c');" styleClass="hand colDiv">
+                                    Sales Order
+                                    <apex:image value="data:image/gif;base64,R0lGODlhAQABAID/AMDAwAAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==" styleClass="sortASC" rendered="{!IF(AND(strSortField == 'Sales_Order__c', strSortType == 'ASC'), true, false)}" />
+                                    <apex:image value="data:image/gif;base64,R0lGODlhAQABAID/AMDAwAAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==" styleClass="sortDESC" rendered="{!IF(AND(strSortField == 'Sales_Order__c', strSortType == 'DESC'), true, false)}" />
+                                </apex:outputLabel>
+                            </apex:facet>
+                            <apex:outputText value="{!assign.Sales_Order__c}" />
+                        </apex:column>
+                        <apex:column headerClass="{!IF(strSortField == 'Geometry__c', 'TableTitle', '')}" >
+                            <apex:facet name="header">
+                                <apex:outputLabel onclick="sortRecordsAF('Geometry__c');" styleClass="hand colDiv">
+                                    Geometry
+                                    <apex:image value="data:image/gif;base64,R0lGODlhAQABAID/AMDAwAAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==" styleClass="sortASC" rendered="{!IF(AND(strSortField == 'Geometry__c', strSortType == 'ASC'), true, false)}" />
+                                    <apex:image value="data:image/gif;base64,R0lGODlhAQABAID/AMDAwAAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==" styleClass="sortDESC" rendered="{!IF(AND(strSortField == 'Geometry__c', strSortType == 'DESC'), true, false)}" />
+                                </apex:outputLabel>
+                            </apex:facet>
+                            <apex:outputText value="{!assign.Geometry__c}" />
+                        </apex:column>
+                        <apex:column headerClass="{!IF(strSortField == 'Current_Scheduled_Date_CSD__c', 'TableTitle', '')}" >
+                            <apex:facet name="header">
+                                <apex:outputLabel onclick="sortRecordsAF('Current_Scheduled_Date_CSD__c');" styleClass="hand colDiv">
+                                    Current Schedule Date(CSD)
+                                    <apex:image value="data:image/gif;base64,R0lGODlhAQABAID/AMDAwAAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==" styleClass="sortASC" rendered="{!IF(AND(strSortField == 'Current_Scheduled_Date_CSD__c', strSortType == 'ASC'), true, false)}" />
+                                    <apex:image value="data:image/gif;base64,R0lGODlhAQABAID/AMDAwAAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==" styleClass="sortDESC" rendered="{!IF(AND(strSortField == 'Current_Scheduled_Date_CSD__c', strSortType == 'DESC'), true, false)}" />
+                                </apex:outputLabel>
+                            </apex:facet>
+                            <apex:outputText value="{0,date,dd MMM, YYYY}"
+                            rendered="{!IF(assign.Current_Scheduled_Date_CSD_OR__c == NULL, true, false)}" > 
+                                <apex:param value="{!assign.Current_Scheduled_Date_CSD__c}" /> 
+                            </apex:outputText>
+                            <apex:outputText value="{0,date,dd MMM, YYYY}"
+                            rendered="{!IF(assign.Current_Scheduled_Date_CSD_OR__c != NULL, true, false)}" > 
+                                <apex:param value="{!assign.Current_Scheduled_Date_CSD_OR__c}" /> 
+                            </apex:outputText>
+                        </apex:column>
+                        <apex:column headerClass="{!IF(strSortField == 'Bare_Die_Shipment_Forecast_Date_BL__c', 'TableTitle', '')}" >
+                            <apex:facet name="header">
+                                <apex:outputLabel onclick="sortRecordsAF('Bare_Die_Shipment_Forecast_Date_BL__c');" styleClass="hand colDiv">
+                                    Bare Die Shipment Forecast Date
+                                    <apex:image value="data:image/gif;base64,R0lGODlhAQABAID/AMDAwAAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==" styleClass="sortASC" rendered="{!IF(AND(strSortField == 'Bare_Die_Shipment_Forecast_Date_BL__c', strSortType == 'ASC'), true, false)}" />
+                                    <apex:image value="data:image/gif;base64,R0lGODlhAQABAID/AMDAwAAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==" styleClass="sortDESC" rendered="{!IF(AND(strSortField == 'Bare_Die_Shipment_Forecast_Date_BL__c', strSortType == 'DESC'), true, false)}" />
+                                </apex:outputLabel>
+                            </apex:facet>
+                            <apex:outputText value="{0,date,dd MMM, YYYY}" 
+                            rendered="{!IF(assign.Bare_Die_Shipment_Forecast_Date_OR__c == NULL, true, false)}" > 
+                                <apex:param value="{!assign.Bare_Die_Shipment_Forecast_Date_BL__c}" /> 
+                            </apex:outputText>
+                            <apex:outputText value="{0,date,dd MMM, YYYY}" 
+                            rendered="{!IF(assign.Bare_Die_Shipment_Forecast_Date_OR__c != NULL, true, false)}" > 
+                                <apex:param value="{!assign.Bare_Die_Shipment_Forecast_Date_OR__c}" /> 
+                            </apex:outputText>
+                        </apex:column>
+                        <apex:column headerClass="{!IF(strSortField == 'Current_Mask_Layer__c', 'TableTitle', '')}" >
+                            <apex:facet name="header">
+                                <apex:outputLabel onclick="sortRecordsAF('Current_Mask_Layer__c');" styleClass="hand colDiv">
+                                    Current Mask Layer
+                                    <apex:image value="data:image/gif;base64,R0lGODlhAQABAID/AMDAwAAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==" styleClass="sortASC" rendered="{!IF(AND(strSortField == 'Current_Mask_Layer__c', strSortType == 'ASC'), true, false)}" />
+                                    <apex:image value="data:image/gif;base64,R0lGODlhAQABAID/AMDAwAAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==" styleClass="sortDESC" rendered="{!IF(AND(strSortField == 'Current_Mask_Layer__c', strSortType == 'DESC'), true, false)}" />
+                                </apex:outputLabel>
+                            </apex:facet>
+                            <apex:outputText value="{!assign.Current_Mask_Layer__c}" />
+                        </apex:column>
+                        <apex:column headerClass="{!IF(strSortField == 'Remaining_Mask_Count__c', 'TableTitle', '')}" >
+                            <apex:facet name="header">
+                                <apex:outputLabel onclick="sortRecordsAF('Remaining_Mask_Count__c');" styleClass="hand colDiv">
+                                    Remaining Mask Count
+                                    <apex:image value="data:image/gif;base64,R0lGODlhAQABAID/AMDAwAAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==" styleClass="sortASC" rendered="{!IF(AND(strSortField == 'Remaining_Mask_Count__c', strSortType == 'ASC'), true, false)}" />
+                                    <apex:image value="data:image/gif;base64,R0lGODlhAQABAID/AMDAwAAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==" styleClass="sortDESC" rendered="{!IF(AND(strSortField == 'Remaining_Mask_Count__c', strSortType == 'DESC'), true, false)}" />
+                                </apex:outputLabel>
+                            </apex:facet>
+                            <apex:outputText value="{!assign.Remaining_Mask_Count__c}" 
+                            rendered="{!IF(OR(AND(assign.MPW_Prime_Die__r.Fab_ID__c != 'Fab1', assign.MPW_Prime_Die__r.Fab_ID__c != 'Fab8'), AND(assign.Geometry__c != '0.028UM', assign.Geometry__c != '0.022UM', assign.Geometry__c != '0.020UM', assign.Geometry__c != '0.014UM', assign.Geometry__c != '0.010UM', assign.Geometry__c != '0.007UM')), true, false)}" />
+                        </apex:column>
+                        <apex:column headerClass="{!IF(strSortField == 'Stage_Name__c', 'TableTitle', '')}" >
+                            <apex:facet name="header">
+                                <apex:outputLabel onclick="sortRecordsAF('Stage_Name__c');" styleClass="hand colDiv">
+                                    Stage Name
+                                    <apex:image value="data:image/gif;base64,R0lGODlhAQABAID/AMDAwAAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==" styleClass="sortASC" rendered="{!IF(AND(strSortField == 'Stage_Name__c', strSortType == 'ASC'), true, false)}" />
+                                    <apex:image value="data:image/gif;base64,R0lGODlhAQABAID/AMDAwAAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==" styleClass="sortDESC" rendered="{!IF(AND(strSortField == 'Stage_Name__c', strSortType == 'DESC'), true, false)}" />
+                                </apex:outputLabel>
+                            </apex:facet>
+                            <apex:outputText value="{!assign.Stage_Name__c}" />
+                        </apex:column>
+                        <apex:column headerClass="{!IF(strSortField == 'Lot_State__c', 'TableTitle', '')}" >
+                            <apex:facet name="header">
+                                <apex:outputLabel onclick="sortRecordsAF('Lot_State__c');" styleClass="hand colDiv">
+                                    Lot State
+                                    <apex:image value="data:image/gif;base64,R0lGODlhAQABAID/AMDAwAAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==" styleClass="sortASC" rendered="{!IF(AND(strSortField == 'Lot_State__c', strSortType == 'ASC'), true, false)}" />
+                                    <apex:image value="data:image/gif;base64,R0lGODlhAQABAID/AMDAwAAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==" styleClass="sortDESC" rendered="{!IF(AND(strSortField == 'Lot_State__c', strSortType == 'DESC'), true, false)}" />
+                                </apex:outputLabel>
+                            </apex:facet>
+                            <apex:outputText value="{!assign.Lot_State__c}" />
+                        </apex:column>
+                        <apex:column headerClass="{!IF(strSortField == 'Current_Lot_Location__c', 'TableTitle', '')}" >
+                            <apex:facet name="header">
+                                <apex:outputLabel onclick="sortRecordsAF('Current_Lot_Location__c');" styleClass="hand colDiv">
+                                    Current Lot Location
+                                    <apex:image value="data:image/gif;base64,R0lGODlhAQABAID/AMDAwAAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==" styleClass="sortASC" rendered="{!IF(AND(strSortField == 'Current_Lot_Location__c', strSortType == 'ASC'), true, false)}" />
+                                    <apex:image value="data:image/gif;base64,R0lGODlhAQABAID/AMDAwAAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==" styleClass="sortDESC" rendered="{!IF(AND(strSortField == 'Current_Lot_Location__c', strSortType == 'DESC'), true, false)}" />
+                                </apex:outputLabel>
+                            </apex:facet>
+                            <apex:outputText value="{!assign.Current_Lot_Location__c}" />
+                        </apex:column>
+                        <apex:column headerClass="{!IF(strSortField == 'Lot_Last_Modified_Date__c', 'TableTitle', '')}" >
+                            <apex:facet name="header">
+                                <apex:outputLabel onclick="sortRecordsAF('Lot_Last_Modified_Date__c');" styleClass="hand colDiv">
+                                    Last Modified Date
+                                    <apex:image value="data:image/gif;base64,R0lGODlhAQABAID/AMDAwAAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==" styleClass="sortASC" rendered="{!IF(AND(strSortField == 'Lot_Last_Modified_Date__c', strSortType == 'ASC'), true, false)}" />
+                                    <apex:image value="data:image/gif;base64,R0lGODlhAQABAID/AMDAwAAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==" styleClass="sortDESC" rendered="{!IF(AND(strSortField == 'Lot_Last_Modified_Date__c', strSortType == 'DESC'), true, false)}" />
+                                </apex:outputLabel>
+                            </apex:facet>
+                            <apex:outputText value="{0,date,dd MMM, YYYY}"> 
+                                <apex:param value="{!assign.Lot_Last_Modified_Date__c}" /> 
+                            </apex:outputText>
+                        </apex:column>
+                    </apex:pageBlockTable> 
+                    <apex:outputText value="No records found." rendered="{!IF(MyMPWAssignments.size == 0, true, false)}" />
+                        
+                    <!-- Pagination Controls -->
+                    <br/>
+                    <apex:outputPanel id="controlPanel" layout="block" style="margin: 0; white-space: nowrap; align: center; position: relative;" rendered="{!IF(MyMPWAssignments.size > 0, true, false)}">
+                        <div style="position: absolute;">
+                        Showing Page {!intCurrentPageNo} of {!intTotalNoOfPages} ({!intTotalNoOfRecords} Records)
+                        </div>
+                        <center>
+                            <apex:commandLink action="{!first}" style="text-decoration: none;" rendered="{!IF(HasPrevious, true, false)}" rerender="myAssignmentTable, controlPanel, err" status="loadStatus">
+                                <apex:image value="/s.gif" styleClass="first1" alt="First Page" />
+                            </apex:commandLink>
+                            <apex:outputPanel rendered="{!IF(NOT(HasPrevious), true, false)}">
+                                <apex:image value="/s.gif" styleClass="firstoff1" alt="First Page" />
+                            </apex:outputPanel>
+                            &nbsp;
+                            <apex:commandLink action="{!previous}" style="text-decoration: none;" rendered="{!IF(HasPrevious, true, false)}" rerender="myAssignmentTable, controlPanel, err" status="loadStatus">
+                                <apex:image value="/s.gif" styleClass="prev1" alt="Previous" /><span class="prevtext">Previous</span>
+                            </apex:commandLink>
+                            <apex:outputPanel rendered="{!IF(NOT(HasPrevious), true, false)}">
+                                <apex:image value="/s.gif" styleClass="prevoff1" alt="Previous" /><span class="prevtextoff1">Previous</span>
+                            </apex:outputPanel>
+                            &nbsp;&nbsp;
+                            <apex:commandLink action="{!next}" style="text-decoration: none;" rendered="{!IF(HasNext, true, false)}" rerender="myAssignmentTable, controlPanel, err" status="loadStatus">
+                                <span class="nexttext">Next</span><apex:image value="/s.gif" styleClass="next1" alt="Next" />
+                            </apex:commandLink>
+                            <apex:outputPanel rendered="{!IF(NOT(HasNext), true, false)}">
+                                <span class="nexttextoff1">Next</span><apex:image value="/s.gif" styleClass="nextoff1" alt="Next" />
+                            </apex:outputPanel>
+                            &nbsp;
+                            <apex:commandLink action="{!last}" style="text-decoration: none;" rendered="{!IF(HasNext, true, false)}" rerender="myAssignmentTable, controlPanel, err" status="loadStatus">
+                                <apex:image value="/s.gif" styleClass="last1" alt="Last Page" />
+                            </apex:commandLink>
+                            <apex:outputPanel rendered="{!IF(NOT(HasNext), true, false)}">
+                                <apex:image value="/s.gif" styleClass="lastoff1" alt="Last Page" />
+                            </apex:outputPanel>
+                        </center>
+                    </apex:outputPanel>
+                </apex:pageBlock>
+            </apex:outputPanel>
+            
+            <apex:outputpanel rendered="{!isReportSchedule}" >
+                <apex:pageBlock title="My MPW WIP Lot Report Schedule" tabStyle="MPW_WIP_Lot__c" >
+                    <apex:pageBlockButtons location="top" >
+                        <apex:commandButton action="{!saveReportSchedule}" rerender="frm" value="Save" /> 
+                        <apex:commandButton action="{!cancelReportSchedule}" rerender="frm" value="Cancel" immediate="true"/> 
+                        <apex:commandButton action="{!deleteReportSchedule}" rerender="frm" value="Delete" 
+                        rendered="{!IF(oReportScheduleCS.Id != null, true, false)}"/> 
+                    </apex:pageBlockButtons>
+                    <apex:pageBlockSection columns="1" >
+                        <apex:pageBlockSectionItem >
+                            <apex:outputLabel value="Schedule Report" />
+                            <apex:outputpanel id="opSchedule" >
+                                <table style="border: 1px solid rgb(221,221,221);margin-bottom: 10px;width: 100%;background-color: rgb(238,238,238);" >
+                                    <tr>
+                                        <td class="mpw-labelCol" >Frequency</td>
+                                        <td class="mpw-granLeft" >
+                                            <apex:selectRadio value="{!strScheduledFrequency}" layout="pageDirection" >
+                                               <!--  <apex:actionSupport event="onchange" action="{!renderFrequency}" rerender="opSchedule, err" /> -->
+                                                <apex:selectOption itemValue="DAILY" itemLabel="Daily" />
+                                                <apex:selectOption itemValue="WEEKLY" itemLabel="Weekly" />
+                                                <apex:selectOption itemValue="MONTHLY" itemLabel="Monthly" />
+                                            </apex:selectRadio>
+                                        </td>
+                                        <td class="mpw-granRight" > 
+                                            <!--  <apex:outputpanel rendered="{!IF(oReportScheduleCS.Scheduled_Frequency1__c == 'DAILY', true, false)}" >
+                                                <div class="mpw-dailyDiv0" >
+                                                    <apex:selectRadio value="{!oReportScheduleCS.Scheduled_Frequency2__c}" layout="pageDirection" >
+                                                        <apex:selectOption itemValue="EVERY_WEEKDAY" itemLabel="Every weekday" />
+                                                        <apex:selectOption itemValue="EVERY_DAY " itemLabel="Every day" />
+                                                    </apex:selectRadio>
+                                                </div>
+                                            </apex:outputpanel>
+                                            <apex:outputpanel rendered="{!IF(oReportScheduleCS.Scheduled_Frequency1__c == 'WEEKLY', true, false)}" >
+                                                <div class="mpw-weeklyDiv0" >
+                                                    <span>Recurs every week on </span>
+                                                    <apex:selectCheckboxes value="{!oReportScheduleCS.Scheduled_Frequency2__c}" layout="pageDirection" >
+                                                        <apex:selectOption itemValue="SUNDAY" itemLabel="Sunday" />
+                                                        <apex:selectOption itemValue="MONDAY" itemLabel="Monday" />
+                                                        <apex:selectOption itemValue="TUESDAY" itemLabel="Tuesday" />
+                                                        <apex:selectOption itemValue="WEDNESDAY" itemLabel="Wednesday" />
+                                                        <apex:selectOption itemValue="THURSDAY" itemLabel="Thursday" />
+                                                        <apex:selectOption itemValue="FRIDAY" itemLabel="Friday" />
+                                                        <apex:selectOption itemValue="SATURDAY" itemLabel="Saturday" />
+                                                    </apex:selectCheckboxes>
+                                                </div>
+                                            </apex:outputpanel> -->
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td class="mpw-labelCol" >Start</td>
+                                        <td colspan="2" style="padding: 2px 10px;text-align: left;" >
+                                            <apex:outputfield value="{!oReportScheduleCS.Start_Date__c}"  />
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td class="mpw-labelCol" >End</td>
+                                        <td colspan="2" style="padding: 0px 10px;text-align: left;" >
+                                            <apex:outputfield value="{!oReportScheduleCS.End_Date__c}"  />
+                                        </td>
+                                    </tr> 
+                                    <tr>
+                                        <td class="mpw-labelCol" >Time</td>
+                                        <td colspan="2" style="padding: 5px 10px;text-align: left;" >
+                                            <select disabled="disabled" >
+                                                <option value="10:00 AM">10:00 AM</option>
+                                            </select>
+                                        </td>
+                                    </tr>
+                                </table>
+                            </apex:outputpanel>
+                        </apex:pageBlockSectionItem>
+                    </apex:pageBlockSection> 
+                </apex:pageBlock>
+            </apex:outputPanel>
+            
+        </div>
+        <apex:actionfunction name="sortRecordsAF" action="{!sortRecords}" rerender="myAssignmentTable, controlPanel, err" status="loadStatus" >     
+            <apex:param name="param1" value="" assignTo="{!strSortField}" />           
+        </apex:actionfunction>
+        
+        <apex:actionStatus onstart="startLoading();" onstop="endLoading();" id="loadStatus" />
+        <div id="load_scrl" class="loadingBox loader" style="display: none" ></div>
+        <div id="load_bck" class="loadingBox overlay" ></div>
+    </apex:form>
+    
+</apex:page>

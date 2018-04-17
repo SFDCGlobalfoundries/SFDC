@@ -1,0 +1,305 @@
+<!--
+ Type Name: SalesOrder_Search
+ Author: Cognizant Technology Solutions
+ Created Date: 3-Nov-2016
+ Reason: This page is used for searching sales order schedule records 
+ Change History: 
+ -->
+
+
+<apex:page readOnly="true" controller="SalesOrder_SearchController"  showChat="false" cache="true" sidebar="false" tabStyle="Sales_Order_Schedule__c" id="SoSearch">
+    <apex:form id="TheForm">
+    <apex:pageBlock mode="mainDetails" title="Sales Order Schedule Search" id="pageblock1" >
+            <apex:pageMessages id="pgmsgs"/>
+            <div class="search-block">
+            
+                <div class="rowText">
+                    <table width="100%" style="border-collapse: collapse;">
+                        <tr > 
+                            <apex:variable var="foo" value="foo">
+                                <td style="width: 9%; align:left;"> 
+                                    <span>Sales Order Schedule Name</span>
+                                </td>
+                                <td style="width: 25%; align:left;">
+                                    <div style="display: inline-table" class="col-md-6">
+                                        <apex:inputText value="{!SalesOrderName}" />
+                                    </div>
+                                </td>
+                             </apex:variable>  
+                              <apex:variable var="foo" value="foo">
+                                <td style="width: 9%; align:left;"> 
+                                    <span>Account Name</span>
+                                </td>
+                                <td style="width: 25%; align:left;">
+                                    <div style="display: inline-table" class="col-md-6">
+                                        <apex:inputText value="{!AccountName}" />
+                                    </div>
+                                </td>
+                             </apex:variable>  
+                             <apex:variable var="foo" value="foo">
+                                <td style="width: 9%; align:left;"> 
+                                    <span>PO Number</span>
+                                </td>
+                                <td style="width: 25%; align:left;">
+                                    <div style="display: inline-table" class="col-md-6">
+                                        <apex:inputText value="{!PONumber}" />
+                                    </div>
+                                </td>
+                                  
+                             </apex:variable>
+                             </tr> 
+                             <tr>
+                             <apex:variable var="foo" value="foo">
+                                <td style="width: 9%; align:left;"> 
+                                    <span>Part Number</span>
+                                </td>
+                                <td style="width: 25%; align:left;">
+                                    <div style="display: inline-table" class="col-md-6">
+                                        <apex:inputText value="{!PartNumber}" />
+                                    </div>
+                                </td>
+                             </apex:variable>  
+                            <!-- <apex:variable var="foo" value="foo">
+                                <td style="width: 9%; align:left;"> 
+                                    <span>Status</span>
+                                </td>
+                                <td style="width: 25%; align:left;">
+                                    <div style="display: inline-table" class="col-md-6">
+                                        <apex:inputText value="{!Status}" />
+                                    </div>
+                                </td>
+                             </apex:variable>  -->
+                        </tr>
+                    </table>
+                </div>
+            </div>
+            <div class="process-block">
+                <apex:actionStatus id="ProcessButtonStatus">
+                    <apex:facet name="stop">
+                        <apex:outputPanel >
+                            <apex:commandButton styleClass="search-block-button" value="Search" action="{!Search}" rerender="TablePanel,pgmsgs" status="TableUpdateStatus"/>
+                            <apex:commandButton styleClass="process-block-button" value="Clear All" action="{!ClearAll}" rerender="TheForm,TablePanel,pgmsgs" status="ProcessButtonStatus"/>
+                        </apex:outputPanel>
+                    </apex:facet>
+                    <apex:facet name="start">
+                        <apex:outputPanel >
+                            <apex:commandButton styleClass="process-block-button" value="Processing..." disabled="true" />
+                            <apex:commandButton styleClass="process-block-button" value="Processing..." disabled="true" />
+                            <apex:commandButton styleClass="process-block-button" value="Processing..." disabled="true" />
+                            <apex:commandButton styleClass="process-block-button" value="Processing..." disabled="true" />
+                        </apex:outputPanel>
+                    </apex:facet>
+                </apex:actionStatus>
+            </div>
+      </apex:pageBlock>   
+      <!-- ******************************************************* -->
+        <!-- search results table      -->
+        <apex:pageBlock id="TablePanel" title="Total Number of Sales Order: {!totalRecords}" >
+           <div>
+                <span class="page-buttonNext" style="float: left; margin-bottom: 5px;">
+                    <apex:commandButton value="<< Previous"  rerender="TablePanel" action="{!Previous}" disabled="{!!hasprevious}" status="TableUpdateStatus"/>
+                    <apex:commandButton value="Next >>"  rerender="TablePanel" action="{!Next}" disabled="{!!hasnext}" status="TableUpdateStatus"/>
+                </span>
+                <!-- alphabet selection -->
+               <span style="float: right; margin: 5px 5px 5px 5px;">
+                    <apex:repeat value="{!AlphaList}" var="a">
+                        <apex:commandLink value="{!a}" action="{!Search}" rerender="TablePanel"
+                            styleClass="alpha-link{!if(AlphaFilter=a,' alpha-select','')}" status="TableUpdateStatus">
+                            <apex:param name="AlphaFilter" value="{!a}" assignTo="{!AlphaFilter}" />
+                        </apex:commandLink>
+                    </apex:repeat>
+                </span>
+            </div>
+            <div style="clear: both;"></div>
+             <apex:actionStatus id="TableUpdateStatus">
+                <apex:inputHidden value="{!AlphaFilter}" id="hiddenField" />
+                <!-- ******************************************************* -->
+                <!-- loading message -->
+                <apex:facet name="start">
+                    <apex:outputPanel layout="block" styleClass="message infoM4">
+                        <apex:panelGrid columns="2" styleClass="messageTable" columnClasses="messageCell" style="padding:0px;margin:0px;">
+                            <apex:panelGroup >
+                                <img class="loading-icon" src="/s.gif" />
+                            </apex:panelGroup>
+                            <apex:panelGroup >
+                                <div class="messageText">Please wait...</div>
+                            </apex:panelGroup>
+                        </apex:panelGrid>
+                    </apex:outputPanel>
+                </apex:facet>
+                <apex:facet name="stop">
+                    <apex:pageBlockTable value="{!listSOPage}" var="a" id="TablePanel1" style="padding-top: 15px;" >
+                      <apex:column >
+                            <apex:facet name="header">
+                                <apex:commandLink action="{!SortToggle}" rerender="TablePanel" status="TableUpdateStatus">
+                                    <apex:param name="SortField" value="Name" assignTo="{!SortField}" />
+                                    <apex:outputText value="{!$ObjectType.Sales_Order_Schedule__c.Fields.Name.Label}{!IF(SortField=='Name',IF(SortDirection='asc','?','?'),'')}" />
+                                </apex:commandLink>
+                            </apex:facet>
+                             <apex:outputLink value="/{!a.Id}" target="_blank">{!a.SalesOrderName}</apex:outputlink>
+                            
+                        </apex:column>
+                        
+                         <apex:column >
+                            <apex:facet name="header">
+                                <apex:commandLink action="{!SortToggle}" rerender="TablePanel" status="TableUpdateStatus">
+                                    <apex:param name="SortField" value="SalesOrder_Account__c" assignTo="{!SortField}" />
+                                    <apex:outputText value="{!$ObjectType.Sales_Order_Schedule__c.Fields.SalesOrder_Account__c.Label}{!IF(SortField=='SalesOrder_Account__c',IF(SortDirection='asc','?','?'),'')}" />
+                                </apex:commandLink>
+                            </apex:facet>
+                            <label>{!a.AccountName}</label>
+                        </apex:column>
+                        
+                        <apex:column >
+                            <apex:facet name="header">
+                                <apex:commandLink action="{!SortToggle}" rerender="TablePanel" status="TableUpdateStatus">
+                                    <apex:param name="SortField" value="Purchase_order_number__c" assignTo="{!SortField}" />
+                                    <apex:outputText value="{!$ObjectType.Sales_Order_Schedule__c.Fields.Purchase_order_number__c.Label}{!IF(SortField=='Purchase_order_number__c',IF(SortDirection='asc','?','?'),'')}" />
+                                </apex:commandLink>
+                            </apex:facet>
+                            <label>{!a.PONumber}</label>
+                        </apex:column>
+                        
+                         <apex:column >
+                            <apex:facet name="header">
+                                <apex:commandLink action="{!SortToggle}" rerender="TablePanel" status="TableUpdateStatus">
+                                    <apex:param name="SortField" value="Part__c" assignTo="{!SortField}" />
+                                    <apex:outputText value="{!$ObjectType.Sales_Order_Schedule__c.Fields.Part__c.Label}{!IF(SortField=='Part__c',IF(SortDirection='asc','?','?'),'')}" />
+                                </apex:commandLink>
+                            </apex:facet>
+                            <label>{!a.PartNumber}</label>
+                        </apex:column>
+                        
+                        <!--<apex:column >
+                            <apex:facet name="header">
+                                <apex:commandLink action="{!SortToggle}" rerender="TablePanel" status="TableUpdateStatus">
+                                    <apex:param name="SortField" value="Status__c" assignTo="{!SortField}" />
+                                    <apex:outputText value="{!$ObjectType.Sales_Order_Schedule__c.Fields.Status__c.Label}{!IF(SortField=='Status__c',IF(SortDirection='asc','?','?'),'')}" />
+                                </apex:commandLink>
+                            </apex:facet>
+                            <label>{!a.Status}</label>
+                        </apex:column>-->
+                     
+                      </apex:pageBlockTable>
+                </apex:facet>
+            </apex:actionStatus>  
+              <div style="margin-top: 5px;">
+                <apex:outputText value="Number of Records per Page: " />
+                <apex:selectList value="{!RecPerPage}" size="1">
+                    <apex:selectOptions value="{!RecPerPageOption}" />
+                    <apex:actionSupport event="onchange" action="{!resetPagination}" reRender="TablePanel" status="TableUpdateStatus"  />
+                </apex:selectList>
+            </div>
+            <apex:outputpanel id="exportpanel">
+                <apex:iframe height="0px" width="px" id="export" src="{!exportUrl}" rendered="{!NOT(ISBLANK(exportUrl))}"/>
+            </apex:outputpanel>
+            
+        </apex:pageBlock>        
+                   
+    </apex:form>
+     <c:JqueryLibrary />
+    <style type="text/css">
+        .loading-icon {
+        background-image: url(/img/loading.gif);
+        width: 16px;
+        height: 16px;
+        } 
+        a.alpha-link {
+        font-weight: normal;
+        font-size: 91%;
+        padding: 0 4px;
+        color: #015BA7 !important;
+        } 
+        a.alpha-link+a.alpha-link {
+        border-left: 1px solid #CFCECE;
+        }
+        a.alpha-link:hover {
+        background-color: #e0f5fc !important;
+        } 
+        a.alpha-select {
+        font-weight: bold;
+        text-decoration: none;
+        background-color: #C6E1FF;
+        color: #000000 !important;
+        }
+        .casetable {
+        height: 200px;
+        overflow-y: scroll;
+        }
+        .search-block {
+        text-align: left;
+        }
+        .search-block input {
+        margin: 0px 0px 2px 0px;
+        }
+        .search-block-button {
+        min-width: 110px;
+        }
+        .search-block span{
+        font-weight: bold;
+        }
+        .rowText {
+        padding-bottom: 20px;
+        }
+        .rowPicklist1 {
+        padding-bottom: 20px;
+        }
+        .process-block {
+        text-align: center;
+        margin-top: 2px;
+        } 
+        .process-block input {
+        margin: 0px 5px;
+        }
+        .process-block-button {
+        min-width: 100px;
+        }
+        .page-buttons input {
+        min-width: 100px;
+        }
+        .page-buttonNext input {
+        min-width: 70px;
+        }
+        div.ui-datepicker{
+            font-size:10px;
+        }
+    </style>
+    <script>   
+    
+        $(document).ready(function(){
+            generateDateRangePicker('createdDateFrom', 'createdDateTo');
+            //generateDateRangePicker('createdDateTo', 'createdDateFrom');
+        });
+        
+        
+        function generateDateRangePicker(srcPicker, destPicker){
+            $('[id$="'+srcPicker+'"]').datepicker({
+              defaultDate: "+1w",
+              changeMonth: true,
+              changeYear:true,
+              numberOfMonths: 1,
+              yearRange:"-10:+00",
+              autoSize: true,
+              maxDate:'0',
+              onClose: function( selectedDate ) {
+                $('[id$="' + destPicker + '"]').datepicker( "option", "minDate", selectedDate );
+              }
+            });
+            $('[id$="'+destPicker+'"]').datepicker({
+              defaultDate: "+1w",
+              changeMonth: true,
+              changeYear:true,
+              numberOfMonths: 1,
+              yearRange:"-10:+00",
+              autoSize: true,
+              maxDate:'0',
+              onClose: function( selectedDate ) {
+                $('[id$="' + srcPicker + '"]').datepicker( "option", "maxDate", selectedDate );
+              }
+            });
+        }
+        function openVFinNewWindow(page,param){ 
+            window.open(page+'?id='+param,'_blank', 'toolbar=no, scrollbars=yes, resizable=yes, top=500, left=500, width=800, height=800');
+        }
+    </script>
+</apex:page>

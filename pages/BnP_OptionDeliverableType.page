@@ -1,0 +1,578 @@
+<!--
+Author        : Cognizant Technology Solutions
+Date Created  : 02/09/2016
+Description   : the purpose of Visualforce Page to capturethe Service,Design,wafer.Modul,Chip,Package Information.
+-->
+<apex:page standardController="Customer_Requirement__c" extensions="BnP_OptionDeliverableTypeCtrl" sidebar="false" >
+    <c:BnP_OptionHeader RcId="{!Customer_Requirement__c.Id}"></c:BnP_OptionHeader>
+    <apex:form id="theTabPanel">
+        <html>
+            <style type="text/css">
+                td.activeTab 
+                {
+                    background-image:none; 
+                    font-size:100%;
+                    font-weight: bold;
+                    border: 1px solid #003eff;
+                    background: #007fff;
+                    color: #ffffff;
+                    padding-top: 5px;
+                    padding-bottom: 5px;
+                }
+                td.inactiveTab 
+                { 
+                    background-color: #f6f6f6;
+                    color:blue; 
+                    background-image:none
+                    background: #f6f6f6;
+                    border: 1px solid #c5c5c5;
+                    color: #454545;
+                    padding-top: 4px;
+                    padding-bottom: 5px;
+                }
+                th.labelCol
+                {
+                  font-size:100%;
+                }
+        </style>
+        
+        
+            <apex:pageBlock title="Deliverable Type Inputs">
+                <apex:pageMessages id="DTMessage" escape="false"></apex:pageMessages>                
+                 <apex:pageBlockSection >
+                    <apex:selectList id="TableSelect" value="{!selectDeliverabletype}" multiselect="false" size="1" title="Select Deliverable Type" disabled="{!DeliverableTypedisable}">
+                        <b>Deliverable Type</b>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 
+                        <apex:selectOptions value="{!DeliverableType}"/>
+                        <apex:actionSupport event="onchange" rerender="Panel,DTMessage" action="{!DeliverableTypeMessage}"/>
+                    </apex:selectList>
+                     <apex:commandLink value="Export to Excel" action="{!doClick}" rendered="{!ShowExport}" style="Float:right;"/>
+                </apex:pageBlockSection>
+                 
+
+                <apex:outputPanel id="Panel">
+                    <apex:tabPanel value="{!Selectedcurenttab}" onclick="setSelectedTabOnController()" id="DeliverablePanel" tabClass="activeTab" inactiveTabClass="inactiveTab" contentStyle="font-size: 12px;" 
+rendered="{!selectDeliverabletype == 'Service' || selectDeliverabletype == 'Wafer' ||  selectDeliverabletype == 'Chip' || selectDeliverabletype == 'Module' || selectDeliverabletype == 'Design'}">
+                        <!-- This Tab For Service-->
+                        <apex:tab label="Service"  switchType="client" name="name1"  id="tabOne1" rendered="{!selectDeliverabletype == 'Service' || selectDeliverabletype == 'Wafer' || selectDeliverabletype == 'Chip' || selectDeliverabletype == 'Module' || selectDeliverabletype == 'Design'}" >
+                          
+                            <apex:pageBlock >
+                                <apex:pageBlockbuttons style="align:center;">
+                                
+                                <apex:actionStatus id="Loader" >
+                                <apex:facet name="start" >
+                                <img src="/img/loading.gif" title="Please Wait..." />                    
+                                </apex:facet>
+                                </apex:actionStatus>
+                                
+                                    <apex:commandButton action="{!SaveServicedata}" rendered="{!IsSaveVisible}" status="Loader" value="Save" reRender="theTabPanel"/>
+                                    <apex:commandButton action="{!EdittheSection}" rendered="{!IsEditVisible}" status="Loader" value="Edit" reRender="theTabPanel" />
+                                    <apex:commandButton action="{!canceldata}"  rendered="{!IsCancelVisible}"  value="Cancel" reRender="theTabPanel" />
+                                </apex:pageBlockbuttons>
+                                <apex:pageBlockSection title="Service Information"  columns="2">
+                                    <apex:repeat value="{!serviceinfo}" var="f">
+                                        <apex:inputField value="{!Service[f.fieldPath]}" style="width: 200px; height: 20px" rendered="{!ServiceInputFieldSet}"  />
+                                        <apex:outputField value="{!Service[f.fieldPath]}" rendered="{!ServiceOutPutFieldSet}" />
+                                    </apex:repeat>
+                                    <apex:outputField value="{!Service.Technical_Requirement__c}" styleclass="genericstyle" style="width: 200px; height: 20px" />
+                                </apex:pageBlockSection>
+                            </apex:pageBlock>
+                           
+                        </apex:tab>
+                        <!-- End-->
+                        <!-- This Tab For Wafer-->
+                        <apex:tab label="Wafer" switchType="client" name="name2" id="tabOne2" rendered="{!selectDeliverabletype == 'Wafer' || selectDeliverabletype == 'Chip' || selectDeliverabletype == 'Module'}">
+                        
+                            <apex:pageBlock >
+                                <apex:pageBlockbuttons style="align:center;">
+                                
+                                <apex:actionStatus id="Loader" >
+                                <apex:facet name="start" >
+                                <img src="/img/loading.gif" />                    
+                                </apex:facet>
+                                </apex:actionStatus>
+                                
+                                    <apex:commandButton action="{!SaveWaferdata}" rendered="{!IsSaveWaferVisible}" status="Loader" value="Save" reRender="theTabPanel" />
+                                    <apex:commandButton action="{!EditWaferSection}" rendered="{!IsEditWaferVisible}"  status="Loader" value="Edit" reRender="theTabPanel" />
+                                    <apex:commandButton action="{!cancelWaferdata}"  rendered="{!IsCancelwaferVisible}"  value="Cancel" reRender="theTabPanel"/>
+                                </apex:pageBlockbuttons>
+                                <apex:pageBlockSection title="Information" columns="2">
+                                    <apex:outputField value="{!wafer.Technical_Requirement__c}" style="width: 200px; height: 20px"/>
+                                </apex:pageBlockSection>
+                                <apex:pageBlockSection title="Additional active side wafer processing" columns="2">
+                                    <apex:repeat value="{!Additionalactivesidewaferprocessing}" var="f">
+                                        <apex:inputField value="{!wafer[f.fieldPath]}" style="width: 200px; height: 20px" rendered="{!WaferInput}" />
+                                        <apex:outputField value="{!wafer[f.fieldPath]}" style="width: 200px; height: 20px" rendered="{!WaferOutPut}" />
+                                    </apex:repeat>
+                                </apex:pageBlockSection>
+                                <apex:pageBlockSection title="Active Side Interconnect Details" columns="2">
+                                    <apex:repeat value="{!ActiveSideInterconnectDetails}" var="f">
+                                        <apex:inputField value="{!wafer[f.fieldPath]}" style="width: 200px; height: 20px" rendered="{!WaferInput}" required="{!OR(f.required, f.dbrequired)}"/>
+                                        <apex:outputField value="{!wafer[f.fieldPath]}" style="width: 200px; height: 20px" rendered="{!WaferOutPut}"/>
+                                    </apex:repeat>
+                                </apex:pageBlockSection>
+                                <apex:pageBlockSection title="Active Side C4 Details" columns="2">
+                                    <apex:repeat value="{!ActiveSideC4Detailswf}" var="f">
+                                        <apex:inputField value="{!wafer[f.fieldPath]}" style="width: 200px; height: 20px" rendered="{!WaferInput}"/>
+                                        <apex:outputField value="{!wafer[f.fieldPath]}" style="width: 200px; height: 20px" rendered="{!WaferOutPut}"/>
+                                    </apex:repeat>
+                                </apex:pageBlockSection>
+                                <apex:pageBlockSection title="Interconnect Details" columns="2">
+                                    <apex:repeat value="{!InterconnectDetails}" var="f">
+                                        <apex:inputField value="{!wafer[f.fieldPath]}" style="width: 200px; height: 20px" rendered="{!WaferInput}" />
+                                        <apex:outputField value="{!wafer[f.fieldPath]}" style="width: 200px; height: 20px" rendered="{!WaferOutPut}" />
+                                    </apex:repeat>
+                                </apex:pageBlockSection>
+                                <apex:pageBlockSection title="Additional back side wafer processing" columns="2">
+                                    <apex:repeat value="{!Additionalbacksidewaferprocessing}" var="f">
+                                        <apex:inputField value="{!wafer[f.fieldPath]}" style="width: 200px; height: 20px" rendered="{!WaferInput}" />
+                                        <apex:outputField value="{!wafer[f.fieldPath]}" style="width: 200px; height: 20px" rendered="{!WaferOutPut}"/>
+                                    </apex:repeat>
+                                </apex:pageBlockSection>
+                                <apex:pageBlockSection title="Back Side Interconnect Details" columns="2">
+                                    <apex:repeat value="{!BackSideInterconnectDetails}" var="f">
+                                        <apex:inputField value="{!wafer[f.fieldPath]}" style="width: 200px; height: 20px" rendered="{!WaferInput}"/>
+                                        <apex:outputField value="{!wafer[f.fieldPath]}" style="width: 200px; height: 20px" rendered="{!WaferOutPut}"/>
+                                    </apex:repeat>
+                                </apex:pageBlockSection>
+                                <apex:pageBlockSection title="Wafer Details" columns="2">
+                                    <apex:repeat value="{!WaferDetails}" var="f">
+                                        <apex:inputField value="{!wafer[f.fieldPath]}" style="width: 200px; height: 20px" rendered="{!WaferInput}"/>
+                                        <apex:outputField value="{!wafer[f.fieldPath]}" style="width: 200px; height: 20px" rendered="{!WaferOutPut}"/>
+                                    </apex:repeat>
+                                </apex:pageBlockSection>
+                                <apex:pageBlockSection title="Test Details" columns="2">
+                                    <apex:repeat value="{!TestDetails}" var="f">
+                                        <apex:inputField value="{!wafer[f.fieldPath]}" style="width: 200px; height: 20px" rendered="{!WaferInput}" />
+                                        <apex:outputField value="{!wafer[f.fieldPath]}" style="width: 200px; height: 20px" rendered="{!WaferOutPut}" />
+                                    </apex:repeat>
+                                </apex:pageBlockSection>
+                                <apex:pageBlockSection title="Additional wafer processing" columns="2">
+                                    <apex:repeat value="{!Additionalwaferprocessing}" var="f">
+                                        <apex:inputField value="{!wafer[f.fieldPath]}" style="width: 200px; height: 20px" rendered="{!WaferInput}"/>
+                                        <apex:outputField value="{!wafer[f.fieldPath]}" style="width: 200px; height: 20px" rendered="{!WaferOutPut}"/>
+                                    </apex:repeat>
+                                </apex:pageBlockSection>
+                            </apex:pageBlock>
+                        </apex:tab>
+                        <!-- End-->
+                        <!-- This Tab For Chip-->
+                        <apex:tab label="Chip" switchType="client" name="name3" id="tabOne3" rendered="{!selectDeliverabletype == 'Chip' || selectDeliverabletype == 'Module' || selectDeliverabletype == 'Wafer'}">
+                            <apex:pageBlock >
+                                <apex:pageBlockbuttons style="align:center;">
+                                
+                                <apex:actionStatus id="Loader" >
+                                <apex:facet name="start" >
+                                <img src="/img/loading.gif" />                    
+                                </apex:facet>
+                                </apex:actionStatus>
+                                
+                                    <apex:commandButton action="{!SaveChipdata}" rendered="{!IsSaveChipVisible}" status="Loader" value="Save" reRender="theTabPanel" />
+                                    <apex:commandButton action="{!EditChipSection}" rendered="{!IsEditChipVisible}" status="Loader" value="Edit" reRender="theTabPanel" />
+                                    <apex:commandButton action="{!CancelChipdata}"  rendered="{!IsCancelChipVisible}"  value="Cancel" reRender="theTabPanel"/>
+                                </apex:pageBlockbuttons>
+                                <apex:pageBlockSection title="Information" columns="2">
+                                    <apex:outputField value="{!Chp.Technical_Requirement__c}" style="width: 200px; height: 20px" />
+                                    <apex:outputField value="{!Chp.Wafer_Data__c}" style="width: 200px; height: 20px" />
+                                </apex:pageBlockSection>
+                                <apex:pageBlockSection title="Parameters & Part Number - Identification" columns="2">
+                                    <apex:repeat value="{!ParametersPartNumberIdentification}" var="f">
+                                        <apex:inputField value="{!Chp[f.fieldPath]}" style="width: 200px; height: 20px" rendered="{!ChipInput}"/>
+                                        <apex:outputField value="{!Chp[f.fieldPath]}" style="width: 200px; height: 20px" rendered="{!ChipOutput}" />
+                                    </apex:repeat>
+                                </apex:pageBlockSection>
+                                <apex:pageBlockSection title="Parameters & Part Number - Physical Dimensions" columns="2">
+                                    <apex:repeat value="{!PhysicalDimensions}" var="f">
+                                        <apex:inputField value="{!Chp[f.fieldPath]}" style="width: 200px; height: 20px" rendered="{!ChipInput}"/>
+                                        <apex:outputField value="{!Chp[f.fieldPath]}" style="width: 200px; height: 20px" rendered="{!ChipOutput}"/>
+                                    </apex:repeat>
+                                </apex:pageBlockSection>
+                                <apex:pageBlockSection title="Parameters & Part Number - Chip Interconnect" columns="2">
+                                    <apex:repeat value="{!ChipInterconnect}" var="f">
+                                        <apex:inputField value="{!Chp[f.fieldPath]}" style="width: 200px; height: 20px" rendered="{!ChipInput}" />
+                                        <apex:outputField value="{!Chp[f.fieldPath]}" style="width: 200px; height: 20px" rendered="{!ChipOutput}" />
+                                    </apex:repeat>
+                                </apex:pageBlockSection>
+                                <apex:pageBlockSection title="Parameters & Part Number - General" columns="2">
+                                    <apex:repeat value="{!General}" var="f">
+                                        <apex:inputField value="{!Chp[f.fieldPath]}" style="width: 200px; height: 20px" rendered="{!ChipInput}" />
+                                        <apex:outputField value="{!Chp[f.fieldPath]}" style="width: 200px; height: 20px" rendered="{!ChipOutput}"/>
+                                    </apex:repeat>
+                                </apex:pageBlockSection>
+                                <apex:pageBlockSection title="Parameters & Part Number - Documentation" columns="2">
+                                    <apex:repeat value="{!Documentation}" var="f">
+                                        <apex:inputField value="{!Chp[f.fieldPath]}" style="width: 200px; height: 20px" rendered="{!ChipInput}" />
+                                        <apex:outputField value="{!Chp[f.fieldPath]}" style="width: 200px; height: 20px" rendered="{!ChipOutput}" />
+                                    </apex:repeat>
+                                </apex:pageBlockSection>
+                                <apex:pageBlockSection title="2D/2.5D/3D" columns="2">
+                                    <apex:repeat value="{!Chip2D}" var="f">
+                                        <apex:inputField value="{!Chp[f.fieldPath]}" style="width: 200px; height: 20px" rendered="{!ChipInput}" />
+                                        <apex:outputField value="{!Chp[f.fieldPath]}" style="width: 200px; height: 20px" rendered="{!ChipOutput}" />
+                                    </apex:repeat>
+                                </apex:pageBlockSection>
+                            </apex:pageBlock>
+                        </apex:tab>
+                        <!-- End-->
+                        <!-- This Tab For Module-->
+                        <apex:tab label="Module" switchType="client" name="name4" id="tabOne4" rendered="{!selectDeliverabletype == 'Module'}">
+                            <apex:pageBlock >
+                                <apex:pageBlockbuttons style="align:center;" >
+                                
+                                 <apex:actionStatus id="Loader" >
+                                <apex:facet name="start" >
+                                <img src="/img/loading.gif" />                    
+                                </apex:facet>
+                                </apex:actionStatus>
+                                
+                                    <apex:commandButton action="{!SaveModuledata}" rendered="{!IsSaveModuleVisible}" status="Loader" value="Save" reRender="theTabPanel" />
+                                    <apex:commandButton action="{!EditModuleSection}" rendered="{!IsEditModuleVisible}" status="Loader" value="Edit" reRender="theTabPanel" />
+                                    <apex:commandButton action="{!CancelModuledata}"  rendered="{!IsCancelModuleVisible}"  value="Cancel" reRender="theTabPanel"/>
+                                </apex:pageBlockbuttons>
+                                <apex:outputLabel value="{!chipOptionSelection}"></apex:outputLabel>
+                                <apex:pageBlockSection title="Information" columns="2">
+                                    <apex:outputField value="{!Modul.Technical_Requirement__c}" style="width: 200px; height: 20px"/>
+                                    <apex:outputField value="{!Modul.Chip_1__c}" style="width: 200px; height: 20px"/>
+                                </apex:pageBlockSection>
+                                <apex:pageBlockSection title="MCM" columns="2" rendered="{!isMCM}">
+                                    <apex:repeat value="{!MCM}" var="f">
+                                        <apex:inputField value="{!Modul[f.fieldPath]}" style="width: 200px; height: 20px" rendered="{!ModuleInput}"/>
+                                        <apex:outputField value="{!Modul[f.fieldPath]}" style="width: 200px; height: 20px" rendered="{!ModuleOutput}"/>
+                                    </apex:repeat>
+                                </apex:pageBlockSection>
+                                <!--</apex:pageBlock>-->
+                                <apex:pageBlockSection title="Module Assembly - Cap/Lid" columns="2">
+                                    <apex:repeat value="{!CapLid}" var="f">
+                                        <apex:inputField value="{!Modul[f.fieldPath]}" style="width: 200px; height: 20px" rendered="{!ModuleInput}"/>
+                                        <apex:outputField value="{!Modul[f.fieldPath]}" style="width: 200px; height: 20px" rendered="{!ModuleOutput}"/>
+                                    </apex:repeat>
+                                </apex:pageBlockSection>
+                                <apex:pageBlockSection title="Module Assembly - Discrete Components" columns="2">
+                                    <apex:repeat value="{!DiscreteComponents}" var="f">
+                                        <apex:inputField value="{!Modul[f.fieldPath]}" rendered="{!ModuleInput}"/>
+                                        <apex:outputField value="{!Modul[f.fieldPath]}" rendered="{!ModuleOutput}"/>
+                                    </apex:repeat>
+                                </apex:pageBlockSection>
+                                <apex:pageBlockSection title="Module Details" columns="2">
+                                    <apex:repeat value="{!ModuleDetails}" var="f">
+                                        <apex:inputField value="{!Modul[f.fieldPath]}" style="width: 200px; height: 20px" rendered="{!ModuleInput}"/>
+                                        <apex:outputField value="{!Modul[f.fieldPath]}" style="width: 200px; height: 20px" rendered="{!ModuleOutput}"/>
+                                    </apex:repeat>
+                                </apex:pageBlockSection>
+                                <apex:pageBlockSection title="2D/2.5D/3D" columns="2">
+                                    <apex:repeat value="{!Module2D}" var="f">
+                                        <apex:inputField value="{!Modul[f.fieldPath]}" style="width: 200px; height: 20px" rendered="{!ModuleInput}"/>
+                                        <apex:outputField value="{!Modul[f.fieldPath]}" style="width: 200px; height: 20px" rendered="{!ModuleOutput}"/>
+                                    </apex:repeat>
+                                </apex:pageBlockSection>
+                            </apex:pageBlock>
+                        </apex:tab>
+                        <!-- End-->
+                        <!-- This Tab For Package-->
+                        <apex:tab label="Package" switchType="client" name="name11"  id="tabOne11" rendered="{!selectDeliverabletype == 'Module'}">
+                            <apex:pageBlock >
+                                <apex:pageBlockbuttons style="align:center;">
+                                
+                                 <apex:actionStatus id="Loader" >
+                                <apex:facet name="start" >
+                                <img src="/img/loading.gif" />                    
+                                </apex:facet>
+                                </apex:actionStatus>
+                                
+                                    <apex:commandButton action="{!SavePackagedata}" rendered="{!IsSavePackageVisible}" status="Loader" value="Save" reRender="theTabPanel" />
+                                    <apex:commandButton action="{!EditPackageSection}" rendered="{!IsEditPackageVisible}" status="Loader" value="Edit" reRender="theTabPanel" />
+                                    <apex:commandButton action="{!CancelPackagedata}"  rendered="{!IsCancelPackageVisible}"  value="Cancel" reRender="theTabPanel"/>
+                                </apex:pageBlockbuttons>
+                                <apex:pageBlockSection title="Information" columns="2">
+                                    <apex:outputField value="{!pack.Technical_Requirement__c}" style="width: 200px; height: 20px"/>
+                                    <apex:outputField value="{!pack.Module_Data__c}" style="width: 200px; height: 20px"/>
+                                </apex:pageBlockSection>
+                                <apex:pageBlockSection title="FC-PBGA Top Surface Details" columns="2">
+                                    <apex:repeat value="{!BottomSurfaceDetails}" var="f">
+                                        <apex:inputField value="{!pack[f.fieldPath]}" style="width: 200px; height: 20px" rendered="{!PackageInput}"/>
+                                        <apex:outputField value="{!pack[f.fieldPath]}" style="width: 200px; height: 20px" rendered="{!PackageOutput}"/>
+                                    </apex:repeat>
+                                </apex:pageBlockSection>
+                                <apex:pageBlockSection title="FC-PBGA Build-up Layer Details" columns="2">
+                                    <apex:repeat value="{!BuildupLayerDetails}" var="f">
+                                        <apex:inputField value="{!pack[f.fieldPath]}" style="width: 200px; height: 20px" rendered="{!PackageInput}"/>
+                                        <apex:outputField value="{!pack[f.fieldPath]}" style="width: 200px; height: 20px" rendered="{!PackageOutput}"/>
+                                    </apex:repeat>
+                                </apex:pageBlockSection>
+                                <apex:pageBlockSection title="FC-PBGA Core Layer Details" columns="2">
+                                    <apex:repeat value="{!CoreLayerDetails}" var="f">
+                                        <apex:inputField value="{!pack[f.fieldPath]}" style="width: 200px; height: 20px" rendered="{!PackageInput}"/>
+                                        <apex:outputField value="{!pack[f.fieldPath]}" style="width: 200px; height: 20px" rendered="{!PackageOutput}"/>
+                                    </apex:repeat>
+                                </apex:pageBlockSection>
+                                <apex:pageBlockSection title="General & Part Number - Package PN Details" columns="2">
+                                    <apex:repeat value="{!GeneralPackage}" var="f">
+                                        <apex:inputField value="{!pack[f.fieldPath]}" style="width: 200px; height: 20px" rendered="{!PackageInput}"/>
+                                        <apex:outputField value="{!pack[f.fieldPath]}" style="width: 200px; height: 20px" rendered="{!PackageOutput}"/>
+                                    </apex:repeat>
+                                </apex:pageBlockSection>
+                                <apex:pageBlockSection title="General & Part Number - General Package Details" columns="2">
+                                    <apex:repeat value="{!GeneralPackageDetails}" var="f">
+                                        <apex:inputField value="{!pack[f.fieldPath]}" style="width: 200px; height: 20px" rendered="{!PackageInput}"/>
+                                        <apex:outputField value="{!pack[f.fieldPath]}" style="width: 200px; height: 20px" rendered="{!PackageOutput}"/>
+                                    </apex:repeat>
+                                </apex:pageBlockSection>
+                                <apex:pageBlockSection title="MLC Layer Details" columns="2">
+                                    <apex:repeat value="{!MLCLayerDetails}" var="f">
+                                        <apex:inputField value="{!pack[f.fieldPath]}" style="width: 200px; height: 20px" rendered="{!PackageInput}"/>
+                                        <apex:outputField value="{!pack[f.fieldPath]}" style="width: 200px; height: 20px" rendered="{!PackageOutput}"/>
+                                    </apex:repeat>
+                                </apex:pageBlockSection>
+                                <apex:pageBlockSection title="Information" columns="2">
+                                    <apex:repeat value="{!OtherInformation}" var="f">
+                                        <apex:inputField value="{!pack[f.fieldPath]}" style="width: 200px; height: 20px" rendered="{!PackageInput}"/>
+                                        <apex:outputField value="{!pack[f.fieldPath]}" style="width: 200px; height: 20px" rendered="{!PackageOutput}"/>
+                                    </apex:repeat>
+                                </apex:pageBlockSection>
+                                <apex:pageBlockSection title="Wirebond Package Chip Site Details" columns="2">
+                                    <apex:repeat value="{!PackageChipSiteDetails}" var="f">
+                                        <apex:inputField value="{!pack[f.fieldPath]}" style="width: 200px; height: 20px" rendered="{!PackageInput}"/>
+                                        <apex:outputField value="{!pack[f.fieldPath]}" style="width: 200px; height: 20px" rendered="{!PackageOutput}"/>
+                                    </apex:repeat>
+                                </apex:pageBlockSection>
+                                <apex:pageBlockSection title="Package_PN_Details" columns="2">
+                                    <apex:repeat value="{!PackagePNDetails}" var="f">
+                                        <apex:inputField value="{!pack[f.fieldPath]}" style="width: 200px; height: 20px" rendered="{!PackageInput}"/>
+                                        <apex:outputField value="{!pack[f.fieldPath]}" style="width: 200px; height: 20px" rendered="{!PackageOutput}"/>
+                                    </apex:repeat>
+                                </apex:pageBlockSection>
+                                <apex:pageBlockSection title="Package_Services" columns="2">
+                                    <apex:repeat value="{!PackageServices}" var="f">
+                                        <apex:inputField value="{!pack[f.fieldPath]}" style="width: 200px; height: 20px" rendered="{!PackageInput}"/>
+                                        <apex:outputField value="{!pack[f.fieldPath]}" style="width: 200px; height: 20px" rendered="{!PackageOutput}"/>
+                                    </apex:repeat>
+                                </apex:pageBlockSection>
+                                <apex:pageBlockSection title="FC-PBGA Bottom Surface Details" columns="2">
+                                    <apex:repeat value="{!TopSurfaceDetails}" var="f">
+                                        <apex:inputField value="{!pack[f.fieldPath]}" style="width: 200px; height: 20px" rendered="{!PackageInput}"/>
+                                        <apex:outputField value="{!pack[f.fieldPath]}" style="width: 200px; height: 20px" rendered="{!PackageOutput}"/>
+                                    </apex:repeat>
+                                </apex:pageBlockSection>
+                                <apex:pageBlockSection title="2D/2.5D/3D" columns="2">
+                                    <apex:repeat value="{!Package2D}" var="f">
+                                        <apex:inputField value="{!pack[f.fieldPath]}" style="width: 200px; height: 20px" rendered="{!PackageInput}"/>
+                                        <apex:outputField value="{!pack[f.fieldPath]}" style="width: 200px; height: 20px" rendered="{!PackageOutput}"/>
+                                    </apex:repeat>
+                                </apex:pageBlockSection>
+                            </apex:pageBlock>
+                        </apex:tab>
+                        <!-- End-->
+                        <!-- This Tab For Design-->
+                        <apex:tab label="Design" switchType="client" name="name5" id="tabOne5" rendered="{!selectDeliverabletype == 'Design' || selectDeliverabletype == 'Service' || selectDeliverabletype == 'Wafer' || selectDeliverabletype == 'Chip' || selectDeliverabletype == 'Module'}">
+                            <apex:pageBlock >
+                                <apex:pageBlockbuttons style="align:center;" >
+                                
+                                <apex:actionStatus id="Loader" >
+                                <apex:facet name="start" >
+                                <img src="/img/loading.gif" />                    
+                                </apex:facet>
+                                </apex:actionStatus>
+                                
+                                    <apex:commandButton action="{!SaveDesigndata}" rendered="{!IsSaveDesignVisible}" status="Loader" value="Save" reRender="theTabPanel" />
+                                    <apex:commandButton action="{!EditDesignSection}" rendered="{!IsEditDesignVisible}" status="Loader" value="Edit" reRender="theTabPanel" />
+                                    <apex:commandButton action="{!CancelDesigndata}"  rendered="{!IsCancelDesignVisible}" value="Cancel" reRender="theTabPanel"/>
+                                </apex:pageBlockbuttons>
+                                <apex:pageBlockSection title="Information" columns="2">
+                                    <apex:outputField value="{!Des.Customer_Requirement__c}" style="width: 200px; height: 20px"/>
+                                </apex:pageBlockSection>
+                                <apex:pageBlockSection title="Add Compilable Circuit List" columns="2">
+                                    <apex:repeat value="{!AddCompilable}" var="f">
+                                        <apex:inputField value="{!Des[f.fieldPath]}" rendered="{!DesignInput}"/>
+                                        <apex:outputField value="{!Des[f.fieldPath]}" rendered="{!DesignOutput}"/>
+                                    </apex:repeat>
+                                </apex:pageBlockSection>
+                                <apex:pageBlockSection title="Add Cores" columns="2">
+                                    <apex:repeat value="{!AddCores}" var="f">
+                                        <apex:inputField value="{!Des[f.fieldPath]}" style="width: 200px; height: 20px" rendered="{!DesignInput}"/>
+                                        <apex:outputField value="{!Des[f.fieldPath]}" style="width: 200px; height: 20px" rendered="{!DesignOutput}"/>
+                                    </apex:repeat>
+                                </apex:pageBlockSection>
+                                <apex:pageBlockSection title="Add Image" columns="2">
+                                    <apex:repeat value="{!AddImage}" var="f">
+                                        <apex:inputField value="{!Des[f.fieldPath]}" style="width: 200px; height: 20px" rendered="{!DesignInput}"  required="{!OR(f.required, f.dbrequired)}"/>
+                                        <apex:outputField value="{!Des[f.fieldPath]}" style="width: 200px; height: 20px" rendered="{!DesignOutput}"/>
+                                    </apex:repeat>
+                                </apex:pageBlockSection>
+                                <apex:pageBlockSection title="Add Image/Package" columns="2">
+                                    <apex:repeat value="{!AddImagePackage}" var="f">
+                                        <apex:inputField value="{!Des[f.fieldPath]}" style="width: 200px; height: 20px" rendered="{!DesignInput}"/>
+                                        <apex:outputField value="{!Des[f.fieldPath]}" style="width: 200px; height: 20px" rendered="{!DesignOutput}"/>
+                                    </apex:repeat>
+                                </apex:pageBlockSection>
+                                <apex:pageBlockSection title="Add Interface Circuits" columns="2">
+                                    <apex:repeat value="{!AddInterfaceCircuits}" var="f">
+                                        <apex:inputField value="{!Des[f.fieldPath]}" style="width: 200px; height: 20px" rendered="{!DesignInput}"/>
+                                        <apex:outputField value="{!Des[f.fieldPath]}" style="width: 200px; height: 20px" rendered="{!DesignOutput}"/>
+                                    </apex:repeat>
+                                </apex:pageBlockSection>
+                                <apex:pageBlockSection title="Add Package" columns="2">
+                                    <apex:repeat value="{!AddPackage}" var="f">
+                                        <apex:inputField value="{!Des[f.fieldPath]}" style="width: 200px; height: 20px" rendered="{!DesignInput}"/>
+                                        <apex:outputField value="{!Des[f.fieldPath]}" style="width: 200px; height: 20px" rendered="{!DesignOutput}"/>
+                                    </apex:repeat>
+                                </apex:pageBlockSection>
+                                <apex:pageBlockSection title="Circuit Details" columns="2">
+                                    <apex:repeat value="{!CircuitDetails}" var="f">
+                                        <apex:inputField value="{!Des[f.fieldPath]}"  rendered="{!DesignInput}"/>
+                                        <apex:outputField value="{!Des[f.fieldPath]}" style="width: 200px; height: 20px" rendered="{!DesignOutput}"/>
+                                    </apex:repeat>
+                                </apex:pageBlockSection>
+                                <apex:pageBlockSection title="Create User Defined - Custom Core" columns="2">
+                                    <apex:repeat value="{!CreateUser}" var="f">
+                                        <apex:inputField value="{!Des[f.fieldPath]}" style="width: 200px; height: 20px" rendered="{!DesignInput}"/>
+                                        <apex:outputField value="{!Des[f.fieldPath]}" style="width: 200px; height: 20px" rendered="{!DesignOutput}"/>
+                                    </apex:repeat>
+                                </apex:pageBlockSection>
+                                <apex:pageBlockSection title="Create User Defined - Custom Image/Custom Package" columns="2">
+                                    <apex:repeat value="{!CreateUserDefinedcustomImg}" var="f">
+                                        <apex:inputField value="{!Des[f.fieldPath]}" style="width: 200px; height: 20px" rendered="{!DesignInput}"/>
+                                        <apex:outputField value="{!Des[f.fieldPath]}" style="width: 200px; height: 20px" rendered="{!DesignOutput}"/>
+                                    </apex:repeat>
+                                </apex:pageBlockSection>
+                                <apex:pageBlockSection title="Design Services Details" columns="2">
+                                    <apex:repeat value="{!DesignServicesDetails}" var="f">
+                                        <apex:inputField value="{!Des[f.fieldPath]}" style="width: 200px; height: 20px" rendered="{!DesignInput}"/>
+                                        <apex:outputField value="{!Des[f.fieldPath]}" style="width: 200px; height: 20px" rendered="{!DesignOutput}"/>
+                                    </apex:repeat>
+                                </apex:pageBlockSection>
+                                <apex:pageBlockSection title="Design for Test Details" columns="2">
+                                    <apex:repeat value="{!DesignforTestDetails}" var="f">
+                                        <apex:inputField value="{!Des[f.fieldPath]}" style="width: 200px; height: 20px" rendered="{!DesignInput}"/>
+                                        <apex:outputField value="{!Des[f.fieldPath]}" style="width: 200px; height: 20px" rendered="{!DesignOutput}"/>
+                                    </apex:repeat>
+                                </apex:pageBlockSection>
+                                <apex:pageBlockSection title="Edit Features" columns="2">
+                                    <apex:repeat value="{!EditFeatures}" var="f">
+                                        <apex:inputField value="{!Des[f.fieldPath]}" style="width: 200px; height: 20px" rendered="{!DesignInput}"/>
+                                        <apex:outputField value="{!Des[f.fieldPath]}" style="width: 200px; height: 20px" rendered="{!DesignOutput}"/>
+                                    </apex:repeat>
+                                </apex:pageBlockSection>
+                                <apex:pageBlockSection title="Interface Circuits" columns="2">
+                                    <apex:repeat value="{!InterfaceCircuits}" var="f">
+                                        <apex:inputField value="{!Des[f.fieldPath]}" style="width: 200px; height: 20px" rendered="{!DesignInput}"/>
+                                        <apex:outputField value="{!Des[f.fieldPath]}" style="width: 200px; height: 20px" rendered="{!DesignOutput}"/>
+                                    </apex:repeat>
+                                </apex:pageBlockSection>
+                                <apex:pageBlockSection title="Power Supply" columns="1">
+                                    <apex:pageBlockSection title="VDD1" columns="2">
+                                        <apex:repeat value="{!VDD1}" var="f">
+                                            <apex:inputField value="{!Des[f.fieldPath]}" rendered="{!DesignInput}"/>
+                                            <apex:outputField value="{!Des[f.fieldPath]}" style="width: 200px; height: 20px" rendered="{!DesignOutput}"/>
+                                        </apex:repeat>
+                                    </apex:pageblockSection>
+                                    <apex:pageBlockSection title="VDD2" columns="2">
+                                        <apex:repeat value="{!VDD2}" var="f">
+                                            <apex:inputField value="{!Des[f.fieldPath]}" rendered="{!DesignInput}"/>
+                                            <apex:outputField value="{!Des[f.fieldPath]}" style="width: 200px; height: 20px" rendered="{!DesignOutput}"/>
+                                        </apex:repeat>
+                                    </apex:pageblockSection>
+                                    <apex:pageBlockSection title="VDD3" columns="2">
+                                        <apex:repeat value="{!VDD3}" var="f">
+                                            <apex:inputField value="{!Des[f.fieldPath]}" rendered="{!DesignInput}"/>
+                                            <apex:outputField value="{!Des[f.fieldPath]}" style="width: 200px; height: 20px" rendered="{!DesignOutput}"/>
+                                        </apex:repeat>
+                                    </apex:pageblockSection>
+                                    <apex:pageBlockSection title="VDD4" columns="2">
+                                        <apex:repeat value="{!VDD4}" var="f">
+                                            <apex:inputField value="{!Des[f.fieldPath]}" rendered="{!DesignInput}"/>
+                                            <apex:outputField value="{!Des[f.fieldPath]}" style="width: 200px; height: 20px" rendered="{!DesignOutput}"/>
+                                        </apex:repeat>
+                                    </apex:pageblockSection>
+                                    <apex:pageBlockSection title="VDD5" columns="2">
+                                        <apex:repeat value="{!VDD5}" var="f">
+                                            <apex:inputField value="{!Des[f.fieldPath]}" rendered="{!DesignInput}"/>
+                                            <apex:outputField value="{!Des[f.fieldPath]}" style="width: 200px; height: 20px" rendered="{!DesignOutput}"/>
+                                        </apex:repeat>
+                                    </apex:pageblockSection>
+                                    <apex:pageBlockSection title="VDD6" columns="2">
+                                        <apex:repeat value="{!VDD6}" var="f">
+                                            <apex:inputField value="{!Des[f.fieldPath]}" rendered="{!DesignInput}"/>
+                                            <apex:outputField value="{!Des[f.fieldPath]}" style="width: 200px; height: 20px" rendered="{!DesignOutput}"/>
+                                        </apex:repeat>
+                                    </apex:pageblockSection>
+                                    <apex:pageBlockSection title="Other Power Supply Information" Columns="2">
+                                        <apex:repeat value="{!PowerSupply}" var="f">
+                                            <apex:inputField value="{!Des[f.fieldPath]}" rendered="{!DesignInput}"/>
+                                            <apex:outputField value="{!Des[f.fieldPath]}" style="width: 200px; height: 20px" rendered="{!DesignOutput}"/>
+                                        </apex:repeat>
+                                    </apex:pageBlockSection>
+                                </apex:pageBlockSection>
+                                <apex:pageBlockSection title="Image Details" columns="2">
+                                    <apex:repeat value="{!ImageDetails}" var="f">
+                                        <apex:inputField value="{!Des[f.fieldPath]}" style="width: 200px; height: 20px" rendered="{!DesignInput}"/>
+                                        <apex:outputField value="{!Des[f.fieldPath]}" style="width: 200px; height: 20px" rendered="{!DesignOutput}"/>
+                                    </apex:repeat>
+                                </apex:pageBlockSection>
+                                <apex:pageBlockSection title="Active Side C4 Details" columns="2">
+                                    <apex:repeat value="{!ActiveSideC4Details}" var="f">
+                                        <apex:inputField value="{!Des[f.fieldPath]}" style="width: 200px; height: 20px" rendered="{!DesignInput}"/>
+                                        <apex:outputField value="{!Des[f.fieldPath]}" style="width: 200px; height: 20px" rendered="{!DesignOutput}"/>
+                                    </apex:repeat>
+                                </apex:pageBlockSection>
+                                <apex:pageBlockSection title="Active Side Capture Pad Details" columns="2">
+                                    <apex:repeat value="{!ActiveSideCapturePadDetails}" var="f">
+                                        <apex:inputField value="{!Des[f.fieldPath]}" style="width: 200px; height: 20px" rendered="{!DesignInput}"/>
+                                        <apex:outputField value="{!Des[f.fieldPath]}" style="width: 200px; height: 20px" rendered="{!DesignOutput}"/>
+                                    </apex:repeat>
+                                </apex:pageBlockSection>
+                                <apex:pageBlockSection title="File Check In" columns="2">
+                                    <apex:repeat value="{!FileCheckIn}" var="f">
+                                        <apex:inputField value="{!Des[f.fieldPath]}" style="width: 200px; height: 20px" rendered="{!DesignInput}"/>
+                                        <apex:outputField value="{!Des[f.fieldPath]}" style="width: 200px; height: 20px" rendered="{!DesignOutput}"/>
+                                    </apex:repeat>
+                                </apex:pageBlockSection>
+                                <apex:pageBlockSection title="Memory Summary" columns="2">
+                                    <apex:repeat value="{!MemorySummary}" var="f">
+                                        <apex:inputField value="{!Des[f.fieldPath]}" style="width: 200px; height: 20px" rendered="{!DesignInput}"/>
+                                        <apex:outputField value="{!Des[f.fieldPath]}" style="width: 200px; height: 20px" rendered="{!DesignOutput}"/>
+                                    </apex:repeat>
+                                </apex:pageBlockSection>
+                                <apex:pageBlockSection title="SRAM Details" columns="2">
+                                    <apex:repeat value="{!SRAMDetails}" var="f">
+                                        <apex:inputField value="{!Des[f.fieldPath]}" style="width: 200px; height: 20px" rendered="{!DesignInput}"/>
+                                        <apex:outputField value="{!Des[f.fieldPath]}" style="width: 200px; height: 20px" rendered="{!DesignOutput}"/>
+                                    </apex:repeat>
+                                </apex:pageBlockSection>
+                                <apex:pageBlockSection title="Embedded DRAM Details" columns="2">
+                                    <apex:repeat value="{!EmbeddedDRAMDetails}" var="f">
+                                        <apex:inputField value="{!Des[f.fieldPath]}" style="width: 200px; height: 20px" rendered="{!DesignInput}"/>
+                                        <apex:outputField value="{!Des[f.fieldPath]}" style="width: 200px; height: 20px" rendered="{!DesignOutput}"/>
+                                    </apex:repeat>
+                                </apex:pageBlockSection>
+                                <apex:pageBlockSection title="Design Methodology" columns="2">
+                                    <apex:repeat value="{!DesignMethodology}" var="f">
+                                        <apex:inputField value="{!Des[f.fieldPath]}" style="width: 200px; height: 20px" rendered="{!DesignInput}"/>
+                                        <apex:outputField value="{!Des[f.fieldPath]}" style="width: 200px; height: 20px" rendered="{!DesignOutput}"/>
+                                    </apex:repeat>
+                                </apex:pageBlockSection>
+                                <apex:pageBlockSection title="Design Details" columns="2">
+                                    <apex:repeat value="{!DesignDetails}" var="f">
+                                        <apex:inputField value="{!Des[f.fieldPath]}" style="width: 200px; height: 20px" rendered="{!DesignInput}"/>
+                                        <apex:outputField value="{!Des[f.fieldPath]}" style="width: 200px; height: 20px" rendered="{!DesignOutput}"/>
+                                    </apex:repeat>
+                                </apex:pageBlockSection>
+                                <apex:pageBlockSection title="Groundrule Waivers" columns="2">
+                                    <apex:repeat value="{!GroundruleWaivers}" var="f">
+                                        <apex:inputField value="{!Des[f.fieldPath]}" style="width: 200px; height: 20px" rendered="{!DesignInput}"/>
+                                        <apex:outputField value="{!Des[f.fieldPath]}" style="width: 200px; height: 20px" rendered="{!DesignOutput}"/>
+                                    </apex:repeat>
+                                </apex:pageBlockSection>
+                                <apex:pageBlockSection title="Select eDRAMs" columns="2">
+                                    <apex:repeat value="{!SelecteDRAMs}" var="f">
+                                        <apex:inputField value="{!Des[f.fieldPath]}" style="width: 200px; height: 20px" rendered="{!DesignInput}"/>
+                                        <apex:outputField value="{!Des[f.fieldPath]}" style="width: 200px; height: 20px" rendered="{!DesignOutput}"/>
+                                    </apex:repeat>
+                                </apex:pageBlockSection>
+                            </apex:pageBlock>
+                        </apex:tab>
+                        <!-- End-->
+                    </apex:tabPanel>
+                </apex:outputPanel>
+            </apex:pageBlock>
+        </html>
+    </apex:form>
+</apex:page>

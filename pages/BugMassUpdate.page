@@ -1,0 +1,110 @@
+<!-- 
+   Type Name:  BugMassUpdate.page
+   Author: UCM Cognizant
+   Reason: 
+   Change History:
+   Author: 
+   Modified Date: 
+   Reason: 
+    -->
+<apex:page standardController="Bug__c" recordSetVar="Bug__c"  extensions="BugMassEditController" sidebar="false">
+    <apex:form id="wizard"> 
+    <apex:sectionHeader title="Mass Update Wizard" subtitle="Step {!step} of 4"/>
+        <apex:pageBlock id="step1" title="Step 1. Confirm records to be updated" mode="edit" rendered="{!step='1'}" >
+            <apex:pagemessages escape="false"></apex:pagemessages>         
+            <apex:pageBlockTable var="a" value="{!bugwrapperlist}" rendered="{!(AND(selected != null,isNotBug = false))}">
+                <apex:column >
+                    <apex:inputCheckbox value="{!a.selected}"/>
+                </apex:column>
+                <apex:column headerValue="Bug Number">
+                    <apex:outputLink target="_blank" value="/{!a.bugObj.Id}">{!a.bugObj.Name}</apex:outputLink>    
+                </apex:column>   
+            <apex:repeat var="f" value="{!columnName}">
+                     <apex:column headerValue="{!columnMap[f]}">
+                        <apex:outputfield value="{!a.bugObj[f]}"/>
+                     </apex:column>                
+                </apex:repeat>                           
+            </apex:pageBlockTable>
+            <apex:panelGrid columns="2">
+            </apex:panelGrid>
+            <apex:pageBlockButtons >
+              <apex:commandButton action="{!cancel}" value="Previous"/>
+              <apex:commandButton action="{!step2}" value="Next" disabled="{!(NOT(AND(selected != null,isNotBug = false)))}"/>
+              <apex:commandButton action="{!cancel}" value="Cancel" onclick="return confirmCancel()" immediate="true" style="margin-left: 2em"/>
+            </apex:pageBlockButtons>
+        </apex:pageBlock>
+      
+      <apex:pageBlock id="step3" title="Step 2. Specify the new value for field" rendered="{!step='2'}">
+         <apex:pagemessages escape="false"></apex:pagemessages>
+         <apex:outputLabel value="NOTE:Update is not applicable for the fields which are left blank/none " style="color:red"/>
+         <apex:pageBlockSection columns="2">    
+             <apex:selectList value="{!ststatus}"   multiselect="false"  size="1" label="{!$ObjectType.Bug__c.fields.Status__c.Label}">
+               <apex:selectOptions value="{!statuslist}"></apex:selectOptions>
+               <apex:actionSupport event="onchange" reRender="a,b,c"/>
+             </apex:selectList>           
+         </apex:pageBlockSection> 
+         <apex:pageBlockSection > 
+             <apex:selectList value="{!stResolution}" multiselect="false" size="1" label="{!$ObjectType.Bug__c.fields.Resolution__c.Label}"   id="a" >
+             <apex:selectOptions value="{!Resolution}"/>
+             </apex:selectList>  
+         </apex:pageBlockSection>
+         <apex:pageBlockSection columns="1" >  
+         <apex:pageBlockSectionItem helpText="Field Update is applicable only to PDK Bugs.">      
+             <apex:outputtext >{!$ObjectType.Bug__c.fields.DM_Team_Classification__c.Label}</apex:outputtext>
+             <apex:selectList value="{!dmTeamClassification}" id="b"  multiselect="false" size="1" disabled="{!NOT(OR(ststatus = 'Verified',ststatus = 'Closed',ststatus = 'Assigned',ststatus = 'Hold',ststatus = 'Resolved'))}" label="DM Team Classification : ">
+               <apex:selectOptions value="{!dmTeamList}"></apex:selectOptions>
+             </apex:selectList>
+          </apex:pageBlockSectionItem>     
+         </apex:pageBlockSection> 
+         <apex:outputPanel id="c"  > 
+         <apex:pageBlockSection columns="1" > 
+             <apex:pageBlockSectionItem helpText="Info appended to Resolution Details">      
+                 <apex:outputtext >Resolution Details</apex:outputtext>         
+                 <apex:inputTextarea value="{!resolutionDetails}"  cols="80" rows="10" disabled="{!NOT(OR(ststatus = 'Verified',ststatus = 'Closed',ststatus = 'Resolved'))}" />                         
+             </apex:pageBlockSectionItem>  
+         </apex:pageBlockSection>         
+         <apex:pageBlockSection columns="1" >  
+         <apex:pageBlockSectionItem helpText="If provided, comment will be posted into Chatter Feed.">      
+             <apex:outputtext >Comment</apex:outputtext>
+             <apex:inputTextarea cols="80" rows="5" richText="false" value="{!chatterComment}" />
+          </apex:pageBlockSectionItem>     
+         </apex:pageBlockSection>          
+         </apex:outputPanel>                 
+         <apex:pageBlockButtons >
+          <apex:commandButton action="{!Step1}" value="Previous"/>
+          <apex:commandButton action="{!step3}" value="Next"/>
+          <apex:commandButton action="{!cancel}" value="Cancel" onclick="return confirmCancel()" immediate="true" style="margin-left: 2em"/>
+         </apex:pageBlockButtons>
+      </apex:pageBlock> 
+      <apex:pageBlock id="step4" title="Step 3. Confirmation" mode="edit" rendered="{!step='3'}">
+          <apex:pagemessages escape="false"></apex:pagemessages>
+          <apex:pageBlockButtons >
+              <apex:commandButton action="{!step2}" value="Previous"/>
+              <apex:commandButton action="{!step4}" value="Update" />
+              <apex:commandButton action="{!cancel}" value="Cancel" onclick="return confirmCancel()" immediate="true" style="margin-left: 2em"/>
+          </apex:pageBlockButtons>
+      </apex:pageBlock>
+      <apex:pageBlock id="step5" title="Step 4. Results" mode="edit" rendered="{!step='4'}">
+          <apex:pagemessages escape="false"></apex:pagemessages>
+          <apex:pageBlockTable value="{!bugVsErrorMap}" var="BugError" rendered="{!hasUpdateError = true}">                 
+                    <apex:column headerValue="Bug Number" >
+                    <apex:outputLink target="_blank" value="/{!BugError.Id}">{!BugError.Name}</apex:outputLink>
+                    </apex:column>                                                         
+                    <apex:repeat var="f" value="{!columnName}">
+                         <apex:column headerValue="{!columnMap[f]}">
+                            <apex:outputfield value="{!BugError[f]}"/>
+                         </apex:column>                
+                    </apex:repeat> 
+                    <apex:column headerValue="Validation Error" >
+                        <apex:outputText value="{!bugVsErrorMap[BugError]}" escape="false"></apex:outputText>  
+                    </apex:column>     
+          </apex:pageBlockTable>  
+ 
+          <apex:pageBlockButtons >
+              <apex:commandButton action="{!cancel}" value="Done"/>
+              <apex:commandButton value="Download Success File" action="{!ExportExcelSuccessLog}"/>
+              <apex:commandButton value="Download Failure File" action="{!ExportExcelErrorLog}"/>
+          </apex:pageBlockButtons>
+      </apex:pageBlock>                      
+    </apex:form>
+</apex:page>

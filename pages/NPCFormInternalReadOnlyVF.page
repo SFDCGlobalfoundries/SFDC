@@ -1,0 +1,372 @@
+<!--
+    Author: Zymark Ambat
+    Description: This page is used for Internal NPC View.
+    History: 
+        ZAmbat      12092013    - Page creation.
+        Nbustillos  12302013    - Added logic to override submit for approval via related list.
+        Asolito     01082014    - Added chatter feeds section
+        ARoy        01092014    - Added logic to override the Approve/Reject link of the Approval History section.   
+        ZAmbat      01282014    - Updated code as per CASE 4515.
+        ARoy        01282014    - Added logic to sort the mask layers based on layers and Is Mask Modified 
+                                  to show changed values at the top (Case : 00004630)
+        ZAmbat      02102014    - Added the Attachment section as this was missing for Internal Users. 
+        ARoy        02272014    - Added css to hide the Reassign link from Approval section.
+        ARoy        02282014    - Modification for Reassign Approver functionality.(Case : 7578)     
+        ZAmbat      03032014    - Updated code to show field history tracking for NPC (CASE 7407).
+        ARoy        03042014    - Updated code for Approver Reassignment.
+        ZAmbat      03262014    - Updated layout.
+        ZAmbat      04032014    - Updated code as per CASE 7400.
+        ZAmbat      04042014    - Updated code as per CASE 8489.
+        ZAmbat      04142014    - Updated code to modify/add help text to 'Reason for New Part', 'Do you require to create a New Part?', and 'Is Mask Modified?' fields.
+        ZAmbat      07092014    - Updated code as per CASE 27667.
+        ZAmbat      12022014    - Updated code as per CASE 7573.
+        DBiswal     12042014    - Updated code to display Clone Button.
+        DBiswal     03062015    - Updated code for Reason for New Part new field value 'ShortLoop Flow'.  
+        KOKA GOPI   07042015    - Updated Automotive_Grade__c for readonly page    
+-->
+
+<apex:page id="NPCFormInternalReadOnlyVF" standardController="New_Part_Creation_Form__c" extensions="NPCFormInternalReadOnlyController" action="{!init}" sidebar="true" showHeader="true" tabStyle="New_Part_Creation_Form__c">
+    <apex:includeScript value="{!URLFOR($Resource.jquery, 'js/jquery-1.8.3.js')}" />
+    <style type="text/css">
+        .imgclass:hover {  
+            background-image: url(/img/help/helpOrbs.gif);  
+            background-repeat: no-repeat;  
+            width: 16px;  
+            height: 15px;     
+            background-position: right;  
+         
+        }  
+        .DatatableClass tbody{
+            text-align:center
+        }
+        
+        .imgclass {  
+            background-image: url(/img/help/helpOrbs.gif);  
+            background-repeat: no-repeat;  
+            width: 16px;  
+            height: 15px;  
+        }  
+        
+        .helpTextStyle {
+            text-decoration: none;
+            position: absolute;
+            width: 15em;
+            z-index: 12;
+            background-color: #fefdb9;
+            padding: 2px 5px;
+            border: 1px solid orange;
+            text-align: left;
+            white-space: normal;
+            font-weight: normal;
+            color: #000;
+        }
+    </style>
+    
+    <script>
+        function showNPCChatterFeeds() {
+            document.getElementById("showFeedLink").style.display = "none";
+            document.getElementById("hideFeedLink").style.display = "block";
+            document.getElementById("NPCChatterFeeds").style.display = "block";
+        }
+        
+        function hideNPCChatterFeeds() {
+            document.getElementById("showFeedLink").style.display = "block";
+            document.getElementById("hideFeedLink").style.display = "none";
+            document.getElementById("NPCChatterFeeds").style.display = "none";
+        }
+        
+        function showHelpText(id) {
+            document.getElementById(id).style.display = "block";
+            document.getElementById(id).style.opacity = 0.99;
+        }
+        
+        function hideHelpText(id) {
+            document.getElementById(id).style.display = "none";
+            document.getElementById(id).style.opacity = -0.2;
+        }
+    </script>
+    
+    <apex:sectionHeader title="NPC Form" subtitle="{!npcForm.Name}" help="https://help.salesforce.com/htviewhelpdoc?id=co_edit.htm&siteLang=en_US" />
+    <apex:pageMessages id="errorSection" />
+    
+    <div class="chatterShowHideFeed">
+        <span class="showFeedLink" id="showFeedLink" style="display: inline-block;">
+            <a href="javascript:void();" class="innerLink" onclick="javascript:showNPCChatterFeeds();">
+                <img src="/s.gif" alt="Show Feed" title="Show Feed" />
+                <span class="linkText">Show Feed</span>
+            </a>
+        </span>
+        <span class="hideFeedLink" id="hideFeedLink" style="display: none;">
+            <a href="javascript:void();" class="innerLink" onclick="javascript:hideNPCChatterFeeds();">
+                <img src="/s.gif" alt="Hide Feed" title="Hide Feed" />
+                <span class="linkText">Hide Feed</span>
+            </a>
+        </span>
+    </div>
+
+    <div id="NPCChatterFeeds" style="display: none;">
+        <chatter:feed entityId="{!New_Part_Creation_Form__c.id}" />
+    </div>
+    
+    <apex:form id="form1">        
+        <apex:pageBlock mode="maindetail" title="NPC Form Detail">          
+            <apex:pageBlockButtons location="both" id="buttonsBlock">
+                <apex:image value="/img/lock_small.gif" alt="Locked" width="16" height="16" title="Locked" rendered="{!showLockIcon}" />
+                <apex:commandButton value="Edit" action="{!editNPC}" rendered="{!showEdit}" />
+                <apex:commandButton value="Submit for Approval" action="{!submitNPC}" rendered="{!showSubmit}" />
+                <apex:commandButton value="Cancel NPC Form" action="{!cancelNPC}" rendered="{!showCancel}" />
+                <apex:commandButton value="Clone" action="{!cloneNPC}" />                
+            </apex:pageBlockButtons>
+            
+            <apex:pageBlockSection columns="2" showHeader="false" collapsible="false">
+                <apex:outputField value="{!npcForm.Name}" />
+                <apex:outputField rendered="{!IF(npcForm.Reason_for_New_Part__c != 'Device Reactivation', true, false)}" value="{!npcForm.NPC_Form_Status__c}" />
+                <apex:outputField rendered="{!IF(npcForm.Reason_for_New_Part__c == 'Device Reactivation', true, false)}" value="{!npcForm.NPC_Device_Reactivation_Status__c}" label="NPC Device Reactivation Status"/>
+                
+                <apex:outputField value="{!npcForm.Account__c}" />
+                <apex:outputField value="{!npcForm.Account_Short_Name__c}" />
+                
+                <apex:outputField value="{!npcForm.Originating_Device__c}" />
+                <apex:outputField value="{!npcForm.Fab__c}" />
+                
+                <apex:outputField value="{!npcForm.Reason_for_New_Part__c}" />
+                <apex:outputField value="{!npcForm.ECN_Change_Date__c}" rendered="{!IF(npcForm.Reason_for_New_Part__c == 'CustomerNameChange', true, false)}"/>                
+                
+                <!-- Dipak 22112016 Start-->
+                <!--<apex:outputField value="{!npcForm.Tapeout_Required__c}"/>-->
+                <apex:outputField value="{!npcForm.Tapeout_Required__c}" rendered="{!IF(npcForm.Reason_for_New_Part__c != 'Device Reactivation', true, false)}"/>
+                <apex:pageBlockSectionItem rendered="{!IF(npcForm.Reason_for_New_Part__c == 'Device Reactivation', true, false)}"/>
+                <!-- Dipak 22112016 End-->
+                
+                <apex:outputField value="{!npcForm.Require_To_Create_The_New_Part__c}" rendered="{!IF(npcForm.Reason_for_New_Part__c == 'Others', true, false)}" />
+                <apex:pageBlockSectionItem rendered="{!IF(npcForm.Reason_for_New_Part__c == 'Others', true, false)}" />
+                
+                <apex:outputField value="{!npcForm.New_Customer_Name__c}" rendered="{!IF(npcForm.Reason_for_New_Part__c == 'CustomerNameChange', true, false)}" />
+                <apex:outputField value="{!npcForm.New_Customer_Short_Name__c}" rendered="{!IF(npcForm.Reason_for_New_Part__c == 'CustomerNameChange', true, false)}" />
+                
+                <apex:outputField value="{!npcForm.New_Fab__c}" rendered="{!IF(npcForm.Reason_for_New_Part__c == 'Fab to Fab Transfer', true, false)}" />
+                <apex:pageBlockSectionItem rendered="{!IF(npcForm.Reason_for_New_Part__c == 'Fab to Fab Transfer', true, false)}" />
+                
+                <apex:outputField value="{!npcForm.Reference_Id__c}" />
+                <!-- Dipak 22112016 Start-->
+                <!--<apex:outputField value="{!npcForm.New_Part_ID__c}" />-->
+                <apex:outputField value="{!npcForm.New_Part_ID__c}" rendered="{!IF(npcForm.Reason_for_New_Part__c != 'Device Reactivation', true, false)}"/>
+                <apex:pageBlockSectionItem rendered="{!IF(npcForm.Reason_for_New_Part__c == 'Device Reactivation', true, false)}"/>
+                <!-- Dipak 22112016 End-->
+                
+                <apex:outputField value="{!npcForm.Secure_Device__c}" />
+                <apex:outputField value="{!npcForm.Automotive_Device__c}" />
+
+                <!-- apex:outputField value="{!npcForm.Device_Mask_Set_Title__c}" / -->
+                
+                <apex:outputField value="{!npcForm.Mask_Set_Title__c}" />
+                <apex:outputField value="{!npcForm.Automotive_Grade__c}"/>
+                
+                <apex:outputField value="{!npcForm.Current_Forecast_Tapeout_Date__c}" rendered="{!IF(AND(npcForm.Tapeout_Required__c == 'Yes', OR(npcForm.Reason_for_New_Part__c == 'Retrofit', npcForm.Reason_for_New_Part__c == 'Retrofit + Add ROM Code', npcForm.Reason_for_New_Part__c == 'Fab to Fab Transfer', npcForm.Reason_for_New_Part__c == 'Change in PID', npcForm.Reason_for_New_Part__c == 'StartingMaterialChange', npcForm.Reason_for_New_Part__c == 'BackgrindThicknessChange', npcForm.Reason_for_New_Part__c == 'ShortLoop Flow')), true, false)}" />
+                <apex:pageBlockSectionItem rendered="{!IF(AND(npcForm.Tapeout_Required__c == 'Yes', OR(npcForm.Reason_for_New_Part__c == 'Retrofit', npcForm.Reason_for_New_Part__c == 'Retrofit + Add ROM Code', npcForm.Reason_for_New_Part__c == 'Fab to Fab Transfer', npcForm.Reason_for_New_Part__c == 'Change in PID', npcForm.Reason_for_New_Part__c == 'StartingMaterialChange', npcForm.Reason_for_New_Part__c == 'BackgrindThicknessChange', npcForm.Reason_for_New_Part__c == 'ShortLoop Flow')), true, false)}" />
+                
+                <apex:outputField value="{!npcForm.NPC_Form_Submitted_Date__c}" />              
+                <apex:outputField value="{!npcForm.Originating_Device__r.Assigned_Process_ID__r.Name}" rendered="{!IF(npcForm.Reason_for_New_Part__c == 'Device Reactivation', true, false)}"/>
+                
+                <apex:outputField value="{!npcForm.Reason_for_editing__c}" rendered="{!IF(NOT(ISBLANK(npcForm.Reason_for_editing__c)), true, false)}" />
+                <apex:pageBlockSectionItem rendered="{!IF(NOT(ISBLANK(npcForm.Reason_for_editing__c)), true, false)}" />
+                
+                <!-- Dipak 22112016 Start-->
+                <apex:outputField value="{!npcForm.Comments__c}" Label="{!IF(npcForm.Reason_for_New_Part__c == 'Device Reactivation', 'Reason for Reactivation','Comments')}"/>
+                <!--<apex:outputField value="{!npcForm.Comments__c}"/>-->
+                <!-- Dipak 22112016 End-->
+                                
+                <apex:outputField value="{!npcForm.PID_Status__c}" rendered="{!IF(npcForm.Reason_for_New_Part__c == 'Device Reactivation', true, false)}"/>
+                <!--  <apex:pageBlockSectionItem />-->
+                <!-- Dipak 14102016 Start-->
+                <apex:outputField rendered="{!IF(npcForm.Reason_for_New_Part__c == 'Device Reactivation', true, false)}" value="{!npcForm.Is_reticle_available__c}" />
+                <apex:outputField rendered="{!IF(npcForm.Reason_for_New_Part__c == 'Device Reactivation', true, false)}" value="{!npcForm.NRE_25K_USD_Is_Acknowledged_by_Customer__c}"/>     
+                <apex:outputField rendered="{!IF(npcForm.Reason_for_New_Part__c == 'Device Reactivation', true, false)}" value="{!npcForm.Min_Order_qty_agreement_customer_Text__c}" />      
+                <apex:outputField rendered="{!IF(npcForm.Reason_for_New_Part__c == 'Device Reactivation', true, false)}" value="{!npcForm.NRE_Comments__c}" />                 
+                <apex:outputField rendered="{!IF(npcForm.Reason_for_New_Part__c == 'Device Reactivation', true, false)}" value="{!npcForm.Risk_Waiver__c}"/>                                                                                                     
+                <apex:outputField rendered="{!IF(npcForm.Reason_for_New_Part__c == 'Device Reactivation', true, false)}" value="{!npcForm.Planned_Implementation_Date__c}" />                                               
+                <apex:outputField rendered="{!IF(npcForm.Reason_for_New_Part__c == 'Device Reactivation', true, false)}" value="{!npcForm.Action__c}" label="PI/YE Action Detail"/>                                                               
+                <apex:outputField rendered="{!IF(npcForm.Reason_for_New_Part__c == 'Device Reactivation', true, false)}" value="{!npcForm.Actual_Implementation_Date__c}" />                                                
+                <apex:outputField rendered="{!IF(npcForm.Reason_for_New_Part__c == 'Device Reactivation', true, false)}" value="{!npcForm.Notification_Group__c}" />                                                                                                
+                <!--<apex:pageBlockSectionItem /> -->
+             
+               <!-- <apex:outputPanel rendered="{!isLoggedinUserAssignee}">
+                    <apex:commandButton styleClass="btnImportant" rendered="{!IF(AND(npcForm.Reason_for_New_Part__c == 'Device Reactivation',npcForm.NPC_Form_Status__c == 'In Execution',OR(npcForm.Assignee_1__c!= null,npcForm.Assignee_2__c!= null)), true, false)}" action="{!navigateto}" value="{!buttonName}" id="theButton"/>                   
+                </apex:outputPanel> 
+                -->                                                                                                                          
+                <!-- Dipak 14102016 End-->
+                <apex:outputField value="{!npcForm.Case__c}" rendered="{!IF(AND(npcForm.Reason_for_New_Part__c == 'CustomerNameChange', OR(npcForm.NPC_Form_Status__c == 'In Execution', npcForm.NPC_Form_Status__c == 'Executed', AND(OR(npcForm.NPC_Form_Status__c == 'Pending Resubmission', npcForm.NPC_Form_Status__c == 'Not Executed'), NOT(ISNULL(npcForm.Case__c))))), true, false)}" />
+            </apex:pageBlockSection>
+           <apex:pageBlockSection rendered="{!IF(npcForm.Reason_for_New_Part__c == 'Device Reactivation', true, false)}"  columns="2" showHeader="false" collapsible="false">
+             <!-- Adding Forcast wafer related info with in this apex:pageBlockSectionItem -->
+                <apex:outputPanel style="text-align:left;"  layout="block">              
+                <b>Past 3 years ACTUAL Loading  (Wafers /Year)</b>                
+                <apex:dataTable styleClass="tableClass" border="1" value="{!npcForm}" var="nf" id="theTable1" style="border: 1px solid #000;width:350px">                    
+                    <apex:column headerValue="{!last3}" value="{!nf.Past_3_Years_1__c}"/>                   
+                    <apex:column headerValue="{!last2}" value="{!nf.Past_3_Years_2__c}"/>                                       
+                    <apex:column headerValue="{!last1}" value="{!nf.Past_3_Years_3__c}"/>                                  
+                </apex:dataTable>                 
+                </apex:outputPanel>
+                 <apex:outputPanel style="text-align:left;"  layout="block">
+                <b>Next 3 years Forecast (Wafers /Year)</b>                               
+                <apex:dataTable value="{!npcForm}" border="1" var="nf" id="theTable" style="border: 1px solid #000;width:350px">                   
+                    <apex:column headerValue="{!next1}" value="{!nf.Next_3_Years_1__c}"/>                   
+                    <apex:column headerValue="{!next2}" value="{!nf.Next_3_Years_2__c}"/>                                       
+                    <apex:column headerValue="{!next3}" value="{!nf.Next_3_Years_3__c}"/>                                                      
+                </apex:dataTable>                 
+                </apex:outputPanel>  
+                                   
+           </apex:pageBlockSection>       
+
+     <!-- Dipak 17112016 Start-->
+             <apex:pageBlockSection columns="2" title="Return Reticle Information" collapsible="true" rendered="{!if((npcForm.Reason_for_New_Part__c='Device Reactivation' && (npcForm.Date_to_Ship_Reticle_to_Mask_Shop__c != null || npcForm.Mask_Shop_Name__c != null || npcForm.Mask_Shop_Site__c != null || npcForm.Mask_Shop_Address__c != null)), true, false)}">
+                
+                <apex:OutputField value="{!npcForm.Date_to_Ship_Reticle_to_Mask_Shop__c}" label="Date Ship Back"/>    
+                 <apex:OutputField value="{!npcForm.Mask_Shop_Name__c}" label="Mask Shop Name"/>   
+                <apex:pageBlockSectionItem >
+                </apex:pageBlockSectionItem>
+               
+                <apex:OutputField value="{!npcForm.Mask_Shop_Site__c}" label="Mask Shop Site"/>
+               <apex:pageBlockSectionItem >
+               </apex:pageBlockSectionItem>
+               <apex:OutputField value="{!npcForm.Mask_Shop_Address__c}" label="Mask Shop Address"/>  
+                
+            </apex:pageBlockSection>                
+   <!-- Dipak 17112016 End-->
+            
+            <apex:pageBlockSection columns="2" title="System Information" collapsible="true">
+                <apex:pageBlockSectionItem >
+                    <apex:outputLabel value="Created By" for="createdBy"/>
+                    <apex:outputPanel id="createdBy">
+                        <apex:outputField value="{!npcForm.CreatedById}" />,&nbsp;
+                        <apex:outputField value="{!npcForm.CreatedDate}" />
+                    </apex:outputPanel>
+                </apex:pageBlockSectionItem>
+                <apex:pageBlockSectionItem >
+                    <apex:outputLabel value="Last Modified By" for="lastModifiedBy"/>
+                    <apex:outputPanel id="lastModifiedBy">
+                        <apex:outputField value="{!npcForm.LastModifiedById}" />,&nbsp;
+                        <apex:outputField value="{!npcForm.LastModifiedDate}" />
+                    </apex:outputPanel>
+                </apex:pageBlockSectionItem>
+                
+                <apex:outputField value="{!npcForm.Last_Sync_to_PLM_Status__c}" />
+                <apex:outputField value="{!npcForm.PLM_Sync_Status__c}" />
+                
+                <apex:outputField value="{!npcForm.PLM_Error_Message__c}" />
+                <apex:pageBlockSectionItem />
+            </apex:pageBlockSection>
+        </apex:pageBlock>
+    </apex:form>
+    <!-- rendered="{!$ObjectType.Device__c.accessible}" -->
+     <apex:relatedList list="Devices__r" />
+    <apex:pageBlock title="Masks" rendered="{!(npcForm.Reason_for_New_Part__c!='Device Reactivation')}">
+        <apex:pageBlockTable value="{!listMasks}" var="m" rendered="{!listMasks.size > 0 && (npcForm.Reason_for_New_Part__c!='Device Reactivation')}">
+            <apex:column value="{!m.Layer__c}">
+                    <apex:facet name="header">Layer</apex:facet>
+                </apex:column>
+                <apex:column value="{!m.Original_Mask__c}">
+                    <apex:facet name="header">Original Mask</apex:facet>
+                </apex:column>
+                <apex:column value="{!m.Modified_Mask__c}">
+                    <apex:facet name="header">Modified Mask</apex:facet>
+                </apex:column>
+                <apex:column value="{!m.Is_Mask_Modified__c}">
+                    <apex:facet name="header">
+                        Is Mask Modified?
+                        <img src="/s.gif" class="imgclass" onmouseover="showHelpText('divIsMaskModified');" onmouseout="hideHelpText('divIsMaskModified');" />
+                    </apex:facet>
+                </apex:column>
+        </apex:pageBlockTable>
+        <apex:outputText rendered="{!listMasks.size == 0  && (npcForm.Reason_for_New_Part__c!='Device Reactivation')}" value="No records to display" />
+    </apex:pageBlock>
+    <apex:relatedList subject="{!npcForm.Id}" list="CombinedAttachments" />
+    <apex:relatedList list="ProcessSteps" />
+    <apex:form >
+        <apex:pageBlock id="appRej" rendered="{!showAppRejSection}">
+            <apex:pageBlockButtons location="top" id="appHistButtons">
+                <apex:actionRegion >
+                    <apex:commandLink value="Approve/Reject" id="appRejectBtn" styleClass="btn" style="padding:2px 5px 3px 5px; text-decoration:none;" action="{!ApprRej}" />
+                </apex:actionRegion>
+            </apex:pageBlockButtons>
+        </apex:pageBlock>
+    </apex:form>    
+    <apex:pageBlock title="NPC Form History">
+        <apex:pageBlockTable value="{!listNPCHistory}" var="h">
+            <apex:column >
+                <apex:facet name="header">Date</apex:facet>
+                <apex:outputText value="{0, date, MM/dd/yyyy h:mm a}">
+                    <apex:param value="{!h.dateUpdated}" />
+                </apex:outputText>
+            </apex:column>
+            <apex:column >
+                <apex:facet name="header">User</apex:facet>
+                <apex:outputLink target="_blank" value="/{!h.userId}">
+                    <apex:outputText value="{!h.userName}" />
+                </apex:outputLink>
+            </apex:column>
+            <apex:column >
+                <apex:facet name="header">Action</apex:facet>
+                <apex:outputText value="{!h.description}" escape="false" />
+            </apex:column>
+        </apex:pageBlockTable>
+    </apex:pageBlock>
+    <apex:pageBlock title="Mask History">
+        <apex:pageBlockTable value="{!listHistory}" var="h">
+            <apex:column >
+                <apex:facet name="header">Date</apex:facet>
+                <apex:outputText value="{0, date, MM/dd/yyyy h:mm a}">
+                    <apex:param value="{!h.dateUpdated}" />
+                </apex:outputText>
+            </apex:column>
+            <apex:column >
+                <apex:facet name="header">User</apex:facet>
+                <apex:outputLink target="_blank" value="/{!h.userId}">
+                    <apex:outputText value="{!h.userName}" />
+                </apex:outputLink>
+            </apex:column>
+            <apex:column >
+                <apex:facet name="header">Action</apex:facet>
+                <apex:outputText value="{!h.description}" escape="false" />
+            </apex:column>
+        </apex:pageBlockTable>
+    </apex:pageBlock>
+    
+    <div id="divIsMaskModified" class="helpTextStyle" style="top: 590px; display: none; opacity: -0.2; left: 680px;">
+        {!$ObjectType.Mask__c.fields.Is_Mask_Modified__c.inlineHelpText}
+    </div>
+    
+    <script type="text/javascript">
+        var submitBtns = document.getElementsByName("piSubmit");
+        for(var x=0;x<submitBtns.length;x++){
+            if(submitBtns[x].type=="button"){
+                var npcId = window.location.href.substring(window.location.href.indexOf("id=")+3,window.location.href.indexOf("id=")+18);
+                submitBtns[x].onclick = function(){
+                    var url = window.location.href;
+                    window.location.href = "/apex/NPCFormApproval?id=" + npcId;
+                }
+                break;
+            }
+        }
+          
+    </script>
+    
+    <style>
+        /* === Hides Approve / Reject link for Approval History === */         
+        
+        a[title^='Approve / Reject']{
+            display:none
+        }
+        
+        /*div.relatedProcessHistory th.actionColumn {
+            display:none
+        }
+        div.relatedProcessHistory td.actionColumn {
+            display:none
+        }*/        
+        
+        /* === END === */
+    </style>
+    
+    
+</apex:page>

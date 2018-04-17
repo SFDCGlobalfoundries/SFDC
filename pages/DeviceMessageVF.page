@@ -1,0 +1,427 @@
+<!--
+    Author: Zymark Ambat
+    Description: This serves as a warning page before creating a new device.
+    History: 
+        ZAmbat      03042013    - Page creation.
+        Asolito     09302013    - Added logic auto populate process technology lookup field
+        ARoy        10102013    - Modified the code to use Target_Process_Technology__c in the query for Opportunity_Program__c.
+        Vijay       01262015    - added logic to identify the record type and redirect to appropriate page based on record type.
+        Vijay       04072015    - added logic to toggle the Message for Customer Device and Internal Device 
+-->
+<apex:page standardController="Device__c" id="DeviceMessageVF" sidebar="true" showHeader="true" tabStyle="Device__c">
+    <script type="text/javascript" src="/js/functions.js"></script>
+    <script type="text/javascript" src="/soap/ajax/27.0/connection.js"></script>
+    <script type="text/javascript">
+    
+        window.onload = function() {
+            var oppProgramId = '{!$CurrentPage.parameters.opId}';
+            var opportunityId = '{!$CurrentPage.parameters.oppId}';
+            var accountId  = '{!$CurrentPage.parameters.acId}';
+            var recordTypeId = '{!$CurrentPage.parameters.RecordType}';
+            
+            if((oppProgramId != null && oppProgramId != '') || (opportunityId != null && opportunityId != '')){
+                document.getElementById("{!$Component.form1.customerDeviceOPanel}").style.display ="block";
+                
+            }else if(accountId != null && accountId != ''){
+                sforce.connection.sessionId = '{!$Api.Session_ID}';
+                var result = sforce.connection.query("Select Id, RecordType.DeveloperName From Account Where Id ='" + accountId +"'");
+                if (result != null) {
+                    var records = result.getArray("records");
+                    if(records != null && records.length > 0){
+                        if(records[0].RecordType.DeveloperName == 'GLOBALFOUNDRIES_Internal'){
+                            document.getElementById("{!$Component.form1.internalDeviceOPanel}").style.display ="block";
+                        }else{
+                            document.getElementById("{!$Component.form1.customerDeviceOPanel}").style.display ="block";
+                        }
+                    }  
+                 }
+            }else{
+                sforce.connection.sessionId = '{!$Api.Session_ID}';
+                var result = sforce.connection.query( "SELECT ID, DeveloperName from RecordType WHERE sObjectType ='Device__c' and Id ='" + recordTypeId + "'");
+                if(result != null){
+                    var records = result.getArray("records");
+                    if(records != null && records.length > 0){
+                        if(records[0].DeveloperName == 'Device'){
+                            document.getElementById("{!$Component.form1.customerDeviceOPanel}").style.display ="block";
+                        }else{
+                            document.getElementById("{!$Component.form1.internalDeviceOPanel}").style.display ="block";
+                        }
+                    }  
+                }
+            }
+            
+        };
+        
+        function createNewDevice() {       
+            
+            var opPT = getUrlVars()["opPT"];
+            var opId = getUrlVars()["opId"];
+            var opName = getUrlVars()["opName"];
+            var opST = getUrlVars()["opST"];
+            var opFab = getUrlVars()["opFab"];
+            var opMS = getUrlVars()["opMS"];
+            var opEA = getUrlVars()["opEA"];
+            var acId = getUrlVars()["acId"];
+            var oppId = getUrlVars()["oppId"];
+            var accName = getUrlVars()["accName"];
+            var oppIot = getUrlVars()["oppIot"];
+            var recordTypeId = getUrlVars()["RecordType"];
+            var eccnTech = '';
+            var eccnWafer = '';
+            var itarFlag = '';
+            var itarStatus = '';
+            var eccnColor = '';
+            var d1Flag = '';
+            var eccnTechId = '';
+            var eccWaferId = '';
+            var itarFlagId = '';
+            var itarStatusId = '';
+            var eccnColorId = '';
+            var d1FlagId = '';
+            
+              
+            if (opId !== undefined && opId != null && opId != "") {
+                //window.location = "/a0l/e?retURL=%2F" + opId + "&CF00N90000004wot1=" + opName + "&CF00N90000004wot1_lkid=" + opId + "&00N90000004wosn=" + opST + "&00N90000004wost=" + opFab + "&00N90000004wosz=" + opMS + "&00N90000004wosq=" + opEA + "&00N90000004wotS=Active&nooverride=1";
+                /*
+                var redirectURL = "/a0l/e?retURL=%2F" + opId + "&CF00N90000004wot1=" + opName + "&CF00N90000004wot1_lkid=" + opId;
+              
+                if(opPT != null && opPT != '' && opPT != 'null') {
+                    redirectURL = redirectURL + "&CF00N90000007hjja=" + encodeURIComponent(opPT);
+                }
+                
+                if (opST != null && opST != '' && opST != 'null') {
+                    redirectURL = redirectURL + "&00N90000004wosn=" + encodeURIComponent(opST);
+                }
+                
+                if (opFab != null && opFab != '' && opFab != 'null') {
+                    redirectURL = redirectURL + "&00N90000004wost=" + encodeURIComponent(opFab);
+                }
+                
+                if (opMS != null && opMS != '' && opMS != 'null') {
+                    redirectURL = redirectURL + "&00N90000004wosz=" + encodeURIComponent(opMS);
+                }
+                
+                if (opEA != null && opEA != '' && opEA != 'null') {
+                    redirectURL = redirectURL + "&00N90000004wosq=" + encodeURIComponent(opEA);
+                }
+                 
+                  if (oppIot != null && oppIot != '' && oppIot != 'null') {
+                    redirectURL = redirectURL + "&00N0k00000181IB=" + encodeURIComponent(oppIot);
+                }
+                */
+                
+                sforce.connection.sessionId = '{!$Api.Session_ID}';
+                var result = sforce.connection.query("SELECT Id, Name, Opportunity_Sourcing_Type__c, Primary_GF_Fab__c, Market_Segment__c, Opportunity_End_Application__c,Target_Process_Technology__c,Opportunity_IoT_Application__c FROM Opportunity_Program__c WHERE Id = '" + opId + "'");
+                
+                if (result.records !== null && result.records != undefined && result.records != "") {
+                    
+                    opPT = result.records.get("Target_Process_Technology__c");
+                    opId = result.records.get("Id");
+                    opName = result.records.get("Name");
+                    opST = result.records.get("Opportunity_Sourcing_Type__c");
+                    opFab = result.records.get("Primary_GF_Fab__c");
+                    opMS = result.records.get("Market_Segment__c");
+                    opEA = result.records.get("Opportunity_End_Application__c");
+                    oppIot = result.records.get("Opportunity_IoT_Application__c");
+                }
+                
+                var redirectURL = "/a0l/e?retURL=%2F" + opId + "&CF00N90000004wot1=" + opName + "&CF00N90000004wot1_lkid=" + opId;
+                
+                if(opPT != null && opPT != '' && opPT != 'null') {
+                    redirectURL = redirectURL + "&CF00N90000007hjja=" + encodeURIComponent(opPT);
+                }
+            
+                if (opST != null && opST != '' && opST != 'null') {
+                    redirectURL = redirectURL + "&00N90000004wosn=" + encodeURIComponent(opST);
+                }
+                
+                if (opFab != null && opFab != '' && opFab != 'null') {
+                    redirectURL = redirectURL + "&00N90000004wost=" + encodeURIComponent(opFab);
+                }
+                
+                if (opMS != null && opMS != '' && opMS != 'null') {
+                    redirectURL = redirectURL + "&00N90000004wosz=" + encodeURIComponent(opMS);
+                }
+                
+                if (opEA != null && opEA != '' && opEA != 'null') {
+                    redirectURL = redirectURL + "&00N90000004wosq=" + encodeURIComponent(opEA);
+                }
+                
+                 if (oppIot != null && oppIot != '' && oppIot != 'null') {
+                    redirectURL = redirectURL + "&00NN0000002em8r=" + encodeURIComponent(oppIot);
+                }
+                
+                recordTypeId = getRecordTypeId('Device__c', 'Device');
+                if(recordTypeId != null){
+                 redirectURL = redirectURL + "&RecordType=" + recordTypeId;
+                }
+                redirectURL = redirectURL + "&00N90000004wotS=Active&nooverride=1";
+                window.location = redirectURL;
+            } else if (oppId !== undefined && oppId != null && oppId != "") {
+                try {
+                    sforce.connection.sessionId = '{!$Api.Session_ID}';
+                    var result = sforce.connection.query("SELECT Id, Name, Opportunity_Sourcing_Type__c, Primary_GF_Fab__c, Market_Segment__c, Opportunity_End_Application__c,Target_Process_Technology__c,Opportunity_IoT_Application__c FROM Opportunity_Program__c WHERE Opportunity__c = '" + oppId + "'");
+                    if (result.records.length > 1) {
+                        //window.location = "/a0l/e?retURL=%2F" + oppId + "&CF00N90000004wot1=" + opName + "&CF00N90000004wot1_lkid=" + opId + "&00N90000004wotS=Active&nooverride=1";
+                        
+                        opPT = result.records[0].get("Target_Process_Technology__c");
+                        opId = result.records[0].get("Id");
+                        opName = result.records[0].get("Name");
+                        opST = result.records[0].get("Opportunity_Sourcing_Type__c");
+                        opFab = result.records[0].get("Primary_GF_Fab__c");
+                        opMS = result.records[0].get("Market_Segment__c");
+                        opEA = result.records[0].get("Opportunity_End_Application__c");
+                        oppIot = result.records[0].get("Opportunity_IoT_Application__c");
+                        
+                    } else if (result.records.length = 1) {
+                        //window.location = "/a0l/e?retURL=%2F" + oppId + "&CF00N90000004wot1=" + opName + "&CF00N90000004wot1_lkid=" + opId + "&00N90000004wotS=Active&nooverride=1";
+                        
+                        opPT = result.records.get("Target_Process_Technology__c");
+                        opId = result.records.get("Id");
+                        opName = result.records.get("Name");
+                        opST = result.records.get("Opportunity_Sourcing_Type__c");
+                        opFab = result.records.get("Primary_GF_Fab__c");
+                        opMS = result.records.get("Market_Segment__c");
+                        opEA = result.records.get("Opportunity_End_Application__c");
+                        oppIot = result.records.get("Opportunity_IoT_Application__c");
+                        
+                    }
+                    
+                    var redirectURL = "/a0l/e?retURL=%2F" + oppId + "&CF00N90000004wot1=" + opName + "&CF00N90000004wot1_lkid=" + opId;
+                   
+                    if(opPT != null && opPT != '' && opPT != 'null') {
+                        redirectURL = redirectURL + "&CF00N90000007hjja=" + encodeURIComponent(opPT);
+                    }
+                
+                    if (opST != null && opST != '' && opST != 'null') {
+                        redirectURL = redirectURL + "&00N90000004wosn=" + encodeURIComponent(opST);
+                    }
+                    
+                    if (opFab != null && opFab != '' && opFab != 'null') {
+                        redirectURL = redirectURL + "&00N90000004wost=" + encodeURIComponent(opFab);
+                    }
+                    
+                    if (opMS != null && opMS != '' && opMS != 'null') {
+                        redirectURL = redirectURL + "&00N90000004wosz=" + encodeURIComponent(opMS);
+                    }
+                    
+                    if (opEA != null && opEA != '' && opEA != 'null') {
+                        redirectURL = redirectURL + "&00N90000004wosq=" + encodeURIComponent(opEA);
+                    }
+                    
+                     if (oppIot != null && oppIot != '' && oppIot != 'null') {
+                        redirectURL = redirectURL + "&00NN0000002em8r=" + encodeURIComponent(oppIot);
+                    }
+                    
+                    
+                    
+                    
+                    recordTypeId = getRecordTypeId('Device__c', 'Device');
+                    if(recordTypeId != null){
+                     redirectURL = redirectURL + "&RecordType=" + recordTypeId;
+                    }
+                    
+                    redirectURL = redirectURL + "&00N90000004wotS=Active&nooverride=1";
+                    window.location = redirectURL;
+                } catch (err) {
+                    alert(err.message);
+                    window.location = "/a0l/e?retURL=%2F" + oppId + "&00N90000004wotS=Active&nooverride=1";
+                }
+            } else if (acId !== undefined && acId != null && acId != "") {
+                var redirectURL = "/a0l/e?retURL=%2F" + acId + "&CF00N90000004wosX="+ accName +"&CF00N90000004wosX_lkid=" + acId;
+                sforce.connection.sessionId = '{!$Api.Session_ID}';
+                var result = sforce.connection.query("Select Id, RecordType.DeveloperName From Account Where Id ='" + acId +"'");
+                if (result != null) {
+                    var records = result.getArray("records");
+                    if(records != null && records.length > 0 && records[0].RecordType.DeveloperName != null && records[0].RecordType.DeveloperName  == 'GLOBALFOUNDRIES_Internal'){
+                        recordTypeId = getRecordTypeId('Device__c', 'Internal_Device');
+                        var eccnTechResult = sforce.connection.query("Select Name, Value__c From Environment_Variable__c Where Name ='DEVICE_ECCN_TECH_INTERNALDEV_DEFAULT'");
+                        if(eccnTechResult != null){
+                            var eccnTechRecords = eccnTechResult.getArray("records");
+                            if(eccnTechRecords != null && eccnTechRecords.length > 0){
+                                eccnTech = eccnTechRecords[0].Value__c;
+                            }
+                        }
+                        var eccnTechIdResult = sforce.connection.query("Select Name, Value__c From Environment_Variable__c Where Name ='DEVICE_ECCNTECH_ID'");
+                        if(eccnTechIdResult != null){
+                            var eccnTechIdRecords = eccnTechIdResult.getArray("records");
+                            if(eccnTechIdRecords != null && eccnTechIdRecords.length > 0){
+                                eccnTechId = eccnTechIdRecords[0].Value__c;
+                            }
+                        }
+                        var eccnWaferResult = sforce.connection.query("Select Name, Value__c From Environment_Variable__c Where Name ='DEVICE_ECCN_WAFER_INTERNALDEV_DEFAULT'");
+                        if(eccnWaferResult != null){
+                            var eccnWaferRecords = eccnWaferResult.getArray("records");
+                            if(eccnWaferRecords != null && eccnWaferRecords.length > 0){
+                                eccnWafer = eccnWaferRecords[0].Value__c;
+                            }
+                        }
+                        var eccnWaferIdResult = sforce.connection.query("Select Name, Value__c From Environment_Variable__c Where Name ='DEVICE_ECCNWAFER_ID'");
+                        if(eccnWaferIdResult != null){
+                            var eccnWaferIdRecords = eccnWaferIdResult.getArray("records");
+                            if(eccnWaferIdRecords != null && eccnWaferIdRecords.length > 0){
+                                eccnWaferId = eccnWaferIdRecords[0].Value__c;
+                            }
+                        }
+                        var itarFlagResult = sforce.connection.query("Select Name, Value__c From Environment_Variable__c Where Name ='DEVICE_ITAR_FLAG_INTERNALDEV_DEFAULT'");
+                        if(itarFlagResult != null){
+                            var itarFlagRecords = itarFlagResult.getArray("records");
+                            if(itarFlagRecords != null && itarFlagRecords.length > 0){
+                                itarFlag = itarFlagRecords[0].Value__c;
+                            }
+                        }
+                        var itarFlagIdResult = sforce.connection.query("Select Name, Value__c From Environment_Variable__c Where Name ='DEVICE_ITARFLAG_ID'");
+                        if(itarFlagIdResult != null){
+                            var itarFlagIdRecords = itarFlagIdResult.getArray("records");
+                            if(itarFlagIdRecords != null && itarFlagIdRecords.length > 0){
+                                itarFlagId = itarFlagIdRecords[0].Value__c;
+                            }
+                        }
+                        var itarStatusResult = sforce.connection.query("Select Name, Value__c From Environment_Variable__c Where Name ='DEVICE_ITAR_CLASS_INTERNALDEV_DEFAULT'");
+                        if(itarStatusResult != null){
+                            var itarStatusRecords = itarStatusResult.getArray("records");
+                            if(itarStatusRecords != null && itarStatusRecords.length > 0){
+                                itarStatus = itarStatusRecords[0].Value__c;
+                            }
+                        }
+                        var itarStatusIdResult = sforce.connection.query("Select Name, Value__c From Environment_Variable__c Where Name ='DEVICE_ITARSTATUS_ID'");
+                        if(itarStatusIdResult != null){
+                            var itarStatusIdRecords = itarStatusIdResult.getArray("records");
+                            if(itarStatusIdRecords != null && itarStatusIdRecords.length > 0){
+                                itarStatusId = itarStatusIdRecords[0].Value__c;
+                            }
+                        }
+                        var eccnColorResult = sforce.connection.query("Select Name, Value__c From Environment_Variable__c Where Name ='DEVICE_ECCN_COLOR_INTERNALDEV_DEFAULT'");
+                        if(eccnColorResult != null){
+                            var eccnColorRecords = eccnColorResult.getArray("records");
+                            if(eccnColorRecords != null && eccnColorRecords.length > 0){
+                                eccnColor = eccnColorRecords[0].Value__c;
+                            }
+                        }
+                        var eccnColorIdResult = sforce.connection.query("Select Name, Value__c From Environment_Variable__c Where Name ='DEVICE_ECCNCOLOR_ID'");
+                        if(eccnColorIdResult != null){
+                            var eccnColorIdRecords = eccnColorIdResult.getArray("records");
+                            if(eccnColorIdRecords != null && eccnColorIdRecords.length > 0){
+                                eccnColorId = eccnColorIdRecords[0].Value__c;
+                            }
+                        }
+                        var d1FlagResult = sforce.connection.query("Select Name, Value__c From Environment_Variable__c Where Name ='DEVICE_D1_FLAG_INTERNALDEV_DEFAULT'");
+                        if(d1FlagResult != null){
+                            var d1FlagRecords = d1FlagResult.getArray("records");
+                            if(d1FlagRecords != null && d1FlagRecords.length > 0){
+                                d1Flag = d1FlagRecords[0].Value__c;
+                            }
+                        }
+                        var d1FlagIdResult = sforce.connection.query("Select Name, Value__c From Environment_Variable__c Where Name ='DEVICE_D1FLAG_ID'");
+                        if(d1FlagIdResult != null){
+                            var d1FlagIdRecords = d1FlagIdResult.getArray("records");
+                            if(d1FlagIdRecords != null && d1FlagIdRecords.length > 0){
+                                d1FlagId = d1FlagIdRecords[0].Value__c;
+                            }
+                        }
+                    }else{
+                        recordTypeId = getRecordTypeId('Device__c', 'Device');
+                    }
+                    if(recordTypeId != null){
+                        redirectURL = redirectURL + "&RecordType="+recordTypeId;
+                    }
+                    if(eccnTech != '' && eccnTech != null){
+                        redirectURL = redirectURL + "&"+eccnTechId+"="+eccnTech;
+                    }
+                    if(eccnWafer != '' && eccnWafer != null){
+                        redirectURL = redirectURL + "&"+eccnWaferId+"="+eccnWafer;
+                    }
+                    if(itarFlag != '' && itarFlag != null){
+                        redirectURL = redirectURL + "&"+itarFlagId+"="+itarFlag;
+                    }
+                    if(itarStatus != '' && itarStatus != null){
+                        redirectURL = redirectURL + "&"+itarStatusId+"="+itarStatus;
+                    }
+                    if(eccnColor != '' && eccnColor != null){
+                        redirectURL = redirectURL + "&"+eccnColorId+"="+eccnColor;
+                    }
+                    if(d1Flag != '' && d1Flag != null){
+                        redirectURL = redirectURL + "&"+d1FlagId+"="+d1Flag;
+                    }
+                    redirectURL = redirectURL + "&00N90000004wotS=Active&nooverride=1";
+                    window.location = redirectURL;
+                }
+                
+            } else {
+                window.location = "/a0l/e?retURL=%2Fa0l%2Fo&nooverride=1&00N90000004wotS=Active&RecordType="+recordTypeId;
+            }
+            
+            return;
+        }
+        
+        function cancel() {
+            var opId = getUrlVars()["opId"];
+            var acId = getUrlVars()["acId"];
+            var oppId = getUrlVars()["oppId"];
+            
+            if (opId !== undefined && opId != null && opId != "") {
+                window.location = "/" + opId;
+            } else if (oppId !== undefined && oppId != null && oppId != "") {
+                window.location = "/" + oppId;
+            } else if (acId !== undefined && acId != null && acId != "") {
+                window.location = "/" + acId;
+            } else {
+                window.location = "/a0l/o";
+            }
+        }
+        
+        function getUrlVars() {
+            var vars = {};
+            var parts = window.location.href.replace(/[?&]+([^=&]+)=([^&]*)/gi, function(m, key, value) {
+                vars[key] = value;
+            });
+            return vars;
+        }
+        
+        function getRecordTypeId(sObjectType, recordTypeDeveloperName){
+            try{
+                sforce.connection.sessionId = '{!$Api.Session_ID}';
+                var result = sforce.connection.query( "SELECT ID from RecordType WHERE sObjectType ='" + sObjectType + "' and developerName ='" + recordTypeDeveloperName + "'");
+                if(result != null){
+                    var records = result.getArray("records");
+                    if(records != null && records.length > 0){
+                       return records[0].Id;
+                    }  
+                }
+            }catch(error){
+                alert(error.message);
+            }
+            return null;
+        }
+        
+       
+    </script>
+    
+    <apex:form id="form1">
+        <apex:outputPanel id="customerDeviceOPanel" style="display:none;">
+            <apex:pageBlock id="customerDevice"  title="Create New Device" mode="edit" >
+                <apex:pageBlockButtons location="bottom">
+                    <input type="button" value="    Ok    " onclick="createNewDevice();" class="btn" />
+                    <input type="button" value="Cancel" onclick="cancel();" class="btn" />
+                </apex:pageBlockButtons>
+                <apex:pageBlockSection title="{!$Label.NewDevice_Message_Header}" columns="1" collapsible="false">
+                    <apex:outputText value="{!$Label.NewDevice_Message_Body}" escape="false" style="text-align: justify;" />
+                    <apex:outputText value="{!$Label.NewDevice_Message_Body_1}" escape="false" />
+                    <apex:outputText value="{!$Label.NewDevice_Message_Body_2}" escape="false" />
+                </apex:pageBlockSection>
+            </apex:pageBlock>
+        </apex:outputPanel>
+        <apex:outputPanel id="internalDeviceOPanel" style="display:none;">
+        <apex:pageBlock id="internalDevice"  title="Create New Device" mode="edit" >
+            <apex:pageBlockButtons location="bottom">
+                <input type="button" value="    Ok    " onclick="createNewDevice();" class="btn" />
+                <input type="button" value="Cancel" onclick="cancel();" class="btn" />
+            </apex:pageBlockButtons>
+            <apex:pageBlockSection title="{!$Label.InternalDevice_Message_Header}" columns="1" collapsible="false">
+                <apex:outputText value="{!$Label.InternalDevice_Message_Body_1}" escape="false" style="text-align: justify;" />
+                <apex:outputText value="{!$Label.InternalDevice_Message_Body_2}" escape="false" />
+            </apex:pageBlockSection>
+        </apex:pageBlock>
+        </apex:outputPanel>
+    </apex:form>
+</apex:page>

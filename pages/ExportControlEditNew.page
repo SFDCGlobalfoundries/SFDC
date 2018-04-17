@@ -1,0 +1,1334 @@
+<!--
+    Author: Baijnath Rathour/Anirban Roy
+    Description: This serves as the visualforce page for the Expose Control Form Customer Portal Page.
+    History: 
+        BRathour    06282013    - page creation.
+        ARoy        07032013    - page modification to include all functionalities.
+        ARoy        10022013    - page modification to display customer portal name, phone and email address for 
+                                  Status = 'Undeclared' as per the information of current portal user.
+        ARoy        10072013    - page modification to remove Reference Id as it was a redundant field as CRMDID No is already present.
+        ARoy        10302013    - removed the required fields and put the field validation on submit for approval.
+        ARoy        11272013    - modified for change in verbiage for GTC and non-GTC users.
+        ARoy        12022013    - modified for change in verbiage of Export Control Default and Custom Template.
+        ARoy        03062014    - added Question 8 in the Export Control Form. (Case : 00005251)
+        DBiswal     11112014    - added code to display CCAT Number under Question 5.
+        Devendra        20092016    - updated the functionality to support the Export Control form for Red system. 
+        Devendra        28062017    - updated the functionality to support MPW ECCN.
+		Devendra        20072017    - Moved ECCN from device to exportcontrol.
+		Poulami         15112017    - updated the functionality for GTC Color Zone Mapping requirement.        		
+
+-->
+<apex:page standardController="Export_Control_Form__c" extensions="ExportControlEditController" action="{!init}" showheader="true" sidebar="false" cache="false">
+    <style type="text/css">
+        .trcolor{background-color:#eaeaea;}
+        .subHead{padding-left:20px;}
+        .subChildHead{padding-left:40px;}
+    </style>
+    <apex:includeScript value="{!URLFOR($Resource.jQuery_Device_Migration, 'jquery-1.10.2.min.js')}"/>
+    <span id="hideMyParent"></span>
+    <script type="text/javascript"> $(document).ready(function() {
+        //HIDE THE ACTION COLUMN FOR MPWECCN RELATEDLIST
+		try{
+			$('.actionColumn').each(function(idx) {
+				if ($(this).html().indexOf('MPWECCN') > 1) {
+					$(this).hide();
+					$($('.actionColumn')[(idx - 1)]).hide();
+				}
+			});
+		}catch(err){
+			console.log(err);
+		}
+    var startYear=2000; 
+    var endYear=2020; 
+    var optionsString=''; 
+    if(startYear<endYear){
+     for(i=startYear;i<endYear+1;i++){ 
+    optionsString += "<option value=\""+i+"\">"+i+"</option>"; 
+    }
+    $('#calYearPicker').html(optionsString); } $('#sidebarDiv #hideMyParent').parent().parent().hide(); });
+    </script>
+    <script>
+        
+        var selectedChkbox;        
+
+        window.onload= function()
+        {
+            var selectChBoxes = document.getElementsByTagName('input');
+            for(var i=0;i<selectChBoxes.length;i++){
+                if(selectChBoxes[i].type=='checkbox'){
+                    if(selectChBoxes[i].checked){
+                        selectedChkbox = selectChBoxes[i];
+                    }
+                }
+            }
+            
+            
+            if('{!isReadOnly}'=='false'){
+                toggleClass_isQ3Yes();
+                toggleClass_isQ4Yes();
+                toggleClass_isITARxv();
+                toggleClass_isITARxvace();
+                toggleClass_isQ5Yes();
+            }else{
+                toggleClass_isQ3Yes_readonly();
+                toggleClass_isQ4Yes_readonly();
+                toggleClass_isITARxv_readonly();
+                toggleClass_isITARxvace_readonly();
+                toggleClass_isQ5Yes_readonly();
+            }
+                
+        }
+        
+        function toggleClass_isQ3Yes(){
+            if(document.getElementById('{!$Component.form.pb.mAppProdChk}') 
+                    && document.getElementById('{!$Component.form.pb.mAppProdChk}').value == 'Yes'){
+                [].forEach.call(document.querySelectorAll('.isQ3Yes'), function (el) {
+                      el.style.display= '';
+                });
+            }else{
+                [].forEach.call(document.querySelectorAll('.isQ3Yes'), function (el) {
+                      el.style.display= 'none';
+                });
+            }
+        }
+        
+        function toggleClass_isQ4Yes(){
+            if(document.getElementById('{!$Component.form.pb.iTARProdChk}') 
+                    && document.getElementById('{!$Component.form.pb.iTARProdChk}').value == 'Yes'){
+                [].forEach.call(document.querySelectorAll('.isQ4Yes'), function (el) {
+                      el.style.display= '';
+                });
+            }else{
+                [].forEach.call(document.querySelectorAll('.isQ4Yes'), function (el) {
+                      el.style.display= 'none';
+                });
+                if(document.getElementById('{!$Component.form.pb.EC_ITAR_Category_Full}') )document.getElementById('{!$Component.form.pb.EC_ITAR_Category_Full}').value = '';
+                if(document.getElementById('{!$Component.form.pb.EC_ITAR_Category}') )document.getElementById('{!$Component.form.pb.EC_ITAR_Category}').value = '';
+            }
+        }
+    
+        function toggleClass_isITARxv(){
+            
+            if(document.getElementById('{!$Component.form.pb.EC_ITAR_Category_Full}') 
+                    && document.getElementById('{!$Component.form.pb.EC_ITAR_Category_Full}').value == 'XV'){
+                [].forEach.call(document.querySelectorAll('.isITARxv'), function (el) {
+                      el.style.display= '';
+                });
+            }else{
+                [].forEach.call(document.querySelectorAll('.isITARxv'), function (el) {
+                      el.style.display= 'none';
+                });
+            }
+        }
+        
+        function toggleClass_isITARxvace(){
+            if(document.getElementById('{!$Component.form.pb.EC_ITAR_Category}') 
+                    && document.getElementById('{!$Component.form.pb.EC_ITAR_Category}').value == 'XV(a)'){
+                [].forEach.call(document.querySelectorAll('.isITARxva'), function (el) {
+                      el.style.display= '';
+                });
+            }else{
+                [].forEach.call(document.querySelectorAll('.isITARxva'), function (el) {
+                      el.style.display= 'none';
+                });
+            }
+            if(document.getElementById('{!$Component.form.pb.EC_ITAR_Category}') 
+                    && document.getElementById('{!$Component.form.pb.EC_ITAR_Category}').value == 'XV(c)'){
+                [].forEach.call(document.querySelectorAll('.isITARxvc'), function (el) {
+                      el.style.display= '';
+                });
+            }else{
+                [].forEach.call(document.querySelectorAll('.isITARxvc'), function (el) {
+                      el.style.display= 'none';
+                });
+            }
+            if(document.getElementById('{!$Component.form.pb.EC_ITAR_Category}') 
+                    && document.getElementById('{!$Component.form.pb.EC_ITAR_Category}').value == 'XV(e)'){
+                [].forEach.call(document.querySelectorAll('.isITARxve'), function (el) {
+                      el.style.display= '';
+                });
+            }else{
+                [].forEach.call(document.querySelectorAll('.isITARxve'), function (el) {
+                      el.style.display= 'none';
+                });
+            }
+        }
+    
+    
+        function toggleClass_isQ5Yes(){
+            
+            if(document.getElementById('{!$Component.form.pb.EC_Encryption_Control_Product}') 
+                    && document.getElementById('{!$Component.form.pb.EC_Encryption_Control_Product}').value == 'Yes'){
+                    document.getElementById('{!$Component.form.pb.usEARProdChk}').value = 'No';
+                [].forEach.call(document.querySelectorAll('.isQ5Yes'), function (el) {
+                      el.style.display= '';
+                });
+                [].forEach.call(document.querySelectorAll('.isQ5No'), function (el) {
+                      el.style.display= 'none';
+                });
+                
+            }else{
+                [].forEach.call(document.querySelectorAll('.isQ5Yes'), function (el) {
+                      el.style.display= 'none';
+                });
+                [].forEach.call(document.querySelectorAll('.isQ5No'), function (el) {
+                      el.style.display= '';
+                });
+                
+                if(document.getElementById('{!$Component.form.pb.usEARProdChk}') 
+                    && document.getElementById('{!$Component.form.pb.usEARProdChk}').value == 'Yes'){
+                [].forEach.call(document.querySelectorAll('.isQ6Yes'), function (el) {
+                      el.style.display= '';
+                });
+                 }else{
+                    [].forEach.call(document.querySelectorAll('.isQ6Yes'), function (el) {
+                          el.style.display= 'none';
+                    });
+                }
+            }
+            
+            
+            
+            if(document.getElementById('{!$Component.form.pb.nonUSEARProdChk}') 
+                    && document.getElementById('{!$Component.form.pb.nonUSEARProdChk}').value == 'Yes'){
+                [].forEach.call(document.querySelectorAll('.isQ7Yes'), function (el) {
+                      el.style.display= '';
+                });
+             }else{
+                [].forEach.call(document.querySelectorAll('.isQ7Yes'), function (el) {
+                      el.style.display= 'none';
+                });
+            }
+        }
+
+
+///for readonly view
+        function toggleClass_isQ3Yes_readonly(){
+            if('{!ExportControl.ITAR_Product__c}' == 'Yes'){
+                [].forEach.call(document.querySelectorAll('.isQ3Yes'), function (el) {
+                      el.style.display= '';
+                });
+            }else{
+                [].forEach.call(document.querySelectorAll('.isQ3Yes'), function (el) {
+                      el.style.display= 'none';
+                });
+            }
+        }
+    
+
+        function toggleClass_isQ4Yes_readonly(){
+            if('{!ExportControl.ITAR_Product__c}' == 'Yes'){
+                [].forEach.call(document.querySelectorAll('.isQ4Yes'), function (el) {
+                      el.style.display= '';
+                });
+            }else{
+                [].forEach.call(document.querySelectorAll('.isQ4Yes'), function (el) {
+                      el.style.display= 'none';
+                });
+            }
+        }
+    
+        function toggleClass_isITARxv_readonly(){
+            
+            if('{!ExportControl.ITAR_Category_Full__c}' == 'XV'){
+                [].forEach.call(document.querySelectorAll('.isITARxv'), function (el) {
+                      el.style.display= '';
+                });
+            }else{
+                [].forEach.call(document.querySelectorAll('.isITARxv'), function (el) {
+                      el.style.display= 'none';
+                });
+            }
+        }
+        
+        function toggleClass_isITARxvace_readonly(){
+            if('{!ExportControl.ITAR_Category__c}'== 'XV(a)'){
+                [].forEach.call(document.querySelectorAll('.isITARxva'), function (el) {
+                      el.style.display= '';
+                });
+            }else{
+                [].forEach.call(document.querySelectorAll('.isITARxva'), function (el) {
+                      el.style.display= 'none';
+                });
+            }
+            if('{!ExportControl.ITAR_Category__c}' == 'XV(c)'){
+                [].forEach.call(document.querySelectorAll('.isITARxvc'), function (el) {
+                      el.style.display= '';
+                });
+            }else{
+                [].forEach.call(document.querySelectorAll('.isITARxvc'), function (el) {
+                      el.style.display= 'none';
+                });
+            }
+            if('{!ExportControl.ITAR_Category__c}' == 'XV(e)'){
+                [].forEach.call(document.querySelectorAll('.isITARxve'), function (el) {
+                      el.style.display= '';
+                });
+            }else{
+                [].forEach.call(document.querySelectorAll('.isITARxve'), function (el) {
+                      el.style.display= 'none';
+                });
+            }
+        }
+    
+        function toggleClass_isQ5Yes_readonly(){
+            
+            if('{!ExportControl.Encryption_Control_Product__c}' == 'Yes'){
+                [].forEach.call(document.querySelectorAll('.isQ5Yes'), function (el) {
+                      el.style.display= '';
+                });
+                [].forEach.call(document.querySelectorAll('.isQ5No'), function (el) {
+                      el.style.display= 'none';
+                });
+            }else{
+                [].forEach.call(document.querySelectorAll('.isQ5Yes'), function (el) {
+                      el.style.display= 'none';
+                });
+                [].forEach.call(document.querySelectorAll('.isQ5No'), function (el) {
+                      el.style.display= '';
+                });
+                
+                if('{!ExportControl.US_EAR_Product__c}'== 'Yes'){
+                [].forEach.call(document.querySelectorAll('.isQ6Yes'), function (el) {
+                      el.style.display= '';
+                });
+                 }else{
+                    [].forEach.call(document.querySelectorAll('.isQ6Yes'), function (el) {
+                          el.style.display= 'none';
+                    });
+                }
+            }
+            
+            
+            
+            if('{!ExportControl.Non_US_EAR_Product__c}' == 'Yes'){
+                [].forEach.call(document.querySelectorAll('.isQ7Yes'), function (el) {
+                      el.style.display= '';
+                });
+             }else{
+                [].forEach.call(document.querySelectorAll('.isQ7Yes'), function (el) {
+                      el.style.display= 'none';
+                });
+            }
+        }
+        
+        
+        function deselectOther(chkBox) {
+            if (chkBox.checked) {
+                if ((chkBox != selectedChkbox) && (selectedChkbox != null)) {
+                    selectedChkbox.checked = false;
+                }
+                selectedChkbox = chkBox;
+            }            
+        }
+        
+        function dataIsValid(id){
+            var errorStr = '';
+            
+            //===================added newly to remove the required fields and put that check on submit for approval=======================//
+            
+            if(document.getElementById('{!$Component.form.pb.ecCustTradeCompConPer}') 
+                    && document.getElementById('{!$Component.form.pb.ecCustTradeCompConPer}').value == ''){
+                errorStr = errorStr + 'Please enter value in Customer Trade Compliance Contact Person field.\n';
+            }
+            
+            if(document.getElementById('{!$Component.form.pb.ecEmailAdd}') 
+                    && document.getElementById('{!$Component.form.pb.ecEmailAdd}').value == ''){
+                errorStr = errorStr + 'Please enter value in Email Address field.\n';
+            }
+            
+            if(document.getElementById('{!$Component.form.pb.ecPhone}') 
+                    && document.getElementById('{!$Component.form.pb.ecPhone}').value == ''){
+                errorStr = errorStr + 'Please enter value in Phone field.\n';
+            }
+                        
+            if(document.getElementById('{!$Component.form.pb.ecProdDesc}') 
+                    && document.getElementById('{!$Component.form.pb.ecProdDesc}').value == ''){
+                errorStr = errorStr + 'Please enter value in Product Description field.\n';
+            }
+            
+            if(document.getElementById('{!$Component.form.pb.ecWeaponProd}') 
+                    && document.getElementById('{!$Component.form.pb.ecWeaponProd}').value == ''){
+                errorStr = errorStr + 'Please enter value in Weapon Development field.\n';
+            }
+            
+            if(document.getElementById('{!$Component.form.pb.mAppProdChk}') 
+                    && document.getElementById('{!$Component.form.pb.mAppProdChk}').value == ''){
+                errorStr = errorStr + 'Please enter value in Military App Product field.\n';
+            }
+            
+            if(document.getElementById('{!$Component.form.pb.iTARProdChk}') 
+                    && document.getElementById('{!$Component.form.pb.iTARProdChk}').value == ''){
+                errorStr = errorStr + 'Please enter value in ITAR Product field.\n';
+            }
+            
+            if(document.getElementById('{!$Component.form.pb.nonUSEARProdChk}') 
+                    && document.getElementById('{!$Component.form.pb.nonUSEARProdChk}').value == ''){
+                errorStr = errorStr + 'Please enter value in Non US Controlled Product field.\n';
+            }                        
+            
+            //============================end of the section================================================================================//
+            
+            if(document.getElementById('{!$Component.form.pb.mAppProdChk}') 
+                && document.getElementById('{!$Component.form.pb.mAppProdChk}').value == 'Yes' 
+                    && document.getElementById('{!$Component.form.pb.mAppProdDetail}') 
+                        && document.getElementById('{!$Component.form.pb.mAppProdDetail}').value == ''){
+                errorStr = errorStr + 'Please specify description for Military Application.\n';
+            }
+            
+            
+            if(document.getElementsByName('{!$Component.form.pb.myFile1}'+':inputFile:file')[0] 
+                && document.getElementsByName('{!$Component.form.pb.myFile1}'+':inputFile:file')[0].size > (1024 * 1024 * 5)){
+                errorStr = errorStr + 'Q4 attachment size cannot exceed 5MB.';
+            }
+            
+            if(document.getElementById('{!$Component.form.pb.usEARProdChk}')  
+                  && document.getElementById('{!$Component.form.pb.usEARProdChk}').value == 'Yes  '
+                        && (document.getElementById('{!$Component.form.pb.usEARProdDetail}') 
+                           && document.getElementById('{!$Component.form.pb.usEARProdDetail}').value == ''
+                                && document.getElementsByName('{!$Component.form.pb.myFile2}'+':inputFile:file')[0].value == '' 
+                                    && (document.getElementById('{!$Component.form.pb.myFile2Exst}')==null || document.getElementById('{!$Component.form.pb.myFile2Exst}').innerHTML == ''))){
+                errorStr = errorStr + 'Please specify Q5 attachment/description.\n';
+            }
+            
+            if(document.getElementsByName('{!$Component.form.pb.myFile2}'+':inputFile:file')[0] 
+                && document.getElementsByName('{!$Component.form.pb.myFile2}'+':inputFile:file')[0].size > (1024 * 1024 * 5)){
+                errorStr = errorStr + 'Q5 attachment size cannot exceed 5MB.';
+            }
+            
+            if(document.getElementById('{!$Component.form.pb.nonUSEARProdChk}') 
+                && document.getElementById('{!$Component.form.pb.nonUSEARProdChk}').value == 'Yes' 
+                        && document.getElementById('{!$Component.form.pb.nonUSEARProdDetails}').value == ''){
+                errorStr = errorStr + 'Please specify Non US EAR Product Details.\n';
+            }
+            
+            var boxes = $('input[class=chkbox]:checked');
+            if($(boxes).size()==0){
+                errorStr = errorStr + 'Please specify Harmonized System.\n';
+            }
+            
+            if($('.otherHarmonSys').parent().parent().find('input:checkbox:first').is(':checked')==true 
+                && $('.otherHarmonSys').val()==''){
+                errorStr = errorStr + 'Please specify the other harmonized system.\n';
+            }
+            
+            // added Question 8 validation in the Export Control Form
+            //*******************************Start***********************************//
+            var tempdate=new Date('{!ExportControl.CreatedDate}');
+            var d = new Date();
+            //d.setFullYear(2014,2,12);
+            d.setFullYear(parseInt('{!$Label.ExportControlYear}'), parseInt('{!$Label.ExportControlMonth}'), parseInt('{!$Label.ExportControlDay}'));
+            
+            if(tempdate>=d && document.getElementById('{!$Component.form.pb.endUserCustName}') 
+                && document.getElementById('{!$Component.form.pb.endUserCustName}').value == ''){
+                errorStr = errorStr + 'Please enter value in End User Customer Name field.\n';
+            } 
+            
+            //*******************************End**********************************//
+            
+             // added new validations for SDA enhancement in the Export Control Form
+            //*******************************Start***********************************//
+            if(document.getElementById('{!$Component.form.pb.iTARProdChk}') 
+                    && document.getElementById('{!$Component.form.pb.iTARProdChk}').value == 'Yes'){
+                    
+                if(document.getElementById('{!$Component.form.pb.EC_ITAR_Category_Full}') 
+                        && document.getElementById('{!$Component.form.pb.EC_ITAR_Category_Full}').value == ''){
+                    errorStr = errorStr + 'Please select the overall ITAR category.\n';
+                }
+                
+                if(document.getElementById('{!$Component.form.pb.EC_ITAR_Cat_Equipment}') 
+                        && document.getElementById('{!$Component.form.pb.EC_ITAR_Cat_Equipment}').value == ''){
+                    errorStr = errorStr + 'Please enter extended suffix value in end use equipment.\n';
+                }
+                
+                if(document.getElementById('{!$Component.form.pb.EC_ITAR_Cat_IC}') 
+                        && document.getElementById('{!$Component.form.pb.EC_ITAR_Cat_IC}').value == ''){
+                    errorStr = errorStr + 'Please enter extended suffix value in integrated circuits.\n';
+                }
+                
+                if(document.getElementById('{!$Component.form.pb.EC_ITAR_Cat_Tech_Data}') 
+                        && document.getElementById('{!$Component.form.pb.EC_ITAR_Cat_Tech_Data}').value == ''){
+                    errorStr = errorStr + 'Please enter extended suffix value in technical data.\n';
+                }
+                
+                if(document.getElementById('{!$Component.form.pb.EC_Fabricated_by_GF}') 
+                        && document.getElementById('{!$Component.form.pb.EC_Fabricated_by_GF}').value == ''){
+                    errorStr = errorStr + 'Please select value in GF designed classified information field.\n';
+                }
+                
+                if(document.getElementById('{!$Component.form.pb.EC_ITAR_Category_Full}') 
+                        && document.getElementById('{!$Component.form.pb.EC_ITAR_Category_Full}').value == 'XV' && 
+                        document.getElementById('{!$Component.form.pb.EC_ITAR_Category}') 
+                        && document.getElementById('{!$Component.form.pb.EC_ITAR_Category}').value == ''){
+                    errorStr = errorStr + 'Please select value in ITAR category.\n';
+                    
+                }
+                
+                if(document.getElementById('{!$Component.form.pb.EC_ITAR_Category}') 
+                        && document.getElementById('{!$Component.form.pb.EC_ITAR_Category}').value == 'XV(a)' && 
+                        document.getElementById('{!$Component.form.pb.EC_Commercial_Satellite}') 
+                        && document.getElementById('{!$Component.form.pb.EC_Commercial_Satellite}').value == ''){
+                    errorStr = errorStr + 'Please select value in XV(a).\n';
+                    
+                }
+                
+                if(document.getElementById('{!$Component.form.pb.EC_ITAR_Category}') 
+                        && document.getElementById('{!$Component.form.pb.EC_ITAR_Category}').value == 'XV(c)' && 
+                        document.getElementById('{!$Component.form.pb.EC_Used_by_Govt_of_Canada}') 
+                        && document.getElementById('{!$Component.form.pb.EC_Used_by_Govt_of_Canada}').value == ''){
+                    errorStr = errorStr + 'Please select value in XV(c).\n';
+                    
+                }
+                
+                if(document.getElementById('{!$Component.form.pb.EC_ITAR_Category}') 
+                        && document.getElementById('{!$Component.form.pb.EC_ITAR_Category}').value == 'XV(e)' && 
+                        document.getElementById('{!$Component.form.pb.EC_Anti_jam_system}') 
+                        && document.getElementById('{!$Component.form.pb.EC_Anti_jam_system}').value == ''){
+                    errorStr = errorStr + 'Please select value in XV(e).\n';
+                    
+                }
+                
+                if(document.getElementById('{!$Component.form.pb.EC_ITAR_Category}') 
+                        && document.getElementById('{!$Component.form.pb.EC_ITAR_Category}').value == 'XV(e)' && 
+                        document.getElementById('{!$Component.form.pb.EC_Designed_for_Antennas}') 
+                        && document.getElementById('{!$Component.form.pb.EC_Designed_for_Antennas}').value == ''){
+                    errorStr = errorStr + 'Please select value in XV(e)(1).\n';
+                    
+                }
+                if(document.getElementById('{!$Component.form.pb.EC_ITAR_Category}') 
+                        && document.getElementById('{!$Component.form.pb.EC_ITAR_Category}').value == 'XV(e)' && 
+                        document.getElementById('{!$Component.form.pb.EC_Designed_for_Attitude_Determination}') 
+                        && document.getElementById('{!$Component.form.pb.EC_Designed_for_Attitude_Determination}').value == ''){
+                    errorStr = errorStr + 'Please select value in XV(e)(10).\n';
+                    
+                }
+                if(document.getElementById('{!$Component.form.pb.EC_ITAR_Category}') 
+                        && document.getElementById('{!$Component.form.pb.EC_ITAR_Category}').value == 'XV(e)' && 
+                        document.getElementById('{!$Component.form.pb.EC_Designed_for_Propulsion_Systems}') 
+                        && document.getElementById('{!$Component.form.pb.EC_Designed_for_Propulsion_Systems}').value == ''){
+                    errorStr = errorStr + 'Please select value in XV(e)(12).\n';
+                    
+                }
+                
+            }
+            
+            if(document.getElementById('{!$Component.form.pb.EC_Encryption_Control_Product}') 
+                && document.getElementById('{!$Component.form.pb.EC_Encryption_Control_Product}').value == ''){
+                    errorStr = errorStr + 'Please enter value in Associated technical data subject to encryption controls.\n';
+            } 
+            
+            if(document.getElementById('{!$Component.form.pb.EC_Encryption_Control_Product}') 
+                && document.getElementById('{!$Component.form.pb.EC_Encryption_Control_Product}').value == 'Yes'){
+                        if(document.getElementById('{!$Component.form.pb.EC_ECCN_Product_Value}') 
+                            && document.getElementById('{!$Component.form.pb.EC_ECCN_Product_Value}').value == ''){
+                            errorStr = errorStr + 'Please enter product ECCN value.\n';
+                        }
+                        if(document.getElementById('{!$Component.form.pb.EC_ECCN_Technology_Data}') 
+                            && document.getElementById('{!$Component.form.pb.EC_ECCN_Technology_Data}').value == ''){
+                            errorStr = errorStr + 'Please enter technical data ECCN value.\n';
+                        }
+                        if(document.getElementById('{!$Component.form.pb.EC_CCATS_Number}') 
+                            && document.getElementById('{!$Component.form.pb.EC_CCATS_Number}').value == ''){
+                            errorStr = errorStr + 'Please enter CCATS number.\n';
+                        }
+                        if(document.getElementById('{!$Component.form.pb.EC_USG_Review_Date}') 
+                            && document.getElementById('{!$Component.form.pb.EC_USG_Review_Date}').value == ''){
+                            errorStr = errorStr + 'Please enter USG review date.\n';
+                        }
+                        if(document.getElementById('{!$Component.form.pb.EC_ENC_Type__c}') 
+                            && document.getElementById('{!$Component.form.pb.EC_ENC_Type__c}').value == ''){
+                            errorStr = errorStr + 'Please select the type';
+                        }
+                        /*if(document.getElementById('{!$Component.form.pb.EC_BIS_Registration}') 
+                            && document.getElementById('{!$Component.form.pb.EC_BIS_Registration}').value == ''){
+                            errorStr = errorStr + 'Please enter value in BIS Registration.\n';
+                        }*/
+                        if(document.getElementById('{!$Component.form.pb.Non_Encryption_ECCN_Technology__c}') 
+                            && document.getElementById('{!$Component.form.pb.Non_Encryption_ECCN_Technology__c}').value == ''){
+                            errorStr = errorStr + 'Please enter value in Deemed export purpose.\n';
+                        }
+            }
+            
+            if(document.getElementById('{!$Component.form.pb.EC_Encryption_Control_Product}') 
+                && document.getElementById('{!$Component.form.pb.EC_Encryption_Control_Product}').value == 'No'){
+                if(document.getElementById('{!$Component.form.pb.usEARProdChk}') 
+                        && document.getElementById('{!$Component.form.pb.usEARProdChk}').value == ''){
+                    errorStr = errorStr + 'Please enter value in US EAR Product field.\n';
+                }
+            }           
+            
+            //*******************************End**********************************//
+                                  
+            if(errorStr != ''){                
+                errorStr = errorStr.replace(/^\s+|\s+$/g, '');
+                alert(errorStr);
+            }
+            
+            /*else if(document.getElementById(id).value=='Reassign'){
+                saveWithReassign();
+            }*/
+            
+            else if(document.getElementById(id).value=='Submit'){
+                afterValidationSubmit();
+            }
+            
+            /*else{
+                afterValidation();
+            }*/
+        }
+        
+        function openPdf(){
+            var url = window.location.href;
+            if(url.indexOf('GlobalfoundryView') != -1){
+                window.open('/GlobalfoundryView/ExportControlPdfNew?deviceid={!devId}');
+            }else{
+                window.open('/apex/ExportControlPdfNew?deviceid={!devId}');
+            }
+        }
+        
+        function saveIsValid(id){
+            if(document.getElementById(id).value=='Save'){
+                afterSaveSubmit();
+            }
+        }
+    </script>
+    <div id="mainDiv">
+        <apex:form id="form">
+            <apex:pageMessages escape="false" />
+            <apex:actionRegion renderRegionOnly="false">
+                <apex:outputPanel id="popup">
+                    <apex:outputPanel styleClass="popupBackground" layout="block" rendered="{!displayPopUp}"/>
+                    <apex:outputPanel styleClass="customPopup" layout="block" rendered="{!displayPopUp}">
+                            <apex:outputText style="font-style:italic;color:Red;font-weight:bold" value="WARNING: You have typed a technology ECCN value that is not listed in the master ECCN / COLOR mapping table. Please first verify that the value entered is accurate. If the value is accurate, it must be added to the master ECCN / COLOR mapping table in order to approve this Export Control Form. Do you want to proceed?"></apex:outputText>
+                            <br/><br/>
+                            <apex:commandButton value="Ok" action="{!showPopup1}" rerender="popup"/>
+                            <apex:commandButton value="Cancel" action="{!closePopup}" rerender="popup"/>
+                    </apex:outputPanel>
+                    <apex:outputPanel styleClass="popupBackground" layout="block" rendered="{!displayPopUp1}"/>
+                    <apex:outputPanel styleClass="customPopup1" layout="block" rendered="{!displayPopUp1}">
+                        <apex:outputText style="font-style:italic;color:Red;font-weight:bold" value="CAUTION: You are about to alter the master ECCN / COLOR mapping table. Proceeding with this step is your confirmation that all 5 attributes below have been verified for accuracy. When all 5 values have been entered, select SAVE and proceed with your standard GTC review practices of the Export Control Form"></apex:outputText>
+                        <br/><br/>
+                        <apex:outputText style="font-style:italic;color:Red;font-weight:bold;font-size:16px" value="Enter All Values before Saving" rendered="{!displayErrorTxt}"></apex:outputText><br/><br/>
+                        <apex:outputText style="font-style:italic;color:Red;font-weight:bold;font-size:16px" value="ECCN-Technology already exists in the master ECCN / COLOR mapping table." rendered="{!displayErrorTxt1}"></apex:outputText><br/><br/>
+                        <table width="1024" cellpadding="3" cellspacing="1" style="border:1px solid #000000;font-family:arial, helvetica, sans-serif;font-size:small">
+                            <tbody> 
+                                <tr> 
+                                    <td class="Table-Item" style="width:20%;background-color:#666666;color:#ffffff">
+                                        <apex:outputLabel value="{!$ObjectType.Export_Control_Form__c.Fields.ECCN_Technology__c.Label}"/>
+                                    </td>
+                                    <td style="width:30%"> 
+                                        <apex:inputfield id="ECCN_Technology" value="{!ExportControl.ECCN_Technology__c}" style="width: 200px;"/>
+                                    </td>
+                                    <td class="Table-Item" style="width:20%;background-color:#666666;color:#ffffff">
+                                        <apex:outputLabel value="PSC"/>
+                                    </td>
+                                    <td style="width:30%"> 
+                                        <apex:inputText value="{!pscValue}" style="width: 200px;" />
+                                    </td>
+                                    <td class="Table-Item" style="width:20%;background-color:#666666;color:#ffffff">
+                                        <apex:outputLabel value="{!$ObjectType.Export_Control_Form__c.Fields.ECCN_Color__c.Label}"/>
+                                    </td>
+                                    <td style="width:30%"> 
+                                        <apex:inputfield id="ECCN_COLOR" value="{!ExportControl.ECCN_Color__c}" style="width: 200px;"/>
+                                    </td>
+                                </tr>
+        
+                                <tr> 
+                                    <td class="Table-Item" style="width:20%;background-color:#666666;color:#ffffff">
+                                        <apex:outputLabel value="{!$ObjectType.Export_Control_Form__c.Fields.D1_National_Access_is_Allowed__c.Label}"/>
+                                    </td>
+                                    <td style="width:30%"> 
+                                        <apex:inputfield id="ECCN_D1Flag" value="{!ExportControl.D1_National_Access_is_Allowed__c}" style="width: 200px;"/>
+                                    </td>
+                                    <td class="Table-Item" style="width:20%;background-color:#666666;color:#ffffff">
+                                        <apex:outputLabel value="PSA"/>
+                                    </td>
+                                    <td style="width:30%"> 
+                                        <apex:inputText value="{!psaValue}" style="width: 200px;" />
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <br/><br/>
+                        <apex:commandButton value="Save" action="{!saveValue}" rerender="popup"/>
+                        <apex:commandButton value="Cancel" action="{!closePopup}" rerender="popup"/>
+                    </apex:outputPanel>
+                </apex:outputPanel>
+            </apex:actionRegion>
+            <apex:pageBlock mode="Edit" id="pb"> 
+                <apex:actionFunction name="afterValidationSubmit" action="{!submitForApproval}" rendered="{!isReadOnly==false}"/>
+                <apex:actionFunction name="afterSaveSubmit" action="{!saveRecord}" rendered="{!isReadOnly==false}"/>
+                <apex:pageblockbuttons >
+                    <apex:actionRegion renderRegionOnly="false">
+                        <apex:commandButton value="{!$Label.Exp_Control_Save}" onclick="saveIsValid(this.id);return false;" rerender="popup" rendered="{!isReadOnly==false && NOT(isOnhold)}" id="Save"/> 
+                    </apex:actionRegion>
+                    <apex:commandButton value="Edit" action="{!editRecord}" rendered="{!isReadOnly && isIntUser && NOT(isOnhold)}" id="Edit"/>
+                    <apex:commandButton value="{!$Label.Exp_Control_Submit_For_Approval}" onclick="dataIsValid(this.id);return false;" rendered="{!isReadOnly==false && NOT(isOnhold) && isLocked==false}" id="SubmitForApproval" />
+                    <apex:commandButton value="Unlock record" action="{!unlockRecord}" rendered="{!isIntUser && isLocked}"  />
+                    <apex:commandButton value="On-Hold" action="{!toggleOnhold}" rendered="{!isIntUser && NOT(isOnhold)}" oncomplete="location.reload();"/>
+                    <apex:commandButton value="Re-Open" action="{!reOpenRec}"  rendered="{!isIntUser}" />
+                    <apex:commandButton value="Remove On-Hold" action="{!toggleOnhold}" rendered="{!isIntUser && (isOnhold)}" oncomplete="location.reload();"/>
+                    <apex:commandButton value="{!$Label.Export_Control_Form_Print_Pdf}" onclick="openPdf();return false;" rendered="{!ExportControl.Status__c=='Submitted' || ExportControl.Status__c=='Approved'}"/>
+                    <apex:commandButton value="{!$Label.Export_Control_Cancel}" action="{!cancel}" />                  
+                    <apex:commandButton value="{!$Label.Export_Control_Form_Reassign}" action="{!saveWithReassign}" rendered="{!isReadOnly==false && (ExportControl.Status__c=='Draft' || ExportControl.Status__c=='Pending Resubmission' || ExportControl.Status__c=='Reassigned')}" id="Reassign" />
+					<apex:outputpanel rendered="{!enableECCN && (ExportControl.Status__c!='Submitted' && ExportControl.Status__c!='Approved')}">
+                    <apex:outputpanel rendered="{!IF(TEXT($User.UserType)=='Standard',true,false)}">
+                    <a   style="text-decoration:none;padding:5px;" class="btn" href="/apex/MPW_ECCNInfoUploader?id={!ExportControl.Id}&deviceid={!devId}" >Upload MPW File</a>
+                    </apex:outputpanel>
+                    <apex:outputpanel rendered="{!IF(TEXT($User.UserType)!='Standard',true,false)}">
+                    <a   style="text-decoration:none;padding:5px;" class="btn" href="/GlobalfoundryView/MPW_ECCNInfoUploader?id={!ExportControl.Id}&deviceid={!devId}" >Upload MPW File</a>
+                    </apex:outputpanel>
+                  </apex:outputpanel>
+			</apex:pageblockbuttons>
+            <table width="1024" style="font-size:small; text-align:center; font-family:arial, helvetica, sans-serif">
+                <tbody>
+                    <tr> 
+                        <td><h3>{!$Label.Export_Control_Form_Header}</h3>
+                        </td>
+                    </tr>
+                    <tr><td width="100%" colspan="5">{!$Label.Export_Control_Form_Text1}</td></tr>
+                </tbody></table>
+                <br/>       
+              <table width="1024" cellpadding="3" cellspacing="1" style="border:1px solid #000000;font-family:arial, helvetica, sans-serif;font-size:small">
+                    <tbody> 
+                                        
+                        <tr> 
+                        
+                            <td class="Table-Item" style="width:20%;background-color:#666666;color:#ffffff">
+                                <apex:outputLabel value="{!$ObjectType.Export_Control_Form__c.Fields.Status__c.Label}"/>
+                            </td>
+                            <td style="width:30%">
+                                <apex:outputtext value="{!ExportControl.EC_Status__c}" />                                                    
+                            </td>
+                            <!--<td class="Table-Item" style="width:20%;background-color:#666666;color:#ffffff">{!$Label.Export_Control_Ref_Number}</td>
+                            <td style="width:30%">
+                                <apex:outputtext value="{!deviceCRMDID}"/>
+                            </td>-->
+                            <td class="Table-Item" style="width:20%;background-color:#666666;color:#ffffff">
+                                <apex:outputLabel value="{!$Label.EXP_CNTR_DEVICE_NAME}"/>
+                            </td>
+                            <td style="width:30%">
+                                <apex:outputtext value="{!deviceName}"/> 
+                            </td>
+                        </tr>
+                        <tr> 
+                            <td class="Table-Item" style="width:20%;background-color:#666666;color:#ffffff">
+                                <apex:outputLabel value="{!$Label.EXP_CNTR_CUST_NAME}"/>
+                            </td>
+                            <td style="width:30%"> 
+                                <apex:outputtext value="{!deviceAccountName}" style="width: 200px;" />        
+                            </td>
+                            <td class="Table-Item" style="width:20%;background-color:#666666;color:#ffffff">
+                                <apex:outputLabel value="{!$Label.EXP_CNTR_CRM_DEV_ID}"/>
+                            </td>
+                            <td style="width:30%">
+                                <apex:outputtext value="{!deviceCRMDID}" style="width: 200px;"/>
+                            </td>                         
+                        </tr>
+                        <tr> 
+                            <td class="Table-Item" style="width:20%;background-color:#666666;color:#ffffff">
+                                <apex:outputLabel value="{!$Label.EXP_CNTR_PROJ_NAME}"/>
+                            </td>
+                            <td style="width:30%">
+                                <apex:outputtext value="{!deviceProjName}"/>
+                            </td>
+                            <td class="Table-Item" style="width:20%;background-color:#666666;color:#ffffff">
+                                <apex:outputLabel value="Contact No:"/>
+                            </td>
+                            <td style="width:30%">
+                                <apex:inputfield id="ecPhone" value="{!ExportControl.Phone__c}" style="width: 200px;" rendered="{!isReadOnly==false}"/>
+                                <apex:outputtext value="{!ExportControl.Phone__c}" style="width: 200px;" rendered="{!isReadOnly}"/>
+                            </td>                            
+                        </tr>
+                        <tr> 
+                            <td class="Table-Item" style="width:20%;background-color:#666666;color:#ffffff">
+                                <apex:outputLabel value="{!$Label.EXP_CNTR_FAB}"/>
+                            </td>
+                            <td style="width:30%">
+                                <apex:outputtext value="{!deviceFab}"/> 
+                            </td>
+                            <td class="Table-Item" style="width:20%;background-color:#666666;color:#ffffff">
+                                <apex:outputLabel value="{!$ObjectType.Export_Control_Form__c.Fields.Email_Address__c.Label}"/>
+                            </td>
+                            <td style="width:30%"> 
+                                <apex:inputfield id="ecEmailAdd" value="{!ExportControl.Email_Address__c}" style="width: 200px;" rendered="{!isReadOnly==false}"/>
+                                <apex:outputtext value="{!ExportControl.Email_Address__c}" style="width: 200px;" rendered="{!isReadOnly}"/>        
+                            </td>
+                        </tr>
+                        <tr> 
+                            <td class="Table-Item" style="width:20%;background-color:#666666;color:#ffffff">
+                                <apex:outputLabel value="{!$ObjectType.Export_Control_Form__c.Fields.Customer_Trade_Compliance_Contact_Person__c.Label}"/>
+                            </td>
+                            <td style="width:30%">
+                                <apex:inputfield id="ecCustTradeCompConPer" value="{!ExportControl.Customer_Trade_Compliance_Contact_Person__c}" style="width: 200px;" rendered="{!isReadOnly==false}"/>
+                                <apex:outputtext value="{!ExportControl.Customer_Trade_Compliance_Contact_Person__c}" style="width: 200px;" rendered="{!isReadOnly}"/> 
+                            </td>
+                            <td class="Table-Item" style="width:20%;background-color:#666666;color:#ffffff">
+                            </td>
+                            <td style="width:30%"> 
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+                <br/>
+                <apex:outputpanel rendered="{!isIntUser}">
+                <table width="1024" cellpadding="3" cellspacing="1" style="border:1px solid #000000;font-family:arial, helvetica, sans-serif;font-size:small">
+                    <tbody> 
+                    
+                        <tr> 
+                            
+                            <td class="Table-Item" style="width:20%;background-color:#666666;color:#ffffff">
+                                <apex:outputLabel value="{!$ObjectType.Export_Control_Form__c.Fields.ECCN_Technology__c.Label}"/>
+                            </td>
+                            <td style="width:30%"> 
+                                <apex:inputfield id="ECCN_Technology" value="{!ExportControl.ECCN_Technology__c}" style="width: 200px;" rendered="{!NOT(isReadOnly)}"/>
+                                <apex:outputtext value="{!ExportControl.ECCN_Technology__c}" style="width: 200px;" rendered="{!(isReadOnly)}"/>        
+                            </td>
+                            <td class="Table-Item" style="width:20%;background-color:#666666;color:#ffffff">
+                                <apex:outputLabel value="{!$ObjectType.Export_Control_Form__c.Fields.ECCN_Wafer__c.Label}"/>
+                            </td>
+                            <td style="width:30%"> 
+                                <apex:inputfield id="ECCN_Wafer" value="{!ExportControl.ECCN_Wafer__c}" style="width: 200px;" rendered="{!NOT(isReadOnly)}"/>
+                                <apex:outputtext value="{!ExportControl.ECCN_Wafer__c}" style="width: 200px;" rendered="{!(isReadOnly)}"/>        
+                            </td>
+                        </tr>
+                                        
+                        <tr> 
+                            <td class="Table-Item" style="width:20%;background-color:#666666;color:#ffffff">
+                                <apex:outputLabel value="{!$ObjectType.Export_Control_Form__c.Fields.D1_National_Access_is_Allowed__c.Label}" rendered="{!(isReadOnly)}"/>
+                            </td>
+                            <td style="width:30%"> 
+                                <apex:outputtext value="{!ExportControl.D1_National_Access_is_Allowed__c}" style="width: 200px;" rendered="{!(isReadOnly)}"/>        
+                            </td>
+                            <td class="Table-Item" style="width:20%;background-color:#666666;color:#ffffff">
+                                <apex:outputLabel value="{!$ObjectType.Export_Control_Form__c.Fields.ECCN_Color__c.Label}" rendered="{!(isReadOnly)}"/>
+                            </td>
+                            <td style="width:30%"> 
+                                <apex:outputtext value="{!ExportControl.ECCN_Color__c}" style="width: 200px;" rendered="{!(isReadOnly)}"/>
+                            </td>
+                            
+                        </tr>
+                        </tbody>
+                        </table>
+                </apex:outputpanel>
+                <br/>
+                
+                
+                
+                
+                <table width="1024" cellpadding="3" cellspacing="1" class="Subtable" style="border:1px solid; font-family:arial, helvetica, sans-serif;font-size:small">  
+                    <tr class="trcolor"> 
+                        <td style="width:600px" valign="top" colspan="3" class="Table-Item">
+                            <apex:outputtext escape="false"  value="{!$Label.ExpQ1}"/>
+                        </td>
+                        <td colspan="2">
+                            <apex:inputfield id="ecProdDesc" value="{!ExportControl.Product_Description__c}" style="width:430px" rendered="{!isReadOnly==false}"/>
+                            <apex:outputtext value="{!ExportControl.Product_Description__c}" style="width:430px" rendered="{!isReadOnly}"/>
+                        </td>
+                  </tr>
+                  <tr>    
+                    <td style="width:600px" valign="top" colspan="3" class="Table-Item">
+                        <apex:outputtext escape="false"  value="{!$Label.ExpQ2}"/>
+                    </td>
+                    <td width="50">   
+                        <apex:inputfield id="ecWeaponProd" value="{!ExportControl.Weapon_Product__c}" rendered="{!isReadOnly==false}"/>
+                        <apex:outputtext value="{!ExportControl.Weapon_Product__c}" rendered="{!isReadOnly}"/>      
+                    </td>
+                  </tr>  
+                  <tr class="trcolor"> 
+                    <td colspan="3" class="Table-Item">
+                        <apex:outputtext escape="false"  value="{!$Label.ExpQ3}"/>
+                    </td>
+                    <td colspan="2">
+                       <apex:inputfield id="mAppProdChk"  onchange="toggleClass_isQ3Yes();" value="{!ExportControl.Military_App_Product__c}" rendered="{!isReadOnly==false}"/>
+                       <apex:outputtext value="{!ExportControl.Military_App_Product__c}" rendered="{!isReadOnly}"/>
+                    </td>
+                  </tr>
+                  <tr class="trcolor isQ3Yes"> 
+                    <td colspan="3" class="Table-Item">
+                        <apex:outputtext escape="false"  value="{!$Label.ExpQ3_Desc}"/>
+                    </td>
+                    <td colspan="2">
+                        <apex:inputfield id="mAppProdDetail" value="{!ExportControl.Military_App_Product_Details__c}" style="width:430px" rendered="{!isReadOnly==false}"/>
+                        <apex:outputtext value="{!ExportControl.Military_App_Product_Details__c}" style="width:430px" rendered="{!isReadOnly}"/>
+                    </td>
+                  </tr>
+                  <tr> 
+                    <td colspan="3" class="Table-Item">
+                        <apex:outputtext escape="false"  value="{!$Label.EC_ExpQ4_New}"/>
+                    </td>
+                    <td colspan="2">
+
+                        <apex:inputfield id="iTARProdChk" onchange="toggleClass_isQ4Yes();" value="{!ExportControl.ITAR_Product__c}" rendered="{!isReadOnly==false}"/>
+                        <!--apex:actionfunction name="reloadSection"  action="{!reloadSection}" rerender="form" /-->
+                        
+
+                        <apex:outputtext value="{!ExportControl.ITAR_Product__c}" rendered="{!isReadOnly}"/>
+                    </td>
+                  </tr>
+                  <tr class="isQ4Yes"> 
+                    <td colspan="3" class="Table-Item">
+                        <apex:outputtext escape="false"  value="{!$Label.ExpQ4_Attach}"/>
+                    </td>
+                    <td colspan="2">                        
+                        <apex:inputFile id="myFile1" value="{!myfile.body}" filename="{!myfile.Name}" rendered="{!isReadOnly==false}"/> 
+                        <apex:outputLink id="myFile1Exst" value="{!URLFOR($Action.Attachment.Download, myfile.Id)}" target="_blank" rendered="{!(myfile.parentId!=null && isReadOnly==false)}">
+                            <apex:outputtext value="{!If(myfile.parentId!=null, myfile.Name, '')}"/>
+                        </apex:outputLink>
+                        <apex:outputtext value="{!If(myfile.parentId!=null, myfile.Name, '')}" rendered="{!isReadOnly}"/>        
+                    </td>
+                  </tr>
+                 <!--  <tr> 
+                    <td colspan="3" class="Table-Item">
+                        <apex:outputtext escape="false"  value="{!$Label.ExpQ4_Desc}"/>
+                    </td>
+                    <td colspan="2">
+                        
+                        <apex:inputfield id="iTARProdDetail" value="{!ExportControl.ITAR_Product_Details__c}" style="width:430px" rendered="{!isReadOnly==false}"/>
+                        <apex:outputtext value="{!ExportControl.ITAR_Product_Details__c}" style="width:430px" rendered="{!isReadOnly}"/>
+                    </td>
+                  </tr> -->
+                    
+                     
+                    <tr class="isQ4Yes">
+                    <td colspan="3" class="Table-Item subHead">
+                        <apex:outputtext escape="false"  value="{!$Label.EC_ITAR_Category_Full}"/>
+                    </td>
+                    <td colspan="2">
+                        <apex:inputfield id="EC_ITAR_Category_Full"  onchange="toggleClass_isITARxv();" value="{!ExportControl.ITAR_Category_Full__c}" style="width:430px" rendered="{!isReadOnly==false}"/>
+                        <apex:outputtext value="{!ExportControl.ITAR_Category_Full__c}" style="width:430px" rendered="{!isReadOnly}"/>
+                    </td>
+                        
+                  </tr>
+                <tr class="isQ4Yes"> 
+                    <td colspan="3" class="Table-Item subChildHead">
+                        <apex:outputtext escape="false"  value="{!$Label.EC_ITAR_Cat_Equipment}"/>
+                    </td>
+                    <td colspan="2">
+                        <apex:inputfield id="EC_ITAR_Cat_Equipment" value="{!ExportControl.ITAR_Cat_Equipment__c}" style="width:430px" rendered="{!isReadOnly==false}"/>
+                        <apex:outputtext value="{!ExportControl.ITAR_Cat_Equipment__c}" style="width:430px" rendered="{!isReadOnly}"/>
+                    </td>
+                  </tr> 
+                <tr class="isQ4Yes"> 
+                    <td colspan="3" class="Table-Item subChildHead">
+                        <apex:outputtext escape="false"  value="{!$Label.EC_ITAR_Cat_IC}"/>
+                    </td>
+                    <td colspan="2">
+                        <apex:inputfield id="EC_ITAR_Cat_IC" value="{!ExportControl.ITAR_Cat_IC__c}" style="width:430px" rendered="{!isReadOnly==false}"/>
+                        <apex:outputtext value="{!ExportControl.ITAR_Cat_IC__c}" style="width:430px" rendered="{!isReadOnly}"/>
+                    </td>
+                  </tr> 
+                 <tr class="isQ4Yes"> 
+                    <td colspan="3" class="Table-Item subChildHead">
+                         <apex:outputtext escape="false"  value="{!$Label.EC_ITAR_Cat_Tech_Data}"/>
+                    </td>
+                    <td colspan="2">
+                        <apex:inputfield id="EC_ITAR_Cat_Tech_Data" value="{!ExportControl.ITAR_Cat_Tech_Data__c}" style="width:430px" rendered="{!isReadOnly==false}"/>
+                        <apex:outputtext value="{!ExportControl.ITAR_Cat_Tech_Data__c}" style="width:430px" rendered="{!isReadOnly}"/>
+                    </td>
+                  </tr> 
+                <tr class="isQ4Yes"> 
+                    <td colspan="3" class="Table-Item subHead">
+                         <apex:outputtext escape="false"  value="{!$Label.EC_Fabricated_by_GF}"/>
+                    </td>
+                    <td colspan="2">
+                        <apex:inputfield id="EC_Fabricated_by_GF" value="{!ExportControl.Fabricated_by_GF__c}" style="width:430px" rendered="{!isReadOnly==false}"/>
+                        <apex:outputtext value="{!ExportControl.Fabricated_by_GF__c}" style="width:430px" rendered="{!isReadOnly}"/>
+                    </td>
+                  </tr>
+                <tr class="isQ4Yes isITARxv"> 
+                    <td colspan="3" class="Table-Item subHead">
+                        <apex:outputtext escape="false" value="{!$Label.EC_ITAR_Category}"/>
+                    </td>
+                    <td colspan="2">
+                        <apex:inputfield id="EC_ITAR_Category" onchange="toggleClass_isITARxvace();" value="{!ExportControl.ITAR_Category__c}" style="width:430px" rendered="{!isReadOnly==false}"/>
+                        <apex:outputtext value="{!ExportControl.ITAR_Category__c}" style="width:430px" rendered="{!isReadOnly}"/>
+                    </td>
+                  </tr> 
+                <tr class="isQ4Yes isITARxv isITARxva"> 
+                    <td colspan="3" class="Table-Item subChildHead">
+                        <apex:outputtext escape="false" value="{!$Label.EC_Commercial_Satellite}"/>
+                    </td>
+                    <td colspan="2">
+                        <apex:inputfield id="EC_Commercial_Satellite" value="{!ExportControl.Commercial_Satellite__c}" style="width:430px" rendered="{!isReadOnly==false}"/>
+                        <apex:outputtext value="{!ExportControl.Commercial_Satellite__c}" style="width:430px" rendered="{!isReadOnly}"/>
+                    </td>
+                  </tr> 
+                <tr class="isQ4Yes isITARxv isITARxvc"> 
+                    <td colspan="3" class="Table-Item subChildHead">
+                        <apex:outputtext escape="false" value="{!$Label.EC_Used_by_Govt_of_Canada}"/>
+                    </td>
+                    <td colspan="2">
+                        <apex:inputfield id="EC_Used_by_Govt_of_Canada" value="{!ExportControl.Used_by_Govt_of_Canada__c}" style="width:430px" rendered="{!isReadOnly==false}"/>
+                        <apex:outputtext value="{!ExportControl.Used_by_Govt_of_Canada__c}" style="width:430px" rendered="{!isReadOnly}"/>
+                    </td>
+                  </tr> 
+                <tr class="isQ4Yes isITARxv isITARxve"> 
+                    <td colspan="3" class="Table-Item subChildHead">
+                        <apex:outputtext escape="false" value="{!$Label.EC_Anti_jam_system}"/>
+                    </td>
+                    <td colspan="2">
+                        <apex:inputfield id="EC_Anti_jam_system" value="{!ExportControl.Anti_jam_system__c}" style="width:430px" rendered="{!isReadOnly==false}"/>
+                        <apex:outputtext value="{!ExportControl.Anti_jam_system__c}" style="width:430px" rendered="{!isReadOnly}"/>
+                    </td>
+                  </tr> 
+                <tr class="isQ4Yes isITARxv isITARxve"> 
+                    <td colspan="3" class="Table-Item subChildHead">
+                        <apex:outputText value="{!$Label.EC_Designed_for_Antennas}" escape="false"/>
+
+                    </td>
+                    <td colspan="2">
+                        <apex:inputfield id="EC_Designed_for_Antennas" value="{!ExportControl.Designed_for_Antennas__c}" style="width:430px" rendered="{!isReadOnly==false}"/>
+                        <apex:outputtext value="{!ExportControl.Designed_for_Antennas__c}" style="width:430px" rendered="{!isReadOnly}"/>
+                    </td>
+                  </tr> 
+                <tr class="isQ4Yes isITARxv isITARxve"> 
+                    <td colspan="3" class="Table-Item subChildHead">
+                        <apex:outputtext escape="false" value="{!$Label.EC_Designed_for_Attitude_Determination}"/>
+                    </td>
+                    <td colspan="2">
+                        <apex:inputfield id="EC_Designed_for_Attitude_Determination" value="{!ExportControl.Designed_for_Att_Det__c}" style="width:430px" rendered="{!isReadOnly==false}"/>
+                        <apex:outputtext value="{!ExportControl.Designed_for_Att_Det__c}" style="width:430px" rendered="{!isReadOnly}"/>
+                    </td>
+                  </tr> 
+                <tr class="isQ4Yes isITARxv isITARxve"> 
+                    <td colspan="3" class="Table-Item subChildHead">
+                        <apex:outputtext escape="false" value="{!$Label.EC_Designed_for_Propulsion_Systems}"/>
+                    </td>
+                    <td colspan="2">
+                        <apex:inputfield id="EC_Designed_for_Propulsion_Systems" value="{!ExportControl.Designed_for_Proplsn_Sys__c}" style="width:430px" rendered="{!isReadOnly==false}"/>
+                        <apex:outputtext value="{!ExportControl.Designed_for_Proplsn_Sys__c}" style="width:430px" rendered="{!isReadOnly}"/>
+                    </td>
+                  </tr>
+                <tr > 
+                    <td colspan="3" class="Table-Item">
+                        <apex:outputtext escape="false" value="{!$Label.EC_Encryption_Control_Product}"/>
+                    </td>
+                    <td colspan="2">
+                        <apex:inputfield id="EC_Encryption_Control_Product" onchange="toggleClass_isQ5Yes();" value="{!ExportControl.Encryption_Control_Product__c}" style="width:430px" rendered="{!isReadOnly==false}"/>
+                        <apex:outputtext value="{!ExportControl.Encryption_Control_Product__c}" style="width:430px" rendered="{!isReadOnly}"/>
+                    </td>
+                  </tr>
+                <tr class="isQ5Yes"> 
+                    <td colspan="3" class="Table-Item subChildHead">
+                        <apex:outputtext escape="false" value="{!$Label.EC_ECCN_Product_Value}"/>
+                    </td>
+                    <td colspan="2">
+                        <apex:inputfield id="EC_ECCN_Product_Value" value="{!ExportControl.ECCN_Product_Value__c}" style="width:430px" rendered="{!isReadOnly==false}"/>
+                        <apex:outputtext value="{!ExportControl.ECCN_Product_Value__c}" style="width:430px" rendered="{!isReadOnly}"/>
+                    </td>
+                  </tr> 
+                <tr class="isQ5Yes"> 
+                    <td colspan="3" class="Table-Item subChildHead">
+                        <apex:outputtext escape="false" value="{!$Label.EC_ECCN_Technology_Data}"/>
+                    </td>
+                    <td colspan="2">
+                        <apex:inputfield id="EC_ECCN_Technology_Data" value="{!ExportControl.ECCN_Technology_Data__c}" style="width:430px" rendered="{!isReadOnly==false}"/>
+                        <apex:outputtext value="{!ExportControl.ECCN_Technology_Data__c}" style="width:430px" rendered="{!isReadOnly}"/>
+                    </td>
+                  </tr> 
+                <tr class="isQ5Yes"> 
+                    <td colspan="3" class="Table-Item subChildHead">
+                        <apex:outputtext escape="false" value="{!$Label.EC_CCATS_Number}"/>
+                    </td>
+                    <td colspan="2">
+                        <apex:inputfield id="EC_CCATS_Number" value="{!ExportControl.EC_CCATS__c}" style="width:430px" rendered="{!isReadOnly==false}"/>
+                        <apex:outputtext value="{!ExportControl.EC_CCATS__c}" style="width:430px" rendered="{!isReadOnly}"/>
+                    </td>
+                  </tr>
+                    <tr class=" isQ5Yes"> 
+                    <td colspan="3" class="Table-Item subChildHead">
+                         <!--<apex:outputtext escape="false"  value="Please provide the CCATS document"/>-->
+                        <apex:outputtext escape="false" style="font-style: italic;"  value="If self-classifying based on a CCATS for a previous generation of this product/device, please provide the information from the original CCATS."/>
+                    </td>
+                    <td colspan="2"> 
+                        <apex:inputFile id="myFile4" value="{!myfile4.body}" filename="{!myfile4.Name}" rendered="{!isReadOnly==false}"/>
+                        <apex:outputLink id="myFile4Exst" value="{!URLFOR($Action.Attachment.Download, myfile4.Id)}" target="_blank" rendered="{!(myfile4.parentId!=null && isReadOnly==false)}">
+                            <apex:outputtext value="{!If(myfile4.parentId!=null, myfile4.Name, '')}"/>
+                        </apex:outputLink>
+                        <apex:outputtext value="{!If(myfile4.parentId!=null, myfile4.Name, '')}" rendered="{!isReadOnly}"/>
+                    </td>
+                  </tr>
+                <tr class="isQ5Yes"> 
+                    <td colspan="3" class="Table-Item subChildHead">
+                        <apex:outputtext escape="false" value="{!$Label.EC_USG_Review_Date}"/>
+                    </td>
+                    <td colspan="2">
+                        <apex:inputfield id="EC_USG_Review_Date" value="{!ExportControl.USG_Review_Date__c}" style="width:352px" rendered="{!isReadOnly==false}"/>
+                        <apex:outputtext value="{!ExportControl.USG_Review_Date__c}" style="width:430px" rendered="{!isReadOnly}"/>
+                    </td>
+                  </tr> 
+                        <tr class="isQ5Yes"> 
+                    <td colspan="3" class="Table-Item subChildHead">
+                        <apex:outputtext escape="false" value="{!$Label.EC_ENC_Type}"/>
+                    </td>
+                    <td colspan="2">
+                        <apex:inputfield id="EC_ENC_Type__c" value="{!ExportControl.EC_ENC_Type__c}" style="width:430px" rendered="{!isReadOnly==false}"/>
+                        <apex:outputtext value="{!ExportControl.EC_ENC_Type__c}" style="width:430px" rendered="{!isReadOnly}"/>
+                    </td>
+                  </tr> 
+                <!-- <tr class="isQ5Yes"> 
+                    <td colspan="3" class="Table-Item subChildHead">
+                        <apex:outputtext escape="false" value="{!$Label.EC_b3_Describe_Type}"/>
+                    </td>
+                    <td colspan="2">
+                        <apex:inputfield id="EC_b3_Describe_Type" value="{!ExportControl.b3_Desc_Type__c}" style="width:430px" rendered="{!isReadOnly==false}"/>
+                        <apex:outputtext value="{!ExportControl.b3_Desc_Type__c}" style="width:430px" rendered="{!isReadOnly}"/>
+                    </td>
+                  </tr>  -->
+               <!--  <tr class="isQ5Yes"> 
+                    <td colspan="3" class="Table-Item subChildHead">
+                        <apex:outputtext escape="false" value="{!$Label.EC_BIS_Registration}"/>
+                    </td>
+                    <td colspan="2">
+                        <apex:inputfield id="EC_BIS_Registration" value="{!ExportControl.BIS_Registration__c}" style="width:430px" rendered="{!isReadOnly==false}"/>
+                        <apex:outputtext value="{!ExportControl.BIS_Registration__c}" style="width:430px" rendered="{!isReadOnly}"/>
+                    </td>
+                  </tr>  -->
+                <tr class="isQ5Yes"> 
+                    <td colspan="3" class="Table-Item subChildHead">
+                        <apex:outputtext escape="false" value="{!$Label.EC_Non_Encryption_ECCN_Technology}"/>
+                    </td>
+                    <td colspan="2">
+                        <apex:inputfield id="Non_Encryption_ECCN_Technology__c" value="{!ExportControl.Non_Encryption_ECCN_Technology__c}" style="width:430px" rendered="{!isReadOnly==false}"/>
+                        <apex:outputtext value="{!ExportControl.Non_Encryption_ECCN_Technology__c}" style="width:430px" rendered="{!isReadOnly}"/>
+                    </td>
+                  </tr>
+                  <tr class="trcolor isQ5No" > 
+                    <td colspan="3" class="Table-Item">
+                        <apex:outputtext escape="false"  value="{!$Label.EC_ExpQ5_New}"/><br/>
+                    </td>
+                    <td colspan="2">
+                        <apex:inputfield id="usEARProdChk" onchange="toggleClass_isQ5Yes();" value="{!ExportControl.US_EAR_Product__c}" rendered="{!isReadOnly==false}"/>
+                        <apex:outputtext value="{!ExportControl.US_EAR_Product__c}" rendered="{!isReadOnly}"/>
+                    </td>
+                  </tr>
+                  <tr class="trcolor isQ5No isQ6Yes"> 
+                    <td colspan="3" class="Table-Item">
+                        <apex:outputtext escape="false"  value="{!$Label.ExpQ5_Attach}"/>
+                    </td>
+                    <td colspan="2"> 
+                        <apex:inputFile id="myFile2" value="{!myfile2.body}" filename="{!myfile2.Name}" rendered="{!isReadOnly==false}"/>
+                        <apex:outputLink id="myFile2Exst" value="{!URLFOR($Action.Attachment.Download, myfile2.Id)}" target="_blank" rendered="{!(myfile2.parentId!=null && isReadOnly==false)}">
+                            <apex:outputtext value="{!If(myfile2.parentId!=null, myfile2.Name, '')}"/>
+                        </apex:outputLink>
+                        <apex:outputtext value="{!If(myfile2.parentId!=null, myfile2.Name, '')}" rendered="{!isReadOnly}"/>
+                    </td>
+                  </tr>
+                  <tr class="trcolor isQ5No isQ6Yes"> 
+                    <td colspan="3" class="Table-Item">
+                        <apex:outputtext escape="false"  value="{!$Label.EC_ExpQ5_Desc_New}"/>
+                    </td>
+                    <td colspan="2">
+                        <apex:inputfield id="usEARProdDetail" value="{!ExportControl.US_EAR_Product_Details__c}" style="width:430px" rendered="{!isReadOnly==false}"/>
+                        <apex:outputText value="{!ExportControl.US_EAR_Product_Details__c}" style="width:430px" rendered="{!isReadOnly}"/>
+                    </td>
+                  </tr>   
+     <!-- 11112014 DBiswal - To display CCAT Number --> 
+        <!-- <tr class="trcolor isQ5No">  
+          <td colspan="3" class="Table-Item"> 
+              <apex:outputtext escape="false"  value="{!$Label.ExpQ5_CCAT}"/> 
+          </td> 
+          <td colspan="2"> 
+              <apex:inputfield id="ccatNo" value="{!ExportControl.CCAT_Number__c}" style="width:430px" rendered="{!isReadOnly==false}"/> 
+              <apex:outputText value="{!ExportControl.CCAT_Number__c}" style="width:430px" rendered="{!isReadOnly}"/> 
+          </td> 
+        </tr>  -->
+        <!-- 11112014 DBiswal - To display CCAT Number -->                                 
+                  <tr> 
+                    <td colspan="3" class="Table-Item">
+                        <apex:outputtext escape="false"  value="{!$Label.EC_ExpQ6_New}"/>
+                    </td>
+                    <td colspan="2">
+                        <div align="left">  
+                            <apex:inputfield id="nonUSEARProdChk"  onchange="toggleClass_isQ5Yes();" value="{!ExportControl.Non_US_EAR_Product__c}" rendered="{!isReadOnly==false}"/>
+                            <apex:outputText value="{!ExportControl.Non_US_EAR_Product__c}" rendered="{!isReadOnly}" />
+                        </div>
+                    </td>
+                  </tr>
+                  <tr class="isQ7Yes"> 
+                    <td colspan="3" class="Table-Item">
+                        <apex:outputtext escape="false"  value="{!$Label.ExpQ6_Desc}"/>
+                        <div style="height:3px"></div><BR/>
+                        <apex:outputLabel rendered="{!IF(deviceExpConTemplate=='Exp_Ctrl_Cust01',true,false)}">{!$Label.ExpQ6_Note}</apex:outputLabel>
+                    </td>
+                    <td colspan="2">
+                        <apex:inputfield id="nonUSEARProdDetails" value="{!ExportControl.Non_US_EAR_Product_Details__c}" style="width:430px" rendered="{!isReadOnly==false}"/>
+                        <apex:outputText value="{!ExportControl.Non_US_EAR_Product_Details__c}" style="width:430px" rendered="{!isReadOnly}" />
+                    </td>
+                  </tr>
+                  <tr class="trcolor"> 
+                    <td colspan="5" class="Table-Item">
+                        <apex:outputLabel escape="false" value="{!$Label.EC_ExpQ7_New}" /> 
+                      </td>
+                  </tr>
+                  <tr class="trcolor"> 
+                    <td colspan="5" class="Table-Item" align="center">                        
+                        <table border="1" style="width:50%;">
+                            <tr>
+                                <th>{!$Label.Export_Control_Form_HS_Code_Header_1}</th>
+                                <th>{!$Label.Export_Control_Form_HS_Code_Header_2}</th>
+                                <th>{!$Label.Export_Control_Form_HS_Code_Header_3}</th>
+                            </tr>
+                            <apex:repeat value="{!expConHSCodeList1}" var="expConHSCode" id="theRepeat">
+                                <tr>
+                                    <td style="text-align:center;"><apex:inputCheckBox styleClass="chkbox" value="{!expConHSCode.selected}" onclick="deselectOther(this)" disabled="{!isReadOnly}"/></td>
+                                    <td><apex:outputText value="{!expConHSCode.expConHSCode}"/></td>
+                                    <td><apex:outputText value="{!expConHSCode.expConHSDescription}" rendered="{!expConHSCode.expConHSCode!='Other'}"/>
+                                    <apex:outputText value="Specify HS Code (" rendered="{!(expConHSCode.expConHSCode=='Other' && isReadOnly==false)}"/>                                                                       
+                                    <apex:inputField id="otherHarmonSys" styleclass="otherHarmonSys" value="{!ExportControl.Other_Harmonized_System__c}" rendered="{!(expConHSCode.expConHSCode=='Other' && isReadOnly==false)}"/>
+                                    <apex:outputText value="{!ExportControl.Other_Harmonized_System__c}" rendered="{!(expConHSCode.expConHSCode=='Other' && isReadOnly)}"/>
+                                    <apex:outputText value=")" rendered="{!(expConHSCode.expConHSCode=='Other' && isReadOnly==false)}"/></td>
+                                </tr>
+                            </apex:repeat>                            
+                        </table>
+                    </td>
+                  </tr>
+                    
+                  <!-- Adding the Question 8 : Start -->
+                  <tr> 
+                    <td colspan="3" class="Table-Item">
+                        <apex:outputtext escape="false"  value="{!$Label.EC_ExpQ9_New}"/><br/>
+                    </td>
+                    <td colspan="2">
+                        <div align="left"> 
+                            <apex:inputfield id="endUserCustName" value="{!ExportControl.End_User_Customer_Name__c}" style="width:430px" rendered="{!isReadOnly==false}"/>
+                            <apex:outputText value="{!ExportControl.End_User_Customer_Name__c}" style="width:430px" rendered="{!isReadOnly}" />
+                        </div>
+                    </td>
+                  </tr>
+                  <!-- Adding the Question 8 : End -->
+                  <tr class="trcolor">
+                      <td colspan="5">
+                          <apex:outputLabel rendered="{!isGTCUser==false && isExpCusTemplate==false}">
+                                  {!$Label.EXPORT_CONTROL_OTHER_CUSTOM_TEXT1}<u>{!ExportControl.Customer_Trade_Compliance_Contact_Person__c}</u>
+                                  {!$Label.EXPORT_CONTROL_OTHER_CUSTOM_TEXT4}&nbsp;<u>{!deviceAccountName}</u>&nbsp;{!$Label.EXPORT_CONTROL_OTHER_CUSTOM_TEXT3}
+                          </apex:outputLabel>
+                          <apex:outputLabel rendered="{!isGTCUser==false && isExpCusTemplate}">
+                                  {!$Label.EXPORT_CONTROL_OTHER_CUSTOM_TEXT1}<u>{!ExportControl.Customer_Trade_Compliance_Contact_Person__c}</u>
+                                  {!$Label.EXPORT_CONTROL_OTHER_CUSTOM_TEXT2}&nbsp;<u>{!deviceAccountName}</u>&nbsp;{!$Label.EXPORT_CONTROL_OTHER_CUSTOM_TEXT3}
+                          </apex:outputLabel>
+                          <apex:outputLabel rendered="{!isGTCUser}">
+                                  <u>{!gtcUserName}</u>{!$Label.EXPORT_CONTROL_TEXT1}                                 
+                          </apex:outputLabel>
+                      </td>                      
+                  </tr>
+                  <tr class="trcolor">
+                      <td colspan="5">
+                          <apex:outputtext escape="false"  value="{!$Label.EXPORT_CONTROL_DATE_TEXT}"/>
+                                  <u><apex:outputText value="{0,date,MM'/'dd'/'yyyy}">
+                                      <apex:param value="{!Today()}" />
+                                  </apex:outputText></u>
+                                  {!$Label.EXPORT_CONTROL_DATE_FORMAT}
+                          
+                      </td>
+                  </tr>
+              </table>
+            </apex:pageblock>   
+        </apex:form>
+        <apex:pageblock title="Attachments" rendered="{!isIntUser}">
+
+        <apex:include pageName="ExpConAttachment" rendered="{!isIntUser}"/></apex:pageblock>
+        
+       <apex:relatedList subject="{!ExportControl}" list="CombinedAttachments" rendered="{!isIntUser}"/>
+       
+       
+       <apex:relatedList subject="{!ExportControl}" list="MPW_ECCN_Info__r" rendered="{!isIntUser}"/>
+
+        <apex:relatedList subject="{!ExportControl}" list="processSteps" rendered="{!isIntUser}"/>
+        
+        <apex:relatedList subject="{!ExportControl}" list="ActivityHistories" rendered="{!isIntUser}" />
+        
+        <apex:outputPanel id="historySectionId" rendered="{!isIntUser}">
+                <c:GenericHistoryComponent Object="{!ExportControl}" Limit="20"/>
+            </apex:outputPanel>
+        
+
+     </div>
+     <script src="/soap/ajax/36.0/connection.js" type="text/javascript"></script>
+<script src="/soap/ajax/36.0/apex.js" type="text/javascript"></script>
+<script type="text/javascript">
+function reopen(){
+
+    var usrRole = '{!$UserRole.Name}';
+    var profName = '{!$Profile.Name}';
+    var status = '{!ExportControl.Status__c}';
+
+    if(usrRole == 'GTC - Global Trade Compliance' || profName == 'System Administrator'){
+    if(status == 'Approved'){
+    if(confirm('Are you sure to Re-Open the record?')==1){ 
+
+    // Now calling the webservice
+        reOpenAction();
+
+    if(callback == 'OK'){ 
+        window.location.reload(); 
+    }else if(callback == 'NotApproved'){
+    alert('The Re-open operation is only possible when the status is Approved'); 
+    }else if(callback == 'NotPermitted'){
+    alert('You are not authorized to perform the Re-open operation. Only GTC users are authorized.');
+    }else{
+    alert('Error: ' + callback);
+    }
+
+    }
+    }else{
+    alert('The Re-open operation is only possible when the status is Approved');
+    }
+    }else{
+    alert('You are not authorized to perform the Re-open operation. Only GTC users are authorized.');
+    }
+}
+
+
+
+</script>
+
+<style type="text/css">
+       .customPopup{
+            background-color: white;
+            border-style: solid;
+            border-width: 2px;
+            //left: 50%;
+            padding:10px;
+            position: absolute;
+            z-index: 9999;
+            /* These are the 3 css properties you will need to tweak so the pop 
+            up displays in the center of the screen. First set the width. Then set 
+            margin-left to negative half of what the width is. You can also add 
+            the height property for a fixed size pop up.*/
+            width: 1024px;
+            //margin-left: -250px;
+            top:100px;
+        }
+        
+        .customPopup1{
+            background-color: white;
+            border-style: solid;
+            border-width: 2px;
+            //left: 50%;
+            padding:10px;
+            position: absolute;
+            z-index: 9999;
+            /* These are the 3 css properties you will need to tweak so the pop 
+            up displays in the center of the screen. First set the width. Then set 
+            margin-left to negative half of what the width is. You can also add 
+            the height property for a fixed size pop up.*/
+            width: 1024px;
+            //margin-left: -250px;
+            top:100px;
+        }
+        .popupBackground{
+            background-color:black;
+            opacity: 0.20;
+            filter: alpha(opacity = 20);
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            z-index: 9998;
+        }
+</style>
+     
+</apex:page>

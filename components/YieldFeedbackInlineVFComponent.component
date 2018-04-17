@@ -1,0 +1,207 @@
+<apex:component controller="YieldFeedbackInlineController" access="global">
+    <style>
+        .first1 {
+            background-image: url(/img/paginationArrows.gif);
+            background-repeat: no-repeat;
+            background-position: 0 1px;
+            width: 9px;
+            height: 10px;
+        }
+        
+        .firstoff1 {
+            background-image: url(/img/paginationArrows.gif);
+            background-repeat: no-repeat;
+            background-position: 0 -10px;
+            width: 9px;
+            height: 10px;
+        }
+        
+        .prev1 {
+            background-image: url(/img/paginationArrows.gif);
+            background-repeat: no-repeat;
+            background-position: -10px 1px;
+            width: 9px;
+            height: 10px;
+            margin: 0;
+            padding: 0;
+        }
+        
+        .prevoff1 {
+            background-image: url(/img/paginationArrows.gif);
+            background-repeat: no-repeat;
+            background-position: -10px -10px;
+            width: 9px;
+            height: 10px;
+            margin: 0;
+            padding: 0;
+        }
+        
+        .next1 {
+            background-image: url(/img/paginationArrows.gif);
+            background-repeat: no-repeat;
+            background-position: -17px 1px;
+            width: 9px;
+            height: 10px;
+            margin: 0;
+            padding: 0;
+        }
+        
+        .nextoff1 {
+            background-image: url(/img/paginationArrows.gif);
+            background-repeat: no-repeat;
+            background-position: -17px -10px;
+            width: 9px;
+            height: 10px;
+            margin: 0;
+            padding: 0;
+        }
+        
+        .last1 {
+            background-image: url(/img/paginationArrows.gif);
+            background-repeat: no-repeat;
+            background-position: -27px 1px;
+            width: 9px;
+            height: 10px;
+            margin: 0;
+            padding: 0;
+        }
+        
+        .lastoff1 {
+            background-image: url(/img/paginationArrows.gif);
+            background-repeat: no-repeat;
+            background-position: -27px -10px;
+            width: 9px;
+            height: 10px;
+            margin: 0;
+            padding: 0;
+        }
+        
+        .prevtext {
+            color: #333;
+            text-decoration: none;
+            display: inline-block;
+            vertical-align: middle;
+        }
+        
+        
+        .prevtextoff {
+            color: #a8a8a8;
+            text-decoration: none;
+            display: inline-block;
+            vertical-align: middle;
+        }
+        
+        .nexttext {
+            color: #333;
+            text-decoration: none;
+            display: inline-block;
+            vertical-align: middle;
+        }
+        
+        
+        .nexttextoff {
+            color: #a8a8a8;
+            text-decoration: none;
+            display: inline-block;
+            vertical-align: middle;
+        }
+    </style>
+    
+    <script>
+        function redirectPage(recordId, objectName) {
+            var url = "/apex/YieldFeedbackVF?";
+            if (objectName == "Account") {
+                url = url + "accountId=" + recordId;
+            } else if (objectName == "Device") {
+                url = url + "deviceId=" + recordId;
+            }
+            window.top.location.href = url;
+        }
+    </script>
+
+    <apex:form id="form1">
+        <apex:pageBlock title="Yield Feedback" mode="Edit">
+            <apex:pageBlockButtons location="top">
+                <apex:commandButton value="Search and Update Yield Feedback" onclick="return redirectPage('{!recordId}', '{!objectName}');" rendered="{!showButton}" />
+            </apex:pageBlockButtons>
+                
+            <apex:pageBlockTable id="recordsTbl" value="{!Records}" var="r" rendered="{!IF(Records.size > 0, true, false)}">
+                <apex:column >
+                    <apex:facet name="header">Lot ID</apex:facet>
+                    <apex:outputLink value="/{!r.Manufacturing_Lot__c}" target="_blank">{!r.Manufacturing_Lot__r.Name}</apex:outputLink>
+                </apex:column>
+                <apex:column rendered="{!IF(objectName == 'Account', true, false)}">
+                    <apex:facet name="header">Device</apex:facet>
+                    <apex:outputLink value="/{!r.Device__c}" target="_blank" rendered="{!IF(NOT(ISBLANK(r.Device__c)), true, false)}">{!r.Device__r.Name}</apex:outputLink>
+                    <apex:outputText value="{!r.Manual_Device__c}" rendered="{!IF(NOT(ISBLANK(r.Manual_Device__c)), true, false)}" />
+                </apex:column>
+                <apex:column >
+                    <apex:facet name="header">Lot Purpose</apex:facet>
+                    <apex:outputField value="{!r.Lot_Purpose__c}" />
+                </apex:column>
+                <apex:column >
+                    <apex:facet name="header">Lot Start Date</apex:facet>
+                    <apex:outputText value="{!MONTH(DATEVALUE(r.Manufacturing_Lot__r.Lot_Start_Date__c))}/{!DAY(DATEVALUE(r.Manufacturing_Lot__r.Lot_Start_Date__c))}/{!YEAR(DATEVALUE(r.Manufacturing_Lot__r.Lot_Start_Date__c))}" rendered="{!IF(NOT(ISBLANK(r.Manufacturing_Lot__r.Lot_Start_Date__c)), true, false)}" />
+                </apex:column> 
+                <apex:column >
+                    <apex:facet name="header">Lot Ship Date</apex:facet>
+                    <apex:outputText value="{!MONTH(r.Manufacturing_Lot__r.Last_Ship_Date__c)}/{!DAY(r.Manufacturing_Lot__r.Last_Ship_Date__c)}/{!YEAR(r.Manufacturing_Lot__r.Last_Ship_Date__c)}" rendered="{!IF(NOT(ISBLANK(r.Manufacturing_Lot__r.Last_Ship_Date__c)), true, false)}" />
+                </apex:column> 
+                <apex:column >
+                    <apex:facet name="header">Functional</apex:facet>
+                    <apex:outputField value="{!r.Functional__c}" />
+                </apex:column>
+                <apex:column >
+                    <apex:facet name="header">Sort/Final Test Yield (%)</apex:facet>
+                    <apex:outputField value="{!r.Sort_Yield__c}" />
+                </apex:column>
+                <apex:column >
+                    <apex:facet name="header">First Time Not Right</apex:facet>
+                    <apex:outputField value="{!r.First_Time_Not_Right__c}" />
+                </apex:column>
+                <apex:column >
+                    <apex:facet name="header">Comments__c</apex:facet>
+                    <apex:outputField value="{!r.Comments__c}" />
+                </apex:column>
+                <apex:column >
+                    <apex:facet name="header">Is Auto-Tagged?</apex:facet>
+                    <apex:outputField value="{!r.Is_Auto_Tagged__c}" />
+                </apex:column>
+                <apex:facet name="footer">Showing Page {!currentPageNo} of {!totalNoOfPages} ({!totalNoOfRecords} Records)</apex:facet>
+            </apex:pageBlockTable>
+            <apex:outputText value="No record(s) retrieved." rendered="{!IF(Records.size > 0, false, true)}" />
+    
+            <apex:outputPanel id="recordsControlPanel" layout="inline" style="margin: 0; white-space: nowrap; align: center; position: relative;" rendered="{!IF(Records.size > 0, true, false)}">
+                <center>
+                    <apex:commandLink action="{!first}" style="text-decoration: none;" rendered="{!IF(HasPrevious, true, false)}" rerender="availableLotsTbl, availableLotsControlPanel">
+                        <apex:image value="/s.gif" styleClass="first1" alt="First Page" />
+                    </apex:commandLink>
+                    <apex:outputPanel rendered="{!IF(NOT(HasPrevious), true, false)}">
+                        <apex:image value="/s.gif" styleClass="firstoff1" alt="First Page" />
+                    </apex:outputPanel>
+                    &nbsp;
+                    <apex:commandLink action="{!previous}" style="text-decoration: none;" rendered="{!IF(HasPrevious, true, false)}" rerender="recordsTbl, recordsControlPanel">
+                        <apex:image value="/s.gif" styleClass="prev1" alt="Previous" /><span class="prevtext">Previous</span>
+                    </apex:commandLink>
+                    <apex:outputPanel rendered="{!IF(NOT(HasPrevious), true, false)}">
+                        <apex:image value="/s.gif" styleClass="prevoff1" alt="Previous" /><span class="prevtextoff">Previous</span>
+                    </apex:outputPanel>
+                    &nbsp;&nbsp;
+                    <apex:commandLink action="{!next}" style="text-decoration: none;" rendered="{!IF(HasNext, true, false)}" rerender="recordsTbl, recordsControlPanel">
+                        <span class="nexttext">Next</span><apex:image value="/s.gif" styleClass="next1" alt="Next" />
+                    </apex:commandLink>
+                    <apex:outputPanel rendered="{!IF(NOT(HasNext), true, false)}">
+                        <span class="nexttextoff">Next</span><apex:image value="/s.gif" styleClass="nextoff1" alt="Next" />
+                    </apex:outputPanel>
+                    &nbsp;
+                    <apex:commandLink action="{!last}" style="text-decoration: none;" rendered="{!IF(HasNext, true, false)}" rerender="recordsTbl, recordsControlPanel">
+                        <apex:image value="/s.gif" styleClass="last1" alt="Last Page" />
+                    </apex:commandLink>
+                    <apex:outputPanel rendered="{!IF(NOT(HasNext), true, false)}">
+                        <apex:image value="/s.gif" styleClass="lastoff1" alt="Last Page" />
+                    </apex:outputPanel>
+                </center>
+            </apex:outputPanel>
+        </apex:pageBlock>
+    </apex:form>
+</apex:component>
