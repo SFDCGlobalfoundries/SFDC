@@ -1486,6 +1486,9 @@
         <layout>Event-Event Layout</layout>
     </layoutAssignments>
     <layoutAssignments>
+        <layout>FeedItem-Feed Item Layout</layout>
+    </layoutAssignments>
+    <layoutAssignments>
         <layout>GFS_Account_History__c-GFS Account History Layout</layout>
     </layoutAssignments>
     <layoutAssignments>
