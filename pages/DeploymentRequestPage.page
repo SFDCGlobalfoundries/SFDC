@@ -1,7 +1,59 @@
-<apex:page standardController="Deployment_Request__c" extensions="DeploymentRequestController" tabStyle="Deployment_Request__c">
+<apex:page standardController="Deployment_Request__c" extensions="DeploymentRequestController,RemotingActionJS" tabStyle="Deployment_Request__c">
+<script type="text/javascript">
+    function fetchChangeTypeValuesfn(sval){
+        Visualforce.remoting.Manager.invokeAction(
+            '{!$RemoteAction.RemotingActionJS.fetchChangeTypeValues}',
+            sval.value, 
+            function(result, event){
+                if(event.status) {                    
+                    var changeTypeVals = result;
+                    var changeTypeId = document.getElementById('j_id0:drform:drblock:j_id31:j_id39:changeTypeList');
+                    changeTypeId.innerHTML = '';
+                    for(var i=0; i<result.length; i++){
+                        var option = document.createElement("option");
+                        option.value = result[i];
+                        option.text = result[i];
+                        changeTypeId.appendChild(option);
+                    }                    
+                } else if (event.type === 'exception') {
+                    document.getElementById("responseErrors").innerHTML = event.message + "<br/>\n<pre>" + event.where + "</pre>";
+                } else {
+                    document.getElementById("responseErrors").innerHTML = event.message;
+                }
+            }, 
+            {escape: true}
+        );
+    }
+
+    function fetchApplicationNameValuesfn(sval){
+        Visualforce.remoting.Manager.invokeAction(
+            '{!$RemoteAction.RemotingActionJS.fetchApplicationNameValues}',
+            sval.value, 
+            function(result, event){
+                if(event.status) {                    
+                    var changeTypeVals = result;
+                    var applicationNameId = document.getElementById('j_id0:drform:drblock:j_id31:j_id70:applicationNameList');
+                    applicationNameId.innerHTML = '';
+                    //alert(changeTypeId);
+                    for(var i=0; i<result.length; i++){
+                        var option = document.createElement("option");
+                        option.value = result[i];
+                        option.text = result[i];
+                        applicationNameId.appendChild(option);
+                    }                    
+                } else if (event.type === 'exception') {
+                    document.getElementById("responseErrors").innerHTML = event.message + "<br/>\n<pre>" + event.where + "</pre>";
+                } else {
+                    document.getElementById("responseErrors").innerHTML = event.message;
+                }
+            }, 
+            {escape: true}
+        );
+    }
+</script>
     <apex:form id="drform">
-        <apex:actionFunction name="fetchChangeTypeValuesfn" action="{!fetchChangeTypeValues}" reRender="changeTypeList" oncomplete=""/>
-        <apex:actionFunction name="fetchApplicationNameValuesfn" action="{!fetchApplicationNameValues}" reRender="applicationNameList" oncomplete=""/>
+        <!-- <apex:actionFunction name="fetchChangeTypeValuesfn" action="{!fetchChangeTypeValues}" reRender="changeTypeList" oncomplete=""/>
+        <apex:actionFunction name="fetchApplicationNameValuesfn" action="{!fetchApplicationNameValues}" reRender="applicationNameList" oncomplete=""/> -->
         <apex:pageBlock id="drblock">
             <apex:pageMessages ></apex:pageMessages>
             <apex:pageBlockButtons >
@@ -13,7 +65,7 @@
                     <apex:outputText value="Request Type"></apex:outputText>
                     <apex:outputPanel layout="block" styleClass="requiredInput">
                     <apex:outputPanel layout="block" styleClass="requiredBlock"/>
-                    <apex:selectList value="{!drObject.Request_Type_txt__c}" multiselect="false" size="1" onchange="fetchChangeTypeValuesfn()">
+                    <apex:selectList value="{!drObject.Request_Type_txt__c}" multiselect="false" size="1" onchange="fetchChangeTypeValuesfn(this)">
                         <apex:selectOptions value="{!requestType}"/>
                     </apex:selectList>     
                     </apex:outputPanel>           
@@ -23,7 +75,7 @@
                     <apex:outputText value="Change Type"></apex:outputText>
                     <apex:selectList value="{!drObject.Change_Type_txt__c}" multiselect="false" size="1" disabled="{!disableChangeType}" id="changeTypeList">
                         <apex:selectOptions value="{!changeType}"/>
-                    </apex:selectList>                
+                    </apex:selectList>                                    
                 </apex:pageBlockSectionItem>
                 <apex:inputField value="{!drObject.CR_Number__c}"/>
                 <apex:pageBlockSectionItem >
@@ -60,7 +112,7 @@
                     <apex:outputText value="Application Category"></apex:outputText>
                     <apex:outputPanel layout="block" styleClass="requiredInput">
                     <apex:outputPanel layout="block" styleClass="requiredBlock"/>                                        
-                    <apex:selectList value="{!drObject.Application_Category_txt__c}" multiselect="false" size="1" onchange="fetchApplicationNameValuesfn()">
+                    <apex:selectList value="{!drObject.Application_Category_txt__c}" multiselect="false" size="1" onchange="fetchApplicationNameValuesfn(this)">
                         <apex:selectOptions value="{!applicationCategory}"/>
                     </apex:selectList>    
                     </apex:outputPanel>            

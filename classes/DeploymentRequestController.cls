@@ -252,8 +252,16 @@ public class DeploymentRequestController{
                                                                     RMA_Approver1__c, RMA_Approver2__c, RMA_Approver3__c, Source_Environment__c, Stage__c, Standard_Apps_Approver1__c, Standard_Apps_Approver2__c, Standard_Apps_Approver3__c,
                                                                     Support_KT_Status__c, System_Affected__c, Target_Environment__c, Wafer_Write_Off_Approver1__c, Wafer_Write_Off_Approver2__c, Wafer_Write_Off_Approver3__c
                                                           From DR_Configuration__c limit 1];
+                                                          
+            list<Application_Approver__c> appApprovers = [Select Id, name, User__c, Application_Name__c, Role__c from Application_Approver__c];                                                          
             
             //set the initial approver
+            if(drObject.Application_Category_txt__c == 'Standard Apps' && drObject.Application_Name_txt__c == 'Account Management')
+                drObject.Initial_Approver__c = configurations[0].Standard_Apps_Approver1__c;
+            
+            
+            
+            
             if(drObject.Application_Category_txt__c == 'Standard Apps')
                 drObject.Initial_Approver__c = configurations[0].Standard_Apps_Approver1__c;
             if(drObject.Application_Category_txt__c == 'SOX compliance Apps' && drObject.Application_Name_txt__c == 'PX - Risk Start System')

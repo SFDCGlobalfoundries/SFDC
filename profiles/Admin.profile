@@ -135,6 +135,10 @@
         <enabled>true</enabled>
     </classAccesses>
     <classAccesses>
+        <apexClass>RemotingActionJS</apexClass>
+        <enabled>true</enabled>
+    </classAccesses>
+    <classAccesses>
         <apexClass>SearchablePicklistController</apexClass>
         <enabled>true</enabled>
     </classAccesses>
@@ -1889,6 +1893,10 @@
         <recordType>Idea.InternalIdeasIdeaRecordType</recordType>
         <visible>false</visible>
     </recordTypeVisibilities>
+    <tabVisibilities>
+        <tab>Application_Approver__c</tab>
+        <visibility>DefaultOn</visibility>
+    </tabVisibilities>
     <tabVisibilities>
         <tab>GFS_History_Configuration</tab>
         <visibility>DefaultOn</visibility>

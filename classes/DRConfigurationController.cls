@@ -21,6 +21,26 @@ public class DRConfigurationController{
         }
     }
     public list<PicklistWrapper> extPicklistValues{get; set;}
+    
+    public class DRApproverWrapper{
+        public Application_Approver__c approverObj{get; set;}
+        
+        public DRApproverWrapper(string aname){
+            approverObj = new Application_Approver__c();
+            approverObj.Application_Name__c = aname;
+        }  
+        
+        public DRApproverWrapper(Application_Approver__c extapp){
+            approverObj = new Application_Approver__c();
+            approverObj = extapp;
+        }     
+    }
+    public list<DRApproverWrapper> accMgmtdrApprovers{get; set;}
+    public list<DRApproverWrapper> optyMgmtdrApprovers{get; set;}
+    public list<DRApproverWrapper> rmadrApprovers{get; set;}
+    public list<DRApproverWrapper> riskStartdrApprovers{get; set;}
+    public list<DRApproverWrapper> defaultdrApprovers{get; set;}
+    
         
     public DRConfigurationController(){
         picklistValues = new list<SelectOption>();  
@@ -63,6 +83,54 @@ public class DRConfigurationController{
         sUrlRewrite = sfBaseProtocol+'://'+sURlRewrite;
         system.debug('>>>>>>>>>>>>>>>>instance URL:'+sUrlRewrite);
         serverURL = sUrlRewrite;
+        
+        //retrieve applications approvers data
+        list<Application_Approver__c> existingApprovers = [Select Id, name, User__c, Application_Name__c, Role__c from Application_Approver__c];
+        accMgmtdrApprovers = new list<DRApproverWrapper>();
+        optyMgmtdrApprovers = new list<DRApproverWrapper>();
+        riskStartdrApprovers = new list<DRApproverWrapper>();
+        rmadrApprovers = new list<DRApproverWrapper>();
+        defaultdrApprovers = new list<DRApproverWrapper>();
+        
+        if(existingApprovers.size() > 0){
+            for(Application_Approver__c ext: existingApprovers){
+                if(ext.Application_Name__c == 'Account Management')
+                    accMgmtdrApprovers.add(new DRApproverWrapper(ext));
+                if(ext.Application_Name__c == 'Opportunity Management')
+                    optyMgmtdrApprovers.add(new DRApproverWrapper(ext));
+                if(ext.Application_Name__c == 'RMA')
+                    rmadrApprovers.add(new DRApproverWrapper(ext));
+                if(ext.Application_Name__c == 'Risk Start')
+                    riskStartdrApprovers.add(new DRApproverWrapper(ext));
+                if(ext.Application_Name__c == 'Default')
+                    defaultdrApprovers.add(new DRApproverWrapper(ext));
+            }
+        }else{
+            accMgmtdrApprovers.add(new DRApproverWrapper('Account Management'));
+            accMgmtdrApprovers.add(new DRApproverWrapper('Account Management'));
+            accMgmtdrApprovers.add(new DRApproverWrapper('Account Management'));
+            accMgmtdrApprovers.add(new DRApproverWrapper('Account Management'));
+            
+            optyMgmtdrApprovers.add(new DRApproverWrapper('Opportunity Management'));
+            optyMgmtdrApprovers.add(new DRApproverWrapper('Opportunity Management'));
+            optyMgmtdrApprovers.add(new DRApproverWrapper('Opportunity Management'));
+            optyMgmtdrApprovers.add(new DRApproverWrapper('Opportunity Management'));
+            
+            rmadrApprovers.add(new DRApproverWrapper('RMA'));
+            rmadrApprovers.add(new DRApproverWrapper('RMA'));
+            rmadrApprovers.add(new DRApproverWrapper('RMA'));
+            rmadrApprovers.add(new DRApproverWrapper('RMA'));
+            
+            riskStartdrApprovers.add(new DRApproverWrapper('Risk Start'));
+            riskStartdrApprovers.add(new DRApproverWrapper('Risk Start'));
+            riskStartdrApprovers.add(new DRApproverWrapper('Risk Start'));
+            riskStartdrApprovers.add(new DRApproverWrapper('Risk Start'));
+            
+            defaultdrApprovers.add(new DRApproverWrapper('Default'));
+            defaultdrApprovers.add(new DRApproverWrapper('Default'));
+            defaultdrApprovers.add(new DRApproverWrapper('Default'));
+            defaultdrApprovers.add(new DRApproverWrapper('Default'));
+        }
     }
     
     public void selectPicklistField(){
@@ -111,8 +179,51 @@ public class DRConfigurationController{
         }   
     }
     
+    public void accMgmtAddRow(){
+        accMgmtdrApprovers.add(new DRApproverWrapper('Account Management'));
+    }
+    
+    public void opptyMgmtAddRow(){
+        optyMgmtdrApprovers.add(new DRApproverWrapper('Opportunity Management'));
+    }
+
+    public void riskStartAddRow(){
+        riskStartdrApprovers.add(new DRApproverWrapper('Risk Start'));
+    }
+
+    public void rmaAddRow(){
+        rmadrApprovers.add(new DRApproverWrapper('RMA'));
+    }
+    
+    public void defaultAddRow(){
+        defaultdrApprovers.add(new DRApproverWrapper('Default'));    
+    }
+
     public void save(){
         upsert config;
+        
+        list<Application_Approver__c> appApprovers = new list<Application_Approver__c>();
+        for(DRApproverWrapper wrapper: accMgmtdrApprovers){
+            if(wrapper.approverObj.User__c != null && wrapper.approverObj.Role__c != null)
+                appApprovers.add(wrapper.approverObj);
+        }
+        for(DRApproverWrapper wrapper: optyMgmtdrApprovers){
+            if(wrapper.approverObj.User__c != null && wrapper.approverObj.Role__c != null)
+                appApprovers.add(wrapper.approverObj);
+        }        
+        for(DRApproverWrapper wrapper: riskStartdrApprovers){
+            if(wrapper.approverObj.User__c != null && wrapper.approverObj.Role__c != null)
+                appApprovers.add(wrapper.approverObj);
+        }        
+        for(DRApproverWrapper wrapper: rmadrApprovers){
+            if(wrapper.approverObj.User__c != null && wrapper.approverObj.Role__c != null)
+                appApprovers.add(wrapper.approverObj);
+        }        
+        for(DRApproverWrapper wrapper: defaultdrApprovers){
+            if(wrapper.approverObj.User__c != null && wrapper.approverObj.Role__c != null)
+                appApprovers.add(wrapper.approverObj);
+        }        
+        upsert appApprovers;
         ApexPages.addmessage(new ApexPages.message(ApexPages.severity.INFO,'DR Configurations saved successfully'));
     }
 }
