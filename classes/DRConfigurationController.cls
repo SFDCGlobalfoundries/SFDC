@@ -224,6 +224,82 @@ public class DRConfigurationController{
                 appApprovers.add(wrapper.approverObj);
         }        
         upsert appApprovers;
+        
+        set<Id> appIds = new set<Id>();
+        for(Application_Approver__c approver :appApprovers){
+            appIds.add(approver.Id);                    
+        }
+        
+        updateDRQueues(appIds);
         ApexPages.addmessage(new ApexPages.message(ApexPages.severity.INFO,'DR Configurations saved successfully'));
+    }
+    
+    @future
+    public static void updateDRQueues(set<Id> approverIds){
+        list<Application_Approver__c> appApprovers = [Select Id, Name, User__c, Role__c, Application_Name__c From Application_Approver__c where Id IN :approverIds];
+        //insert approvers in queue as a member
+        list<GroupMember> members = new list<GroupMember>();
+        
+        list<Group> grps = [Select Id, name, DeveloperName from Group where DeveloperName IN ('DR_Account_Mgmt_CAB','DR_Account_Mgmt_EBIZ_FBO','DR_Account_Mgmt_SOD','DR_Account_Mgmt_Test','DR_Default_CAB','DR_Default_EBIZ_FBO','DR_Default_Test','DR_Opportunity_Mgmt_CAB','DR_Opportunity_Mgmt_EBIZ_FBO','DR_Opportunity_Mgmt_SOD','DR_Opportunity_Mgmt_Test','DR_Risk_Start_CAB','DR_Risk_Start_EBIZ_FBO','DR_Risk_Start_SOD','DR_Risk_Start_Test','DR_RMA_CAB','DR_RMA_EBIZ_FBO','DR_RMA_SOD','DR_RMA_Test')];
+        map<string,Id> grpMap = new map<string,Id>();
+        for(Group g: grps)
+            grpMap.put(g.DeveloperName,g.Id);
+        
+        system.debug('>>>>>>>grpMap:'+grpMap);
+        //delete existing members of grp
+        list<GroupMember> extmembers = [Select UserOrGroupId, GroupId from GroupMember where GroupId IN :grpMap.values()];
+        delete extmembers;
+        
+        list<GroupMember> grpMembers = new list<GroupMember>();        
+        for(Application_Approver__c approver: appApprovers){
+            GroupMember newMember = new GroupMember();
+            newMember.UserOrGroupId = approver.User__c;
+            if(approver.Application_Name__c == 'Account Management' && approver.Role__c == 'EBiZ/FBO')
+                newMember.GroupId = grpMap.get('DR_Account_Mgmt_EBIZ_FBO');
+            if(approver.Application_Name__c == 'Account Management' && approver.Role__c == 'CAB')
+                newMember.GroupId = grpMap.get('DR_Account_Mgmt_CAB');
+            if(approver.Application_Name__c == 'Account Management' && approver.Role__c == 'SOD')
+                newMember.GroupId = grpMap.get('DR_Account_Mgmt_SOD');
+            if(approver.Application_Name__c == 'Account Management' && approver.Role__c == 'TEST')
+                newMember.GroupId = grpMap.get('DR_Account_Mgmt_Test');
+
+            if(approver.Application_Name__c == 'Opportunity Management' && approver.Role__c == 'EBiZ/FBO')
+                newMember.GroupId = grpMap.get('DR_Opportunity_Mgmt_EBIZ_FBO');
+            if(approver.Application_Name__c == 'Opportunity Management' && approver.Role__c == 'CAB')
+                newMember.GroupId = grpMap.get('DR_Opportunity_Mgmt_CAB');            
+            if(approver.Application_Name__c == 'Opportunity Management' && approver.Role__c == 'SOD')
+                newMember.GroupId = grpMap.get('DR_Opportunity_Mgmt_SOD');
+            if(approver.Application_Name__c == 'Opportunity Management' && approver.Role__c == 'TEST')
+                newMember.GroupId = grpMap.get('DR_Opportunity_Mgmt_Test');
+
+            if(approver.Application_Name__c == 'Risk Start' && approver.Role__c == 'EBiZ/FBO')
+                newMember.GroupId = grpMap.get('DR_Risk_Start_EBIZ_FBO');
+            if(approver.Application_Name__c == 'Risk Start' && approver.Role__c == 'CAB')
+                newMember.GroupId = grpMap.get('DR_Risk_Start_CAB');            
+            if(approver.Application_Name__c == 'Risk Start' && approver.Role__c == 'SOD')
+                newMember.GroupId = grpMap.get('DR_Risk_Start_SOD');
+            if(approver.Application_Name__c == 'Risk Start' && approver.Role__c == 'TEST')
+                newMember.GroupId = grpMap.get('DR_Risk_Start_Test');                
+
+            if(approver.Application_Name__c == 'RMA' && approver.Role__c == 'EBiZ/FBO')
+                newMember.GroupId = grpMap.get('DR_RMA_EBIZ_FBO');
+            if(approver.Application_Name__c == 'RMA' && approver.Role__c == 'CAB')
+                newMember.GroupId = grpMap.get('DR_RMA_CAB');            
+            if(approver.Application_Name__c == 'RMA' && approver.Role__c == 'SOD')
+                newMember.GroupId = grpMap.get('DR_RMA_SOD');
+            if(approver.Application_Name__c == 'RMA' && approver.Role__c == 'TEST')
+                newMember.GroupId = grpMap.get('DR_RMA_Test');                
+
+            if(approver.Application_Name__c == 'Default' && approver.Role__c == 'EBiZ/FBO')
+                newMember.GroupId = grpMap.get('DR_Default_EBIZ_FBO');
+            if(approver.Application_Name__c == 'Default' && approver.Role__c == 'CAB')
+                newMember.GroupId = grpMap.get('DR_Default_CAB');            
+            if(approver.Application_Name__c == 'Default' && approver.Role__c == 'TEST')
+                newMember.GroupId = grpMap.get('DR_Default_Test');   
+                
+            system.debug('>>>>>>>newMember:'+newMember);                             
+            grpMembers.add(newMember);
+        }
+        upsert grpMembers;    
     }
 }

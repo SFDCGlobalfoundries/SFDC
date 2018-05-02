@@ -213,6 +213,8 @@ public class DeploymentRequestController{
       
     public Pagereference save(){
         try{
+            system.debug('drObject.Change_Type_txt__c:'+drObject.Change_Type_txt__c);
+            system.debug('drObject.Application_Name_txt__c:'+drObject.Application_Name_txt__c);
             //required field validations
             if(drObject.Request_Type_txt__c == null){
                 ApexPages.addmessage(new ApexPages.message(ApexPages.severity.Error,'Please select Request Type'));
@@ -246,28 +248,47 @@ public class DeploymentRequestController{
                 ApexPages.addmessage(new ApexPages.message(ApexPages.severity.Error,'Please select Is Code Review Completed'));
                 return null;            
             }
-
-            list<DR_Configuration__c> configurations = [Select Id, Name, Additional_Notes__c, Application_Category__c, Application_Name__c, ApproverSubmitter_Check__c, Change_Type__c, Deployment_Status__c, Is_Code_Review_Completed__c,
+            
+            list<string> groupIds = new list<string>();
+            string grpStartswithName = 'DR_Account_Mgmt';
+            if(drObject.Application_Name_txt__c == 'Account Management')
+                grpStartswithName = 'DR_Account_Mgmt';
+            if(drObject.Application_Name_txt__c == 'Opportunity Management')
+                grpStartswithName = 'DR_Opportunity_Mgmt';
+            if(drObject.Application_Name_txt__c == 'PX - Risk Start System')
+                grpStartswithName = 'DR_Risk_Start';
+            if(drObject.Application_Name_txt__c == 'RMA')
+                grpStartswithName = 'DR_RMA';
+            if(drObject.Application_Category_txt__c == 'Standard Apps') 
+                grpStartswithName = 'DR_Default';   
+                
+            list<Group> drgroups = [Select Id, Name from Group where DeveloperName like :grpStartswithName+'%'];
+            map<string, Id> grpMap = new map<string, Id>();
+            for(Group gp: drgroups)
+                grpMap.put(gp.Name, gp.Id);
+            
+            list<GroupMember> drGroupMembers = [Select UserOrGroupId from GroupMember where GroupId IN :grpMap.values()];
+            
+                
+            /* list<DR_Configuration__c> configurations = [Select Id, Name, Additional_Notes__c, Application_Category__c, Application_Name__c, ApproverSubmitter_Check__c, Change_Type__c, Deployment_Status__c, Is_Code_Review_Completed__c,
                                                                     Is_TA_Review_Completed__c, Is_TFA_Review_Completed__c, Request_Type__c, Review_Status__c, Risk_Start_Approver1__c, Risk_Start_Approver2__c, Risk_Start_Approver3__c,
                                                                     RMA_Approver1__c, RMA_Approver2__c, RMA_Approver3__c, Source_Environment__c, Stage__c, Standard_Apps_Approver1__c, Standard_Apps_Approver2__c, Standard_Apps_Approver3__c,
                                                                     Support_KT_Status__c, System_Affected__c, Target_Environment__c, Wafer_Write_Off_Approver1__c, Wafer_Write_Off_Approver2__c, Wafer_Write_Off_Approver3__c
                                                           From DR_Configuration__c limit 1];
                                                           
-            list<Application_Approver__c> appApprovers = [Select Id, name, User__c, Application_Name__c, Role__c from Application_Approver__c];                                                          
+            list<Application_Approver__c> appApprovers = [Select Id, name, User__c, Application_Name__c, Role__c from Application_Approver__c];  
+            */                                                  
             
             //set the initial approver
-            if(drObject.Application_Category_txt__c == 'Standard Apps' && drObject.Application_Name_txt__c == 'Account Management')
-                drObject.Initial_Approver__c = configurations[0].Standard_Apps_Approver1__c;
-            
-            
-            
-            
-            if(drObject.Application_Category_txt__c == 'Standard Apps')
+            //if(drObject.Application_Category_txt__c == 'Standard Apps' && drObject.Application_Name_txt__c == 'Account Management')
+            //    drObject.Initial_Approver__c = configurations[0].Standard_Apps_Approver1__c;
+                                         
+            /* if(drObject.Application_Category_txt__c == 'Standard Apps')
                 drObject.Initial_Approver__c = configurations[0].Standard_Apps_Approver1__c;
             if(drObject.Application_Category_txt__c == 'SOX compliance Apps' && drObject.Application_Name_txt__c == 'PX - Risk Start System')
                 drObject.Initial_Approver__c = configurations[0].Risk_Start_Approver1__c;
             if(drObject.Application_Category_txt__c == 'SOX compliance Apps' && drObject.Application_Name_txt__c == 'RMA')
-                drObject.Initial_Approver__c = configurations[0].RMA_Approver1__c;
+                drObject.Initial_Approver__c = configurations[0].RMA_Approver1__c; */
             upsert drObject;             
         }catch(Exception ex){
             system.debug('Exception:'+ex);

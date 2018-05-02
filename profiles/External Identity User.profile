@@ -954,9 +954,29 @@
         <readable>false</readable>
     </fieldPermissions>
     <fieldPermissions>
+        <editable>false</editable>
+        <field>Deployment_Request__c.CAB_Approver_Count__c</field>
+        <readable>false</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>false</editable>
+        <field>Deployment_Request__c.FBO_Approver_Count__c</field>
+        <readable>false</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>false</editable>
+        <field>Deployment_Request__c.SOD_Approver_Count__c</field>
+        <readable>false</readable>
+    </fieldPermissions>
+    <fieldPermissions>
         <editable>true</editable>
         <field>Deployment_Request__c.Short_Description__c</field>
         <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>false</editable>
+        <field>Deployment_Request__c.Test_Approver_Count__c</field>
+        <readable>false</readable>
     </fieldPermissions>
     <fieldPermissions>
         <editable>true</editable>
@@ -1683,6 +1703,10 @@
     </pageAccesses>
     <pageAccesses>
         <apexPage>GFSSetFieldHistory</apexPage>
+        <enabled>false</enabled>
+    </pageAccesses>
+    <pageAccesses>
+        <apexPage>ProgressIndicator</apexPage>
         <enabled>false</enabled>
     </pageAccesses>
     <pageAccesses>
