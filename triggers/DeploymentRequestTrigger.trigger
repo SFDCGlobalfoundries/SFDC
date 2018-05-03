@@ -18,37 +18,18 @@ trigger DeploymentRequestTrigger on Deployment_Request__c (after update, before 
             }            
         }
         
-        if(dr.Stage_txt__c == 'Approved' && oldDR.Stage_txt__c != 'Approved'){
-            //create Task               
-            Task t = new Task();
-            t.ownerId = dr.ownerId;
-            t.whatId = dr.Id;
-            t.Subject = 'Post Implementation Review';
-            t.Status = 'Not Started';
-            t.Description = 'This is implementation review task';
-            tasks.add(t);
-        }   
-                
-      /*  if(trigger.isBefore){
-            if(dr.Approver_Response1__c && !oldDR.Approver_Response1__c){
-                if(dr.Application_Category_txt__c == 'Standard Apps' && drconfig[0].Standard_Apps_Approver2__c != null)
-                    dr.Initial_Approver__c = drconfig[0].Standard_Apps_Approver2__c;
-                if(dr.Application_Category_txt__c == 'SOX compliance Apps' && dr.Application_Name_txt__c == 'PX - Risk Start System' && drconfig[0].Risk_Start_Approver2__c != null)
-                    dr.Initial_Approver__c = drconfig[0].Risk_Start_Approver2__c;
-                if(dr.Application_Category_txt__c == 'SOX compliance Apps' && dr.Application_Name_txt__c == 'RMA' && drconfig[0].RMA_Approver2__c != null)
-                    dr.Initial_Approver__c = drconfig[0].RMA_Approver2__c;
-            }
-    
-            if(dr.Approver_Response2__c && !oldDR.Approver_Response2__c){
-                if(dr.Application_Category_txt__c == 'Standard Apps' && drconfig[0].Standard_Apps_Approver3__c != null)
-                    dr.Initial_Approver__c = drconfig[0].Standard_Apps_Approver3__c;
-                if(dr.Application_Category_txt__c == 'SOX compliance Apps' && dr.Application_Name_txt__c == 'PX - Risk Start System' && drconfig[0].Risk_Start_Approver3__c != null)
-                    dr.Initial_Approver__c = drconfig[0].Risk_Start_Approver3__c;
-                if(dr.Application_Category_txt__c == 'SOX compliance Apps' && dr.Application_Name_txt__c == 'RMA' && drconfig[0].RMA_Approver3__c != null)
-                    dr.Initial_Approver__c = drconfig[0].RMA_Approver3__c;
-            }
-        } */
-    }
-    
+        if(trigger.isAfter){
+            if(dr.Stage_txt__c == 'Deployed' && oldDR.Stage_txt__c != 'Deployed'){
+                //create Task               
+                Task t = new Task();
+                t.ownerId = dr.ownerId;
+                t.whatId = dr.Id;
+                t.Subject = 'Post Deployment Review';
+                t.Status = 'Not Started';
+                t.Description = 'Please validate changes in the target environment before this request is closed';
+                tasks.add(t);
+            }   
+        }               
+    }    
     if(tasks.size() > 0) insert tasks;
 }

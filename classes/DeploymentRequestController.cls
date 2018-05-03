@@ -50,6 +50,7 @@ public class DeploymentRequestController{
         if(drObject.Id == null){
             drObject.Deployment_Status_txt__c = 'Not Started';
             drObject.RM_Review_Status_txt__c = 'Not Started';
+            drObject.Stage_txt__c = 'Draft';
         }
         init();
         if(drObject.Change_Type_txt__c != null){
@@ -267,28 +268,15 @@ public class DeploymentRequestController{
             for(Group gp: drgroups)
                 grpMap.put(gp.Name, gp.Id);
             
-            list<GroupMember> drGroupMembers = [Select UserOrGroupId from GroupMember where GroupId IN :grpMap.values()];
-            
-                
-            /* list<DR_Configuration__c> configurations = [Select Id, Name, Additional_Notes__c, Application_Category__c, Application_Name__c, ApproverSubmitter_Check__c, Change_Type__c, Deployment_Status__c, Is_Code_Review_Completed__c,
-                                                                    Is_TA_Review_Completed__c, Is_TFA_Review_Completed__c, Request_Type__c, Review_Status__c, Risk_Start_Approver1__c, Risk_Start_Approver2__c, Risk_Start_Approver3__c,
-                                                                    RMA_Approver1__c, RMA_Approver2__c, RMA_Approver3__c, Source_Environment__c, Stage__c, Standard_Apps_Approver1__c, Standard_Apps_Approver2__c, Standard_Apps_Approver3__c,
-                                                                    Support_KT_Status__c, System_Affected__c, Target_Environment__c, Wafer_Write_Off_Approver1__c, Wafer_Write_Off_Approver2__c, Wafer_Write_Off_Approver3__c
-                                                          From DR_Configuration__c limit 1];
-                                                          
-            list<Application_Approver__c> appApprovers = [Select Id, name, User__c, Application_Name__c, Role__c from Application_Approver__c];  
-            */                                                  
-            
-            //set the initial approver
-            //if(drObject.Application_Category_txt__c == 'Standard Apps' && drObject.Application_Name_txt__c == 'Account Management')
-            //    drObject.Initial_Approver__c = configurations[0].Standard_Apps_Approver1__c;
-                                         
-            /* if(drObject.Application_Category_txt__c == 'Standard Apps')
-                drObject.Initial_Approver__c = configurations[0].Standard_Apps_Approver1__c;
-            if(drObject.Application_Category_txt__c == 'SOX compliance Apps' && drObject.Application_Name_txt__c == 'PX - Risk Start System')
-                drObject.Initial_Approver__c = configurations[0].Risk_Start_Approver1__c;
-            if(drObject.Application_Category_txt__c == 'SOX compliance Apps' && drObject.Application_Name_txt__c == 'RMA')
-                drObject.Initial_Approver__c = configurations[0].RMA_Approver1__c; */
+            list<GroupMember> drGroupMembers = [Select UserOrGroupId, GroupId from GroupMember where GroupId IN :grpMap.values()];
+            map<Id, list<string>> grpIdGrpMembers = new map<Id, list<string>>();
+            for(GroupMember member: drGroupMembers){
+                if(!grpIdGrpMembers.containsKey(member.GroupId))
+                    grpIdGrpMembers.put(member.GroupId, new list<string>{member.UserOrGroupId});
+                else
+                    grpIdGrpMembers.get(member.GroupId).add(member.UserOrGroupId);
+            }
+            system.debug('>>>>>>>>>>>>grpIdGrpMembers:'+grpIdGrpMembers);                
             upsert drObject;             
         }catch(Exception ex){
             system.debug('Exception:'+ex);

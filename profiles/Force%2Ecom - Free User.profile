@@ -1566,6 +1566,14 @@
     </layoutAssignments>
     <layoutAssignments>
         <layout>Deployment_Request__c-Deployment Request Layout</layout>
+        <recordType>Deployment_Request__c.DR_Prod</recordType>
+    </layoutAssignments>
+    <layoutAssignments>
+        <layout>Deployment_Request__c-Deployment Request Layout</layout>
+        <recordType>Deployment_Request__c.DR_UAT</recordType>
+    </layoutAssignments>
+    <layoutAssignments>
+        <layout>Deployment_Request__c-Deployment Request Layout</layout>
         <recordType>Deployment_Request__c.DR_Unlocked</recordType>
     </layoutAssignments>
     <layoutAssignments>
@@ -1681,6 +1689,11 @@
         <default>false</default>
         <recordType>Deployment_Request__c.DR_Locked</recordType>
         <visible>false</visible>
+    </recordTypeVisibilities>
+    <recordTypeVisibilities>
+        <default>true</default>
+        <recordType>Deployment_Request__c.DR_UAT</recordType>
+        <visible>true</visible>
     </recordTypeVisibilities>
     <recordTypeVisibilities>
         <default>false</default>
