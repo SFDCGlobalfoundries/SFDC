@@ -1728,6 +1728,11 @@
     </recordTypeVisibilities>
     <recordTypeVisibilities>
         <default>false</default>
+        <recordType>Deployment_Request__c.DR_Prod</recordType>
+        <visible>false</visible>
+    </recordTypeVisibilities>
+    <recordTypeVisibilities>
+        <default>false</default>
         <recordType>Deployment_Request__c.DR_UAT</recordType>
         <visible>false</visible>
     </recordTypeVisibilities>

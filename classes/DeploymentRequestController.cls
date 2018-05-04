@@ -170,6 +170,10 @@ public class DeploymentRequestController{
             systemAffected.add(new SelectOption(f.getLabel(), f.getValue()));                                   
     }
     
+    public void updateStages(){
+        
+    }
+    
     public void fetchChangeTypeValues(){
         changeType = new list<SelectOption>();
         changeType.add(new SelectOption('','--None--'));
