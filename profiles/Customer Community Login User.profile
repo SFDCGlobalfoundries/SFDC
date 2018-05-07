@@ -945,6 +945,16 @@
     </fieldPermissions>
     <fieldPermissions>
         <editable>false</editable>
+        <field>DR_Stage_Mapping__mdt.Stage__c</field>
+        <readable>false</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>false</editable>
+        <field>DR_Stage_Mapping__mdt.Target_Environment__c</field>
+        <readable>false</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>false</editable>
         <field>Deployment_Request__c.Approver_Response1__c</field>
         <readable>false</readable>
     </fieldPermissions>
@@ -1553,6 +1563,9 @@
     </layoutAssignments>
     <layoutAssignments>
         <layout>DR_Configuration__c-DR Configuration Layout</layout>
+    </layoutAssignments>
+    <layoutAssignments>
+        <layout>DR_Stage_Mapping__mdt-DR Stage Mapping Layout</layout>
     </layoutAssignments>
     <layoutAssignments>
         <layout>DandBCompany-D%26B Company Layout</layout>

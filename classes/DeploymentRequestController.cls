@@ -15,19 +15,7 @@ public class DeploymentRequestController{
     public list<SelectOption> sourceEnvironment{get; set;}
     public list<SelectOption> stages{get; set;}
     public list<SelectOption> systemAffected{get; set;}
-    
-    public string notes{get; set;}
-    public string appCategory{get; set;}
-    public string appName{get; set;}
-    public string dstatus{get; set;}
-    public string codereview{get; set;}
-    public string tareview{get; set;}
-    public string tfareview{get; set;}
-    public string reqtype{get; set;}
-    public string rstatus{get; set;}
-    public string ktstatus{get; set;}
-    public string targetenv{get; set;}
-    public string stage{get; set;}
+       
 
     public Deployment_Request__c drObject{get; set;}
     public DR_Configuration__c drconfig{get; set;}
@@ -53,6 +41,7 @@ public class DeploymentRequestController{
             drObject.Stage_txt__c = 'Draft';
         }
         init();
+        updateStages();
         if(drObject.Change_Type_txt__c != null){
             disableChangeType = false; 
             fetchChangeTypeValues();
@@ -171,7 +160,14 @@ public class DeploymentRequestController{
     }
     
     public void updateStages(){
-        
+        //fetch stages from stage mapping custom metadata
+        stages = new list<SelectOption>();
+        stages.add(new SelectOption('','--None--'));
+        list<DR_Stage_Mapping__mdt> drmappings = [Select Id, Stage__c, Target_Environment__c from DR_Stage_Mapping__mdt where Target_Environment__c = :drObject.Target_Environment_txt__c];
+        for(DR_Stage_Mapping__mdt smap: drmappings){
+            stages.add(new SelectOption(smap.Stage__c,smap.Stage__c));
+        }
+        drObject.Stage_txt__c = 'Draft';
     }
     
     public void fetchChangeTypeValues(){
