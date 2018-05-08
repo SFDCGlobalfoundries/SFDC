@@ -75,6 +75,10 @@
         <enabled>false</enabled>
     </classAccesses>
     <classAccesses>
+        <apexClass>DRConfigurationController1</apexClass>
+        <enabled>false</enabled>
+    </classAccesses>
+    <classAccesses>
         <apexClass>DeploymentRequestController</apexClass>
         <enabled>false</enabled>
     </classAccesses>
@@ -1825,6 +1829,10 @@
     </objectPermissions>
     <pageAccesses>
         <apexPage>DRConfiguration</apexPage>
+        <enabled>false</enabled>
+    </pageAccesses>
+    <pageAccesses>
+        <apexPage>DRConfiguration1</apexPage>
         <enabled>false</enabled>
     </pageAccesses>
     <pageAccesses>

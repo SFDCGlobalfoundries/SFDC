@@ -1,0 +1,65 @@
+<apex:page controller="DRConfigurationController1" tabStyle="DR_Configuration__c">
+    <apex:form >
+        <apex:actionFunction name="selectFieldfn" action="{!selectPicklistField}"/>
+        <apex:pageBlock id="DRconfig">
+            <apex:pagemessages ></apex:pagemessages>
+            <apex:pageBlockButtons >
+                <apex:commandButton value="Save" action="{!save}" oncomplete="" reRender="DRconfig"/>                                            
+            </apex:pageBlockButtons>
+            <apex:pageBlockSection title="Configure Deployment Request Picklists" columns="1">
+                <apex:pageBlockSectionItem >
+                    <apex:outputText value="Select Picklist:"></apex:outputText>
+                    <apex:selectList value="{!picklistName}" multiselect="false" size="1" onchange="selectFieldfn()"> 
+                        <apex:selectOptions value="{!picklistValues}"></apex:selectOptions>
+                    </apex:selectList>                
+                </apex:pageBlockSectionItem>
+                <apex:pageBlockSectionItem >
+                    <apex:outputLabel value="Add one or more picklist values below. Each value should be on its own line and it is used for both a value's label and API name."/>
+                </apex:pageBlockSectionItem>
+                <apex:pageBlockSectionItem >
+                    <apex:outputtext value="Enter Value:"></apex:outputtext>
+                    <apex:inputTextArea value="{!newpicklistVal}" style="width: 175px; height: 149px;"/>
+                </apex:pageBlockSectionItem>
+                <apex:pageBlockSectionItem >
+                    <apex:outputLabel value=""/>
+                    <apex:commandButton value="Add" action="{!add}"/>
+                </apex:pageBlockSectionItem>                                     
+            </apex:pageBlockSection>
+            <apex:pageBlockSection title="Configure Picklist Field Dependency" columns="1">
+                <apex:pageBlockSectionItem >
+                    <apex:outputText value="Please click link to configure dependent picklists" />
+                    <a href="#" onclick="window.open('{!serverURL}/setup/ui/dependencyList.jsp?tableEnumOrId={!customObjectId}&setupid=CustomObjects')">Click here</a>                   
+                </apex:pageBlockSectionItem>               
+            </apex:pageBlockSection>
+            <apex:pageBlockSection title="Configure Deployment Request Approvers" columns="1">
+                <apex:outputPanel >
+                    <apex:outputText value="Enter Application Name:"/>
+                    <apex:inputText value="{!applicationName}"/><apex:commandButton value="Add Application" action="{!addApplication}" onComplete="" rerender="ApplicationPanel"/>
+                </apex:outputPanel>
+                <apex:outputPanel id="ApplicationPanel">
+                    <apex:pageBlockTable value="{!approvers}" var="approver" style="width:50%;">
+                        <apex:column style="width:300px;" headerValue="Application Name">
+                            <apex:inputField value="{!approver.approverObj.Application_Name__c}"/>
+                        </apex:column>
+                        <apex:column style="width:300px;" headerValue="User">
+                            <apex:inputField value="{!approver.approverObj.User__c}"/>
+                        </apex:column>
+                        <apex:column headerValue="Role">
+                            <apex:inputField value="{!approver.approverObj.Role__c}"/>
+                        </apex:column>
+                    </apex:pageBlockTable>
+                    <div style="width:50%;">
+                        <apex:commandButton value="Add Row" action="{!addRow}" oncomplete="" style="float:right;" rerender="ApplicationPanel"/>
+                        <br/>
+                        <apex:commandButton value="Save Approvers" action="{!saveApprovers}" oncomplete="" rerender="ApplicationPanel"/>
+                    </div>                    
+                </apex:outputPanel>
+            </apex:pageBlockSection>
+            <apex:pageBlockSection title="Other Configurations">
+                <apex:pageBlockSectionItem >
+                    <apex:outputLabel value="Submitter Can not be Approver"/><apex:inputCheckbox value="{!config.ApproverSubmitter_Check__c}"/>
+                </apex:pageBlockSectionItem>
+            </apex:pageBlockSection>
+        </apex:pageBlock>
+    </apex:form>
+</apex:page>

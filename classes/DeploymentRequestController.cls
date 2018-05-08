@@ -214,42 +214,55 @@ public class DeploymentRequestController{
       
     public Pagereference save(){
         try{
-            system.debug('drObject.Change_Type_txt__c:'+drObject.Change_Type_txt__c);
-            system.debug('drObject.Application_Name_txt__c:'+drObject.Application_Name_txt__c);
             //required field validations
             if(drObject.Request_Type_txt__c == null){
                 ApexPages.addmessage(new ApexPages.message(ApexPages.severity.Error,'Please select Request Type'));
                 return null;
             }
-            if(drObject.Source_Environment_txt__c == ''){
+            if(drObject.Source_Environment_txt__c == null){
                 ApexPages.addmessage(new ApexPages.message(ApexPages.severity.Error,'Please select Source Environment'));
                 return null;            
             }
-            if(drObject.Target_Environment_txt__c == ''){
+            if(drObject.Target_Environment_txt__c == null){
                 ApexPages.addmessage(new ApexPages.message(ApexPages.severity.Error,'Please select Target Environment'));
                 return null;            
             }
             
-            if(drObject.Application_Category_txt__c == ''){
+            if(drObject.Application_Category_txt__c == null){
                 ApexPages.addmessage(new ApexPages.message(ApexPages.severity.Error,'Please select Application Category'));
                 return null;            
             }
+            
+            if(drObject.Short_Description__c == null){
+                ApexPages.addmessage(new ApexPages.message(ApexPages.severity.Error,'Please enter Short Description'));
+                return null;            
+            }
 
-            if(drObject.Is_TFA_Review_Completed_txt__c == ''){
+            if(drObject.Description__c == null){
+                ApexPages.addmessage(new ApexPages.message(ApexPages.severity.Error,'Please enter Description'));
+                return null;            
+            }            
+
+            if(drObject.Is_TFA_Review_Completed_txt__c == null){
                 ApexPages.addmessage(new ApexPages.message(ApexPages.severity.Error,'Please select Is TFA Review Completed'));
                 return null;            
             }
 
-            if(drObject.Is_TA_Review_Completed_txt__c == ''){
+            if(drObject.Is_TA_Review_Completed_txt__c == null){
                 ApexPages.addmessage(new ApexPages.message(ApexPages.severity.Error,'Please select Is TA Review Completed'));
                 return null;            
             }
             
-            if(drObject.Is_Code_Review_Completed_txt__c == ''){
+            if(drObject.Is_Code_Review_Completed_txt__c == null){
                 ApexPages.addmessage(new ApexPages.message(ApexPages.severity.Error,'Please select Is Code Review Completed'));
                 return null;            
             }
             
+            if(drObject.Is_Code_Review_Completed_txt__c == null){
+                ApexPages.addmessage(new ApexPages.message(ApexPages.severity.Error,'Please select Is Code Review Completed'));
+                return null;            
+            }
+
             list<string> groupIds = new list<string>();
             string grpStartswithName = 'DR_Account_Mgmt';
             if(drObject.Application_Name_txt__c == 'Account Management')
