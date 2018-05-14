@@ -37,6 +37,15 @@
         <protected>false</protected>
     </fieldUpdates>
     <fieldUpdates>
+        <fullName>Update_Stage_equals_TFA_Review1</fullName>
+        <field>Stage_txt__c</field>
+        <formula>&quot;TFA Review&quot;</formula>
+        <name>Update_Stage_equals_TFA_Review1</name>
+        <notifyAssignee>false</notifyAssignee>
+        <operation>Formula</operation>
+        <protected>false</protected>
+    </fieldUpdates>
+    <fieldUpdates>
         <fullName>Update_Stage_to_Approved</fullName>
         <field>Stage_txt__c</field>
         <formula>&quot;Approved&quot;</formula>
