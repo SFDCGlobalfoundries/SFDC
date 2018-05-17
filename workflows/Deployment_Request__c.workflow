@@ -37,10 +37,55 @@
         <protected>false</protected>
     </fieldUpdates>
     <fieldUpdates>
+        <fullName>Update_Stage_equals_Approved</fullName>
+        <field>Stage_txt__c</field>
+        <formula>&quot;Approved&quot;</formula>
+        <name>Update_Stage_equals_Approved</name>
+        <notifyAssignee>false</notifyAssignee>
+        <operation>Formula</operation>
+        <protected>false</protected>
+    </fieldUpdates>
+    <fieldUpdates>
+        <fullName>Update_Stage_equals_CAB_Review</fullName>
+        <field>Stage_txt__c</field>
+        <formula>&quot;CAB Review&quot;</formula>
+        <name>Update_Stage_equals_CAB_Review</name>
+        <notifyAssignee>false</notifyAssignee>
+        <operation>Formula</operation>
+        <protected>false</protected>
+    </fieldUpdates>
+    <fieldUpdates>
         <fullName>Update_Stage_equals_EBiZ_FBO_Review</fullName>
         <field>Stage_txt__c</field>
         <formula>&quot;EBiZ/FBO Review&quot;</formula>
         <name>Update_Stage_equals_EBiZ_FBO_Review</name>
+        <notifyAssignee>false</notifyAssignee>
+        <operation>Formula</operation>
+        <protected>false</protected>
+    </fieldUpdates>
+    <fieldUpdates>
+        <fullName>Update_Stage_equals_SOD_Review</fullName>
+        <field>Stage_txt__c</field>
+        <formula>&quot;SOD Review&quot;</formula>
+        <name>Update_Stage_equals_SOD_Review</name>
+        <notifyAssignee>false</notifyAssignee>
+        <operation>Formula</operation>
+        <protected>false</protected>
+    </fieldUpdates>
+    <fieldUpdates>
+        <fullName>Update_Stage_equals_TA_Review</fullName>
+        <field>Stage_txt__c</field>
+        <formula>&quot;TA Review&quot;</formula>
+        <name>Update_Stage_equals_TA_Review</name>
+        <notifyAssignee>false</notifyAssignee>
+        <operation>Formula</operation>
+        <protected>false</protected>
+    </fieldUpdates>
+    <fieldUpdates>
+        <fullName>Update_Stage_equals_TEST_Review</fullName>
+        <field>Stage_txt__c</field>
+        <formula>&quot;TEST Review&quot;</formula>
+        <name>Update_Stage_equals_TEST_Review</name>
         <notifyAssignee>false</notifyAssignee>
         <operation>Formula</operation>
         <protected>false</protected>
