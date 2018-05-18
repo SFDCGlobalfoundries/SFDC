@@ -84,7 +84,7 @@
     <fieldUpdates>
         <fullName>Update_Stage_equals_TEST_Review</fullName>
         <field>Stage_txt__c</field>
-        <formula>&quot;TEST Review&quot;</formula>
+        <formula>&quot;Test Review&quot;</formula>
         <name>Update_Stage_equals_TEST_Review</name>
         <notifyAssignee>false</notifyAssignee>
         <operation>Formula</operation>

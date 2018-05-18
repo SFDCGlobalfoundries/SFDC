@@ -77,7 +77,7 @@ public class DRConfigurationController1{
     
     public void addApplication(){
         approvers = new list<DRApproverWrapper>();
-        list<Application_Approver__c> existingApprovers = [Select Id, name, User__c, Application_Name__c, Role__c from Application_Approver__c where Application_Name__c  = :applicationName];
+        list<Application_Approver__c> existingApprovers = [Select Id, name, User__c, Application_Name__c, Role__c from Application_Approver__c where Application_Name__c  = :applicationName order by name];
         if(existingApprovers.size() > 0){
             for(Application_Approver__c approver :existingApprovers){
                 DRApproverWrapper wrapper = new DRApproverWrapper();
@@ -139,13 +139,27 @@ public class DRConfigurationController1{
     }
     
     public void createApprovalProcesses(){
-        createUATApprovalProcess();
-        createProductionApprovalProcess();
+        //deleteExistingApprovalProcesses(userinfo.getSessionId());
+        list<Approval_Counter__c> appCounter = [Select Id, Name from Approval_Counter__c limit 1];
+        integer approvalCounter = Integer.valueOf(appCounter[0].Name);
+        createUATApprovalProcess(userinfo.getSessionId(),approvalCounter);
+        createProductionApprovalProcess(userinfo.getSessionId(),approvalCounter);        
+    }
+    
+    public static void deleteExistingApprovalProcesses(string sessionId){   
+        GFSMetadataService.MetadataPort service = new GFSMetadataService.MetadataPort();   
+        service.SessionHeader = new GFSMetadataService.SessionHeader_element();
+        service.timeout_x = 120000;
+        service.SessionHeader.sessionId = sessionId;//userinfo.getSessionId();
+        List<GFSMetadataService.DeleteResult> results = service.deleteMetadata('ApprovalProcess', new String[] { 'Deployment_Request__c.DR_Production_Approval1' });
+        List<GFSMetadataService.DeleteResult> results1 = service.deleteMetadata('ApprovalProcess', new String[] { 'Deployment_Request__c.DR_UAT_Approval1' });
+        system.debug('>>>>>>>>results:'+results);
+        system.debug('>>>>>>>>results1:'+results1);
     }
     
     @future(callout=true)
-    public static void createProductionApprovalProcess(){
-        list<Application_Approver__c> newApprovers = [Select Id, name, User__c, Application_Name__c, Role__c from Application_Approver__c];
+    public static void createProductionApprovalProcess(string sessionId, integer counter){
+        list<Application_Approver__c> newApprovers = [Select Id, name, User__c, Application_Name__c, Role__c from Application_Approver__c order by Name];
         map<string,set<string>> appNameListOfRoles = new map<string,set<string>>();
         for(Application_Approver__c approver: newApprovers){
             if(!appNameListOfRoles.containsKey(approver.Application_Name__c))
@@ -157,17 +171,18 @@ public class DRConfigurationController1{
         GFSMetadataService.MetadataPort service = new GFSMetadataService.MetadataPort();   
         service.SessionHeader = new GFSMetadataService.SessionHeader_element();
         service.timeout_x = 120000;
-        service.SessionHeader.sessionId = userinfo.getSessionId();
+        service.SessionHeader.sessionId = sessionId;//userinfo.getSessionId();
         GFSMetadataService.ApprovalProcess approvalProcess = new GFSMetadataService.ApprovalProcess();
-        approvalProcess.fullName = 'Deployment_Request__c.DR_Production_Approval1';
-        approvalProcess.label = 'DR Production Approval1';
-        approvalProcess.active = false;
+        approvalProcess.fullName = 'Deployment_Request__c.DR_Production_Approval'+counter;
+        approvalProcess.label = 'DR Production Approval'+counter;
+        approvalProcess.active = true;
         approvalProcess.allowRecall = true; 
         approvalProcess.showApprovalHistory = true;
         approvalProcess.recordEditability = 'AdminOnly';
         approvalProcess.finalApprovalRecordLock = false; 
         approvalProcess.finalRejectionRecordLock = false;
         approvalProcess.showApprovalHistory = false;
+        approvalProcess.emailTemplate = 'Deployment_Request_Templates/Deployment_Approval_Request_Email';
         
         GFSMetadataService.WorkflowFieldUpdate fldUpdate = new GFSMetadataService.WorkflowFieldUpdate();
         fldUpdate.field = 'Stage_txt__c';
@@ -214,7 +229,7 @@ public class DRConfigurationController1{
         testReviewfldUpdate.protected_x = false;
         testReviewfldUpdate.notifyAssignee = false;
         testReviewfldUpdate.operation = 'Formula';
-        testReviewfldUpdate.formula = '"TEST Review"';
+        testReviewfldUpdate.formula = '"Test Review"';
 
         GFSMetadataService.WorkflowFieldUpdate sodReviewfldUpdate = new GFSMetadataService.WorkflowFieldUpdate();
         sodReviewfldUpdate.field = 'Stage_txt__c';
@@ -281,20 +296,22 @@ public class DRConfigurationController1{
 
                 //Approval Step Action
                 system.debug('>>>>>>>>>>>>>role:'+role);
-                if(role != 'CAB'){
-                    GFSMetadataService.WorkflowActionReference fldupdateStepAction = new GFSMetadataService.WorkflowActionReference();
-                    if(role == 'EBiZ/FBO')
-                        fldupdateStepAction.name = 'Update_Stage_equals_TEST_Review';
-                    if(role == 'TEST')
-                        fldupdateStepAction.name = 'Update_Stage_equals_SOD_Review';                
-                    if(role == 'SOD')
-                        fldupdateStepAction.name = 'Update_Stage_equals_CAB_Review';
-                                            
-                    fldupdateStepAction.type_x = 'FieldUpdate';                
-                    GFSMetadataService.ApprovalAction appStepAction = new GFSMetadataService.ApprovalAction();
-                    appStepAction.action = new list<GFSMetadataService.WorkflowActionReference>{fldupdateStepAction};                                
-                    otherApprovalStep.approvalActions = appStepAction;
-                }
+                //if(role != 'CAB'){
+                GFSMetadataService.WorkflowActionReference fldupdateStepAction = new GFSMetadataService.WorkflowActionReference();
+                if(role == 'EBiZ/FBO')
+                    fldupdateStepAction.name = 'Update_Stage_equals_TEST_Review';
+                if(role == 'TEST')
+                    fldupdateStepAction.name = 'Update_Stage_equals_SOD_Review';                
+                if(role == 'SOD')
+                    fldupdateStepAction.name = 'Update_Stage_equals_CAB_Review';
+                if(role == 'CAB')
+                    fldupdateStepAction.name = 'Update_Stage_equals_Approved';                        
+                                        
+                fldupdateStepAction.type_x = 'FieldUpdate';                
+                GFSMetadataService.ApprovalAction appStepAction = new GFSMetadataService.ApprovalAction();
+                appStepAction.action = new list<GFSMetadataService.WorkflowActionReference>{fldupdateStepAction};                                
+                otherApprovalStep.approvalActions = appStepAction;
+                //}
                 if(i != j)
                     otherApprovalStep.ifCriteriaNotMet = 'GotoNextStep';
                  
@@ -304,12 +321,19 @@ public class DRConfigurationController1{
         } 
         
         List<GFSMetadataService.SaveResult> results1 = service.createMetadata( new GFSMetadataService.Metadata[] { approvalProcess });
-        system.debug('>>>>>>>results:'+results1);                
+        system.debug('>>>>>>>results:'+results1);   
+        
+        //update counter
+        list<Approval_Counter__c> appCounter = [Select Id, Name from Approval_Counter__c limit 1];    
+        integer c = Integer.valueOf(appCounter[0].Name);    
+        appCounter[0].Name = string.valueOf(c + 1);
+        update appCounter; 
+                     
     }
     
     @future(callout=true)
-    public static void createUATApprovalProcess(){
-        list<Application_Approver__c> newApprovers = [Select Id, name, User__c, Application_Name__c, Role__c from Application_Approver__c];
+    public static void createUATApprovalProcess(string sessionId, integer counter){
+        list<Application_Approver__c> newApprovers = [Select Id, name, User__c, Application_Name__c, Role__c from Application_Approver__c order by Name];
         map<string,list<string>> appNameListOfRoles = new map<string,list<string>>();
         for(Application_Approver__c approver: newApprovers){
             if(!appNameListOfRoles.containsKey(approver.Application_Name__c))
@@ -323,17 +347,18 @@ public class DRConfigurationController1{
         GFSMetadataService.MetadataPort service = new GFSMetadataService.MetadataPort();   
         service.SessionHeader = new GFSMetadataService.SessionHeader_element();
         service.timeout_x = 120000;
-        service.SessionHeader.sessionId = userinfo.getSessionId();
+        service.SessionHeader.sessionId = sessionId;//userinfo.getSessionId();
         GFSMetadataService.ApprovalProcess approvalProcess = new GFSMetadataService.ApprovalProcess();
-        approvalProcess.fullName = 'Deployment_Request__c.DR_UAT_Approval1';
-        approvalProcess.label = 'DR UAT Approval1';
-        approvalProcess.active = false;
+        approvalProcess.fullName = 'Deployment_Request__c.DR_UAT_Approval'+counter;
+        approvalProcess.label = 'DR UAT Approval'+counter;
+        approvalProcess.active = true;
         approvalProcess.allowRecall = true; 
         approvalProcess.showApprovalHistory = true;
         approvalProcess.recordEditability = 'AdminOnly';
         approvalProcess.finalApprovalRecordLock = false; 
         approvalProcess.finalRejectionRecordLock = false;
         approvalProcess.showApprovalHistory = false;
+        approvalProcess.emailTemplate = 'Deployment_Request_Templates/Deployment_Approval_Request_Email';
         
         GFSMetadataService.WorkflowFieldUpdate fldUpdate = new GFSMetadataService.WorkflowFieldUpdate();
         fldUpdate.field = 'Stage_txt__c';

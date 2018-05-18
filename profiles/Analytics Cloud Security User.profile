@@ -1799,6 +1799,9 @@
         <layout>Application_Approver__c-Application Approver Layout</layout>
     </layoutAssignments>
     <layoutAssignments>
+        <layout>Approval_Counter__c-Approval Counter Layout</layout>
+    </layoutAssignments>
+    <layoutAssignments>
         <layout>Asset-Asset Layout</layout>
     </layoutAssignments>
     <layoutAssignments>
@@ -2147,6 +2150,10 @@
     <tabVisibilities>
         <tab>Application_Approver__c</tab>
         <visibility>DefaultOn</visibility>
+    </tabVisibilities>
+    <tabVisibilities>
+        <tab>Approval_Counter__c</tab>
+        <visibility>DefaultOff</visibility>
     </tabVisibilities>
     <tabVisibilities>
         <tab>GFS_History_Configuration</tab>

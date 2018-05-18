@@ -29,6 +29,17 @@ trigger DeploymentRequestTrigger on Deployment_Request__c (after update, before 
                 t.Description = 'Please validate changes in the target environment before this request is closed';
                 tasks.add(t);
             }   
+            
+            if(dr.Stage_txt__c == 'Approved' && oldDR.Stage_txt__c != 'Approved'){
+                //create Task               
+                Task t = new Task();
+                t.ownerId = dr.ownerId;//dr.Administrator_to_Deploy__c;
+                t.whatId = dr.Id;
+                t.Subject = 'Deployment Task';
+                t.Status = 'Not Started';
+                t.Description = 'Please deploy changes to the target environment and close the request';
+                tasks.add(t);
+            }            
         }               
     }    
     if(tasks.size() > 0) insert tasks;

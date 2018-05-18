@@ -167,7 +167,8 @@ public class DeploymentRequestController{
         for(DR_Stage_Mapping__mdt smap: drmappings){
             stages.add(new SelectOption(smap.Stage__c,smap.Stage__c));
         }
-        drObject.Stage_txt__c = 'Draft';
+        if(drObject.Stage_txt__c == null)
+            drObject.Stage_txt__c = 'Draft';
     }
     
     public void fetchChangeTypeValues(){
@@ -243,32 +244,27 @@ public class DeploymentRequestController{
                 return null;            
             }            
 
-            if(drObject.Is_TFA_Review_Completed_txt__c == null){
+            if(drObject.Target_Environment_txt__c == 'UAT' && drObject.Is_TFA_Review_Completed_txt__c == null){
                 ApexPages.addmessage(new ApexPages.message(ApexPages.severity.Error,'Please select Is TFA Review Completed'));
                 return null;            
             }
 
-            if(drObject.Is_TA_Review_Completed_txt__c == null){
+            if(drObject.Target_Environment_txt__c == 'UAT' && drObject.Is_TA_Review_Completed_txt__c == null){
                 ApexPages.addmessage(new ApexPages.message(ApexPages.severity.Error,'Please select Is TA Review Completed'));
                 return null;            
             }
             
-            if(drObject.Is_Code_Review_Completed_txt__c == null){
+            if(drObject.Target_Environment_txt__c == 'UAT' && drObject.Is_Code_Review_Completed_txt__c == null){
                 ApexPages.addmessage(new ApexPages.message(ApexPages.severity.Error,'Please select Is Code Review Completed'));
                 return null;            
             }
             
-            if(drObject.Is_Code_Review_Completed_txt__c == null){
-                ApexPages.addmessage(new ApexPages.message(ApexPages.severity.Error,'Please select Is Code Review Completed'));
-                return null;            
-            }
-
             list<string> groupIds = new list<string>();
-            string grpStartswithName = 'DR_Account_Mgmt';
+            string grpStartswithName = 'DR_Account_Management';
             if(drObject.Application_Name_txt__c == 'Account Management')
-                grpStartswithName = 'DR_Account_Mgmt';
+                grpStartswithName = 'DR_Account_Management';
             if(drObject.Application_Name_txt__c == 'Opportunity Management')
-                grpStartswithName = 'DR_Opportunity_Mgmt';
+                grpStartswithName = 'DR_Opportunity_Management';
             if(drObject.Application_Name_txt__c == 'PX - Risk Start System')
                 grpStartswithName = 'DR_Risk_Start';
             if(drObject.Application_Name_txt__c == 'RMA')
