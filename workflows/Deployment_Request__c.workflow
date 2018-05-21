@@ -37,6 +37,15 @@
         <protected>false</protected>
     </fieldUpdates>
     <fieldUpdates>
+        <fullName>Update_CAB_Approver</fullName>
+        <field>CAB_Approver_Name__c</field>
+        <formula>$User.FirstName +&quot; &quot;+$User.LastName</formula>
+        <name>Update CAB Approver</name>
+        <notifyAssignee>false</notifyAssignee>
+        <operation>Formula</operation>
+        <protected>false</protected>
+    </fieldUpdates>
+    <fieldUpdates>
         <fullName>Update_Stage_equals_Approved</fullName>
         <field>Stage_txt__c</field>
         <formula>&quot;Approved&quot;</formula>

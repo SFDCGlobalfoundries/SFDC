@@ -12,6 +12,8 @@ public class DRConfigurationController1{
     public string controllingFieldVal{get; set;}
     
     public string applicationName{get; set;}
+    public list<SelectOption> appNames{get; set;}
+    public string newAppName{get; set;}
     
     public class PicklistWrapper{
         public string pickLabel{get; set;}
@@ -23,6 +25,7 @@ public class DRConfigurationController1{
         }
     }
     public list<PicklistWrapper> extPicklistValues{get; set;}
+    public string oldpicklistVal{get; set;}
     
     public class DRApproverWrapper{
         public Application_Approver__c approverObj{get; set;}        
@@ -73,6 +76,15 @@ public class DRConfigurationController1{
         serverURL = sUrlRewrite;
         
         approvers = new list<DRApproverWrapper>();
+        
+        appNames = new list<SelectOption>();
+        set<string> aNames = new set<string>();
+        list<Application_Approver__c> existingApprovers = [Select Id, name, User__c, Application_Name__c, Role__c from Application_Approver__c];
+        for(Application_Approver__c appApprover: existingApprovers)
+            aNames.add(appApprover.Application_Name__c);
+        for(string n: aNames)
+            appNames.add(new SelectOption(n,n));
+        appNames.add(new SelectOption('New Application', 'New Application'));
     }
     
     public void addApplication(){
@@ -97,6 +109,7 @@ public class DRConfigurationController1{
     public void selectPicklistField(){
         //fetch existing picklist values
         extPicklistValues = new list<PicklistWrapper>(); 
+        oldpicklistVal = '';
         system.debug('>>>>>>>>>>picklistName:'+picklistName);
         Map<String, Schema.SObjectField> drfieldsMap =  Schema.SObjectType.DR_Configuration__c.fields.getMap();
         for(Schema.SObjectField field : drfieldsMap.values()){
@@ -104,6 +117,7 @@ public class DRConfigurationController1{
                 List<Schema.PicklistEntry> ple = field.getDescribe().getPicklistValues();   
                 for(Schema.PicklistEntry p: ple){
                     extPicklistValues.add(new PicklistWrapper(p.getValue(),p.getLabel()));
+                    oldpicklistVal = oldpicklistVal + p.getLabel()+'\n';
                 }            
             }
         }
@@ -139,14 +153,14 @@ public class DRConfigurationController1{
     }
     
     public void createApprovalProcesses(){
-        //deleteExistingApprovalProcesses(userinfo.getSessionId());
+        //deactivateExistingApprovalProcesses(userinfo.getSessionId());
         list<Approval_Counter__c> appCounter = [Select Id, Name from Approval_Counter__c limit 1];
         integer approvalCounter = Integer.valueOf(appCounter[0].Name);
         createUATApprovalProcess(userinfo.getSessionId(),approvalCounter);
         createProductionApprovalProcess(userinfo.getSessionId(),approvalCounter);        
     }
     
-    public static void deleteExistingApprovalProcesses(string sessionId){   
+    public static void deactivateExistingApprovalProcesses(string sessionId){   
         GFSMetadataService.MetadataPort service = new GFSMetadataService.MetadataPort();   
         service.SessionHeader = new GFSMetadataService.SessionHeader_element();
         service.timeout_x = 120000;
@@ -251,6 +265,40 @@ public class DRConfigurationController1{
         
         List<GFSMetadataService.SaveResult> results2 = service.createMetadata( new GFSMetadataService.Metadata[] {testReviewfldUpdate,sodReviewfldUpdate,cabReviewfldUpdate});
         system.debug('>>>>>>>>>>>results2:'+results2);
+        
+        GFSMetadataService.WorkflowFieldUpdate approvedfldUpdate = new GFSMetadataService.WorkflowFieldUpdate();
+        approvedfldUpdate.field = 'Stage_txt__c';
+        approvedfldUpdate.name = 'Update_Stage_equals_Approved';
+        approvedfldUpdate.fullName = 'Deployment_Request__c.Update_Stage_equals_Approved';
+        approvedfldUpdate.protected_x = false;
+        approvedfldUpdate.notifyAssignee = false;
+        approvedfldUpdate.operation = 'Formula';
+        approvedfldUpdate.formula = '"Approved"';
+        List<GFSMetadataService.SaveResult> approvedResults = service.createMetadata( new GFSMetadataService.Metadata[] { approvedfldUpdate });
+
+        GFSMetadataService.WorkflowFieldUpdate rejectedfldUpdate = new GFSMetadataService.WorkflowFieldUpdate();
+        rejectedfldUpdate.field = 'Stage_txt__c';
+        rejectedfldUpdate.name = 'Update_Stage_equals_Rejected';
+        rejectedfldUpdate.fullName = 'Deployment_Request__c.Update_Stage_equals_Rejected';
+        rejectedfldUpdate.protected_x = false;
+        rejectedfldUpdate.notifyAssignee = false;
+        rejectedfldUpdate.operation = 'Formula';
+        rejectedfldUpdate.formula = '"Rejected"';
+        List<GFSMetadataService.SaveResult> rejectedResults = service.createMetadata( new GFSMetadataService.Metadata[] { rejectedfldUpdate });
+                
+        GFSMetadataService.WorkflowActionReference finalApprovalAction = new GFSMetadataService.WorkflowActionReference();
+        finalApprovalAction.name = 'Update_Stage_equals_Approved';
+        finalApprovalAction.type_x = 'FieldUpdate';        
+        GFSMetadataService.ApprovalAction finalappAction = new GFSMetadataService.ApprovalAction();
+        finalappAction.action = new list<GFSMetadataService.WorkflowActionReference>{finalApprovalAction} ;            
+        approvalProcess.finalApprovalActions = finalappAction;
+        
+        GFSMetadataService.WorkflowActionReference finalRejectAction = new GFSMetadataService.WorkflowActionReference();
+        finalRejectAction.name = 'Update_Stage_equals_Rejected';
+        finalRejectAction.type_x = 'FieldUpdate';        
+        GFSMetadataService.ApprovalAction finalrejAction = new GFSMetadataService.ApprovalAction();
+        finalrejAction.action = new list<GFSMetadataService.WorkflowActionReference>{finalRejectAction} ;            
+        approvalProcess.finalRejectionActions = finalrejAction;        
         
         approvalProcess.approvalStep = new list<GFSMetadataService.ApprovalStep>();
         integer i = 0, j = 0;
@@ -485,7 +533,31 @@ public class DRConfigurationController1{
         approvedfldUpdate.operation = 'Formula';
         approvedfldUpdate.formula = '"Approved"';
         List<GFSMetadataService.SaveResult> approvedResults = service.createMetadata( new GFSMetadataService.Metadata[] { approvedfldUpdate });
+
+        GFSMetadataService.WorkflowFieldUpdate rejectedfldUpdate = new GFSMetadataService.WorkflowFieldUpdate();
+        rejectedfldUpdate.field = 'Stage_txt__c';
+        rejectedfldUpdate.name = 'Update_Stage_equals_Rejected';
+        rejectedfldUpdate.fullName = 'Deployment_Request__c.Update_Stage_equals_Rejected';
+        rejectedfldUpdate.protected_x = false;
+        rejectedfldUpdate.notifyAssignee = false;
+        rejectedfldUpdate.operation = 'Formula';
+        rejectedfldUpdate.formula = '"Rejected"';
+        List<GFSMetadataService.SaveResult> rejectedResults = service.createMetadata( new GFSMetadataService.Metadata[] { rejectedfldUpdate });
+                
+        GFSMetadataService.WorkflowActionReference finalApprovalAction = new GFSMetadataService.WorkflowActionReference();
+        finalApprovalAction.name = 'Update_Stage_equals_Approved';
+        finalApprovalAction.type_x = 'FieldUpdate';        
+        GFSMetadataService.ApprovalAction finalappAction = new GFSMetadataService.ApprovalAction();
+        finalappAction.action = new list<GFSMetadataService.WorkflowActionReference>{finalApprovalAction} ;            
+        approvalProcess.finalApprovalActions = finalappAction;
         
+        GFSMetadataService.WorkflowActionReference finalRejectAction = new GFSMetadataService.WorkflowActionReference();
+        finalRejectAction.name = 'Update_Stage_equals_Rejected';
+        finalRejectAction.type_x = 'FieldUpdate';        
+        GFSMetadataService.ApprovalAction finalrejAction = new GFSMetadataService.ApprovalAction();
+        finalrejAction.action = new list<GFSMetadataService.WorkflowActionReference>{finalRejectAction} ;            
+        approvalProcess.finalRejectionActions = finalrejAction;
+
         integer i=0;
         for(string key: appNameListOfRoles.keySet()){
             i++;

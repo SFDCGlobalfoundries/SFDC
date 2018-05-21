@@ -244,6 +244,11 @@ public class DeploymentRequestController{
                 return null;            
             }            
 
+            if(drObject.Deployment_Request_Date_Time__c == null){
+                ApexPages.addmessage(new ApexPages.message(ApexPages.severity.Error,'Please enter Requested Deployment Date/Time'));
+                return null;            
+            }            
+
             if(drObject.Target_Environment_txt__c == 'UAT' && drObject.Is_TFA_Review_Completed_txt__c == null){
                 ApexPages.addmessage(new ApexPages.message(ApexPages.severity.Error,'Please select Is TFA Review Completed'));
                 return null;            
