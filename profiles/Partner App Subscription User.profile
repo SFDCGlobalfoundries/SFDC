@@ -934,6 +934,11 @@
     </fieldPermissions>
     <fieldPermissions>
         <editable>true</editable>
+        <field>DR_Configuration__c.Application_Name__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
         <field>DR_Configuration__c.Opty_CAB_Approver__c</field>
         <readable>true</readable>
     </fieldPermissions>
@@ -1069,6 +1074,11 @@
     </fieldPermissions>
     <fieldPermissions>
         <editable>true</editable>
+        <field>Deployment_Request__c.EBIZ_FBO_Approver_Name__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
         <field>Deployment_Request__c.FBO_Approver_Count__c</field>
         <readable>true</readable>
     </fieldPermissions>
@@ -1145,6 +1155,11 @@
     <fieldPermissions>
         <editable>true</editable>
         <field>Deployment_Request__c.SOD_Approver_Count__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>Deployment_Request__c.SOD_Approver_Name__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>

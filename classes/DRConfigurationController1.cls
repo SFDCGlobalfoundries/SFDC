@@ -10,6 +10,7 @@ public class DRConfigurationController1{
     public string customObjectId{get; set;}       
     public string dependentFieldVal{get; set;}
     public string controllingFieldVal{get; set;}
+    public boolean isNewAppSelected{get; set;}
     
     public string applicationName{get; set;}
     public list<SelectOption> appNames{get; set;}
@@ -82,6 +83,7 @@ public class DRConfigurationController1{
         list<Application_Approver__c> existingApprovers = [Select Id, name, User__c, Application_Name__c, Role__c from Application_Approver__c];
         for(Application_Approver__c appApprover: existingApprovers)
             aNames.add(appApprover.Application_Name__c);
+        appNames.add(new SelectOption('','--None--'));
         for(string n: aNames)
             appNames.add(new SelectOption(n,n));
         appNames.add(new SelectOption('New Application', 'New Application'));
@@ -89,20 +91,35 @@ public class DRConfigurationController1{
     
     public void addApplication(){
         approvers = new list<DRApproverWrapper>();
-        list<Application_Approver__c> existingApprovers = [Select Id, name, User__c, Application_Name__c, Role__c from Application_Approver__c where Application_Name__c  = :applicationName order by name];
-        if(existingApprovers.size() > 0){
-            for(Application_Approver__c approver :existingApprovers){
-                DRApproverWrapper wrapper = new DRApproverWrapper();
-                wrapper.approverObj= approver;
-                approvers.add(wrapper);
+        if(applicationName != 'New Application'){
+            isNewAppSelected = false;
+            list<Application_Approver__c> existingApprovers = [Select Id, name, User__c, Application_Name__c, Role__c from Application_Approver__c where Application_Name__c  = :applicationName order by name];
+            if(existingApprovers.size() > 0){
+                for(Application_Approver__c approver :existingApprovers){
+                    DRApproverWrapper wrapper = new DRApproverWrapper();
+                    wrapper.approverObj= approver;
+                    approvers.add(wrapper);
+                }
+            }else {
+                for(Integer i=0; i<4; i++){
+                    DRApproverWrapper wrapper = new DRApproverWrapper();
+                    wrapper.approverObj = new Application_Approver__c();
+                    wrapper.approverObj.Application_Name__c = applicationName;
+                    approvers.add(wrapper);
+                }
             }
-        }else {
-            for(Integer i=0; i<4; i++){
-                DRApproverWrapper wrapper = new DRApproverWrapper();
-                wrapper.approverObj = new Application_Approver__c();
-                wrapper.approverObj.Application_Name__c = applicationName;
-                approvers.add(wrapper);
-            }
+        }else{
+            isNewAppSelected = true;            
+        }
+    }
+
+    public void addNewApplication(){
+        approvers = new list<DRApproverWrapper>();        
+        for(Integer i=0; i<4; i++){
+            DRApproverWrapper wrapper = new DRApproverWrapper();
+            wrapper.approverObj = new Application_Approver__c();
+            wrapper.approverObj.Application_Name__c = newAppName;
+            approvers.add(wrapper);
         }
     }
     
@@ -150,6 +167,7 @@ public class DRConfigurationController1{
             
         createQueuesAndMembers(queueNames,newApproversIds);
         //createUATApprovalProcess();      
+        ApexPages.addmessage(new ApexPages.message(ApexPages.severity.INFO,'Approvers added successfully'));
     }
     
     public void createApprovalProcesses(){
@@ -642,10 +660,12 @@ public class DRConfigurationController1{
         extqueueMap = new map<string, Id>();
         for(Group g :extQueues)
             extqueueMap.put(g.Name, g.Id);
-        
+            
+        system.debug('>>>>>>>>>>>>>>>extqueueMap:'+extqueueMap);
         //insert group members
         list<GroupMember> newMembers = new list<GroupMember>();            
         for(Application_Approver__c nApprover :newApprovers){
+            system.debug('>>>>>>>>>>>>nApprover:'+nApprover);
             if(extqueueMap.containsKey('DR '+nApprover.Application_Name__c+' '+nApprover.Role__c)){
                 GroupMember member = new GroupMember();
                 member.UserOrGroupId = nApprover.User__c;

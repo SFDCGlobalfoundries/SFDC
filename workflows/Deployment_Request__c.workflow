@@ -73,6 +73,15 @@
         <protected>false</protected>
     </fieldUpdates>
     <fieldUpdates>
+        <fullName>Update_Stage_equals_Rejected</fullName>
+        <field>Stage_txt__c</field>
+        <formula>&quot;Rejected&quot;</formula>
+        <name>Update_Stage_equals_Rejected</name>
+        <notifyAssignee>false</notifyAssignee>
+        <operation>Formula</operation>
+        <protected>false</protected>
+    </fieldUpdates>
+    <fieldUpdates>
         <fullName>Update_Stage_equals_SOD_Review</fullName>
         <field>Stage_txt__c</field>
         <formula>&quot;SOD Review&quot;</formula>
