@@ -15,7 +15,14 @@ public class DRConfigurationController1{
     public string applicationName{get; set;}
     public list<SelectOption> appNames{get; set;}
     public string newAppName{get; set;}
-    
+
+    public List<string> leftselected{get;set;}
+    public List<string> rightselected{get;set;}
+    Set<string> leftvalues = new Set<string>();
+    Set<string> rightvalues = new Set<string>();    
+
+    private set<string> newlyAddedValues;
+    private set<string> removedValues;        
     public class PicklistWrapper{
         public string pickLabel{get; set;}
         public string pickValue{get; set;}
@@ -31,6 +38,7 @@ public class DRConfigurationController1{
     public class DRApproverWrapper{
         public Application_Approver__c approverObj{get; set;}        
         public string queueName{get; set;}
+        public boolean deleteflag{get; set;}
     }    
     public list<DRApproverWrapper> approvers{get; set;}
         
@@ -87,8 +95,54 @@ public class DRConfigurationController1{
         for(string n: aNames)
             appNames.add(new SelectOption(n,n));
         appNames.add(new SelectOption('New Application', 'New Application'));
+        
+        leftvalues = new set<string>();
+        rightvalues = new set<string>();
+        
+        newlyAddedValues = new set<string>();
+        removedValues = new set<string>();       
     }
     
+    public PageReference selectclick(){
+        rightselected.clear();
+        for(String s : leftselected){
+            leftvalues.remove(s);
+            rightvalues.add(s);
+            newlyAddedValues.add(s); 
+        }
+        return null;
+    }
+         
+    public PageReference unselectclick(){
+        leftselected.clear();
+        for(String s : rightselected){
+            rightvalues.remove(s);
+            leftvalues.add(s);
+            removedValues.add(s);
+        }
+        return null;
+    }     
+
+    public List<SelectOption> getunSelectedValues(){
+        List<SelectOption> options = new List<SelectOption>();
+        List<string> tempList = new List<String>();
+        tempList.addAll(leftvalues);
+        tempList.sort();
+        for(string s : tempList)
+            options.add(new SelectOption(s,s));
+        return options;
+    }
+     
+    public List<SelectOption> getSelectedValues(){
+        List<SelectOption> options1 = new List<SelectOption>();
+        List<string> tempList = new List<String>();
+        tempList.addAll(rightvalues);
+        tempList.sort();
+        for(String s : tempList)
+            options1.add(new SelectOption(s,s));
+        return options1;
+    }      
+        
     public void addApplication(){
         approvers = new list<DRApproverWrapper>();
         if(applicationName != 'New Application'){
@@ -97,7 +151,8 @@ public class DRConfigurationController1{
             if(existingApprovers.size() > 0){
                 for(Application_Approver__c approver :existingApprovers){
                     DRApproverWrapper wrapper = new DRApproverWrapper();
-                    wrapper.approverObj= approver;
+                    wrapper.approverObj = approver;
+                    wrapper.deleteFlag = false;
                     approvers.add(wrapper);
                 }
             }else {
@@ -105,6 +160,7 @@ public class DRConfigurationController1{
                     DRApproverWrapper wrapper = new DRApproverWrapper();
                     wrapper.approverObj = new Application_Approver__c();
                     wrapper.approverObj.Application_Name__c = applicationName;
+                    wrapper.deleteFlag = false;
                     approvers.add(wrapper);
                 }
             }
@@ -126,7 +182,7 @@ public class DRConfigurationController1{
     public void selectPicklistField(){
         //fetch existing picklist values
         extPicklistValues = new list<PicklistWrapper>(); 
-        oldpicklistVal = '';
+        rightvalues = new set<string>();
         system.debug('>>>>>>>>>>picklistName:'+picklistName);
         Map<String, Schema.SObjectField> drfieldsMap =  Schema.SObjectType.DR_Configuration__c.fields.getMap();
         for(Schema.SObjectField field : drfieldsMap.values()){
@@ -134,7 +190,7 @@ public class DRConfigurationController1{
                 List<Schema.PicklistEntry> ple = field.getDescribe().getPicklistValues();   
                 for(Schema.PicklistEntry p: ple){
                     extPicklistValues.add(new PicklistWrapper(p.getValue(),p.getLabel()));
-                    oldpicklistVal = oldpicklistVal + p.getLabel()+'\n';
+                    rightvalues.add(p.getLabel());
                 }            
             }
         }
@@ -153,14 +209,20 @@ public class DRConfigurationController1{
         //delete extapprovers;
         
         list<Application_Approver__c> newApprovers = new list<Application_Approver__c>();
+        list<Application_Approver__c> tobeDeletedApprovers = new list<Application_Approver__c>();
         set<string> queueNames = new set<string>();
         for(DRApproverWrapper  wrapper :approvers){            
             if(wrapper.approverObj.User__c != null && wrapper.approverObj.Role__c != null){
-                newApprovers.add(wrapper.approverObj);
-                queueNames.add('DR '+wrapper.approverObj.Application_Name__c+' '+wrapper.approverObj.Role__c.toUpperCase());
+                if(wrapper.deleteFlag == false){
+                    newApprovers.add(wrapper.approverObj);
+                    queueNames.add('DR '+wrapper.approverObj.Application_Name__c+' '+wrapper.approverObj.Role__c.toUpperCase());
+                }else {
+                    tobeDeletedApprovers.add(wrapper.approverObj);
+                }
             }
         }        
         upsert newApprovers;
+        delete tobeDeletedApprovers;
         list<Id> newApproversIds = new list<Id>();
         for(Application_Approver__c approver :newApprovers)
             newApproversIds.add(approver.Id);
@@ -676,48 +738,62 @@ public class DRConfigurationController1{
         insert newMembers;    
     }
     
+    public void addPickVal(){
+        leftvalues.add(newpicklistVal);
+    }
+    
     public void add(){
         //add value to the picklist field
         try{
-            if(newpicklistVal != null){
-                GFSMetadataService.MetadataPort service = new GFSMetadataService.MetadataPort();   
-                service.SessionHeader = new GFSMetadataService.SessionHeader_element();
-                service.timeout_x = 120000;
-                service.SessionHeader.sessionId = userinfo.getSessionId();
-                GFSMetadataService.CustomField customField = new GFSMetadataService.CustomField();
-                GFSMetadataService.PickListValue[] pickVals = new list<GFSMetadataService.PickListValue>();
-                GFSMetadataService.PickListValue[] newpickVals = new list<GFSMetadataService.PickListValue>();
-                customField = (GFSMetadataService.CustomField) service.readMetadata('CustomField', new String[] { 'DR_Configuration__c.'+picklistName}).getRecords()[0];
-                pickVals = customField.picklist.picklistValues;
-                system.debug('>>>>>>>pickVals :'+pickVals);
-                list<string> splittedPicklist = newpicklistVal.split('\r\n');
-                system.debug('>>>>>>>splittedPicklist:'+splittedPicklist);
-                for(string str: splittedPicklist){
-                    GFSMetadataService.PicklistValue two = new GFSMetadataService.PicklistValue();
-                    two.fullName= str;
-                    two.default_x=false;   
-                    customField.picklist.picklistValues.add(two);
-                    newpickVals.add(two);            
+            map<string, string> removedValMap = new map<string, string>();
+            for(string r: removedValues)
+                removedValMap.put(r,r);
+            GFSMetadataService.MetadataPort service = new GFSMetadataService.MetadataPort();   
+            service.SessionHeader = new GFSMetadataService.SessionHeader_element();
+            service.timeout_x = 120000;
+            service.SessionHeader.sessionId = userinfo.getSessionId();
+            GFSMetadataService.CustomField customField = new GFSMetadataService.CustomField();
+            GFSMetadataService.PickListValue[] pickVals = new list<GFSMetadataService.PickListValue>();
+            GFSMetadataService.PickListValue[] newpickVals = new list<GFSMetadataService.PickListValue>();
+            customField = (GFSMetadataService.CustomField) service.readMetadata('CustomField', new String[] { 'DR_Configuration__c.'+picklistName}).getRecords()[0];
+            pickVals = customField.picklist.picklistValues;
+            system.debug('>>>>>>>>>>>>pickVals:'+pickVals);
+            for(string str: newlyAddedValues){
+                GFSMetadataService.PicklistValue two = new GFSMetadataService.PicklistValue();
+                two.fullName= str;
+                two.default_x=false;   
+                two.isActive = true;
+                customField.picklist.picklistValues.add(two);
+                newpickVals.add(two);            
+            }           
+            
+            for(GFSMetadataService.PickListValue pk: pickVals){
+                system.debug('>>>>>>>>>>>>pk.fullName:'+pk.fullName);
+                if(removedValMap.containsKey(pk.fullName)){
+                    pk.isActive = false;
+                    newpickVals.add(pk);
                 }
-                List<GFSMetadataService.SaveResult> results2 = service.updateMetadata(new GFSMetadataService.Metadata[] { customField });
-                ApexPages.addmessage(new ApexPages.message(ApexPages.severity.INFO,'Picklist values added successfully'));
-            }     
+            }
+            List<GFSMetadataService.SaveResult> results2 = service.updateMetadata(new GFSMetadataService.Metadata[] { customField });
+            ApexPages.addmessage(new ApexPages.message(ApexPages.severity.INFO,'Picklist values added successfully'));
+              
         }catch(Exception ex){
             ApexPages.addmessage(new ApexPages.message(ApexPages.severity.ERROR,ex.getMessage()));
         }   
     }
     
     public void save(){
+        add();
         upsert config;
         
-        list<Application_Approver__c> appApprovers = new list<Application_Approver__c>();
+        /* list<Application_Approver__c> appApprovers = new list<Application_Approver__c>();
 
         upsert appApprovers;
         
         set<Id> appIds = new set<Id>();
         for(Application_Approver__c approver :appApprovers){
             appIds.add(approver.Id);                    
-        }
+        } */
         
         //updateDRQueues(appIds);
         ApexPages.addmessage(new ApexPages.message(ApexPages.severity.INFO,'DR Configurations saved successfully'));

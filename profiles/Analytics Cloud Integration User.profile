@@ -953,6 +953,11 @@
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
+        <editable>true</editable>
+        <field>DR_Configuration__c.Request_Type__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
         <editable>false</editable>
         <field>DR_Stage_Mapping__mdt.Stage__c</field>
         <readable>false</readable>
@@ -961,6 +966,26 @@
         <editable>false</editable>
         <field>DR_Stage_Mapping__mdt.Target_Environment__c</field>
         <readable>false</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>DR_Task__c.Assigned_To__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>DR_Task__c.Deployment_Request__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>DR_Task__c.Description__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>DR_Task__c.Subject__c</field>
+        <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
         <editable>true</editable>
@@ -1139,6 +1164,11 @@
     </fieldPermissions>
     <fieldPermissions>
         <editable>true</editable>
+        <field>Deployment_Request__c.Rejcted_Stage__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
         <field>Deployment_Request__c.Request_Type_txt__c</field>
         <readable>true</readable>
     </fieldPermissions>
@@ -1265,6 +1295,11 @@
     <fieldPermissions>
         <editable>true</editable>
         <field>Deployment_Request__c.UAT_DR__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>Deployment_Request__c.UAT_Test_Approver__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
@@ -1850,6 +1885,9 @@
         <layout>DR_Stage_Mapping__mdt-DR Stage Mapping Layout</layout>
     </layoutAssignments>
     <layoutAssignments>
+        <layout>DR_Task__c-DR Task Layout</layout>
+    </layoutAssignments>
+    <layoutAssignments>
         <layout>DandBCompany-D%26B Company Layout</layout>
     </layoutAssignments>
     <layoutAssignments>
@@ -2031,6 +2069,15 @@
         <allowRead>true</allowRead>
         <modifyAllRecords>false</modifyAllRecords>
         <object>DR_Stage_Mapping__mdt</object>
+        <viewAllRecords>true</viewAllRecords>
+    </objectPermissions>
+    <objectPermissions>
+        <allowCreate>false</allowCreate>
+        <allowDelete>false</allowDelete>
+        <allowEdit>false</allowEdit>
+        <allowRead>true</allowRead>
+        <modifyAllRecords>false</modifyAllRecords>
+        <object>DR_Task__c</object>
         <viewAllRecords>true</viewAllRecords>
     </objectPermissions>
     <objectPermissions>

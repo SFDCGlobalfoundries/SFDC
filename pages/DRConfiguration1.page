@@ -3,7 +3,9 @@
         <apex:actionFunction name="selectFieldfn" action="{!selectPicklistField}"/>
         <apex:actionFunction name="addApplicationfn" action="{!addApplication}" reRender="newAppPanel,outerApplicationPanel"/>
         <apex:pageBlock id="DRconfig">
-            <apex:pagemessages ></apex:pagemessages>
+            <apex:outputPanel id="errorPanel">
+                <apex:pagemessages ></apex:pagemessages>
+            </apex:outputPanel>
             <apex:pageBlockButtons >
                 <apex:commandButton value="Save" action="{!save}" oncomplete="" reRender="DRconfig"/>                                            
             </apex:pageBlockButtons>
@@ -17,23 +19,26 @@
                 <apex:pageBlockSectionItem >
                     <apex:outputLabel value="Add one or more picklist values below. Each value should be on its own line and it is used for both a value's label and API name."/>
                 </apex:pageBlockSectionItem>
-                <apex:panelGrid columns="3" id="abcd">   
+                <apex:panelGrid columns="3">
+                Enter New Value: <apex:inputText value="{!newpicklistVal}"/><apex:commandButton value="Add" action="{!addPickVal}" reRender="appPanel" onComplete=""/>
+                </apex:panelGrid>  
+                <apex:panelGrid columns="3" id="appPanel">                     
+                    <apex:selectList value="{!leftselected}" multiselect="true" style="width:250px" size="10">
+                        <apex:selectOptions value="{!unselectedvalues}" />
+                    </apex:selectList>
                     <apex:panelGroup >
-                        <table cellspacing="10" cellpadding="5">
-                            <tr>
-                                <td><apex:outputtext styleClass="labelCol" value="Enter New Values"></apex:outputtext></td>
-                                <td><apex:outputtext styleClass="labelCol" value="Existing Values"></apex:outputtext></td>
-                            </tr>
-                            <tr>
-                                <td><apex:inputTextArea value="{!newpicklistVal}" style="width: 175px; height: 149px;"/></td>
-                                <td><apex:inputTextArea value="{!oldpicklistVal}" style="width: 175px; height: 149px;" disabled="true" /></td>
-                            </tr>
-                            <tr>
-                                <td><apex:commandButton value="Add" action="{!add}"/></td>
-                                <td></td>
-                            </tr>
-                        </table>
-                    </apex:panelGroup>
+                        <br/><br/><br/>
+                        <apex:image value="{!$Resource.GFSmultiselected}">
+                            <apex:actionSupport event="onclick" action="{!selectclick}" reRender="appPanel,selectApp"/>
+                        </apex:image>
+                        <br/><br/>
+                        <apex:image value="{!$Resource.GFSmultiunselected}">
+                            <apex:actionSupport event="onclick" action="{!unselectclick}" reRender="appPanel,selectApp"/>
+                        </apex:image>
+                    </apex:panelGroup>                        
+                    <apex:selectList value="{!rightselected}" multiselect="true" style="width:250px" size="10">
+                        <apex:selectOptions value="{!selectedValues}" />
+                    </apex:selectList>                                            
                 </apex:panelGrid>
                 <!--<apex:pageBlockSectionItem >
                     <apex:outputtext value="Enter Value:"></apex:outputtext>
@@ -66,6 +71,9 @@
                 <apex:outputPanel id="outerApplicationPanel">
                 <apex:outputPanel id="ApplicationPanel" rendered="{!IF(approvers.size == 0,false,true)}">
                     <apex:pageBlockTable value="{!approvers}" var="approver" style="width:50%;">
+                        <apex:column headerValue="Flag for Delete">
+                            <apex:inputCheckbox value="{!approver.deleteFlag}"/>
+                        </apex:column>
                         <apex:column style="width:300px;" headerValue="Application Name">
                             <apex:inputField value="{!approver.approverObj.Application_Name__c}"  html-disabled="true"/>
                         </apex:column>
@@ -79,7 +87,7 @@
                     <div style="width:50%;">
                         <apex:commandButton value="Add Row" action="{!addRow}" oncomplete="" style="float:right;" rerender="outerApplicationPanel"/>
                         <br/>
-                        <apex:commandButton value="Save Approvers" action="{!saveApprovers}" oncomplete="" rerender="outerApplicationPanel"/>
+                        <apex:commandButton value="Save Approvers" action="{!saveApprovers}" oncomplete="" rerender="outerApplicationPanel,errorPanel"/>
                     </div>                    
                 </apex:outputPanel>
                 </apex:outputPanel>
