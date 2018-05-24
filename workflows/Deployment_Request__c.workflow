@@ -46,6 +46,33 @@
         <protected>false</protected>
     </fieldUpdates>
     <fieldUpdates>
+        <fullName>Update_DR_CAB_Reviewer</fullName>
+        <field>CAB_Approver_Name__c</field>
+        <formula>&quot;$User.FirstName&quot;+&quot; &quot;+&quot;$User.LastName&quot;</formula>
+        <name>Update_DR_CAB_Reviewer</name>
+        <notifyAssignee>false</notifyAssignee>
+        <operation>Formula</operation>
+        <protected>false</protected>
+    </fieldUpdates>
+    <fieldUpdates>
+        <fullName>Update_DR_TA_Reviewer</fullName>
+        <field>TA_Approver_Name__c</field>
+        <formula>&quot;$User.FirstName&quot;+&quot; &quot;+&quot;$User.LastName&quot;</formula>
+        <name>Update_DR_TA_Reviewer</name>
+        <notifyAssignee>false</notifyAssignee>
+        <operation>Formula</operation>
+        <protected>false</protected>
+    </fieldUpdates>
+    <fieldUpdates>
+        <fullName>Update_DR_TFA_Reviewer</fullName>
+        <field>TFA_Approver_Name__c</field>
+        <formula>$User.FirstName +&quot; &quot;+ $User.LastName</formula>
+        <name>Update DR TFA Reviewer</name>
+        <notifyAssignee>false</notifyAssignee>
+        <operation>Formula</operation>
+        <protected>false</protected>
+    </fieldUpdates>
+    <fieldUpdates>
         <fullName>Update_Stage_equals_Approved</fullName>
         <field>Stage_txt__c</field>
         <formula>&quot;Approved&quot;</formula>

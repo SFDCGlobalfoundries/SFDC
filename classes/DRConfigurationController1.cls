@@ -237,7 +237,7 @@ public class DRConfigurationController1{
         list<Approval_Counter__c> appCounter = [Select Id, Name from Approval_Counter__c limit 1];
         integer approvalCounter = Integer.valueOf(appCounter[0].Name);
         createUATApprovalProcess(userinfo.getSessionId(),approvalCounter);
-        createProductionApprovalProcess(userinfo.getSessionId(),approvalCounter);        
+        //createProductionApprovalProcess(userinfo.getSessionId(),approvalCounter);        
     }
     
     public static void deactivateExistingApprovalProcesses(string sessionId){   
@@ -539,6 +539,24 @@ public class DRConfigurationController1{
         approvalTFAStep.allowDelegate= true;
         approvalTFAStep.assignedApprover = tfastepApprover;
 
+        GFSMetadataService.WorkflowFieldUpdate tfaReviewerfldUpdate = new GFSMetadataService.WorkflowFieldUpdate();
+        tfaReviewerfldUpdate.field = 'TFA_Approver_Name__c';
+        tfaReviewerfldUpdate.name = 'Update_DR_TFA_Reviewer';
+        tfaReviewerfldUpdate.fullName = 'Deployment_Request__c.Update_DR_TFA_Reviewer';
+        tfaReviewerfldUpdate.protected_x = false;
+        tfaReviewerfldUpdate.notifyAssignee = false;
+        tfaReviewerfldUpdate.operation = 'Formula';
+        tfaReviewerfldUpdate.formula = '\"'+userinfo.getFirstName()+'\"';
+
+       /* GFSMetadataService.WorkflowFieldUpdate taReviewerfldUpdate = new GFSMetadataService.WorkflowFieldUpdate();
+        taReviewerfldUpdate.field = 'TA_Approver_Name__c';
+        taReviewerfldUpdate.name = 'Update_DR_TA_Reviewer';
+        taReviewerfldUpdate.fullName = 'Deployment_Request__c.Update_DR_TA_Reviewer';
+        taReviewerfldUpdate.protected_x = false;
+        taReviewerfldUpdate.notifyAssignee = false;
+        taReviewerfldUpdate.operation = 'Formula';
+        taReviewerfldUpdate.formula =  '$User.FirstName'; */
+
         //field update 
         GFSMetadataService.WorkflowFieldUpdate tafldUpdate = new GFSMetadataService.WorkflowFieldUpdate();
         tafldUpdate.field = 'Stage_txt__c';
@@ -548,16 +566,20 @@ public class DRConfigurationController1{
         tafldUpdate.notifyAssignee = false;
         tafldUpdate.operation = 'Formula';
         tafldUpdate.formula = '"TA Review"';
-        List<GFSMetadataService.SaveResult> results1 = service.createMetadata( new GFSMetadataService.Metadata[] { tafldUpdate });
+        List<GFSMetadataService.SaveResult> results1 = service.createMetadata( new GFSMetadataService.Metadata[] { tafldUpdate, tfaReviewerfldUpdate });
         system.debug('>>>>>>>results:'+results1);
         
-        //initial submission action
+        //tfa approval action
         GFSMetadataService.WorkflowActionReference taAction = new GFSMetadataService.WorkflowActionReference();
         taAction.name = 'Update_Stage_equals_TA_Review';
         taAction.type_x = 'FieldUpdate';
-        
+
+        GFSMetadataService.WorkflowActionReference tfaAction2 = new GFSMetadataService.WorkflowActionReference();
+        taAction.name = 'Update_DR_TFA_Reviewer';
+        taAction.type_x = 'FieldUpdate';
+                
         GFSMetadataService.ApprovalAction taStepAction = new GFSMetadataService.ApprovalAction();
-        taStepAction.action = new list<GFSMetadataService.WorkflowActionReference>{taAction} ;
+        taStepAction.action = new list<GFSMetadataService.WorkflowActionReference>{taAction, tfaAction2} ;
                 
         approvalTFAStep.approvalActions = taStepAction;
         approvalProcess.approvalStep.add(approvalTFAStep);
@@ -592,11 +614,15 @@ public class DRConfigurationController1{
         List<GFSMetadataService.SaveResult> results2 = service.createMetadata( new GFSMetadataService.Metadata[] { cabfldUpdate });
         system.debug('>>>>>>>results:'+results2);
         
-        //initial submission action
+        //ta step action
         GFSMetadataService.WorkflowActionReference cabAction = new GFSMetadataService.WorkflowActionReference();
         cabAction.name = 'Update_Stage_equals_CAB_Review';
         cabAction.type_x = 'FieldUpdate';
         
+        /* GFSMetadataService.WorkflowActionReference taAction2 = new GFSMetadataService.WorkflowActionReference();
+        taAction.name = 'Update_DR_TA_Reviewer';
+        taAction.type_x = 'FieldUpdate'; */
+
         GFSMetadataService.ApprovalAction cabStepAction = new GFSMetadataService.ApprovalAction();
         cabStepAction.action = new list<GFSMetadataService.WorkflowActionReference>{cabAction} ;
         
@@ -637,6 +663,18 @@ public class DRConfigurationController1{
         GFSMetadataService.ApprovalAction finalrejAction = new GFSMetadataService.ApprovalAction();
         finalrejAction.action = new list<GFSMetadataService.WorkflowActionReference>{finalRejectAction} ;            
         approvalProcess.finalRejectionActions = finalrejAction;
+        
+    /*    GFSMetadataService.WorkflowFieldUpdate cabReviewerfldUpdate = new GFSMetadataService.WorkflowFieldUpdate();
+        cabReviewerfldUpdate.field = 'CAB_Approver_Name__c';
+        cabReviewerfldUpdate.name = 'Update_DR_CAB_Reviewer';
+        cabReviewerfldUpdate.fullName = 'Deployment_Request__c.Update_DR_CAB_Reviewer';
+        cabReviewerfldUpdate.protected_x = false;
+        cabReviewerfldUpdate.notifyAssignee = false;
+        cabReviewerfldUpdate.operation = 'Formula';
+        cabReviewerfldUpdate.formula =  '$User.FirstName'; 
+
+        List<GFSMetadataService.SaveResult> approvedResults1 = service.createMetadata( new GFSMetadataService.Metadata[] { cabReviewerfldUpdate }); */
+        
 
         integer i=0;
         for(string key: appNameListOfRoles.keySet()){

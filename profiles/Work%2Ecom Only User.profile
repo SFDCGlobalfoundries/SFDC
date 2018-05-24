@@ -984,6 +984,11 @@
     </fieldPermissions>
     <fieldPermissions>
         <editable>true</editable>
+        <field>DR_Task__c.Status__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
         <field>DR_Task__c.Subject__c</field>
         <readable>true</readable>
     </fieldPermissions>
@@ -1165,6 +1170,11 @@
     <fieldPermissions>
         <editable>true</editable>
         <field>Deployment_Request__c.Rejcted_Stage__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>Deployment_Request__c.Rejected_Stage__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>

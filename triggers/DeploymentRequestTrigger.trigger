@@ -1,5 +1,5 @@
 trigger DeploymentRequestTrigger on Deployment_Request__c (after update, before update) {
-    list<Task> tasks = new list<Task>();
+    list<DR_Task__c> tasks = new list<DR_Task__c>();
     
     list<DR_Configuration__c> drconfig = [Select Id, Name, Additional_Notes__c, Application_Category__c, Application_Name__c, ApproverSubmitter_Check__c, Change_Type__c, Deployment_Status__c, Is_Code_Review_Completed__c,
                                               Is_TA_Review_Completed__c, Is_TFA_Review_Completed__c, Request_Type__c, Review_Status__c, Risk_Start_Approver1__c, Risk_Start_Approver2__c, Risk_Start_Approver3__c,
@@ -21,23 +21,23 @@ trigger DeploymentRequestTrigger on Deployment_Request__c (after update, before 
         if(trigger.isAfter){
             if(dr.Stage_txt__c == 'Deployed' && oldDR.Stage_txt__c != 'Deployed'){
                 //create Task               
-                Task t = new Task();
-                t.ownerId = dr.ownerId;
-                t.whatId = dr.Id;
-                t.Subject = 'Post Deployment Review';
-                t.Status = 'Not Started';
-                t.Description = 'Please validate changes in the target environment before this request is closed';
+                DR_Task__c t = new DR_Task__c();
+                t.Assigned_To__c = dr.ownerId;
+                t.Deployment_Request__c = dr.Id;
+                t.Subject__c = 'Post Deployment Review';
+                t.Status__c = 'Not Started';
+                t.Description__c = 'Please validate changes in the target environment before this request is closed';
                 tasks.add(t);
             }   
             
             if(dr.Stage_txt__c == 'Approved' && oldDR.Stage_txt__c != 'Approved'){
                 //create Task               
-                Task t = new Task();
-                t.ownerId = dr.ownerId;//dr.Administrator_to_Deploy__c;
-                t.whatId = dr.Id;
-                t.Subject = 'Deployment Task';
-                t.Status = 'Not Started';
-                t.Description = 'Please deploy changes to the target environment and close the request';
+                DR_Task__c t = new DR_Task__c();
+                t.Assigned_To__c = dr.ownerId;//dr.Administrator_to_Deploy__c;
+                t.Deployment_Request__c = dr.Id;
+                t.Subject__c = 'Deployment Task';
+                t.Status__c = 'Not Started';
+                t.Description__c = 'Please deploy changes to the target environment and close the request';
                 tasks.add(t);
             }            
         }               
