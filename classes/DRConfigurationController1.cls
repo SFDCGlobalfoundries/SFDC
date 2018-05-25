@@ -48,7 +48,7 @@ public class DRConfigurationController1{
         list<DR_Configuration__c> configurations = [Select Id, Name, Additional_Notes__c, Application_Category__c, Application_Name__c, ApproverSubmitter_Check__c, Change_Type__c, Deployment_Status__c, Is_Code_Review_Completed__c,
                             Is_TA_Review_Completed__c, Is_TFA_Review_Completed__c, Request_Type__c, Review_Status__c, Risk_Start_Approver1__c, Risk_Start_Approver2__c, Risk_Start_Approver3__c,Opty_CAB_Approver__c,Opty_Internal_Control_Approver__c,
                             RMA_Approver1__c, RMA_Approver2__c, RMA_Approver3__c, Source_Environment__c, Stage__c, Standard_Apps_Approver1__c, Standard_Apps_Approver2__c, Standard_Apps_Approver3__c,Opty_FBO_EBiZ_Approver__c,Account_CAB_Approver__c,
-                            Support_KT_Status__c, System_Affected__c, Target_Environment__c, Wafer_Write_Off_Approver1__c, Wafer_Write_Off_Approver2__c, Wafer_Write_Off_Approver3__c,Account_Internal_Control__c,Account_FBO_EBiZ_Approver__c
+                            Support_KT_Status__c, System_Affected__c, Target_Environment__c, Wafer_Write_Off_Approver1__c, Wafer_Write_Off_Approver2__c, Wafer_Write_Off_Approver3__c,Account_Internal_Control__c,Account_FBO_EBiZ_Approver__c, Admin_Email__c 
                   From DR_Configuration__c limit 1];
         
         if(configurations.size() > 0){
@@ -237,7 +237,7 @@ public class DRConfigurationController1{
         list<Approval_Counter__c> appCounter = [Select Id, Name from Approval_Counter__c limit 1];
         integer approvalCounter = Integer.valueOf(appCounter[0].Name);
         createUATApprovalProcess(userinfo.getSessionId(),approvalCounter);
-        //createProductionApprovalProcess(userinfo.getSessionId(),approvalCounter);        
+        createProductionApprovalProcess(userinfo.getSessionId(),approvalCounter);        
     }
     
     public static void deactivateExistingApprovalProcesses(string sessionId){   
@@ -539,14 +539,14 @@ public class DRConfigurationController1{
         approvalTFAStep.allowDelegate= true;
         approvalTFAStep.assignedApprover = tfastepApprover;
 
-        GFSMetadataService.WorkflowFieldUpdate tfaReviewerfldUpdate = new GFSMetadataService.WorkflowFieldUpdate();
+        /* GFSMetadataService.WorkflowFieldUpdate tfaReviewerfldUpdate = new GFSMetadataService.WorkflowFieldUpdate();
         tfaReviewerfldUpdate.field = 'TFA_Approver_Name__c';
         tfaReviewerfldUpdate.name = 'Update_DR_TFA_Reviewer';
         tfaReviewerfldUpdate.fullName = 'Deployment_Request__c.Update_DR_TFA_Reviewer';
         tfaReviewerfldUpdate.protected_x = false;
         tfaReviewerfldUpdate.notifyAssignee = false;
         tfaReviewerfldUpdate.operation = 'Formula';
-        tfaReviewerfldUpdate.formula = '\"'+userinfo.getFirstName()+'\"';
+        tfaReviewerfldUpdate.formula = '\"'+userinfo.getFirstName()+'\"'; */
 
        /* GFSMetadataService.WorkflowFieldUpdate taReviewerfldUpdate = new GFSMetadataService.WorkflowFieldUpdate();
         taReviewerfldUpdate.field = 'TA_Approver_Name__c';
@@ -566,7 +566,7 @@ public class DRConfigurationController1{
         tafldUpdate.notifyAssignee = false;
         tafldUpdate.operation = 'Formula';
         tafldUpdate.formula = '"TA Review"';
-        List<GFSMetadataService.SaveResult> results1 = service.createMetadata( new GFSMetadataService.Metadata[] { tafldUpdate, tfaReviewerfldUpdate });
+        List<GFSMetadataService.SaveResult> results1 = service.createMetadata( new GFSMetadataService.Metadata[] { tafldUpdate });
         system.debug('>>>>>>>results:'+results1);
         
         //tfa approval action
@@ -574,12 +574,12 @@ public class DRConfigurationController1{
         taAction.name = 'Update_Stage_equals_TA_Review';
         taAction.type_x = 'FieldUpdate';
 
-        GFSMetadataService.WorkflowActionReference tfaAction2 = new GFSMetadataService.WorkflowActionReference();
+        /* GFSMetadataService.WorkflowActionReference tfaAction2 = new GFSMetadataService.WorkflowActionReference();
         taAction.name = 'Update_DR_TFA_Reviewer';
-        taAction.type_x = 'FieldUpdate';
+        taAction.type_x = 'FieldUpdate'; */
                 
         GFSMetadataService.ApprovalAction taStepAction = new GFSMetadataService.ApprovalAction();
-        taStepAction.action = new list<GFSMetadataService.WorkflowActionReference>{taAction, tfaAction2} ;
+        taStepAction.action = new list<GFSMetadataService.WorkflowActionReference>{taAction} ;
                 
         approvalTFAStep.approvalActions = taStepAction;
         approvalProcess.approvalStep.add(approvalTFAStep);

@@ -934,6 +934,11 @@
     </fieldPermissions>
     <fieldPermissions>
         <editable>false</editable>
+        <field>DR_Configuration__c.Admin_Email__c</field>
+        <readable>false</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>false</editable>
         <field>DR_Configuration__c.Application_Name__c</field>
         <readable>false</readable>
     </fieldPermissions>
@@ -965,6 +970,11 @@
     <fieldPermissions>
         <editable>false</editable>
         <field>DR_Stage_Mapping__mdt.Target_Environment__c</field>
+        <readable>false</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>false</editable>
+        <field>DR_Task__c.Admin_Email__c</field>
         <readable>false</readable>
     </fieldPermissions>
     <fieldPermissions>

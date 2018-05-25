@@ -4,7 +4,7 @@ global class DeploymentRequestHelper {
         string retVal = 'Failure';
         try{        
             Deployment_Request__c dRequest = [SELECT Id, Name,Deployment_Request_Date_Time__c,Change_Type_txt__c,Total_Build_Summaries__c,CR_Number__c,Target_Environment_txt__c,
-                                                    Application_Category_txt__c, Application_Name_txt__c
+                                                    Application_Category_txt__c, Application_Name_txt__c, Stage_txt__c
                                                FROM Deployment_Request__c 
                                                WHERE Id =: requestId];
                                                
@@ -20,6 +20,9 @@ global class DeploymentRequestHelper {
                     retVal = 'Request_datetime_Issue';
                 }else if(dRequest.Change_Type_txt__c == 'Issue' && dRequest.CR_Number__c == null && dRequest.Total_Build_Summaries__c < 1 && dRequest.Target_Environment_txt__c == 'Production'){
                     retVal = 'Build_Summaries_Issue';
+                    //oDR.addError('Please add Build Summaries or CR number as the Change Type is an Issue');                                
+                }else if(dRequest.Stage_txt__c != 'Draft'){
+                    retVal = 'Stage_Not_Equal_to_Draft';
                     //oDR.addError('Please add Build Summaries or CR number as the Change Type is an Issue');                                
                 }else{
                     retVal = 'Success';

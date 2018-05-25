@@ -290,7 +290,7 @@ public class DeploymentRequestController{
             upsert drObject;             
         }catch(Exception ex){
             system.debug('Exception:'+ex);
-            ApexPages.addmessage(new ApexPages.message(ApexPages.severity.Error,ex.getMessage()));
+            //ApexPages.addmessage(new ApexPages.message(ApexPages.severity.Error,ex.getMessage()));
             return null;
         }       
         return new PageReference('/'+drObject.Id).setRedirect(true);
