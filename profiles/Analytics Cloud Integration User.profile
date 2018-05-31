@@ -79,11 +79,19 @@
         <enabled>false</enabled>
     </classAccesses>
     <classAccesses>
+        <apexClass>DRConfigurationTest</apexClass>
+        <enabled>false</enabled>
+    </classAccesses>
+    <classAccesses>
         <apexClass>DeploymentRequestController</apexClass>
         <enabled>false</enabled>
     </classAccesses>
     <classAccesses>
         <apexClass>DeploymentRequestHelper</apexClass>
+        <enabled>false</enabled>
+    </classAccesses>
+    <classAccesses>
+        <apexClass>DeploymentRequestTest</apexClass>
         <enabled>false</enabled>
     </classAccesses>
     <classAccesses>
@@ -2326,6 +2334,10 @@
     <tabVisibilities>
         <tab>Approval_Counter__c</tab>
         <visibility>DefaultOff</visibility>
+    </tabVisibilities>
+    <tabVisibilities>
+        <tab>DR_Configuration</tab>
+        <visibility>DefaultOn</visibility>
     </tabVisibilities>
     <tabVisibilities>
         <tab>GFS_History_Configuration</tab>

@@ -25,15 +25,17 @@ public class DeploymentRequestController{
 
     public DeploymentRequestController(ApexPages.StandardController controller) {
         drconfig = new DR_Configuration__c();
-        drObject = new Deployment_Request__c();          
-        controller.addFields(new String[]{
-            'CR_Number__c','Request_Type_txt__c','Change_Type_txt__c','Source_Environment_txt__c','Target_Environment_txt__c','Deployment_Status_txt__c',
-            'Deployment_Request_Date_Time__c','RM_Review_Status_txt__c','Application_Category_txt__c','Application_Name_txt__c','System_Affected_txt__c',
-            'Clarity_Project_Id__c','Stage_txt__c','Is_TFA_Review_Completed_txt__c','Short_Description__c','UAT_DR__c','Description__c','Compliance_Review_Required__c',
-            'TFA_Review_User__c','TA_Review_User__c','Code_Review_User__c','Is_TFA_Review_Completed_txt__c','Is_TA_Review_Completed_txt__c','Is_Code_Review_Completed_txt__c',
-            'Support_KT_Date__c','Support_KT_Status_txt__c','Additional_Comments_txt__c','RM_Approval_Date__c','Administrator_to_Deploy__c','Deployment_End_Date_Time__c',
-            'Deployment_Start_Date_Time__c','Submitted_Date__c','Approval_Date__c','Administrator_Comment__c','OwnerId','UAT_Test_Approver__c'  
-        });
+        drObject = new Deployment_Request__c();  
+        if(!Test.isRunningTest()){        
+            controller.addFields(new String[]{
+                'CR_Number__c','Request_Type_txt__c','Change_Type_txt__c','Source_Environment_txt__c','Target_Environment_txt__c','Deployment_Status_txt__c',
+                'Deployment_Request_Date_Time__c','RM_Review_Status_txt__c','Application_Category_txt__c','Application_Name_txt__c','System_Affected_txt__c',
+                'Clarity_Project_Id__c','Stage_txt__c','Is_TFA_Review_Completed_txt__c','Short_Description__c','UAT_DR__c','Description__c','Compliance_Review_Required__c',
+                'TFA_Review_User__c','TA_Review_User__c','Code_Review_User__c','Is_TFA_Review_Completed_txt__c','Is_TA_Review_Completed_txt__c','Is_Code_Review_Completed_txt__c',
+                'Support_KT_Date__c','Support_KT_Status_txt__c','Additional_Comments_txt__c','RM_Approval_Date__c','Administrator_to_Deploy__c','Deployment_End_Date_Time__c',
+                'Deployment_Start_Date_Time__c','Submitted_Date__c','Approval_Date__c','Administrator_Comment__c','OwnerId','UAT_Test_Approver__c'  
+            });
+        }
         drObject = (Deployment_Request__c)controller.getRecord();
         if(drObject.Id == null){
             drObject.Deployment_Status_txt__c = 'Not Started';
@@ -180,13 +182,16 @@ public class DeploymentRequestController{
             service.SessionHeader = new GFSMetadataService.SessionHeader_element();
             service.timeout_x = 120000;
             service.SessionHeader.sessionId = userinfo.getSessionId();
-            GFSMetadataService.CustomField customField = (GFSMetadataService.CustomField) service.readMetadata('CustomField', new String[] { 'DR_Configuration__c.Change_Type__c' }).getRecords()[0];
-            for(GFSMetadataService.PicklistValue picklistValue : customField.picklist.picklistValues) {
-                if(( picklistValue.controllingFieldValues == null ) || new Set<String>( picklistValue.controllingFieldValues ).contains(drObject.Request_Type_txt__c)) {
-                    changeType.add(new SelectOption(picklistValue.fullName, picklistValue.fullName));  
-                    disableChangeType = false;    
-                }
-            }  
+            GFSMetadataService.CustomField customField = new GFSMetadataService.CustomField();
+            if(!Test.isRunningTest()){
+                customField = (GFSMetadataService.CustomField) service.readMetadata('CustomField', new String[] { 'DR_Configuration__c.Change_Type__c' }).getRecords()[0];
+                for(GFSMetadataService.PicklistValue picklistValue : customField.picklist.picklistValues) {
+                    if(( picklistValue.controllingFieldValues == null ) || new Set<String>( picklistValue.controllingFieldValues ).contains(drObject.Request_Type_txt__c)) {
+                        changeType.add(new SelectOption(picklistValue.fullName, picklistValue.fullName));  
+                        disableChangeType = false;    
+                    }
+                }  
+            }
         } else {
             disableChangeType = true;
         }  
@@ -201,13 +206,16 @@ public class DeploymentRequestController{
             service.SessionHeader = new GFSMetadataService.SessionHeader_element();
             service.timeout_x = 120000;
             service.SessionHeader.sessionId = userinfo.getSessionId();
-            GFSMetadataService.CustomField customField = (GFSMetadataService.CustomField) service.readMetadata('CustomField', new String[] { 'DR_Configuration__c.Application_Name__c' }).getRecords()[0];
-            for(GFSMetadataService.PicklistValue picklistValue : customField.picklist.picklistValues) {
-                if(( picklistValue.controllingFieldValues == null ) || new Set<String>( picklistValue.controllingFieldValues ).contains(drObject.Application_Category_txt__c)) {
-                    applicationName.add(new SelectOption(picklistValue.fullName, picklistValue.fullName));  
-                    disableApplicationName = false;    
-                }
-            }  
+            GFSMetadataService.CustomField customField = new GFSMetadataService.CustomField();
+            if(!Test.isRunningTest()){
+                customField = (GFSMetadataService.CustomField) service.readMetadata('CustomField', new String[] { 'DR_Configuration__c.Application_Name__c' }).getRecords()[0];
+                for(GFSMetadataService.PicklistValue picklistValue : customField.picklist.picklistValues) {
+                    if(( picklistValue.controllingFieldValues == null ) || new Set<String>( picklistValue.controllingFieldValues ).contains(drObject.Application_Category_txt__c)) {
+                        applicationName.add(new SelectOption(picklistValue.fullName, picklistValue.fullName));  
+                        disableApplicationName = false;    
+                    }
+                }  
+            }
         } else {
             disableApplicationName = true;
         }              

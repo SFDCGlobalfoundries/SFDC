@@ -1,0 +1,29 @@
+@isTest
+private class DeploymentRequestTest{
+
+    @testSetup public static void setupData(){
+        
+    }
+    
+    static testMethod void testCreateDR(){
+        Deployment_Request__c drObject = new Deployment_Request__c();
+        ApexPages.StandardController stdcontroller = new ApexPages.StandardController(drObject);
+        DeploymentRequestController controller = new DeploymentRequestController(stdcontroller); 
+        drObject.Request_Type_txt__c = 'Emergency';
+        drObject.Application_Category_txt__c = 'SOX compliance Apps';
+        drObject.Source_Environment_txt__c = 'SIT';
+        drObject.Target_Environment_txt__c = 'UAT';
+        drObject.Application_Category_txt__c = 'SOX compliance Apps';
+        drObject.Short_Description__c = 'test';
+        drObject.Description__c = 'test';
+        drObject.Deployment_Request_Date_Time__c = DateTime.now();
+        drObject.Is_TFA_Review_Completed_txt__c = 'No';
+        drObject.Is_TA_Review_Completed_txt__c = 'No';
+        controller.disableChangeType = false;
+        controller.disableApplicationName = false;   
+        controller.fetchChangeTypeValues();
+        controller.fetchApplicationNameValues();
+        controller.save();       
+        controller.cancel();
+    }
+}

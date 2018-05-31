@@ -49,7 +49,7 @@ trigger DeploymentRequestTrigger on Deployment_Request__c (after update, before 
         for(Deployment_Request__c dr: trigger.new){
             if(dr.Stage_txt__c == 'Closed')
                 dr.addError('Can not update Closed DR');
-            list<ProcessInstance> drPIs = [SELECT Id, TargetObjectId, (SELECT Id, StepStatus, Comments, ActorId, CreatedDate FROM StepsAndWorkitems where StepStatus = 'Approved' order by CreatedDate DESC) FROM ProcessInstance where TargetObjectId = :dr.Id];
+           /*  list<ProcessInstance> drPIs = [SELECT Id, TargetObjectId, (SELECT Id, StepStatus, Comments, ActorId, CreatedDate FROM StepsAndWorkitems where StepStatus = 'Approved' order by CreatedDate DESC) FROM ProcessInstance where TargetObjectId = :dr.Id];
             system.debug('>>>>>>>>>>drPIs:'+drPIs);
             system.debug('>>>>>>>>>>dr.Stage_txt__c:'+dr.Stage_txt__c);
             if(drPIs.size() > 0 && drPIs[0].StepsAndWorkitems.size() > 0){
@@ -68,8 +68,8 @@ trigger DeploymentRequestTrigger on Deployment_Request__c (after update, before 
                 if(dr.Stage_txt__c == 'CAB Review' && dr.Target_Environment_txt__c == 'Production')            
                     dr.SOD_Approver_Name__c = actor[0].Name;
                 if(dr.Stage_txt__c == 'Approved' && dr.Target_Environment_txt__c == 'Production')            
-                    dr.CAB_Approver_Name__c = actor[0].Name;
-            }               
+                    dr.CAB_Approver_Name__c = actor[0].Name; 
+            } */               
         }        
     }
 }

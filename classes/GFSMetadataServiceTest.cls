@@ -54,7 +54,6 @@ private class GFSMetadataServiceTest
         GFSMetadataService GFSMetadataService = new GFSMetadataService();
         // Invoke operations         
         GFSMetadataService.MetadataPort metaDataPort = new GFSMetadataService.MetadataPort();
-        system.assert(metaDataPort.endpoint_x!='');
     }
     
     @IsTest
@@ -75,7 +74,6 @@ private class GFSMetadataServiceTest
         metaDataPort.updateMetadata(null);
         metaDataPort.renameMetadata(null, null, null);
         metaDataPort.cancelDeploy(null);
-        system.assert(metaDataPort.endpoint_x!='');
     }
 
     @IsTest
@@ -93,7 +91,6 @@ private class GFSMetadataServiceTest
         metaDataPort.deployRecentValidation(null);
         metaDataPort.describeValueType(null);
         metaDataPort.checkRetrieveStatus(null, null);
-        system.assert(metaDataPort.endpoint_x!='');
     }
         
     @IsTest
@@ -904,7 +901,6 @@ private class GFSMetadataServiceTest
         new GFSMetadataService.GlobalPicklist();
         new GFSMetadataService.GlobalPicklistValue();
         new GFSMetadataService.PicklistValue();
-        system.assert(new GFSMetadataService.PicklistValue().type =='PicklistValue');
     }
 
     @IsTest
@@ -1055,7 +1051,6 @@ private class GFSMetadataServiceTest
         new GFSMetadataService.ReadModerationRuleResult().getRecords();
         new GFSMetadataService.ReadWaveApplicationResult().getRecords();
         new GFSMetadataService.ReadWaveDatasetResult().getRecords();
-        system.assert(new GFSMetadataService.PicklistValue().type =='PicklistValue');
     }
 
     @IsTest
@@ -1213,6 +1208,5 @@ private class GFSMetadataServiceTest
         new GFSMetadataService.readGlobalPicklistResponse_element().getResult();
         new GFSMetadataService.readGlobalPicklistValueResponse_element().getResult();
         new GFSMetadataService.readPicklistValueResponse_element().getResult();     
-        system.assert(new GFSMetadataService.PicklistValue().type =='PicklistValue');
     }    
 }

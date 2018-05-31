@@ -79,11 +79,19 @@
         <enabled>true</enabled>
     </classAccesses>
     <classAccesses>
+        <apexClass>DRConfigurationTest</apexClass>
+        <enabled>true</enabled>
+    </classAccesses>
+    <classAccesses>
         <apexClass>DeploymentRequestController</apexClass>
         <enabled>true</enabled>
     </classAccesses>
     <classAccesses>
         <apexClass>DeploymentRequestHelper</apexClass>
+        <enabled>true</enabled>
+    </classAccesses>
+    <classAccesses>
+        <apexClass>DeploymentRequestTest</apexClass>
         <enabled>true</enabled>
     </classAccesses>
     <classAccesses>
@@ -2325,6 +2333,10 @@
     </tabVisibilities>
     <tabVisibilities>
         <tab>Approval_Counter__c</tab>
+        <visibility>DefaultOn</visibility>
+    </tabVisibilities>
+    <tabVisibilities>
+        <tab>DR_Configuration</tab>
         <visibility>DefaultOn</visibility>
     </tabVisibilities>
     <tabVisibilities>
