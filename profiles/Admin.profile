@@ -83,6 +83,10 @@
         <enabled>true</enabled>
     </classAccesses>
     <classAccesses>
+        <apexClass>DRTaskTriggerTest</apexClass>
+        <enabled>true</enabled>
+    </classAccesses>
+    <classAccesses>
         <apexClass>DeploymentRequestController</apexClass>
         <enabled>true</enabled>
     </classAccesses>
@@ -92,6 +96,10 @@
     </classAccesses>
     <classAccesses>
         <apexClass>DeploymentRequestTest</apexClass>
+        <enabled>true</enabled>
+    </classAccesses>
+    <classAccesses>
+        <apexClass>DeploymentRequestTriggerTest</apexClass>
         <enabled>true</enabled>
     </classAccesses>
     <classAccesses>

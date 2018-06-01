@@ -26,4 +26,21 @@ private class DeploymentRequestTest{
         controller.save();       
         controller.cancel();
     }
+    
+    static testMethod void testDRhelper(){
+        Deployment_Request__c drObject = new Deployment_Request__c();
+        drObject.Request_Type_txt__c = 'Emergency';
+        drObject.Application_Category_txt__c = 'SOX compliance Apps';
+        drObject.Source_Environment_txt__c = 'SIT';
+        drObject.Target_Environment_txt__c = 'UAT';
+        drObject.Short_Description__c = 'test';
+        drObject.Description__c = 'test';
+        drObject.Deployment_Request_Date_Time__c = DateTime.now();
+        drObject.Is_TFA_Review_Completed_txt__c = 'No';
+        drObject.Is_TA_Review_Completed_txt__c = 'No';
+        insert drObject;
+                
+        DeploymentRequestHelper.processApprovalNew(drObject.Id);
+        
+    }
 }
