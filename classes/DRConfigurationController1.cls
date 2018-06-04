@@ -271,7 +271,7 @@ public class DRConfigurationController1{
         service.timeout_x = 120000;
         service.SessionHeader.sessionId = sessionId;//userinfo.getSessionId();
         GFSMetadataService.ApprovalProcess approvalProcess = new GFSMetadataService.ApprovalProcess();
-        approvalProcess.fullName = 'Deployment_Request__c.DR_Production_Approval'+counter;
+        approvalProcess.fullName = 'GFSDR__Deployment_Request__c.DR_Production_Approval'+counter;
         approvalProcess.label = 'DR Production Approval'+counter;
         approvalProcess.active = true;
         approvalProcess.allowRecall = true; 
@@ -489,7 +489,7 @@ public class DRConfigurationController1{
         service.timeout_x = 120000;
         service.SessionHeader.sessionId = sessionId;//userinfo.getSessionId();
         GFSMetadataService.ApprovalProcess approvalProcess = new GFSMetadataService.ApprovalProcess();
-        approvalProcess.fullName = 'Deployment_Request__c.DR_UAT_Approval'+counter;
+        approvalProcess.fullName = 'GFSDR__Deployment_Request__c.DR_UAT_Approval'+counter;
         approvalProcess.label = 'DR UAT Approval'+counter;
         approvalProcess.active = true;
         approvalProcess.allowRecall = true; 
@@ -811,6 +811,7 @@ public class DRConfigurationController1{
             map<string, string> removedValMap = new map<string, string>();
             for(string r: removedValues)
                 removedValMap.put(r,r);
+            system.debug('>>>>>>>>>>>picklistName:'+picklistName);
             GFSMetadataService.MetadataPort service = new GFSMetadataService.MetadataPort();   
             service.SessionHeader = new GFSMetadataService.SessionHeader_element();
             service.timeout_x = 120000;
@@ -818,7 +819,7 @@ public class DRConfigurationController1{
             GFSMetadataService.CustomField customField = new GFSMetadataService.CustomField();
             GFSMetadataService.PickListValue[] pickVals = new list<GFSMetadataService.PickListValue>();
             GFSMetadataService.PickListValue[] newpickVals = new list<GFSMetadataService.PickListValue>();
-            customField = (GFSMetadataService.CustomField) service.readMetadata('CustomField', new String[] { 'DR_Configuration__c.'+picklistName}).getRecords()[0];
+            customField = (GFSMetadataService.CustomField) service.readMetadata('CustomField', new String[] { 'GFSDR__DR_Configuration__c.'+picklistName}).getRecords()[0];
             pickVals = customField.picklist.picklistValues;
             system.debug('>>>>>>>>>>>>pickVals:'+pickVals);
             for(string str: newlyAddedValues){

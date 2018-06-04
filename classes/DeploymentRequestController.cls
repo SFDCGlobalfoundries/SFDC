@@ -182,9 +182,9 @@ public class DeploymentRequestController{
             service.SessionHeader = new GFSMetadataService.SessionHeader_element();
             service.timeout_x = 120000;
             service.SessionHeader.sessionId = userinfo.getSessionId();
-            GFSMetadataService.CustomField customField = new GFSMetadataService.CustomField();
+            GFSMetadataService.CustomField customField;
             if(!Test.isRunningTest()){
-                customField = (GFSMetadataService.CustomField) service.readMetadata('CustomField', new String[] { 'DR_Configuration__c.Change_Type__c' }).getRecords()[0];
+                customField = (GFSMetadataService.CustomField) service.readMetadata('CustomField', new String[] { 'GFSDR__DR_Configuration__c.GFSDR__Change_Type__c' }).getRecords()[0];
                 for(GFSMetadataService.PicklistValue picklistValue : customField.picklist.picklistValues) {
                     if(( picklistValue.controllingFieldValues == null ) || new Set<String>( picklistValue.controllingFieldValues ).contains(drObject.Request_Type_txt__c)) {
                         changeType.add(new SelectOption(picklistValue.fullName, picklistValue.fullName));  
@@ -206,9 +206,9 @@ public class DeploymentRequestController{
             service.SessionHeader = new GFSMetadataService.SessionHeader_element();
             service.timeout_x = 120000;
             service.SessionHeader.sessionId = userinfo.getSessionId();
-            GFSMetadataService.CustomField customField = new GFSMetadataService.CustomField();
+            GFSMetadataService.CustomField customField;
             if(!Test.isRunningTest()){
-                customField = (GFSMetadataService.CustomField) service.readMetadata('CustomField', new String[] { 'DR_Configuration__c.Application_Name__c' }).getRecords()[0];
+                customField = (GFSMetadataService.CustomField) service.readMetadata('CustomField', new String[] { 'GFSDR__DR_Configuration__c.GFSDR__Application_Name__c' }).getRecords()[0];
                 for(GFSMetadataService.PicklistValue picklistValue : customField.picklist.picklistValues) {
                     if(( picklistValue.controllingFieldValues == null ) || new Set<String>( picklistValue.controllingFieldValues ).contains(drObject.Application_Category_txt__c)) {
                         applicationName.add(new SelectOption(picklistValue.fullName, picklistValue.fullName));  

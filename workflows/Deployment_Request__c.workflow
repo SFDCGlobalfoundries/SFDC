@@ -73,6 +73,24 @@
         <protected>false</protected>
     </fieldUpdates>
     <fieldUpdates>
+        <fullName>Update_EBIZ_FBO_Approver</fullName>
+        <field>EBIZ_FBO_Approver_Name__c</field>
+        <formula>$User.FirstName+&quot; &quot;+$User.LastName</formula>
+        <name>Update EBIZ/FBO Approver</name>
+        <notifyAssignee>false</notifyAssignee>
+        <operation>Formula</operation>
+        <protected>false</protected>
+    </fieldUpdates>
+    <fieldUpdates>
+        <fullName>Update_SOD_Approver</fullName>
+        <field>SOD_Approver_Name__c</field>
+        <formula>$User.FirstName+&quot; &quot;+$User.LastName</formula>
+        <name>Update SOD Approver</name>
+        <notifyAssignee>false</notifyAssignee>
+        <operation>Formula</operation>
+        <protected>false</protected>
+    </fieldUpdates>
+    <fieldUpdates>
         <fullName>Update_Stage_equals_Approved</fullName>
         <field>Stage_txt__c</field>
         <formula>&quot;Approved&quot;</formula>
@@ -185,6 +203,33 @@
         <field>Stage_txt__c</field>
         <formula>&quot;TFA Review&quot;</formula>
         <name>Update Stage to TFA Review</name>
+        <notifyAssignee>false</notifyAssignee>
+        <operation>Formula</operation>
+        <protected>false</protected>
+    </fieldUpdates>
+    <fieldUpdates>
+        <fullName>Update_TA_Approver</fullName>
+        <field>TA_Approver_Name__c</field>
+        <formula>$User.FirstName+&quot; &quot;+$User.LastName</formula>
+        <name>Update TA Approver</name>
+        <notifyAssignee>false</notifyAssignee>
+        <operation>Formula</operation>
+        <protected>false</protected>
+    </fieldUpdates>
+    <fieldUpdates>
+        <fullName>Update_TFA_Approver</fullName>
+        <field>TFA_Approver_Name__c</field>
+        <formula>$User.FirstName+&quot; &quot;+$User.LastName</formula>
+        <name>Update TFA Approver</name>
+        <notifyAssignee>false</notifyAssignee>
+        <operation>Formula</operation>
+        <protected>false</protected>
+    </fieldUpdates>
+    <fieldUpdates>
+        <fullName>Update_Test_Approver</fullName>
+        <field>Test_Approver_Name__c</field>
+        <formula>$User.FirstName+&quot; &quot;+$User.LastName</formula>
+        <name>Update Test Approver</name>
         <notifyAssignee>false</notifyAssignee>
         <operation>Formula</operation>
         <protected>false</protected>
