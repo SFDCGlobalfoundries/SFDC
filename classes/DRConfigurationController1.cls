@@ -257,6 +257,7 @@ public class DRConfigurationController1{
     
     @future(callout=true)
     public static void createProductionApprovalProcess(string sessionId, integer counter){
+        try{
         list<Application_Approver__c> newApprovers = [Select Id, name, User__c, Application_Name__c, Role__c from Application_Approver__c order by Name];
         map<string,set<string>> appNameListOfRoles = new map<string,set<string>>();
         for(Application_Approver__c approver: newApprovers){
@@ -280,7 +281,7 @@ public class DRConfigurationController1{
         approvalProcess.finalApprovalRecordLock = false; 
         approvalProcess.finalRejectionRecordLock = false;
         approvalProcess.showApprovalHistory = false;
-        approvalProcess.emailTemplate = 'Deployment_Request_Templates/Deployment_Approval_Request_Email';
+        //approvalProcess.emailTemplate = 'Deployment_Request_Templates/Deployment_Approval_Request_Email';
         
         GFSMetadataService.WorkflowFieldUpdate fldUpdate = new GFSMetadataService.WorkflowFieldUpdate();
         fldUpdate.field = 'Stage_txt__c';
@@ -306,7 +307,7 @@ public class DRConfigurationController1{
         approvalProcess.initialSubmissionActions = appAction;
         //Entry Criteria
         GFSMetadataService.FilterItem ft = new GFSMetadataService.FilterItem();
-        ft.field = 'Deployment_Request__c.Target_Environment_txt__c';
+        ft.field = 'GFSDR__Deployment_Request__c.Target_Environment_txt__c';
         ft.operation = 'equals';
         ft.value = 'Production';
         
@@ -323,27 +324,27 @@ public class DRConfigurationController1{
         
         //create field updates for steps
         GFSMetadataService.WorkflowFieldUpdate testReviewfldUpdate = new GFSMetadataService.WorkflowFieldUpdate();
-        testReviewfldUpdate.field = 'Stage_txt__c';
+        testReviewfldUpdate.field = 'GFSDR__Stage_txt__c';
         testReviewfldUpdate.name = 'Update_Stage_equals_TEST_Review';
-        testReviewfldUpdate.fullName = 'Deployment_Request__c.Update_Stage_equals_TEST_Review';
+        testReviewfldUpdate.fullName = 'GFSDR__Deployment_Request__c.Update_Stage_equals_TEST_Review';
         testReviewfldUpdate.protected_x = false;
         testReviewfldUpdate.notifyAssignee = false;
         testReviewfldUpdate.operation = 'Formula';
         testReviewfldUpdate.formula = '"Test Review"';
 
         GFSMetadataService.WorkflowFieldUpdate sodReviewfldUpdate = new GFSMetadataService.WorkflowFieldUpdate();
-        sodReviewfldUpdate.field = 'Stage_txt__c';
+        sodReviewfldUpdate.field = 'GFSDR__Stage_txt__c';
         sodReviewfldUpdate.name = 'Update_Stage_equals_SOD_Review';
-        sodReviewfldUpdate.fullName = 'Deployment_Request__c.Update_Stage_equals_SOD_Review';
+        sodReviewfldUpdate.fullName = 'GFSDR__Deployment_Request__c.Update_Stage_equals_SOD_Review';
         sodReviewfldUpdate.protected_x = false;
         sodReviewfldUpdate.notifyAssignee = false;
         sodReviewfldUpdate.operation = 'Formula';
         sodReviewfldUpdate.formula = '"SOD Review"';
 
         GFSMetadataService.WorkflowFieldUpdate cabReviewfldUpdate = new GFSMetadataService.WorkflowFieldUpdate();
-        cabReviewfldUpdate.field = 'Stage_txt__c';
+        cabReviewfldUpdate.field = 'GFSDR__Stage_txt__c';
         cabReviewfldUpdate.name = 'Update_Stage_equals_CAB_Review';
-        cabReviewfldUpdate.fullName = 'Deployment_Request__c.Update_Stage_equals_CAB_Review';
+        cabReviewfldUpdate.fullName = 'GFSDR__Deployment_Request__c.Update_Stage_equals_CAB_Review';
         cabReviewfldUpdate.protected_x = false;
         cabReviewfldUpdate.notifyAssignee = false;
         cabReviewfldUpdate.operation = 'Formula';
@@ -355,9 +356,9 @@ public class DRConfigurationController1{
         }
         
         GFSMetadataService.WorkflowFieldUpdate approvedfldUpdate = new GFSMetadataService.WorkflowFieldUpdate();
-        approvedfldUpdate.field = 'Stage_txt__c';
+        approvedfldUpdate.field = 'GFSDR__Stage_txt__c';
         approvedfldUpdate.name = 'Update_Stage_equals_Approved';
-        approvedfldUpdate.fullName = 'Deployment_Request__c.Update_Stage_equals_Approved';
+        approvedfldUpdate.fullName = 'GFSDR__Deployment_Request__c.Update_Stage_equals_Approved';
         approvedfldUpdate.protected_x = false;
         approvedfldUpdate.notifyAssignee = false;
         approvedfldUpdate.operation = 'Formula';
@@ -366,9 +367,9 @@ public class DRConfigurationController1{
             List<GFSMetadataService.SaveResult> approvedResults = service.createMetadata( new GFSMetadataService.Metadata[] { approvedfldUpdate });
 
         GFSMetadataService.WorkflowFieldUpdate rejectedfldUpdate = new GFSMetadataService.WorkflowFieldUpdate();
-        rejectedfldUpdate.field = 'Stage_txt__c';
+        rejectedfldUpdate.field = 'GFSDR__Stage_txt__c';
         rejectedfldUpdate.name = 'Update_Stage_equals_Rejected';
-        rejectedfldUpdate.fullName = 'Deployment_Request__c.Update_Stage_equals_Rejected';
+        rejectedfldUpdate.fullName = 'GFSDR__Deployment_Request__c.Update_Stage_equals_Rejected';
         rejectedfldUpdate.protected_x = false;
         rejectedfldUpdate.notifyAssignee = false;
         rejectedfldUpdate.operation = 'Formula';
@@ -413,11 +414,11 @@ public class DRConfigurationController1{
                 //Entry Criteria
                 GFSMetadataService.FilterItem otherFilterEntry = new GFSMetadataService.FilterItem();
                 if(key == 'Default'){
-                    otherFilterEntry.field = 'Deployment_Request__c.Application_Category_txt__c';
+                    otherFilterEntry.field = 'GFSDR__Deployment_Request__c.GFSDR__Application_Category_txt__c';
                     otherFilterEntry.operation = 'equals';
                     otherFilterEntry.value = 'Standard Apps';            
                 } else {
-                    otherFilterEntry.field = 'Deployment_Request__c.Application_Name_txt__c';
+                    otherFilterEntry.field = 'GFSDR__Deployment_Request__c.GFSDR__Application_Name_txt__c';
                     otherFilterEntry.operation = 'equals';
                     otherFilterEntry.value = key;
                 }
@@ -468,11 +469,18 @@ public class DRConfigurationController1{
         integer c = Integer.valueOf(appCounter[0].Name);    
         appCounter[0].Name = string.valueOf(c + 1);
         update appCounter; 
-                     
+        }catch(Exception ex){
+             Messaging.SingleEmailMessage message = new Messaging.SingleEmailMessage();
+             message.setSubject('Approval Proccess Exception');
+             message.setHtmlBody('Exception:'+ex.getMessage());
+             message.setToAddresses(new list<string>{'anushribhushan.sarwade@globalfoundries.com'});
+             Messaging.sendEmail(new Messaging.SingleEmailMessage[] { message });
+        }             
     }
     
     @future(callout=true)
     public static void createUATApprovalProcess(string sessionId, integer counter){
+        try{
         list<Application_Approver__c> newApprovers = [Select Id, name, User__c, Application_Name__c, Role__c from Application_Approver__c order by Name];
         map<string,list<string>> appNameListOfRoles = new map<string,list<string>>();
         for(Application_Approver__c approver: newApprovers){
@@ -498,12 +506,12 @@ public class DRConfigurationController1{
         approvalProcess.finalApprovalRecordLock = false; 
         approvalProcess.finalRejectionRecordLock = false;
         approvalProcess.showApprovalHistory = false;
-        approvalProcess.emailTemplate = 'Deployment_Request_Templates/Deployment_Approval_Request_Email';
+        //approvalProcess.emailTemplate = 'Deployment_Request_Templates/Deployment_Approval_Request_Email';
         
         GFSMetadataService.WorkflowFieldUpdate fldUpdate = new GFSMetadataService.WorkflowFieldUpdate();
-        fldUpdate.field = 'Stage_txt__c';
+        fldUpdate.field = 'GFSDR__Stage_txt__c';
         fldUpdate.name = 'Update_Stage_equals_TFA_Review1';
-        fldUpdate.fullName = 'Deployment_Request__c.Update_Stage_equals_TFA_Review1';
+        fldUpdate.fullName = 'GFSDR__Deployment_Request__c.Update_Stage_equals_TFA_Review1';
         fldUpdate.protected_x = false;
         fldUpdate.notifyAssignee = false;
         fldUpdate.operation = 'Formula';
@@ -523,7 +531,7 @@ public class DRConfigurationController1{
         approvalProcess.initialSubmissionActions = appAction;
         //Entry Criteria
         GFSMetadataService.FilterItem ft = new GFSMetadataService.FilterItem();
-        ft.field = 'Deployment_Request__c.Target_Environment_txt__c';
+        ft.field = 'GFSDR__Deployment_Request__c.GFSDR__Target_Environment_txt__c';
         ft.operation = 'equals';
         ft.value = 'UAT';
         
@@ -539,7 +547,7 @@ public class DRConfigurationController1{
         
         //TFA Step
         GFSMetadataService.Approver tfaapprover = new GFSMetadataService.Approver();
-        tfaapprover.name = 'Deployment_Request__c.TFA_Review_User__c';
+        tfaapprover.name = 'GFSDR__Deployment_Request__c.GFSDR__TFA_Review_User__c';
         tfaapprover.type_x ='relatedUserField';
         
         GFSMetadataService.ApprovalStepApprover tfastepApprover = new GFSMetadataService.ApprovalStepApprover();
@@ -572,9 +580,9 @@ public class DRConfigurationController1{
 
         //field update 
         GFSMetadataService.WorkflowFieldUpdate tafldUpdate = new GFSMetadataService.WorkflowFieldUpdate();
-        tafldUpdate.field = 'Stage_txt__c';
+        tafldUpdate.field = 'GFSDR__Stage_txt__c';
         tafldUpdate.name = 'Update_Stage_equals_TA_Review';
-        tafldUpdate.fullName = 'Deployment_Request__c.Update_Stage_equals_TA_Review';
+        tafldUpdate.fullName = 'GFSDR__Deployment_Request__c.Update_Stage_equals_TA_Review';
         tafldUpdate.protected_x = false;
         tafldUpdate.notifyAssignee = false;
         tafldUpdate.operation = 'Formula';
@@ -602,7 +610,7 @@ public class DRConfigurationController1{
         
         //TA Step
         GFSMetadataService.Approver taapprover= new GFSMetadataService.Approver();
-        taapprover.name = 'Deployment_Request__c.TA_Review_User__c';
+        taapprover.name = 'GFSDR__Deployment_Request__c.GFSDR__TA_Review_User__c';
         taapprover.type_x ='relatedUserField';
         
         GFSMetadataService.ApprovalStepApprover tastepApprover= new GFSMetadataService.ApprovalStepApprover();
@@ -620,9 +628,9 @@ public class DRConfigurationController1{
         approvalTAStep.rejectBehavior = taRejectBehave;
         
         GFSMetadataService.WorkflowFieldUpdate cabfldUpdate = new GFSMetadataService.WorkflowFieldUpdate();
-        cabfldUpdate.field = 'Stage_txt__c';
+        cabfldUpdate.field = 'GFSDR__Stage_txt__c';
         cabfldUpdate.name = 'Update_Stage_equals_CAB_Review';
-        cabfldUpdate.fullName = 'Deployment_Request__c.Update_Stage_equals_CAB_Review';
+        cabfldUpdate.fullName = 'GFSDR__Deployment_Request__c.Update_Stage_equals_CAB_Review';
         cabfldUpdate.protected_x = false;
         cabfldUpdate.notifyAssignee = false;
         cabfldUpdate.operation = 'Formula';
@@ -649,9 +657,9 @@ public class DRConfigurationController1{
         approvalProcess.approvalStep.add(approvalTAStep);
         
         GFSMetadataService.WorkflowFieldUpdate approvedfldUpdate = new GFSMetadataService.WorkflowFieldUpdate();
-        approvedfldUpdate.field = 'Stage_txt__c';
+        approvedfldUpdate.field = 'GFSDR__Stage_txt__c';
         approvedfldUpdate.name = 'Update_Stage_equals_Approved';
-        approvedfldUpdate.fullName = 'Deployment_Request__c.Update_Stage_equals_Approved';
+        approvedfldUpdate.fullName = 'GFSDR__Deployment_Request__c.Update_Stage_equals_Approved';
         approvedfldUpdate.protected_x = false;
         approvedfldUpdate.notifyAssignee = false;
         approvedfldUpdate.operation = 'Formula';
@@ -661,9 +669,9 @@ public class DRConfigurationController1{
             List<GFSMetadataService.SaveResult> approvedResults = service.createMetadata( new GFSMetadataService.Metadata[] { approvedfldUpdate });
 
         GFSMetadataService.WorkflowFieldUpdate rejectedfldUpdate = new GFSMetadataService.WorkflowFieldUpdate();
-        rejectedfldUpdate.field = 'Stage_txt__c';
+        rejectedfldUpdate.field = 'GFSDR__Stage_txt__c';
         rejectedfldUpdate.name = 'Update_Stage_equals_Rejected';
-        rejectedfldUpdate.fullName = 'Deployment_Request__c.Update_Stage_equals_Rejected';
+        rejectedfldUpdate.fullName = 'GFSDR__Deployment_Request__c.Update_Stage_equals_Rejected';
         rejectedfldUpdate.protected_x = false;
         rejectedfldUpdate.notifyAssignee = false;
         rejectedfldUpdate.operation = 'Formula';
@@ -714,11 +722,11 @@ public class DRConfigurationController1{
             //Entry Criteria
             GFSMetadataService.FilterItem otherFilterEntry = new GFSMetadataService.FilterItem();
             if(key == 'Default'){
-                otherFilterEntry.field = 'Deployment_Request__c.Application_Category_txt__c';
+                otherFilterEntry.field = 'GFSDR__Deployment_Request__c.GFSDR__Application_Category_txt__c';
                 otherFilterEntry.operation = 'equals';
                 otherFilterEntry.value = 'Standard Apps';            
             } else {
-                otherFilterEntry.field = 'Deployment_Request__c.Application_Name_txt__c';
+                otherFilterEntry.field = 'GFSDR__Deployment_Request__c.GFSDR__Application_Name_txt__c';
                 otherFilterEntry.operation = 'equals';
                 otherFilterEntry.value = key;
             }
@@ -752,6 +760,13 @@ public class DRConfigurationController1{
             List<GFSMetadataService.SaveResult> results3 = service.createMetadata( new GFSMetadataService.Metadata[] { approvalProcess });
             system.debug('>>>>>>>results:'+results3);    
         }
+        }catch(Exception ex){
+             Messaging.SingleEmailMessage message = new Messaging.SingleEmailMessage();
+             message.setSubject('Approval Proccess Exception');
+             message.setHtmlBody('Exception:'+ex.getMessage());
+             message.setToAddresses(new list<string>{'anushribhushan.sarwade@globalfoundries.com'});
+             Messaging.sendEmail(new Messaging.SingleEmailMessage[] { message });
+        }   
     }
     
     @future
@@ -791,10 +806,13 @@ public class DRConfigurationController1{
         list<GroupMember> newMembers = new list<GroupMember>();            
         for(Application_Approver__c nApprover :newApprovers){
             system.debug('>>>>>>>>>>>>nApprover:'+nApprover);
-            if(extqueueMap.containsKey('DR '+nApprover.Application_Name__c+' '+nApprover.Role__c)){
+            system.debug('>>>>'+extqueueMap.containsKey('DR '+nApprover.Application_Name__c+' '+nApprover.Role__c));    
+            string role = nApprover.Role__c;
+            role = role.toUpperCase();        
+            if(extqueueMap.containsKey('DR '+nApprover.Application_Name__c+' '+role)){
                 GroupMember member = new GroupMember();
                 member.UserOrGroupId = nApprover.User__c;
-                member.GroupId = extqueueMap.get('DR '+nApprover.Application_Name__c+' '+nApprover.Role__c);
+                member.GroupId = extqueueMap.get('DR '+nApprover.Application_Name__c+' '+role);
                 newMembers.add(member);
             }
         }        

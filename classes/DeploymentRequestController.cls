@@ -296,9 +296,12 @@ public class DeploymentRequestController{
             }
             system.debug('>>>>>>>>>>>>grpIdGrpMembers:'+grpIdGrpMembers);                
             upsert drObject;             
+        }catch(DMLException dex){        
+            ApexPages.addmessage(new ApexPages.message(ApexPages.severity.Error,dex.getDmlMessage(0)));
+            return null;         
         }catch(Exception ex){
             system.debug('Exception:'+ex);
-            //ApexPages.addmessage(new ApexPages.message(ApexPages.severity.Error,ex.getMessage()));
+            ApexPages.addmessage(new ApexPages.message(ApexPages.severity.Error,ex.getMessage()));
             return null;
         }       
         return new PageReference('/'+drObject.Id).setRedirect(true);

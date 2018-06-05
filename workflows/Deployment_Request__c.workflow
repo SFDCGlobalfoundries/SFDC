@@ -82,6 +82,60 @@
         <protected>false</protected>
     </fieldUpdates>
     <fieldUpdates>
+        <fullName>Update_Rejected_Stage_field</fullName>
+        <field>Rejected_Stage__c</field>
+        <formula>&quot;TFA Review&quot;</formula>
+        <name>Update Rejected Stage field</name>
+        <notifyAssignee>false</notifyAssignee>
+        <operation>Formula</operation>
+        <protected>false</protected>
+    </fieldUpdates>
+    <fieldUpdates>
+        <fullName>Update_Rejected_Stage_to_CAB_Review</fullName>
+        <field>Rejected_Stage__c</field>
+        <formula>&quot;CAB Review&quot;</formula>
+        <name>Update Rejected Stage to CAB Review</name>
+        <notifyAssignee>false</notifyAssignee>
+        <operation>Formula</operation>
+        <protected>false</protected>
+    </fieldUpdates>
+    <fieldUpdates>
+        <fullName>Update_Rejected_Stage_to_EBiZ_FBO_Review</fullName>
+        <field>Rejected_Stage__c</field>
+        <formula>&quot;EBiZ/FBO Review&quot;</formula>
+        <name>Update Rejected Stage to EBiZ/FBO Review</name>
+        <notifyAssignee>false</notifyAssignee>
+        <operation>Formula</operation>
+        <protected>false</protected>
+    </fieldUpdates>
+    <fieldUpdates>
+        <fullName>Update_Rejected_Stage_to_SOD_Review</fullName>
+        <field>Rejected_Stage__c</field>
+        <formula>&quot;SOD Review&quot;</formula>
+        <name>Update Rejected Stage to SOD Review</name>
+        <notifyAssignee>false</notifyAssignee>
+        <operation>Formula</operation>
+        <protected>false</protected>
+    </fieldUpdates>
+    <fieldUpdates>
+        <fullName>Update_Rejected_Stage_to_TA_Review</fullName>
+        <field>Rejected_Stage__c</field>
+        <formula>&quot;TA Review&quot;</formula>
+        <name>Update Rejected Stage to TA Review</name>
+        <notifyAssignee>false</notifyAssignee>
+        <operation>Formula</operation>
+        <protected>false</protected>
+    </fieldUpdates>
+    <fieldUpdates>
+        <fullName>Update_Rejected_stage_to_Test_Review</fullName>
+        <field>Rejected_Stage__c</field>
+        <formula>&quot;Test Review&quot;</formula>
+        <name>Update Rejected stage to Test Review</name>
+        <notifyAssignee>false</notifyAssignee>
+        <operation>Formula</operation>
+        <protected>false</protected>
+    </fieldUpdates>
+    <fieldUpdates>
         <fullName>Update_SOD_Approver</fullName>
         <field>SOD_Approver_Name__c</field>
         <formula>$User.FirstName+&quot; &quot;+$User.LastName</formula>

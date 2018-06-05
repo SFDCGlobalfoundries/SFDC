@@ -25,7 +25,7 @@ trigger DeploymentRequestTrigger on Deployment_Request__c (after update, before 
                 t.Deployment_Request__c = dr.Id;
                 t.Subject__c = 'Post Deployment Review';
                 t.Status__c = 'Not Started';
-                t.Description__c = 'Please validate changes in the target environment before this request is closed';
+                t.Description__c = 'Please validate changes in the target environment to complete the task';
                 tasks.add(t);
             }   
             

@@ -1000,6 +1000,11 @@
     </fieldPermissions>
     <fieldPermissions>
         <editable>false</editable>
+        <field>DR_Task__c.DR_Target_Environment__c</field>
+        <readable>false</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>false</editable>
         <field>DR_Task__c.Deployment_Request__c</field>
         <readable>false</readable>
     </fieldPermissions>

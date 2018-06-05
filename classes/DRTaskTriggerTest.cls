@@ -20,19 +20,7 @@ private class DRTaskTriggerTest{
         drObject.Is_TA_Review_Completed_txt__c = 'No';
         drObject.Stage_txt__c = 'Draft';
         insert drObject;
-          
-        DR_Task__c t = new DR_Task__c();
-        t.Assigned_To__c = drObject.ownerId;
-        t.Admin_Email__c = 'test@gmail.com';
-        t.Deployment_Request__c = drObject.Id;
-        t.Subject__c = 'Post Deployment Review';
-        t.Status__c = 'Not Started';
-        t.Description__c = 'Please validate changes in the target environment before this request is closed';
-        insert t;
 
-        t.Status__c = 'Completed';
-        update t;
-        
         DR_Task__c task = new DR_Task__c();
         task.Admin_Email__c = 'test@gmail.com';
         task.Deployment_Request__c = drObject.Id;
@@ -43,5 +31,18 @@ private class DRTaskTriggerTest{
         
         task.Status__c = 'Completed';
         update task;
+                  
+        /* DR_Task__c t = new DR_Task__c();
+        t.Assigned_To__c = drObject.ownerId;
+        t.Admin_Email__c = 'test@gmail.com';
+        t.Deployment_Request__c = drObject.Id;
+        t.Subject__c = 'Post Deployment Review';
+        t.Status__c = 'Not Started';
+        t.Description__c = 'Please validate changes in the target environment before this request is closed';
+        insert t;
+
+        t.Status__c = 'Completed';
+        update t; */
+                
     }
 }
