@@ -267,7 +267,10 @@ public class DeploymentRequestController{
                 return null;            
             }
             
-            
+            if(drObject.GFSDR__Stage_txt__c == 'Closed' || drObject.GFSDR__Stage_txt__c == 'Rejected'){
+                ApexPages.addmessage(new ApexPages.message(ApexPages.severity.Error,'Closed or Rejected Request cannot be updated'));
+                return null;            
+            }                        
             list<string> groupIds = new list<string>();
             string grpStartswithName = 'DR_Account_Management';
             if(drObject.Application_Name_txt__c == 'Account Management')

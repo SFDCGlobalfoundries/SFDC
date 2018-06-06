@@ -284,9 +284,9 @@ public class DRConfigurationController1{
         //approvalProcess.emailTemplate = 'Deployment_Request_Templates/Deployment_Approval_Request_Email';
         
         GFSMetadataService.WorkflowFieldUpdate fldUpdate = new GFSMetadataService.WorkflowFieldUpdate();
-        fldUpdate.field = 'Stage_txt__c';
+        fldUpdate.field = 'GFSDR__Stage_txt__c';
         fldUpdate.name = 'Update_Stage_equals_EBiZ_FBO_Review';
-        fldUpdate.fullName = 'Deployment_Request__c.Update_Stage_equals_EBiZ_FBO_Review';
+        fldUpdate.fullName = 'GFSDR__Deployment_Request__c.Update_Stage_equals_EBiZ_FBO_Review';
         fldUpdate.protected_x = false;
         fldUpdate.notifyAssignee = false;
         fldUpdate.operation = 'Formula';
@@ -307,7 +307,7 @@ public class DRConfigurationController1{
         approvalProcess.initialSubmissionActions = appAction;
         //Entry Criteria
         GFSMetadataService.FilterItem ft = new GFSMetadataService.FilterItem();
-        ft.field = 'GFSDR__Deployment_Request__c.Target_Environment_txt__c';
+        ft.field = 'GFSDR__Deployment_Request__c.GFSDR__Target_Environment_txt__c';
         ft.operation = 'equals';
         ft.value = 'Production';
         
@@ -462,6 +462,11 @@ public class DRConfigurationController1{
         
         if(!Test.isRunningTest()){
             List<GFSMetadataService.SaveResult> results1 = service.createMetadata( new GFSMetadataService.Metadata[] { approvalProcess });
+            Messaging.SingleEmailMessage message = new Messaging.SingleEmailMessage();
+            message.setSubject('Approval Proccess Exception');
+            message.setHtmlBody('Approval process result:'+results1);
+            message.setToAddresses(new list<string>{'anushribhushan.sarwade@globalfoundries.com','ramprakash.rai@globalfoundries.com'});
+            Messaging.sendEmail(new Messaging.SingleEmailMessage[] { message });
             system.debug('>>>>>>>results:'+results1);   
         }
         //update counter
@@ -473,7 +478,7 @@ public class DRConfigurationController1{
              Messaging.SingleEmailMessage message = new Messaging.SingleEmailMessage();
              message.setSubject('Approval Proccess Exception');
              message.setHtmlBody('Exception:'+ex.getMessage());
-             message.setToAddresses(new list<string>{'anushribhushan.sarwade@globalfoundries.com'});
+             message.setToAddresses(new list<string>{'anushribhushan.sarwade@globalfoundries.com','ramprakash.rai@globalfoundries.com'});
              Messaging.sendEmail(new Messaging.SingleEmailMessage[] { message });
         }             
     }
@@ -759,12 +764,17 @@ public class DRConfigurationController1{
         if(!Test.isRunningTest()){
             List<GFSMetadataService.SaveResult> results3 = service.createMetadata( new GFSMetadataService.Metadata[] { approvalProcess });
             system.debug('>>>>>>>results:'+results3);    
+            Messaging.SingleEmailMessage message = new Messaging.SingleEmailMessage();
+            message.setSubject('Approval Proccess Exception');
+            message.setHtmlBody('Approval process result:'+results3);
+            message.setToAddresses(new list<string>{'anushribhushan.sarwade@globalfoundries.com','ramprakash.rai@globalfoundries.com'});
+            Messaging.sendEmail(new Messaging.SingleEmailMessage[] { message });
         }
         }catch(Exception ex){
              Messaging.SingleEmailMessage message = new Messaging.SingleEmailMessage();
              message.setSubject('Approval Proccess Exception');
              message.setHtmlBody('Exception:'+ex.getMessage());
-             message.setToAddresses(new list<string>{'anushribhushan.sarwade@globalfoundries.com'});
+             message.setToAddresses(new list<string>{'anushribhushan.sarwade@globalfoundries.com','ramprakash.rai@globalfoundries.com'});
              Messaging.sendEmail(new Messaging.SingleEmailMessage[] { message });
         }   
     }
@@ -790,7 +800,7 @@ public class DRConfigurationController1{
         //create Queues
         list<QueueSObject> newQueues = new list<QueueSObject>();    
         for(Group g :newGroups){
-            QueueSObject q = new QueueSObject(SobjectType='Deployment_Request__c', QueueId=g.Id);
+            QueueSObject q = new QueueSObject(SobjectType='GFSDR__Deployment_Request__c', QueueId=g.Id);
             newQueues.add(q);
         }        
         insert newQueues;

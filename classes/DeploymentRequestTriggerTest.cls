@@ -9,7 +9,9 @@ private class DeploymentRequestTriggerTest{
     static testMethod void triggerTest(){
         Deployment_Request__c drObject = new Deployment_Request__c();
         drObject.Request_Type_txt__c = 'Emergency';
+        drObject.GFSDR__Application_Name_txt__c= 'Test';        
         drObject.Application_Category_txt__c = 'SOX compliance Apps';
+        drObject.GFSDR__Application_Name_txt__c= 'Test';
         drObject.Source_Environment_txt__c = 'SIT';
         drObject.Target_Environment_txt__c = 'UAT';
         drObject.Application_Category_txt__c = 'SOX compliance Apps';

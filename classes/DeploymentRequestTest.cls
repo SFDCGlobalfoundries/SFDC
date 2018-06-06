@@ -13,6 +13,7 @@ private class DeploymentRequestTest{
         drObject.Application_Category_txt__c = 'SOX compliance Apps';
         drObject.Source_Environment_txt__c = 'SIT';
         drObject.Target_Environment_txt__c = 'UAT';
+        drObject.GFSDR__Application_Name_txt__c= 'Test';
         drObject.Application_Category_txt__c = 'SOX compliance Apps';
         drObject.Short_Description__c = 'test';
         drObject.Description__c = 'test';
@@ -33,6 +34,7 @@ private class DeploymentRequestTest{
         drObject.Application_Category_txt__c = 'SOX compliance Apps';
         drObject.Source_Environment_txt__c = 'SIT';
         drObject.Target_Environment_txt__c = 'UAT';
+        drObject.GFSDR__Application_Name_txt__c= 'Test';
         drObject.Short_Description__c = 'test';
         drObject.Description__c = 'test';
         drObject.Deployment_Request_Date_Time__c = DateTime.now();
