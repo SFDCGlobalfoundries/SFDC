@@ -311,6 +311,11 @@ public class DeploymentRequestController{
     }
     
     public Pagereference cancel(){
-        return new PageReference('/'+drObject.Id).setRedirect(true);    
+    
+        
+        Schema.DescribeSObjectResult result = GFSDR__Deployment_Request__c.SObjectType.getDescribe();
+        PageReference pageRef = new PageReference('/' + result.getKeyPrefix());
+       
+       return pageRef ;
     }
 }

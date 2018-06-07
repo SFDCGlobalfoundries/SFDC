@@ -74,7 +74,8 @@ public class DRConfigurationController1{
             customObjectId = customObject.Id;
             customObjectId = customObjectId.substring(0,15);
         }
-        //Get server URL
+        
+        /*
         String sUrlRewrite = System.URL.getSalesforceBaseUrl().getHost();
         String sfBaseProtocol = System.URL.getSalesforceBaseUrl().getProtocol();
     
@@ -87,7 +88,34 @@ public class DRConfigurationController1{
         sUrlRewrite = sfBaseProtocol+'://'+sURlRewrite;
         system.debug('>>>>>>>>>>>>>>>>instance URL:'+sUrlRewrite);
         serverURL = sUrlRewrite;
+        */
         
+        
+        
+        String Host = ApexPages.currentPage().getHeaders().get('Host');
+
+        map<string, string> sandboxMap  = new map<string, string>() ;
+        sandboxMap.put('preprod','preprod');
+                  
+        Organization org = [select id,IsSandbox,InstanceName from Organization limit 1];   
+        String objectEndpointURL = 'https://'+Host;
+        string sandboxNameold = '',sandboxNameNew = '';
+        if(org.IsSandbox){
+            sandboxNameold = UserInfo.getUserName().substringAfterLast('.');   
+            if(sandboxMap.containsKey(sandboxNameold))
+                sandboxNameNew = sandboxMap.get(sandboxNameold);
+            
+            serverURL = 'https://globalfoundries--'+sandboxNameNew+'.'+org.InstanceName.tolowercase()+'.my.salesforce.com';
+        }else{
+            serverURL = URL.getSalesforceBaseUrl().toExternalForm().split('visual.force.com')[0];
+            if(serverURL.indexOf('gfsdr'+'.') > 0)
+                serverURL = 'https://'+serverURL.split('gfsdr'+'.')[1]+'salesforce.com';
+            else
+                serverURL += 'salesforce.com';
+        } 
+        
+        
+ 
         approvers = new list<DRApproverWrapper>();
         
         appNames = new list<SelectOption>();
@@ -234,6 +262,7 @@ public class DRConfigurationController1{
         createQueuesAndMembers(queueNames,newApproversIds);
         //createUATApprovalProcess();      
         ApexPages.addmessage(new ApexPages.message(ApexPages.severity.INFO,'Approvers added successfully'));
+
     }
     
     public void createApprovalProcesses(){
@@ -876,9 +905,16 @@ public class DRConfigurationController1{
     }
     
     public void save(){
-        add();
-        upsert config;
         
+        if(config.Admin_Email__c != null){
+            add();
+            upsert config;
+            ApexPages.addmessage(new ApexPages.message(ApexPages.severity.INFO,'DR Configurations saved successfully'));   
+        }else{
+        
+            ApexPages.addmessage(new ApexPages.message(ApexPages.severity.Error,'Please Enter Configure Admin Email'));   
+        }
+         
         /* list<Application_Approver__c> appApprovers = new list<Application_Approver__c>();
 
         upsert appApprovers;
@@ -889,6 +925,6 @@ public class DRConfigurationController1{
         } */
         
         //updateDRQueues(appIds);
-        ApexPages.addmessage(new ApexPages.message(ApexPages.severity.INFO,'DR Configurations saved successfully'));
+     
     }   
 }
