@@ -561,8 +561,11 @@ public class DRConfigurationController1{
         
         GFSMetadataService.ApprovalAction appAction = new GFSMetadataService.ApprovalAction();
         appAction.action = new list<GFSMetadataService.WorkflowActionReference>{initAction} ;
+        
             
         approvalProcess.initialSubmissionActions = appAction;
+        approvalProcess.recallActions = appAction;
+        
         //Entry Criteria
         GFSMetadataService.FilterItem ft = new GFSMetadataService.FilterItem();
         ft.field = 'GFSDR__Deployment_Request__c.GFSDR__Target_Environment_txt__c';
@@ -594,7 +597,8 @@ public class DRConfigurationController1{
         approvalTFAStep.label='TFA Approval';
         approvalTFAStep.allowDelegate= true;
         approvalTFAStep.assignedApprover = tfastepApprover;
-
+        
+        
         /* GFSMetadataService.WorkflowFieldUpdate tfaReviewerfldUpdate = new GFSMetadataService.WorkflowFieldUpdate();
         tfaReviewerfldUpdate.field = 'TFA_Approver_Name__c';
         tfaReviewerfldUpdate.name = 'Update_DR_TFA_Reviewer';
@@ -616,6 +620,8 @@ public class DRConfigurationController1{
         //field update 
         GFSMetadataService.WorkflowFieldUpdate tafldUpdate = new GFSMetadataService.WorkflowFieldUpdate();
         GFSMetadataService.WorkflowFieldUpdate tafldUpdate1 = new GFSMetadataService.WorkflowFieldUpdate();
+        GFSMetadataService.WorkflowFieldUpdate tafldUpdate2 = new GFSMetadataService.WorkflowFieldUpdate();
+        
         tafldUpdate.field = 'GFSDR__Stage_txt__c';
         tafldUpdate.name = 'Update_Stage_equals_TA_Review';
         tafldUpdate.fullName = 'GFSDR__Deployment_Request__c.Update_Stage_equals_TA_Review';
@@ -633,6 +639,14 @@ public class DRConfigurationController1{
         tafldUpdate1.operation = 'Formula';
         tafldUpdate1.formula = '"TFA Review"';
         
+        tafldUpdate2.field = 'GFSDR__Stage_txt__c';
+        tafldUpdate2.name = 'Update_Stage_to_Draft';
+        tafldUpdate2.fullName = 'GFSDR__Deployment_Request__c.Update_Stage_to_Draft';
+        tafldUpdate2.protected_x = false;
+        tafldUpdate2.notifyAssignee = false;
+        tafldUpdate2.operation = 'Formula';
+        tafldUpdate2.formula = '"Draft"';
+        
         
         
         if(!Test.isRunningTest()){
@@ -643,12 +657,20 @@ public class DRConfigurationController1{
         //tfa approval action
         GFSMetadataService.WorkflowActionReference taAction = new GFSMetadataService.WorkflowActionReference();
         GFSMetadataService.WorkflowActionReference taAction1 = new GFSMetadataService.WorkflowActionReference();
+        GFSMetadataService.ApprovalAction taAction2 = new GFSMetadataService.ApprovalAction();
         
         taAction.name = 'Update_Stage_equals_TA_Review';
         taAction.type_x = 'FieldUpdate';
         
         taAction1.name = 'Update_Rejected_Stage_field';
         taAction1.type_x = 'FieldUpdate';
+        
+        // taAction2.action = new list<GFSMetadataService.WorkflowActionReference>{tafldUpdate2};
+        
+       // taAction2.name = 'Update_Stage_to_Draft';
+      //  taAction2.type_x = 'FieldUpdate';
+        
+        
 
         /* GFSMetadataService.WorkflowActionReference tfaAction2 = new GFSMetadataService.WorkflowActionReference();
         taAction.name = 'Update_DR_TFA_Reviewer';
@@ -659,11 +681,15 @@ public class DRConfigurationController1{
         
         GFSMetadataService.ApprovalAction taStepAction1 = new GFSMetadataService.ApprovalAction();
         
-        taStepAction1.action = new list<GFSMetadataService.WorkflowActionReference>{taAction1} ;
-                 
-        approvalTFAStep.approvalActions = taStepAction;
-        approvalProcess.approvalStep.add(approvalTFAStep);
+        GFSMetadataService.ApprovalProcess recallAction = new GFSMetadataService.ApprovalProcess();
         
+        
+                 
+        approvalTFAStep.approvalActions  = taStepAction;
+        approvalTFAStep.rejectionActions = taStepAction;
+        
+        approvalProcess.approvalStep.add(approvalTFAStep);
+       // approvalProcess.approvalStep.add(approvalTFAStep);
         
         //TA Step
         GFSMetadataService.Approver taapprover= new GFSMetadataService.Approver();
