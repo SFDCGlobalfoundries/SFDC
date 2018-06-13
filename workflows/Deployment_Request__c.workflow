@@ -91,6 +91,15 @@
         <protected>false</protected>
     </fieldUpdates>
     <fieldUpdates>
+        <fullName>Update_Rejected_Stage_field_TA</fullName>
+        <field>Rejected_Stage__c</field>
+        <formula>&quot;TA Review&quot;</formula>
+        <name>Update_Rejected_Stage_field_TA</name>
+        <notifyAssignee>false</notifyAssignee>
+        <operation>Formula</operation>
+        <protected>false</protected>
+    </fieldUpdates>
+    <fieldUpdates>
         <fullName>Update_Rejected_Stage_to_CAB_Review</fullName>
         <field>Rejected_Stage__c</field>
         <formula>&quot;CAB Review&quot;</formula>
