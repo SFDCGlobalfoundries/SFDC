@@ -46,6 +46,15 @@
         <protected>false</protected>
     </fieldUpdates>
     <fieldUpdates>
+        <fullName>Update_CAB_Approverr</fullName>
+        <field>CAB_Approver_Name__c</field>
+        <formula>$User.FirstName + $User.LastName</formula>
+        <name>Update_CAB_Approverr</name>
+        <notifyAssignee>false</notifyAssignee>
+        <operation>Formula</operation>
+        <protected>false</protected>
+    </fieldUpdates>
+    <fieldUpdates>
         <fullName>Update_DR_CAB_Reviewer</fullName>
         <field>CAB_Approver_Name__c</field>
         <formula>&quot;$User.FirstName&quot;+&quot; &quot;+&quot;$User.LastName&quot;</formula>
@@ -57,7 +66,7 @@
     <fieldUpdates>
         <fullName>Update_DR_TA_Reviewer</fullName>
         <field>TA_Approver_Name__c</field>
-        <formula>&quot;$User.FirstName&quot;+&quot; &quot;+&quot;$User.LastName&quot;</formula>
+        <formula>$User.FirstName + $User.LastName</formula>
         <name>Update_DR_TA_Reviewer</name>
         <notifyAssignee>false</notifyAssignee>
         <operation>Formula</operation>
@@ -103,7 +112,7 @@
         <fullName>Update_Rejected_Stage_to_CAB_Review</fullName>
         <field>Rejected_Stage__c</field>
         <formula>&quot;CAB Review&quot;</formula>
-        <name>Update Rejected Stage to CAB Review</name>
+        <name>Update_Rejected_Stage_to_CAB_Review</name>
         <notifyAssignee>false</notifyAssignee>
         <operation>Formula</operation>
         <protected>false</protected>
@@ -158,6 +167,15 @@
         <field>Stage_txt__c</field>
         <formula>&quot;Approved&quot;</formula>
         <name>Update_Stage_equals_Approved</name>
+        <notifyAssignee>false</notifyAssignee>
+        <operation>Formula</operation>
+        <protected>false</protected>
+    </fieldUpdates>
+    <fieldUpdates>
+        <fullName>Update_Stage_equals_Approvedd</fullName>
+        <field>Stage_txt__c</field>
+        <formula>&quot;Approved&quot;</formula>
+        <name>Update_Stage_equals_Approvedd</name>
         <notifyAssignee>false</notifyAssignee>
         <operation>Formula</operation>
         <protected>false</protected>
@@ -280,10 +298,28 @@
         <protected>false</protected>
     </fieldUpdates>
     <fieldUpdates>
+        <fullName>Update_TA_Approver_Name</fullName>
+        <field>TA_Approver_Name__c</field>
+        <formula>&quot; &quot;</formula>
+        <name>Update_TA_Approver_Name</name>
+        <notifyAssignee>false</notifyAssignee>
+        <operation>Formula</operation>
+        <protected>false</protected>
+    </fieldUpdates>
+    <fieldUpdates>
         <fullName>Update_TFA_Approver</fullName>
         <field>TFA_Approver_Name__c</field>
         <formula>$User.FirstName+&quot; &quot;+$User.LastName</formula>
         <name>Update TFA Approver</name>
+        <notifyAssignee>false</notifyAssignee>
+        <operation>Formula</operation>
+        <protected>false</protected>
+    </fieldUpdates>
+    <fieldUpdates>
+        <fullName>Update_TFA_Approver_Name</fullName>
+        <field>TFA_Approver_Name__c</field>
+        <formula>&quot; &quot;</formula>
+        <name>Update_TFA_Approver_Name</name>
         <notifyAssignee>false</notifyAssignee>
         <operation>Formula</operation>
         <protected>false</protected>
