@@ -781,7 +781,7 @@ public class GFSMetadataService {
         private String[] allowRecall_type_info = new String[]{'allowRecall','http://soap.sforce.com/2006/04/metadata',null,'0','1','false'};
         private String[] allowedSubmitters_type_info = new String[]{'allowedSubmitters','http://soap.sforce.com/2006/04/metadata',null,'0','-1','false'};
         private String[] approvalPageFields_type_info = new String[]{'approvalPageFields','http://soap.sforce.com/2006/04/metadata',null,'0','1','false'};
-        private String[] approvalStep_type_info = new String[]{'approvalStep','http://soap.sforce.com/2006/04/metadata',null,'0','-1','false'};
+        private String[] approvalStep_type_info = new String[]{'approvalStep','http://soap.sforce.com/2006/04/metadata',null,'0','1','false'};
         private String[] description_type_info = new String[]{'description','http://soap.sforce.com/2006/04/metadata',null,'0','1','false'};
         private String[] emailTemplate_type_info = new String[]{'emailTemplate','http://soap.sforce.com/2006/04/metadata',null,'0','1','false'};
         private String[] enableMobileDeviceAccess_type_info = new String[]{'enableMobileDeviceAccess','http://soap.sforce.com/2006/04/metadata',null,'0','1','false'};

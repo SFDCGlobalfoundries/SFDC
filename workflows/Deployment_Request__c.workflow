@@ -64,6 +64,15 @@
         <protected>false</protected>
     </fieldUpdates>
     <fieldUpdates>
+        <fullName>Update_DR_EBIZ_Reviewer</fullName>
+        <field>EBIZ_FBO_Approver_Name__c</field>
+        <formula>$User.FirstName + $User.LastName</formula>
+        <name>Update_DR_EBIZ_Reviewer</name>
+        <notifyAssignee>false</notifyAssignee>
+        <operation>Formula</operation>
+        <protected>false</protected>
+    </fieldUpdates>
+    <fieldUpdates>
         <fullName>Update_DR_TA_Reviewer</fullName>
         <field>TA_Approver_Name__c</field>
         <formula>$User.FirstName + $User.LastName</formula>
@@ -163,10 +172,28 @@
         <protected>false</protected>
     </fieldUpdates>
     <fieldUpdates>
+        <fullName>Update_SOD_Approver_Update</fullName>
+        <field>SOD_Approver_Name__c</field>
+        <formula>$User.FirstName + $User.LastName</formula>
+        <name>Update_SOD_Approver_Update</name>
+        <notifyAssignee>false</notifyAssignee>
+        <operation>Formula</operation>
+        <protected>false</protected>
+    </fieldUpdates>
+    <fieldUpdates>
         <fullName>Update_Stage_equals_Approved</fullName>
         <field>Stage_txt__c</field>
         <formula>&quot;Approved&quot;</formula>
         <name>Update_Stage_equals_Approved</name>
+        <notifyAssignee>false</notifyAssignee>
+        <operation>Formula</operation>
+        <protected>false</protected>
+    </fieldUpdates>
+    <fieldUpdates>
+        <fullName>Update_Stage_equals_Approved_Rj</fullName>
+        <field>Rejected_Stage__c</field>
+        <formula>&quot;CAB Review&quot;</formula>
+        <name>Update_Stage_equals_Approved_Rj</name>
         <notifyAssignee>false</notifyAssignee>
         <operation>Formula</operation>
         <protected>false</protected>
@@ -185,6 +212,15 @@
         <field>Stage_txt__c</field>
         <formula>&quot;CAB Review&quot;</formula>
         <name>Update_Stage_equals_CAB_Review</name>
+        <notifyAssignee>false</notifyAssignee>
+        <operation>Formula</operation>
+        <protected>false</protected>
+    </fieldUpdates>
+    <fieldUpdates>
+        <fullName>Update_Stage_equals_CAB_Review_Rj</fullName>
+        <field>Rejected_Stage__c</field>
+        <formula>&quot;SOD Review&quot;</formula>
+        <name>Update_Stage_equals_CAB_Review_Rj</name>
         <notifyAssignee>false</notifyAssignee>
         <operation>Formula</operation>
         <protected>false</protected>
@@ -217,6 +253,15 @@
         <protected>false</protected>
     </fieldUpdates>
     <fieldUpdates>
+        <fullName>Update_Stage_equals_SOD_Review_Rj</fullName>
+        <field>Rejected_Stage__c</field>
+        <formula>&quot;Test Review&quot;</formula>
+        <name>Update_Stage_equals_SOD_Review_Rj</name>
+        <notifyAssignee>false</notifyAssignee>
+        <operation>Formula</operation>
+        <protected>false</protected>
+    </fieldUpdates>
+    <fieldUpdates>
         <fullName>Update_Stage_equals_TA_Review</fullName>
         <field>Stage_txt__c</field>
         <formula>&quot;TA Review&quot;</formula>
@@ -230,6 +275,15 @@
         <field>Stage_txt__c</field>
         <formula>&quot;Test Review&quot;</formula>
         <name>Update_Stage_equals_TEST_Review</name>
+        <notifyAssignee>false</notifyAssignee>
+        <operation>Formula</operation>
+        <protected>false</protected>
+    </fieldUpdates>
+    <fieldUpdates>
+        <fullName>Update_Stage_equals_TEST_Review_Rj</fullName>
+        <field>Rejected_Stage__c</field>
+        <formula>&quot;EBiZ/FBO Review&quot;</formula>
+        <name>Update_Stage_equals_TEST_Review_Rj</name>
         <notifyAssignee>false</notifyAssignee>
         <operation>Formula</operation>
         <protected>false</protected>
@@ -271,6 +325,15 @@
         <protected>false</protected>
     </fieldUpdates>
     <fieldUpdates>
+        <fullName>Update_Stage_to_Draft_Prd</fullName>
+        <field>Stage_txt__c</field>
+        <formula>&quot;Draft&quot;</formula>
+        <name>Update_Stage_to_Draft_Prd</name>
+        <notifyAssignee>false</notifyAssignee>
+        <operation>Formula</operation>
+        <protected>false</protected>
+    </fieldUpdates>
+    <fieldUpdates>
         <fullName>Update_Stage_to_TA_Review</fullName>
         <field>Stage_txt__c</field>
         <formula>&quot;TA Review&quot;</formula>
@@ -307,6 +370,15 @@
         <protected>false</protected>
     </fieldUpdates>
     <fieldUpdates>
+        <fullName>Update_TA_Approver_Name_Prd</fullName>
+        <field>TA_Approver_Name__c</field>
+        <formula>&quot; &quot;</formula>
+        <name>Update_TA_Approver_Name_Prd</name>
+        <notifyAssignee>false</notifyAssignee>
+        <operation>Formula</operation>
+        <protected>false</protected>
+    </fieldUpdates>
+    <fieldUpdates>
         <fullName>Update_TFA_Approver</fullName>
         <field>TFA_Approver_Name__c</field>
         <formula>$User.FirstName+&quot; &quot;+$User.LastName</formula>
@@ -320,6 +392,15 @@
         <field>TFA_Approver_Name__c</field>
         <formula>&quot; &quot;</formula>
         <name>Update_TFA_Approver_Name</name>
+        <notifyAssignee>false</notifyAssignee>
+        <operation>Formula</operation>
+        <protected>false</protected>
+    </fieldUpdates>
+    <fieldUpdates>
+        <fullName>Update_TFA_Approver_Name_Prd</fullName>
+        <field>TFA_Approver_Name__c</field>
+        <formula>&quot; &quot;</formula>
+        <name>Update_TFA_Approver_Name_Prd</name>
         <notifyAssignee>false</notifyAssignee>
         <operation>Formula</operation>
         <protected>false</protected>
