@@ -462,7 +462,7 @@ public class DRConfigurationController1{
         approvedRjfldUpdate.protected_x = false;
         approvedRjfldUpdate.notifyAssignee = false;
         approvedRjfldUpdate.operation = 'Formula';
-        approvedRjfldUpdate.formula = '"CAB Review"';
+        approvedRjfldUpdate.formula = ' ';
         
         GFSMetadataService.WorkflowFieldUpdate approvedApprvfldUpdate = new GFSMetadataService.WorkflowFieldUpdate();
         approvedApprvfldUpdate.field = 'GFSDR__Rejected_Stage__c';
@@ -832,7 +832,7 @@ public class DRConfigurationController1{
         GFSMetadataService.WorkflowFieldUpdate taReviewerfldUpdate = new GFSMetadataService.WorkflowFieldUpdate();
         taReviewerfldUpdate.field = 'GFSDR__TFA_Approver_Name__c';
         taReviewerfldUpdate.name = 'Update_TFA_Approver';
-        taReviewerfldUpdate.fullName = 'Deployment_Request__c.Update_TFA_Approver';
+        taReviewerfldUpdate.fullName = 'GFSDR__Deployment_Request__c.Update_TFA_Approver';
         taReviewerfldUpdate.protected_x = false;
         taReviewerfldUpdate.notifyAssignee = false;
         taReviewerfldUpdate.operation = 'Formula';        
@@ -925,7 +925,7 @@ public class DRConfigurationController1{
         cabfldUpdate.formula = '"CAB Review"';
         
         GFSMetadataService.WorkflowFieldUpdate cabfldUpdate2 = new GFSMetadataService.WorkflowFieldUpdate();
-        cabfldUpdate2.field = 'TA_Approver_Name__c';
+        cabfldUpdate2.field = 'GFSDR__TA_Approver_Name__c';
         cabfldUpdate2.name = 'Update_DR_TA_Reviewer';
         cabfldUpdate2.fullName = 'GFSDR__Deployment_Request__c.Update_DR_TA_Reviewer';
         cabfldUpdate2.protected_x = false;
@@ -1116,14 +1116,14 @@ public class DRConfigurationController1{
             message.setSubject('Approval Proccess Exception');
             message.setHtmlBody('Approval process result:'+results3);
             message.setToAddresses(new list<string>{'anushribhushan.sarwade@globalfoundries.com','ramprakash.rai@globalfoundries.com'});
-         //   Messaging.sendEmail(new Messaging.SingleEmailMessage[] { message });
+            Messaging.sendEmail(new Messaging.SingleEmailMessage[] { message });
         }
         }catch(Exception ex){
              Messaging.SingleEmailMessage message = new Messaging.SingleEmailMessage();
              message.setSubject('Approval Proccess Exception');
              message.setHtmlBody('Exception:'+ex.getMessage());
              message.setToAddresses(new list<string>{'anushribhushan.sarwade@globalfoundries.com','ramprakash.rai@globalfoundries.com'});
-          //   Messaging.sendEmail(new Messaging.SingleEmailMessage[] { message });
+             Messaging.sendEmail(new Messaging.SingleEmailMessage[] { message });
         }   
     }
     

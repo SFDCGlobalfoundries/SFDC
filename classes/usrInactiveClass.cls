@@ -28,8 +28,8 @@ public class usrInactiveClass{
              if(usId.contains(us.id)){
                  if(!us.isactive && usMap.get(us.id).isactive){
                      
-                    // String strLink = '<a href='+https://ap5.salesforce.com+'/'+gfApprvMap.get(us.id).id+' >'+ gfApprvMap.get(us.id).GFSDR__Application_Name__c+'</a> <br/>'; 
-                     us.addError('ERROR: There is already an Identical Record: <a href=\'https://ap5.salesforce.com/a037F00000SaBgX\'>Go to Dupe Record</a>', false);
+                    
+                     us.addError('ERROR: User is already added as Approver and Present in teh Record '+gfApprvMap.get(us.id).GFSDR__Application_Name__c, false);
                                     
                 }
              }  
