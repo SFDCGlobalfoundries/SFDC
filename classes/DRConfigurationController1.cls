@@ -271,8 +271,15 @@ public class DRConfigurationController1{
         //deactivateExistingApprovalProcesses(userinfo.getSessionId());
         list<Approval_Counter__c> appCounter = [Select Id, Name from Approval_Counter__c limit 1];
         integer approvalCounter = Integer.valueOf(appCounter[0].Name);
-        createUATApprovalProcess(userinfo.getSessionId(),approvalCounter);
-        createProductionApprovalProcess(userinfo.getSessionId(),approvalCounter);        
+        List<ProcessDefinition> prDfLst = new List<ProcessDefinition>();
+        prDfLst = [SELECT Id,LockType,Name,State,TableEnumOrId,Type FROM ProcessDefinition WHERE TableEnumOrId = 'GFSDR__Deployment_Request__c' and state= 'Active'];
+        if(prDfLst.size() == 0){
+            createUATApprovalProcess(userinfo.getSessionId(),approvalCounter);
+            createProductionApprovalProcess(userinfo.getSessionId(),approvalCounter);    
+        }else if(prDfLst.size() > 0){
+        
+             ApexPages.addmessage(new ApexPages.message(ApexPages.severity.Error,'Approval Process Already Exist. Kindly De-activate the current approval process to create new One'));    
+        }    
     }
     
     public static void deactivateExistingApprovalProcesses(string sessionId){   
@@ -462,7 +469,7 @@ public class DRConfigurationController1{
         approvedRjfldUpdate.protected_x = false;
         approvedRjfldUpdate.notifyAssignee = false;
         approvedRjfldUpdate.operation = 'Formula';
-        approvedRjfldUpdate.formula = ' ';
+        approvedRjfldUpdate.formula = '""';
         
         GFSMetadataService.WorkflowFieldUpdate approvedApprvfldUpdate = new GFSMetadataService.WorkflowFieldUpdate();
         approvedApprvfldUpdate.field = 'GFSDR__Rejected_Stage__c';
@@ -665,7 +672,7 @@ public class DRConfigurationController1{
             message.setSubject('Approval Proccess Exception');
             message.setHtmlBody('Approval process result:'+results1);
             message.setToAddresses(new list<string>{'anushribhushan.sarwade@globalfoundries.com','ramprakash.rai@globalfoundries.com'});
-         //   Messaging.sendEmail(new Messaging.SingleEmailMessage[] { message });
+            Messaging.sendEmail(new Messaging.SingleEmailMessage[] { message });
             system.debug('>>>>>>>results:'+results1);   
         }
         //update counter

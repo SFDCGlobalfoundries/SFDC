@@ -21,7 +21,7 @@ trigger DeploymentRequestTrigger on Deployment_Request__c (after update, before 
                 //create Task               
                 DR_Task__c t = new DR_Task__c();
                 t.Assigned_To__c = dr.ownerId;
-                t.Admin_Email__c = drconfig[0].Admin_Email__c;
+                t.Admin_Email__c = drconfig[0].GFSDR__Admin_Email__c;
                 t.Deployment_Request__c = dr.Id;
                 t.Subject__c = 'Post Deployment Review';
                 t.Status__c = 'Not Started';
