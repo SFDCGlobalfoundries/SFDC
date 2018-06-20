@@ -16,6 +16,9 @@ public class DRConfigurationController1{
     public list<SelectOption> appNames{get; set;}
     public string newAppName{get; set;}
     public boolean rndrCrtApprov {get;set;}
+    public static boolean isUATProcCreated;
+    public static boolean isProdProcCreated;
+    
 
     public List<string> leftselected{get;set;}
     public List<string> rightselected{get;set;}
@@ -121,7 +124,12 @@ public class DRConfigurationController1{
         
         appNames = new list<SelectOption>();
         set<string> aNames = new set<string>();
-        list<Application_Approver__c> existingApprovers = [Select Id, name, User__c, Application_Name__c, Role__c from Application_Approver__c];
+    //     Map<Id,Profile> profileIds = new Map<id,profile>([SELECT Id,UserLicenseId FROM Profile where UserLicenseId in (SELECT Id FROM UserLicense where name ='Salesforce')]); 
+    //     List<user> standardProfileUsers = [select id from user where profileId in:profileIds.Keyset()];
+
+        
+        
+        list<Application_Approver__c> existingApprovers = [Select Id, name, GFSDR__User__c , Application_Name__c, Role__c from Application_Approver__c ];
         for(Application_Approver__c appApprover: existingApprovers)
             aNames.add(appApprover.Application_Name__c);
         appNames.add(new SelectOption('','--None--'));
@@ -133,7 +141,10 @@ public class DRConfigurationController1{
         rightvalues = new set<string>();
         
         newlyAddedValues = new set<string>();
-        removedValues = new set<string>();       
+        removedValues = new set<string>();      
+        isUATProcCreated = false ;
+        isProdProcCreated = false ;
+         
     }
     
     public PageReference selectclick(){
@@ -276,9 +287,11 @@ public class DRConfigurationController1{
         if(prDfLst.size() == 0){
             createUATApprovalProcess(userinfo.getSessionId(),approvalCounter);
             createProductionApprovalProcess(userinfo.getSessionId(),approvalCounter);    
-        }else if(prDfLst.size() > 0){
+            if(isUATProcCreated == true && isProdProcCreated == true)
+                ApexPages.addmessage(new ApexPages.message(ApexPages.severity.Error,'Approval Process created.Please check Approval Process Page'));         
+          }else if(prDfLst.size() > 0){
         
-             ApexPages.addmessage(new ApexPages.message(ApexPages.severity.Error,'Approval Process Already Exist. Kindly De-activate the current approval process to create new One'));    
+          ApexPages.addmessage(new ApexPages.message(ApexPages.severity.Error,'Approval Process Already Exist. Kindly De-activate the current approval process to create new One'));    
         }    
     }
     
@@ -319,7 +332,7 @@ public class DRConfigurationController1{
         approvalProcess.finalApprovalRecordLock = false; 
         approvalProcess.finalRejectionRecordLock = false;
         approvalProcess.showApprovalHistory = false;
-        //approvalProcess.emailTemplate = 'Deployment_Request_Templates/Deployment_Approval_Request_Email';
+        approvalProcess.emailTemplate = 'Deployment_Request_Templates/Deployment_Approval_Request_Email';
         
         GFSMetadataService.WorkflowFieldUpdate fldUpdate = new GFSMetadataService.WorkflowFieldUpdate();
         fldUpdate.field = 'GFSDR__Stage_txt__c';
@@ -469,16 +482,16 @@ public class DRConfigurationController1{
         approvedRjfldUpdate.protected_x = false;
         approvedRjfldUpdate.notifyAssignee = false;
         approvedRjfldUpdate.operation = 'Formula';
-        approvedRjfldUpdate.formula = '""';
+        approvedRjfldUpdate.formula = '"CAB Review"';
         
         GFSMetadataService.WorkflowFieldUpdate approvedApprvfldUpdate = new GFSMetadataService.WorkflowFieldUpdate();
-        approvedApprvfldUpdate.field = 'GFSDR__Rejected_Stage__c';
+        approvedApprvfldUpdate.field = 'GFSDR__CAB_Approver_Name__c';
         approvedApprvfldUpdate.name = 'Update_Stage_equals_Approved_Appr';
         approvedApprvfldUpdate.fullName = 'GFSDR__Deployment_Request__c.Update_Stage_equals_Approved_Appr';
         approvedApprvfldUpdate.protected_x = false;
         approvedApprvfldUpdate.notifyAssignee = false;
         approvedApprvfldUpdate.operation = 'Formula';
-        approvedApprvfldUpdate.formula = '"CAB Review"';
+        approvedApprvfldUpdate.formula = '$User.FirstName + $User.LastName';
              
         
         if(!Test.isRunningTest())
@@ -674,12 +687,14 @@ public class DRConfigurationController1{
             message.setToAddresses(new list<string>{'anushribhushan.sarwade@globalfoundries.com','ramprakash.rai@globalfoundries.com'});
             Messaging.sendEmail(new Messaging.SingleEmailMessage[] { message });
             system.debug('>>>>>>>results:'+results1);   
+           
         }
         //update counter
         list<Approval_Counter__c> appCounter = [Select Id, Name from Approval_Counter__c limit 1];    
         integer c = Integer.valueOf(appCounter[0].Name);    
         appCounter[0].Name = string.valueOf(c + 1);
         update appCounter; 
+        isProdProcCreated = true;
         }catch(Exception ex){
              Messaging.SingleEmailMessage message = new Messaging.SingleEmailMessage();
              message.setSubject('Approval Proccess Exception');
@@ -688,6 +703,7 @@ public class DRConfigurationController1{
          //    Messaging.sendEmail(new Messaging.SingleEmailMessage[] { message });
         }             
     }
+    
     
     @future(callout=true)
     public static void createUATApprovalProcess(string sessionId, integer counter){
@@ -717,7 +733,7 @@ public class DRConfigurationController1{
         approvalProcess.finalApprovalRecordLock = false; 
         approvalProcess.finalRejectionRecordLock = false;
         approvalProcess.showApprovalHistory = false;
-        //approvalProcess.emailTemplate = 'Deployment_Request_Templates/Deployment_Approval_Request_Email';
+        approvalProcess.emailTemplate = 'Deployment_Request_Templates/Deployment_Approval_Request_Email';
         
         GFSMetadataService.WorkflowFieldUpdate fldUpdate = new GFSMetadataService.WorkflowFieldUpdate();
         fldUpdate.field = 'GFSDR__Stage_txt__c';
@@ -1124,6 +1140,7 @@ public class DRConfigurationController1{
             message.setHtmlBody('Approval process result:'+results3);
             message.setToAddresses(new list<string>{'anushribhushan.sarwade@globalfoundries.com','ramprakash.rai@globalfoundries.com'});
             Messaging.sendEmail(new Messaging.SingleEmailMessage[] { message });
+            isUATProcCreated = true;
         }
         }catch(Exception ex){
              Messaging.SingleEmailMessage message = new Messaging.SingleEmailMessage();
@@ -1234,9 +1251,12 @@ public class DRConfigurationController1{
     public void save(){
         
         if(config.Admin_Email__c != null){
+             ApexPages.addmessage(new ApexPages.message(ApexPages.severity.INFO,'DR Configurations saved successfully'));   
+            long now = datetime.now().gettime();
+            while(datetime.now().gettime()-now<2000);
             add();
             upsert config;
-            ApexPages.addmessage(new ApexPages.message(ApexPages.severity.INFO,'DR Configurations saved successfully'));   
+           
         }else{
         
             ApexPages.addmessage(new ApexPages.message(ApexPages.severity.Error,'Please Enter Configure Admin Email'));   

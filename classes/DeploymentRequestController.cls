@@ -62,6 +62,7 @@ public class DeploymentRequestController{
         List<Schema.PicklistEntry> notesPle = notesResult.getPicklistValues();
         for(Schema.PicklistEntry f : notesPle)
             additionalNotes.add(new SelectOption(f.getLabel(), f.getValue()));       
+        system.debug('-additionalNotes-'+additionalNotes);    
 
         applicationCategory = new list<SelectOption>();
         applicationCategory.add(new SelectOption('','--None--'));
@@ -158,7 +159,8 @@ public class DeploymentRequestController{
         Schema.DescribeFieldResult systemAffectedResult = DR_Configuration__c.System_Affected__c.getDescribe();
         List<Schema.PicklistEntry> systemAffectedple = systemAffectedResult.getPicklistValues();
         for(Schema.PicklistEntry f : systemAffectedple)
-            systemAffected.add(new SelectOption(f.getLabel(), f.getValue()));                                   
+            systemAffected.add(new SelectOption(f.getLabel(), f.getValue()));        
+        system.debug('-systemAffected-'+systemAffected);                               
     }
     
     public void updateStages(){

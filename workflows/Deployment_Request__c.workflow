@@ -209,8 +209,8 @@
     </fieldUpdates>
     <fieldUpdates>
         <fullName>Update_Stage_equals_Approved_Appr</fullName>
-        <field>Rejected_Stage__c</field>
-        <formula>&quot;CAB Review&quot;</formula>
+        <field>CAB_Approver_Name__c</field>
+        <formula>$User.FirstName + $User.LastName</formula>
         <name>Update_Stage_equals_Approved_Appr</name>
         <notifyAssignee>false</notifyAssignee>
         <operation>Formula</operation>
