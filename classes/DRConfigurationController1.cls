@@ -18,7 +18,7 @@ public class DRConfigurationController1{
     public boolean rndrCrtApprov {get;set;}
     public static boolean isUATProcCreated;
     public static boolean isProdProcCreated;
-    
+    public string apprvlMssg {get;set;}
 
     public List<string> leftselected{get;set;}
     public List<string> rightselected{get;set;}
@@ -94,7 +94,7 @@ public class DRConfigurationController1{
         serverURL = sUrlRewrite;
         */
         
-        
+        apprvlMssg = ApexPages.currentPage().getParameters().get('mssg');
         
         String Host = ApexPages.currentPage().getHeaders().get('Host');
 
@@ -144,6 +144,11 @@ public class DRConfigurationController1{
         removedValues = new set<string>();      
         isUATProcCreated = false ;
         isProdProcCreated = false ;
+        
+        if(apprvlMssg == 'Approvers added successfully'){
+           
+            ApexPages.addMessage(new ApexPages.Message(ApexPages.severity.INFO,'Approvers added successfully'));
+        }   
          
     }
     
@@ -248,7 +253,7 @@ public class DRConfigurationController1{
         approvers.add(wrapper);
     }
 
-    public void saveApprovers(){
+    public pagereference saveApprovers(){
         //fetch existing approvers
         //list<Application_Approver__c> extapprovers = [Select Id, name, User__c, Application_Name__c, Role__c from Application_Approver__c where Application_Name__c = :applicationName];
         //delete extapprovers;
@@ -274,7 +279,11 @@ public class DRConfigurationController1{
             
         createQueuesAndMembers(queueNames,newApproversIds);
         //createUATApprovalProcess();      
-        ApexPages.addmessage(new ApexPages.message(ApexPages.severity.INFO,'Approvers added successfully'));
+       // ApexPages.addmessage(new ApexPages.message(ApexPages.severity.INFO,'Approvers added successfully'));
+        PageReference pgRef = new PageReference('/apex/DRConfiguration1');
+        pgRef.getParameters().put('mssg', 'Approvers added successfully');
+        pgRef.setRedirect(true);
+        return pgRef;
 
     }
     
@@ -284,15 +293,15 @@ public class DRConfigurationController1{
         integer approvalCounter = Integer.valueOf(appCounter[0].Name);
         List<ProcessDefinition> prDfLst = new List<ProcessDefinition>();
         prDfLst = [SELECT Id,LockType,Name,State,TableEnumOrId,Type FROM ProcessDefinition WHERE TableEnumOrId = 'GFSDR__Deployment_Request__c' and state= 'Active'];
-        if(prDfLst.size() == 0){
+      //  if(prDfLst.size() == 0){
             createUATApprovalProcess(userinfo.getSessionId(),approvalCounter);
             createProductionApprovalProcess(userinfo.getSessionId(),approvalCounter);    
             if(isUATProcCreated == true && isProdProcCreated == true)
                 ApexPages.addmessage(new ApexPages.message(ApexPages.severity.Error,'Approval Process created.Please check Approval Process Page'));         
-          }else if(prDfLst.size() > 0){
+      //    }else if(prDfLst.size() > 0){
         
-          ApexPages.addmessage(new ApexPages.message(ApexPages.severity.Error,'Approval Process Already Exist. Kindly De-activate the current approval process to create new One'));    
-        }    
+       //   ApexPages.addmessage(new ApexPages.message(ApexPages.severity.Error,'Approval Process Already Exist. Kindly De-activate the current approval process to create new One'));    
+      //  }    
     }
     
     public static void deactivateExistingApprovalProcesses(string sessionId){   
@@ -685,17 +694,20 @@ public class DRConfigurationController1{
             message.setSubject('Approval Proccess Exception');
             message.setHtmlBody('Approval process result:'+results1);
             message.setToAddresses(new list<string>{'anushribhushan.sarwade@globalfoundries.com','ramprakash.rai@globalfoundries.com'});
-            Messaging.sendEmail(new Messaging.SingleEmailMessage[] { message });
+           // Messaging.sendEmail(new Messaging.SingleEmailMessage[] { message });
             system.debug('>>>>>>>results:'+results1);   
            
         }
+        createUATApprovalProcess(sessionId, counter);
         //update counter
         list<Approval_Counter__c> appCounter = [Select Id, Name from Approval_Counter__c limit 1];    
         integer c = Integer.valueOf(appCounter[0].Name);    
         appCounter[0].Name = string.valueOf(c + 1);
         update appCounter; 
         isProdProcCreated = true;
+        
         }catch(Exception ex){
+             system.debug('-mssg-'+ex.getmessage()); 
              Messaging.SingleEmailMessage message = new Messaging.SingleEmailMessage();
              message.setSubject('Approval Proccess Exception');
              message.setHtmlBody('Exception:'+ex.getMessage());
@@ -705,7 +717,7 @@ public class DRConfigurationController1{
     }
     
     
-    @future(callout=true)
+  //  @future(callout=true)
     public static void createUATApprovalProcess(string sessionId, integer counter){
         try{
         list<Application_Approver__c> newApprovers = [Select Id, name, User__c, Application_Name__c, Role__c from Application_Approver__c order by Name];
@@ -1139,15 +1151,16 @@ public class DRConfigurationController1{
             message.setSubject('Approval Proccess Exception');
             message.setHtmlBody('Approval process result:'+results3);
             message.setToAddresses(new list<string>{'anushribhushan.sarwade@globalfoundries.com','ramprakash.rai@globalfoundries.com'});
-            Messaging.sendEmail(new Messaging.SingleEmailMessage[] { message });
+           // Messaging.sendEmail(new Messaging.SingleEmailMessage[] { message });
             isUATProcCreated = true;
         }
         }catch(Exception ex){
+             system.debug('-mssg-'+ex.getmessage());        
              Messaging.SingleEmailMessage message = new Messaging.SingleEmailMessage();
              message.setSubject('Approval Proccess Exception');
              message.setHtmlBody('Exception:'+ex.getMessage());
              message.setToAddresses(new list<string>{'anushribhushan.sarwade@globalfoundries.com','ramprakash.rai@globalfoundries.com'});
-             Messaging.sendEmail(new Messaging.SingleEmailMessage[] { message });
+           //  Messaging.sendEmail(new Messaging.SingleEmailMessage[] { message });
         }   
     }
     
