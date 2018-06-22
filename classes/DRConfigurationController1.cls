@@ -288,20 +288,22 @@ public class DRConfigurationController1{
     }
     
     public void createApprovalProcesses(){
-        //deactivateExistingApprovalProcesses(userinfo.getSessionId());
-        list<Approval_Counter__c> appCounter = [Select Id, Name from Approval_Counter__c limit 1];
-        integer approvalCounter = Integer.valueOf(appCounter[0].Name);
-        List<ProcessDefinition> prDfLst = new List<ProcessDefinition>();
-        prDfLst = [SELECT Id,LockType,Name,State,TableEnumOrId,Type FROM ProcessDefinition WHERE TableEnumOrId = 'GFSDR__Deployment_Request__c' and state= 'Active'];
-      //  if(prDfLst.size() == 0){
-            createUATApprovalProcess(userinfo.getSessionId(),approvalCounter);
-            createProductionApprovalProcess(userinfo.getSessionId(),approvalCounter);    
-            if(isUATProcCreated == true && isProdProcCreated == true)
-                ApexPages.addmessage(new ApexPages.message(ApexPages.severity.Error,'Approval Process created.Please check Approval Process Page'));         
-      //    }else if(prDfLst.size() > 0){
         
-       //   ApexPages.addmessage(new ApexPages.message(ApexPages.severity.Error,'Approval Process Already Exist. Kindly De-activate the current approval process to create new One'));    
-      //  }    
+        String updApplicationName = ApplicationName.replaceAll(' ', '_');
+        String appName = 'DR UAT Approval'+'_'+ updApplicationName;
+        system.debug('-appName-'+appName);
+        
+        List<ProcessDefinition> prDfLst = new List<ProcessDefinition>();
+        prDfLst = [SELECT Id,LockType,Name,State,TableEnumOrId,Type FROM ProcessDefinition WHERE TableEnumOrId = 'GFSDR__Deployment_Request__c' and state= 'Active' and Name =:appName];
+            
+        if(prDfLst.size() == 0){
+            system.debug('-applicationName-'+applicationName);  
+            createUATApprovlProcess(userinfo.getSessionId(),applicationName); 
+            createProductionApprovlProcess(userinfo.getSessionId(),applicationName);   
+            
+        }else{
+            ApexPages.addmessage(new ApexPages.message(ApexPages.severity.Error,'Approval Process Already Exist.'));    
+        }    
     }
     
     public static void deactivateExistingApprovalProcesses(string sessionId){   
@@ -314,6 +316,862 @@ public class DRConfigurationController1{
         system.debug('>>>>>>>>results:'+results);
         system.debug('>>>>>>>>results1:'+results1);
     }
+    
+     @future(callout=true)
+    public static void createUATApprovlProcess(string sessionId, String ApplicationName){
+    
+        try{
+            list<Application_Approver__c> newApprovers = [Select Id, name, User__c, Application_Name__c, Role__c from Application_Approver__c where Application_Name__c=: ApplicationName order by Name];
+            map<string,set<string>> appNameListOfRoles = new map<string,set<string>>();
+            String updApplicationName = ApplicationName.replaceAll(' ', '_');
+            
+            for(Application_Approver__c approver: newApprovers){
+                if(!appNameListOfRoles.containsKey(approver.Application_Name__c))
+                    appNameListOfRoles.put(approver.Application_Name__c, new set<string>{approver.Role__c});
+                else 
+                    appNameListOfRoles.get(approver.Application_Name__c).add(approver.Role__c);
+            }
+                        
+        GFSMetadataService.MetadataPort service = new GFSMetadataService.MetadataPort();   
+        service.SessionHeader = new GFSMetadataService.SessionHeader_element();
+        service.timeout_x = 120000;
+        service.SessionHeader.sessionId = sessionId;//userinfo.getSessionId();
+        GFSMetadataService.ApprovalProcess approvalProcess = new GFSMetadataService.ApprovalProcess();
+        approvalProcess.fullName = 'GFSDR__Deployment_Request__c.DR_UAT_Approval'+'_'+ updApplicationName;
+        approvalProcess.label = 'DR UAT Approval'+'_'+ updApplicationName;
+        approvalProcess.active = true;
+        approvalProcess.allowRecall = true; 
+        approvalProcess.showApprovalHistory = true;
+        approvalProcess.recordEditability = 'AdminOnly';
+        approvalProcess.finalApprovalRecordLock = false; 
+        approvalProcess.finalRejectionRecordLock = false;
+        approvalProcess.showApprovalHistory = false;
+        approvalProcess.emailTemplate = 'Deployment_Request_Templates/Deployment_Approval_Request_Email';
+        
+        GFSMetadataService.WorkflowFieldUpdate fldUpdate = new GFSMetadataService.WorkflowFieldUpdate();
+        fldUpdate.field = 'GFSDR__Stage_txt__c';
+        fldUpdate.name = 'Update_Stage_equals_TFA_Review1';
+        fldUpdate.fullName = 'GFSDR__Deployment_Request__c.Update_Stage_equals_TFA_Review1';
+        fldUpdate.protected_x = false;
+        fldUpdate.notifyAssignee = false;
+        fldUpdate.operation = 'Formula';
+        fldUpdate.formula = '"TFA Review"';
+        
+        if(!Test.isRunningTest()){
+            List<GFSMetadataService.SaveResult> results = service.createMetadata( new GFSMetadataService.Metadata[] { fldUpdate });
+            system.debug('>>>>>>>results:'+results);
+        }
+        
+        //Recall Approval Process 
+        GFSMetadataService.WorkflowFieldUpdate fldrecllUpdate = new GFSMetadataService.WorkflowFieldUpdate();
+        fldrecllUpdate.field = 'GFSDR__TA_Approver_Name__c';
+        fldrecllUpdate.name = 'Update_TA_Approver_Name';
+        fldrecllUpdate.fullName = 'GFSDR__Deployment_Request__c.Update_TA_Approver_Name';
+        fldrecllUpdate.protected_x = false;
+        fldrecllUpdate.notifyAssignee = false;
+        fldrecllUpdate.operation = 'Formula';
+        fldrecllUpdate.formula = '" "';
+        
+        GFSMetadataService.WorkflowFieldUpdate fldrecllUpdate2 = new GFSMetadataService.WorkflowFieldUpdate();
+        fldrecllUpdate2.field = 'GFSDR__TFA_Approver_Name__c';
+        fldrecllUpdate2.name = 'Update_TFA_Approver_Name';
+        fldrecllUpdate2.fullName = 'GFSDR__Deployment_Request__c.Update_TFA_Approver_Name';
+        fldrecllUpdate2.protected_x = false;
+        fldrecllUpdate2.notifyAssignee = false;
+        fldrecllUpdate2.operation = 'Formula';
+        fldrecllUpdate2.formula = '" "';
+        
+        
+        GFSMetadataService.WorkflowFieldUpdate fldrecllUpdate3 = new GFSMetadataService.WorkflowFieldUpdate();
+        fldrecllUpdate3.field = 'GFSDR__Stage_txt__c';
+        fldrecllUpdate3.name = 'Update_Stage_to_Draft';
+        fldrecllUpdate3.fullName = 'GFSDR__Deployment_Request__c.Update_Stage_to_Draft';
+        fldrecllUpdate3.protected_x = false;
+        fldrecllUpdate3.notifyAssignee = false;
+        fldrecllUpdate3.operation = 'Formula';
+        fldrecllUpdate3.formula = '"Draft"';
+         
+        if(!Test.isRunningTest()){
+            List<GFSMetadataService.SaveResult> results = service.createMetadata( new GFSMetadataService.Metadata[] {fldrecllUpdate,fldrecllUpdate2,fldrecllUpdate3});
+            system.debug('>>>>>>>results:'+results);
+        }   
+        
+        
+                //initial submission action
+        GFSMetadataService.WorkflowActionReference initAction = new GFSMetadataService.WorkflowActionReference();
+        initAction.name = 'Update_Stage_equals_TFA_Review1';
+        initAction.type_x = 'FieldUpdate';
+        
+        //Recall Field Update
+        GFSMetadataService.WorkflowActionReference recllAction = new GFSMetadataService.WorkflowActionReference();
+        recllAction.name = 'Update_TA_Approver_Name';
+        recllAction.type_x = 'FieldUpdate';
+        
+        GFSMetadataService.WorkflowActionReference recllAction2 = new GFSMetadataService.WorkflowActionReference();
+        recllAction2.name = 'Update_TFA_Approver_Name';
+        recllAction2.type_x = 'FieldUpdate';
+        
+        GFSMetadataService.WorkflowActionReference recllAction3 = new GFSMetadataService.WorkflowActionReference();
+        recllAction3.name = 'Update_Stage_to_Draft';
+        recllAction3.type_x = 'FieldUpdate';
+        
+        GFSMetadataService.ApprovalAction appAction = new GFSMetadataService.ApprovalAction();
+        appAction.action = new list<GFSMetadataService.WorkflowActionReference>{initAction} ;
+        
+        GFSMetadataService.ApprovalAction reappAction = new GFSMetadataService.ApprovalAction();
+        reappAction.action = new list<GFSMetadataService.WorkflowActionReference>{recllAction,recllAction2,recllAction3};
+            
+        approvalProcess.initialSubmissionActions = appAction;
+        approvalProcess.recallActions = reappAction;
+        
+        //Entry Criteria
+        GFSMetadataService.FilterItem ft = new GFSMetadataService.FilterItem();
+        ft.field = 'GFSDR__Deployment_Request__c.GFSDR__Application_Name_txt__c';
+        ft.operation = 'equals';
+        ft.value = ApplicationName;
+        
+        GFSMetadataService.ApprovalEntryCriteria entry =  new GFSMetadataService.ApprovalEntryCriteria();
+        entry.criteriaItems = new list<GFSMetadataService.FilterItem>{ft};
+        approvalProcess.entryCriteria = entry;   
+        
+        GFSMetadataService.ApprovalSubmitter submitter1 = new GFSMetadataService.ApprovalSubmitter();
+        submitter1.type_x = 'owner';
+        approvalProcess.allowedSubmitters = new list<GFSMetadataService.ApprovalSubmitter>{submitter1};
+
+        approvalProcess.approvalStep = new list<GFSMetadataService.ApprovalStep>();
+      //  approvalProcess.rejectionActions = new list<GFSMetadataService.rejectionActions>();
+        
+        //TFA Step
+        GFSMetadataService.Approver tfaapprover = new GFSMetadataService.Approver();
+        tfaapprover.name = 'GFSDR__Deployment_Request__c.GFSDR__TFA_Review_User__c';
+        tfaapprover.type_x ='relatedUserField';
+        
+        GFSMetadataService.ApprovalStepApprover tfastepApprover = new GFSMetadataService.ApprovalStepApprover();
+        tfastepApprover.approver = new list<GFSMetadataService.Approver>{tfaapprover};
+        tfastepApprover.whenMultipleApprovers = 'Unanimous';
+            
+        GFSMetadataService.ApprovalStep approvalTFAStep = new GFSMetadataService.ApprovalStep();
+        approvalTFAStep.name='TFA_Approval';
+        approvalTFAStep.label='TFA Approval';
+        approvalTFAStep.allowDelegate= true;
+        approvalTFAStep.assignedApprover = tfastepApprover;
+        
+        
+        /* GFSMetadataService.WorkflowFieldUpdate tfaReviewerfldUpdate = new GFSMetadataService.WorkflowFieldUpdate();
+        tfaReviewerfldUpdate.field = 'TFA_Approver_Name__c';
+        tfaReviewerfldUpdate.name = 'Update_DR_TFA_Reviewer';
+        tfaReviewerfldUpdate.fullName = 'Deployment_Request__c.Update_DR_TFA_Reviewer';
+        tfaReviewerfldUpdate.protected_x = false;
+        tfaReviewerfldUpdate.notifyAssignee = false;
+        tfaReviewerfldUpdate.operation = 'Formula';
+        tfaReviewerfldUpdate.formula = '\"'+userinfo.getFirstName()+'\"'; */
+
+        GFSMetadataService.WorkflowFieldUpdate taReviewerfldUpdate = new GFSMetadataService.WorkflowFieldUpdate();
+        taReviewerfldUpdate.field = 'GFSDR__TFA_Approver_Name__c';
+        taReviewerfldUpdate.name = 'Update_TFA_Approver';
+        taReviewerfldUpdate.fullName = 'GFSDR__Deployment_Request__c.Update_TFA_Approver';
+        taReviewerfldUpdate.protected_x = false;
+        taReviewerfldUpdate.notifyAssignee = false;
+        taReviewerfldUpdate.operation = 'Formula';        
+        taReviewerfldUpdate.formula =  '$User.FirstName + $User.LastName';
+
+        //field update 
+        GFSMetadataService.WorkflowFieldUpdate tafldUpdate = new GFSMetadataService.WorkflowFieldUpdate();
+        GFSMetadataService.WorkflowFieldUpdate taRjfldUpdate = new GFSMetadataService.WorkflowFieldUpdate();        
+        
+        tafldUpdate.field = 'GFSDR__Stage_txt__c';
+        tafldUpdate.name = 'Update_Stage_equals_TA_Review';
+        tafldUpdate.fullName = 'GFSDR__Deployment_Request__c.Update_Stage_equals_TA_Review';
+        tafldUpdate.protected_x = false;
+        tafldUpdate.notifyAssignee = false;
+        tafldUpdate.operation = 'Formula';
+        tafldUpdate.formula = '"TA Review"';
+        
+        
+        taRjfldUpdate.field = 'GFSDR__Rejected_Stage__c';
+        taRjfldUpdate.name = 'Update_Rejected_Stage_field';
+        taRjfldUpdate.fullName = 'GFSDR__Deployment_Request__c.Update_Rejected_Stage_field';
+        taRjfldUpdate.protected_x = false;
+        taRjfldUpdate.notifyAssignee = false;
+        taRjfldUpdate.operation = 'Formula';
+        taRjfldUpdate.formula = '"TFA Review"';
+                
+        
+        if(!Test.isRunningTest()){
+            List<GFSMetadataService.SaveResult> results1 = service.createMetadata( new GFSMetadataService.Metadata[] { tafldUpdate,taReviewerfldUpdate,taRjfldUpdate});
+            system.debug('>>>>>>>results:'+results1);
+        }
+        
+        //tfa approval action
+        GFSMetadataService.WorkflowActionReference taAction = new GFSMetadataService.WorkflowActionReference();
+        GFSMetadataService.WorkflowActionReference taAction1 = new GFSMetadataService.WorkflowActionReference();
+        
+        GFSMetadataService.WorkflowActionReference taRjAction = new GFSMetadataService.WorkflowActionReference();
+        
+        
+        taAction.name = 'Update_Stage_equals_TA_Review';
+        taAction.type_x = 'FieldUpdate';
+        
+        taAction1.name = 'Update_TFA_Approver';
+        taAction1.type_x = 'FieldUpdate';
+        
+        taRjAction.name = 'Update_Rejected_Stage_field';
+        taRjAction.type_x = 'FieldUpdate';
+    
+        GFSMetadataService.ApprovalAction taStepAction = new GFSMetadataService.ApprovalAction();
+        taStepAction.action = new list<GFSMetadataService.WorkflowActionReference>{taAction,taAction1} ;
+        
+        GFSMetadataService.ApprovalAction taRjStepAction = new GFSMetadataService.ApprovalAction();
+        taRjStepAction.action = new list<GFSMetadataService.WorkflowActionReference>{taRjAction} ;
+        
+        GFSMetadataService.ApprovalProcess recallAction = new GFSMetadataService.ApprovalProcess();
+                
+                 
+        approvalTFAStep.approvalActions  = taStepAction;
+        approvalTFAStep.rejectionActions = taRjStepAction;
+        
+        approvalProcess.approvalStep.add(approvalTFAStep);
+       // approvalProcess.approvalStep.add(approvalTFAStep);
+        
+        //TA Step
+        GFSMetadataService.Approver taapprover= new GFSMetadataService.Approver();
+        taapprover.name = 'GFSDR__Deployment_Request__c.GFSDR__TA_Review_User__c';
+        taapprover.type_x ='relatedUserField';
+        
+        GFSMetadataService.ApprovalStepApprover tastepApprover= new GFSMetadataService.ApprovalStepApprover();
+        tastepApprover.approver = new list<GFSMetadataService.Approver>{taapprover};
+        tastepApprover.whenMultipleApprovers = 'Unanimous';
+        
+        GFSMetadataService.ApprovalStepRejectBehavior taRejectBehave = new GFSMetadataService.ApprovalStepRejectBehavior();
+        taRejectBehave.type_x = 'RejectRequest';
+        
+        GFSMetadataService.ApprovalStep approvalTAStep = new GFSMetadataService.ApprovalStep();
+        approvalTAStep.name='TA_Approval';
+        approvalTAStep.label='TA Approval';
+        approvalTAStep.allowDelegate= true;
+        approvalTAStep.assignedApprover = tastepApprover;
+        approvalTAStep.rejectBehavior = taRejectBehave;
+        
+        GFSMetadataService.WorkflowFieldUpdate cabfldUpdate = new GFSMetadataService.WorkflowFieldUpdate();
+        cabfldUpdate.field = 'GFSDR__Stage_txt__c';
+        cabfldUpdate.name = 'Update_Stage_equals_CAB_Review';
+        cabfldUpdate.fullName = 'GFSDR__Deployment_Request__c.Update_Stage_equals_CAB_Review';
+        cabfldUpdate.protected_x = false;
+        cabfldUpdate.notifyAssignee = false;
+        cabfldUpdate.operation = 'Formula';
+        cabfldUpdate.formula = '"CAB Review"';
+        
+        GFSMetadataService.WorkflowFieldUpdate cabfldUpdate2 = new GFSMetadataService.WorkflowFieldUpdate();
+        cabfldUpdate2.field = 'GFSDR__TA_Approver_Name__c';
+        cabfldUpdate2.name = 'Update_DR_TA_Reviewer';
+        cabfldUpdate2.fullName = 'GFSDR__Deployment_Request__c.Update_DR_TA_Reviewer';
+        cabfldUpdate2.protected_x = false;
+        cabfldUpdate2.notifyAssignee = false;
+        cabfldUpdate2.operation = 'Formula';        
+        cabfldUpdate2.formula =  '$User.FirstName + $User.LastName';
+        
+        
+        GFSMetadataService.WorkflowFieldUpdate cabRjfldUpdate = new GFSMetadataService.WorkflowFieldUpdate();
+        cabRjfldUpdate.field = 'GFSDR__Rejected_Stage__c';
+        cabRjfldUpdate.name = 'Update_Rejected_Stage_field_TA';
+        cabRjfldUpdate.fullName = 'GFSDR__Deployment_Request__c.Update_Rejected_Stage_field_TA';
+        cabRjfldUpdate.protected_x = false;
+        cabRjfldUpdate.notifyAssignee = false;
+        cabRjfldUpdate.operation = 'Formula';
+        cabRjfldUpdate.formula = '"TA Review"';
+        
+        
+        if(!Test.isRunningTest()){
+            List<GFSMetadataService.SaveResult> results2 = service.createMetadata( new GFSMetadataService.Metadata[] {cabfldUpdate,cabfldUpdate2,cabRjfldUpdate});
+            system.debug('>>>>>>>results:'+results2);
+        }
+        //ta step action
+        GFSMetadataService.WorkflowActionReference cabAction = new GFSMetadataService.WorkflowActionReference();
+        cabAction.name = 'Update_Stage_equals_CAB_Review';
+        cabAction.type_x = 'FieldUpdate';
+        
+        GFSMetadataService.WorkflowActionReference cabAction2 = new GFSMetadataService.WorkflowActionReference();
+        cabAction2.name = 'Update_DR_TA_Reviewer';
+        cabAction2.type_x = 'FieldUpdate';
+        
+        
+        
+        GFSMetadataService.WorkflowActionReference cabRjAction = new GFSMetadataService.WorkflowActionReference();
+        cabRjAction.name = 'Update_Rejected_Stage_field_TA';
+        cabRjAction.type_x = 'FieldUpdate';
+        
+                
+        
+        /* GFSMetadataService.WorkflowActionReference taAction2 = new GFSMetadataService.WorkflowActionReference();
+        taAction.name = 'Update_DR_TA_Reviewer';
+        taAction.type_x = 'FieldUpdate'; */
+
+        GFSMetadataService.ApprovalAction cabStepAction = new GFSMetadataService.ApprovalAction();
+        cabStepAction.action = new list<GFSMetadataService.WorkflowActionReference>{cabAction,cabAction2} ;
+        
+        GFSMetadataService.ApprovalAction caRjStepAction = new GFSMetadataService.ApprovalAction();
+        caRjStepAction.action = new list<GFSMetadataService.WorkflowActionReference>{cabRjAction};    
+                 
+        approvalTAStep.rejectionActions = caRjStepAction ;
+        
+        approvalTAStep.approvalActions = cabStepAction;    
+        approvalProcess.approvalStep.add(approvalTAStep);
+        
+               
+        GFSMetadataService.WorkflowFieldUpdate approvedfldUpdate = new GFSMetadataService.WorkflowFieldUpdate();
+        approvedfldUpdate.field = 'GFSDR__Stage_txt__c';
+        approvedfldUpdate.name = 'Update_Stage_equals_Approvedd';
+        approvedfldUpdate.fullName = 'GFSDR__Deployment_Request__c.Update_Stage_equals_Approvedd';
+        approvedfldUpdate.protected_x = false;
+        approvedfldUpdate.notifyAssignee = false;
+        approvedfldUpdate.operation = 'Formula';
+        approvedfldUpdate.formula = '"Approved"';
+        
+        
+        GFSMetadataService.WorkflowFieldUpdate approvedfldUpdate12 = new GFSMetadataService.WorkflowFieldUpdate();
+        approvedfldUpdate12.field = 'GFSDR__CAB_Approver_Name__c';
+        approvedfldUpdate12.name = 'Update_CAB_Approverr';
+        approvedfldUpdate12.fullName = 'GFSDR__Deployment_Request__c.Update_CAB_Approverr';
+        approvedfldUpdate12.protected_x = false;
+        approvedfldUpdate12.notifyAssignee = false;
+        approvedfldUpdate12.operation = 'Formula';
+        approvedfldUpdate12.formula = '$User.FirstName + $User.LastName';
+
+        
+        
+        GFSMetadataService.WorkflowFieldUpdate rejectedfldUpdate = new GFSMetadataService.WorkflowFieldUpdate();
+        rejectedfldUpdate.field = 'GFSDR__Rejected_Stage__c';
+        rejectedfldUpdate.name = 'Update_Rejected_Stage_to_CAB_Review';
+        rejectedfldUpdate.fullName = 'GFSDR__Deployment_Request__c.Update_Rejected_Stage_to_CAB_Review';
+        rejectedfldUpdate.protected_x = false;
+        rejectedfldUpdate.notifyAssignee = false;
+        rejectedfldUpdate.operation = 'Formula';
+        rejectedfldUpdate.formula = '"CAB Review"';
+        
+        
+        
+        if(!Test.isRunningTest()){
+            List<GFSMetadataService.SaveResult> approvedResults = service.createMetadata( new GFSMetadataService.Metadata[] {approvedfldUpdate,approvedfldUpdate12,rejectedfldUpdate});
+       //    List<GFSMetadataService.SaveResult> approvedResults1 = service.createMetadata( new GFSMetadataService.Metadata[] {approvedfldUpdate12});
+        system.debug('>>>>>>>results:'+approvedResults );
+        }
+        GFSMetadataService.WorkflowFieldUpdate rejectedfldUpdte = new GFSMetadataService.WorkflowFieldUpdate();
+        rejectedfldUpdte.field = 'GFSDR__Stage_txt__c';
+        rejectedfldUpdte.name = 'Update_Stage_equals_Rejected';
+        rejectedfldUpdte.fullName = 'GFSDR__Deployment_Request__c.Update_Stage_equals_Rejected';
+        rejectedfldUpdte.protected_x = false;
+        rejectedfldUpdte.notifyAssignee = false;
+        rejectedfldUpdte.operation = 'Formula';
+        rejectedfldUpdte.formula = '"Rejected"';
+        
+        if(!Test.isRunningTest())
+            List<GFSMetadataService.SaveResult> rejectedResults = service.createMetadata( new GFSMetadataService.Metadata[] {rejectedfldUpdte});
+                
+        GFSMetadataService.WorkflowActionReference finalApprovalAction = new GFSMetadataService.WorkflowActionReference();
+        finalApprovalAction.name = 'Update_Stage_equals_Approved';
+        finalApprovalAction.type_x = 'FieldUpdate';        
+        GFSMetadataService.ApprovalAction finalappAction = new GFSMetadataService.ApprovalAction();
+        finalappAction.action = new list<GFSMetadataService.WorkflowActionReference>{finalApprovalAction} ;            
+        approvalProcess.finalApprovalActions = finalappAction;
+        
+        GFSMetadataService.WorkflowActionReference finalRejectAction = new GFSMetadataService.WorkflowActionReference();
+        finalRejectAction.name = 'Update_Stage_equals_Rejected';
+        finalRejectAction.type_x = 'FieldUpdate';        
+        GFSMetadataService.ApprovalAction finalrejAction = new GFSMetadataService.ApprovalAction();
+        finalrejAction.action = new list<GFSMetadataService.WorkflowActionReference>{finalRejectAction} ;            
+        approvalProcess.finalRejectionActions = finalrejAction;
+             
+
+        integer i=0;
+        for(string key: appNameListOfRoles.keySet()){
+            i++;
+            //other Steps
+            GFSMetadataService.Approver otherapprover = new GFSMetadataService.Approver();
+            string str = key.replaceAll(' ','_');
+            otherapprover.name = 'DR_'+str+'_CAB';
+            otherapprover.type_x ='queue';
+            
+            GFSMetadataService.ApprovalStepApprover otherstepApprover= new GFSMetadataService.ApprovalStepApprover();
+            otherstepApprover.approver = new list<GFSMetadataService.Approver>{otherapprover};
+            otherstepApprover.whenMultipleApprovers = 'Unanimous';
+
+            //Entry Criteria
+            GFSMetadataService.FilterItem otherFilterEntry = new GFSMetadataService.FilterItem();
+            if(key == 'Default'){
+                otherFilterEntry.field = 'GFSDR__Deployment_Request__c.GFSDR__Application_Category_txt__c';
+                otherFilterEntry.operation = 'equals';
+                otherFilterEntry.value = 'Standard Apps';            
+            } else {
+                otherFilterEntry.field = 'GFSDR__Deployment_Request__c.GFSDR__Application_Name_txt__c';
+                otherFilterEntry.operation = 'equals';
+                otherFilterEntry.value = key;
+            }
+            
+            GFSMetadataService.ApprovalEntryCriteria otherentry =  new GFSMetadataService.ApprovalEntryCriteria();
+            otherentry.criteriaItems = new list<GFSMetadataService.FilterItem>{otherFilterEntry};
+            
+            GFSMetadataService.ApprovalStep otherApprovalStep = new GFSMetadataService.ApprovalStep();
+            otherApprovalStep.name=str+'_Approval';
+            otherApprovalStep.label=key+' Approval';
+            otherApprovalStep.allowDelegate= true;
+            otherApprovalStep.rejectBehavior = taRejectBehave;
+            otherApprovalStep.entryCriteria = otherentry;
+            if(i != appNameListOfRoles.size())
+                otherApprovalStep.ifCriteriaNotMet = 'GotoNextStep';
+            otherApprovalStep.assignedApprover = otherstepApprover;
+            
+            //field update action                          
+            GFSMetadataService.WorkflowActionReference approvedAction = new GFSMetadataService.WorkflowActionReference();
+            approvedAction.name = 'Update_Stage_equals_Approvedd';
+            approvedAction.type_x = 'FieldUpdate';
+            
+            
+            GFSMetadataService.WorkflowActionReference approvedAction2 = new GFSMetadataService.WorkflowActionReference();
+            approvedAction2.name = 'Update_CAB_Approverr';
+            approvedAction2.type_x = 'FieldUpdate';
+            
+            GFSMetadataService.WorkflowActionReference rejectedAction = new GFSMetadataService.WorkflowActionReference();
+            rejectedAction.name = 'Update_Rejected_Stage_to_CAB_Review';
+            rejectedAction.type_x = 'FieldUpdate';
+                        
+
+            GFSMetadataService.ApprovalAction approvedStepAction = new GFSMetadataService.ApprovalAction();
+            approvedStepAction.action = new list<GFSMetadataService.WorkflowActionReference>{approvedAction,approvedAction2 } ;
+            
+            GFSMetadataService.ApprovalAction taRjStepActionAll = new GFSMetadataService.ApprovalAction();
+            taRjStepActionAll.action = new list<GFSMetadataService.WorkflowActionReference>{rejectedAction} ;
+            otherApprovalStep.rejectionActions = taRjStepActionAll;
+                    
+            otherApprovalStep.approvalActions = approvedStepAction;                
+            approvalProcess.approvalStep.add(otherApprovalStep);                                                
+            
+        }
+        
+        if(!Test.isRunningTest()){
+            List<GFSMetadataService.SaveResult> results3 = service.createMetadata( new GFSMetadataService.Metadata[] { approvalProcess });
+            system.debug('>>>>>>>results:'+results3);    
+            Messaging.SingleEmailMessage message = new Messaging.SingleEmailMessage();
+            message.setSubject('Approval Proccess Exception');
+            message.setHtmlBody('Approval process result:'+results3);
+            message.setToAddresses(new list<string>{'anushribhushan.sarwade@globalfoundries.com','ramprakash.rai@globalfoundries.com'});
+           // Messaging.sendEmail(new Messaging.SingleEmailMessage[] { message });
+            isUATProcCreated = true;
+        }
+            
+        }catch(Exception ex){
+             system.debug('-mssg-'+ex.getmessage()); 
+             Messaging.SingleEmailMessage message = new Messaging.SingleEmailMessage();
+             message.setSubject('Approval Proccess Exception');
+             message.setHtmlBody('Exception:'+ex.getMessage());
+             message.setToAddresses(new list<string>{'anushribhushan.sarwade@globalfoundries.com','ramprakash.rai@globalfoundries.com'});
+         //    Messaging.sendEmail(new Messaging.SingleEmailMessage[] { message });
+        }         
+    
+    }
+    
+    @future(callout=true)
+    public static void createProductionApprovlProcess(string sessionId, String ApplicationName){
+    
+        try{
+        list<Application_Approver__c> newApprovers = [Select Id, name, User__c, Application_Name__c, Role__c from Application_Approver__c  where Application_Name__c=: ApplicationName order by Name];
+        map<string,set<string>> appNameListOfRoles = new map<string,set<string>>();
+        for(Application_Approver__c approver: newApprovers){
+            if(!appNameListOfRoles.containsKey(approver.Application_Name__c))
+                appNameListOfRoles.put(approver.Application_Name__c, new set<string>{approver.Role__c});
+            else 
+                appNameListOfRoles.get(approver.Application_Name__c).add(approver.Role__c);
+        }   
+        String updApplicationName = ApplicationName.replaceAll(' ', '_');
+        
+        GFSMetadataService.MetadataPort service = new GFSMetadataService.MetadataPort();   
+        service.SessionHeader = new GFSMetadataService.SessionHeader_element();
+        service.timeout_x = 120000;
+        service.SessionHeader.sessionId = sessionId;//userinfo.getSessionId();
+        GFSMetadataService.ApprovalProcess approvalProcess = new GFSMetadataService.ApprovalProcess();
+        approvalProcess.fullName = 'GFSDR__Deployment_Request__c.DR_Production_Approval'+'_'+ updApplicationName;
+        approvalProcess.label = 'DR Production Approval'+'_'+ updApplicationName;
+        approvalProcess.active = true;
+        approvalProcess.allowRecall = true; 
+        approvalProcess.showApprovalHistory = true;
+        approvalProcess.recordEditability = 'AdminOnly';
+        approvalProcess.finalApprovalRecordLock = false; 
+        approvalProcess.finalRejectionRecordLock = false;
+        approvalProcess.showApprovalHistory = false;
+        approvalProcess.emailTemplate = 'Deployment_Request_Templates/Deployment_Approval_Request_Email';
+        
+        GFSMetadataService.WorkflowFieldUpdate fldUpdate = new GFSMetadataService.WorkflowFieldUpdate();
+        fldUpdate.field = 'GFSDR__Stage_txt__c';
+        fldUpdate.name = 'Update_Stage_equals_EBiZ_FBO_Review';
+        fldUpdate.fullName = 'GFSDR__Deployment_Request__c.Update_Stage_equals_EBiZ_FBO_Review';
+        fldUpdate.protected_x = false;
+        fldUpdate.notifyAssignee = false;
+        fldUpdate.operation = 'Formula';
+        fldUpdate.formula = '"EBiZ/FBO Review"';
+        
+        if(!Test.isRunningTest()){
+            List<GFSMetadataService.SaveResult> results = service.createMetadata( new GFSMetadataService.Metadata[] { fldUpdate });
+            system.debug('>>>>>>>results:'+results);
+        }
+        //initial submission action
+        GFSMetadataService.WorkflowActionReference initAction = new GFSMetadataService.WorkflowActionReference();
+        initAction.name = 'Update_Stage_equals_EBiZ_FBO_Review';
+        initAction.type_x = 'FieldUpdate';
+        
+        GFSMetadataService.ApprovalAction appAction = new GFSMetadataService.ApprovalAction();
+        appAction.action = new list<GFSMetadataService.WorkflowActionReference>{initAction};
+            
+        approvalProcess.initialSubmissionActions = appAction;
+        //Entry Criteria
+        GFSMetadataService.FilterItem ft = new GFSMetadataService.FilterItem();
+        ft.field = 'GFSDR__Deployment_Request__c.GFSDR__Application_Name_txt__c';
+        ft.operation = 'equals';
+        ft.value = ApplicationName;
+        
+        GFSMetadataService.ApprovalEntryCriteria entry =  new GFSMetadataService.ApprovalEntryCriteria();
+        entry.criteriaItems = new list<GFSMetadataService.FilterItem>{ft};
+        approvalProcess.entryCriteria = entry;   
+        
+        GFSMetadataService.ApprovalSubmitter submitter1 = new GFSMetadataService.ApprovalSubmitter();
+        submitter1.type_x = 'owner';
+        approvalProcess.allowedSubmitters = new list<GFSMetadataService.ApprovalSubmitter>{submitter1};
+
+        GFSMetadataService.ApprovalStepRejectBehavior taRejectBehave = new GFSMetadataService.ApprovalStepRejectBehavior();
+        taRejectBehave.type_x = 'RejectRequest';
+        
+        //create field updates for steps
+        GFSMetadataService.WorkflowFieldUpdate testReviewfldUpdate = new GFSMetadataService.WorkflowFieldUpdate();
+        testReviewfldUpdate.field = 'GFSDR__Stage_txt__c';
+        testReviewfldUpdate.name = 'Update_Stage_equals_TEST_Review';
+        testReviewfldUpdate.fullName = 'GFSDR__Deployment_Request__c.Update_Stage_equals_TEST_Review';
+        testReviewfldUpdate.protected_x = false;
+        testReviewfldUpdate.notifyAssignee = false;
+        testReviewfldUpdate.operation = 'Formula';
+        testReviewfldUpdate.formula = '"Test Review"';
+        //Rejected Update
+        GFSMetadataService.WorkflowFieldUpdate testReviewRjfldUpdate = new GFSMetadataService.WorkflowFieldUpdate();
+        testReviewRjfldUpdate.field = 'GFSDR__Rejected_Stage__c';
+        testReviewRjfldUpdate.name = 'Update_Stage_equals_TEST_Review_Rj';
+        testReviewRjfldUpdate.fullName = 'GFSDR__Deployment_Request__c.Update_Stage_equals_TEST_Review_Rj';
+        testReviewRjfldUpdate.protected_x = false;
+        testReviewRjfldUpdate.notifyAssignee = false;
+        testReviewRjfldUpdate.operation = 'Formula';
+        testReviewRjfldUpdate.formula = '"EBiZ/FBO Review"';
+        //Ebiz Approver
+        GFSMetadataService.WorkflowFieldUpdate testReviewfldUpdateApprver = new GFSMetadataService.WorkflowFieldUpdate();
+        testReviewfldUpdateApprver.field = 'GFSDR__EBIZ_FBO_Approver_Name__c';
+        testReviewfldUpdateApprver.name = 'Update_DR_EBIZ_Reviewer_Prd';
+        testReviewfldUpdateApprver.fullName = 'GFSDR__Deployment_Request__c.Update_DR_EBIZ_Reviewer_Prd';
+        testReviewfldUpdateApprver.protected_x = false;
+        testReviewfldUpdateApprver.notifyAssignee = false;
+        testReviewfldUpdateApprver.operation = 'Formula';        
+        testReviewfldUpdateApprver.formula = '$User.FirstName + $User.LastName';
+        
+        
+        GFSMetadataService.WorkflowFieldUpdate sodReviewfldUpdate = new GFSMetadataService.WorkflowFieldUpdate();
+        sodReviewfldUpdate.field = 'GFSDR__Stage_txt__c';
+        sodReviewfldUpdate.name = 'Update_Stage_equals_SOD_Review_Prd';
+        sodReviewfldUpdate.fullName = 'GFSDR__Deployment_Request__c.Update_Stage_equals_SOD_Review_Prd';
+        sodReviewfldUpdate.protected_x = false;
+        sodReviewfldUpdate.notifyAssignee = false;
+        sodReviewfldUpdate.operation = 'Formula';
+        sodReviewfldUpdate.formula = '"SOD Review"';
+        
+        //Rejected Update
+        GFSMetadataService.WorkflowFieldUpdate sodReviewRjfldUpdate = new GFSMetadataService.WorkflowFieldUpdate();
+        sodReviewRjfldUpdate.field = 'GFSDR__Rejected_Stage__c';
+        sodReviewRjfldUpdate.name = 'Update_Stage_equals_SOD_Review_Rj';
+        sodReviewRjfldUpdate.fullName = 'GFSDR__Deployment_Request__c.Update_Stage_equals_SOD_Review_Rj';
+        sodReviewRjfldUpdate.protected_x = false;
+        sodReviewRjfldUpdate.notifyAssignee = false;
+        sodReviewRjfldUpdate.operation = 'Formula';
+        sodReviewRjfldUpdate.formula = '"Test Review"';
+        
+        //SOD Approver Update
+        GFSMetadataService.WorkflowFieldUpdate sodReviewAppfldUpdate = new GFSMetadataService.WorkflowFieldUpdate();
+        sodReviewAppfldUpdate.field = 'GFSDR__SOD_Approver_Name__c';
+        sodReviewAppfldUpdate.name = 'Update_SOD_Approver_Update_Prd';
+        sodReviewAppfldUpdate.fullName = 'GFSDR__Deployment_Request__c.Update_SOD_Approver_Update_Prd';
+        sodReviewAppfldUpdate.protected_x = false;
+        sodReviewAppfldUpdate.notifyAssignee = false;
+        sodReviewAppfldUpdate.operation = 'Formula';
+        sodReviewAppfldUpdate.formula = '$User.FirstName + $User.LastName';
+
+        GFSMetadataService.WorkflowFieldUpdate cabReviewfldUpdate = new GFSMetadataService.WorkflowFieldUpdate();
+        cabReviewfldUpdate.field = 'GFSDR__Stage_txt__c';
+        cabReviewfldUpdate.name = 'Update_Stage_equals_CAB_Review';
+        cabReviewfldUpdate.fullName = 'GFSDR__Deployment_Request__c.Update_Stage_equals_CAB_Review';
+        cabReviewfldUpdate.protected_x = false;
+        cabReviewfldUpdate.notifyAssignee = false;
+        cabReviewfldUpdate.operation = 'Formula';
+        cabReviewfldUpdate.formula = '"CAB Review"';
+        
+        //Rejected Update
+        GFSMetadataService.WorkflowFieldUpdate cabReviewRjfldUpdate = new GFSMetadataService.WorkflowFieldUpdate();
+        cabReviewRjfldUpdate.field = 'GFSDR__Rejected_Stage__c';
+        cabReviewRjfldUpdate.name = 'Update_Stage_equals_CAB_Review_Rj';
+        cabReviewRjfldUpdate.fullName = 'GFSDR__Deployment_Request__c.Update_Stage_equals_CAB_Review_Rj';
+        cabReviewRjfldUpdate.protected_x = false;
+        cabReviewRjfldUpdate.notifyAssignee = false;
+        cabReviewRjfldUpdate.operation = 'Formula';
+        cabReviewRjfldUpdate.formula = '"SOD Review"';
+        
+        //CAB Approver Update
+         GFSMetadataService.WorkflowFieldUpdate cabReviewApprvfldUpdate = new GFSMetadataService.WorkflowFieldUpdate();
+         cabReviewApprvfldUpdate.field = 'GFSDR__CAB_Approver_Name__c';
+         cabReviewApprvfldUpdate.name = 'Update_Stage_equals_CAB_Review_Appr';
+         cabReviewApprvfldUpdate.fullName = 'GFSDR__Deployment_Request__c.Update_Stage_equals_CAB_Review_Appr';
+         cabReviewApprvfldUpdate.protected_x = false;
+         cabReviewApprvfldUpdate.notifyAssignee = false;
+         cabReviewApprvfldUpdate.operation = 'Formula';
+         cabReviewApprvfldUpdate.formula = '$User.FirstName + $User.LastName';
+        
+        
+        if(!Test.isRunningTest()){
+            List<GFSMetadataService.SaveResult> results2 = service.createMetadata(new GFSMetadataService.Metadata[] {testReviewfldUpdate,testReviewRjfldUpdate,testReviewfldUpdateApprver,sodReviewfldUpdate,sodReviewAppfldUpdate,sodReviewRjfldUpdate,cabReviewfldUpdate,cabReviewApprvfldUpdate ,cabReviewRjfldUpdate});
+            system.debug('>>>>>>>>>>>results2:'+results2);
+        }
+        
+        GFSMetadataService.WorkflowFieldUpdate approvedfldUpdate = new GFSMetadataService.WorkflowFieldUpdate();
+        approvedfldUpdate.field = 'GFSDR__Stage_txt__c';
+        approvedfldUpdate.name = 'Update_Stage_equals_Approved';
+        approvedfldUpdate.fullName = 'GFSDR__Deployment_Request__c.Update_Stage_equals_Approved';
+        approvedfldUpdate.protected_x = false;
+        approvedfldUpdate.notifyAssignee = false;
+        approvedfldUpdate.operation = 'Formula';
+        approvedfldUpdate.formula = '"Approved"';
+        
+        GFSMetadataService.WorkflowFieldUpdate approvedRjfldUpdate = new GFSMetadataService.WorkflowFieldUpdate();
+        approvedRjfldUpdate.field = 'GFSDR__Rejected_Stage__c';
+        approvedRjfldUpdate.name = 'Update_Stage_equals_Approved_Rj';
+        approvedRjfldUpdate.fullName = 'GFSDR__Deployment_Request__c.Update_Stage_equals_Approved_Rj';
+        approvedRjfldUpdate.protected_x = false;
+        approvedRjfldUpdate.notifyAssignee = false;
+        approvedRjfldUpdate.operation = 'Formula';
+        approvedRjfldUpdate.formula = '"CAB Review"';
+        
+        GFSMetadataService.WorkflowFieldUpdate approvedApprvfldUpdate = new GFSMetadataService.WorkflowFieldUpdate();
+        approvedApprvfldUpdate.field = 'GFSDR__CAB_Approver_Name__c';
+        approvedApprvfldUpdate.name = 'Update_Stage_equals_Approved_Appr';
+        approvedApprvfldUpdate.fullName = 'GFSDR__Deployment_Request__c.Update_Stage_equals_Approved_Appr';
+        approvedApprvfldUpdate.protected_x = false;
+        approvedApprvfldUpdate.notifyAssignee = false;
+        approvedApprvfldUpdate.operation = 'Formula';
+        approvedApprvfldUpdate.formula = '$User.FirstName + $User.LastName';
+             
+        
+        if(!Test.isRunningTest())
+            List<GFSMetadataService.SaveResult> approvedResults = service.createMetadata( new GFSMetadataService.Metadata[] { approvedfldUpdate,approvedRjfldUpdate,approvedApprvfldUpdate});
+
+        GFSMetadataService.WorkflowFieldUpdate rejectedfldUpdate = new GFSMetadataService.WorkflowFieldUpdate();
+        rejectedfldUpdate.field = 'GFSDR__Stage_txt__c';
+        rejectedfldUpdate.name = 'Update_Stage_equals_Rejected';
+        rejectedfldUpdate.fullName = 'GFSDR__Deployment_Request__c.Update_Stage_equals_Rejected';
+        rejectedfldUpdate.protected_x = false;
+        rejectedfldUpdate.notifyAssignee = false;
+        rejectedfldUpdate.operation = 'Formula';
+        rejectedfldUpdate.formula = '"Rejected"';
+        
+        if(!Test.isRunningTest())
+            List<GFSMetadataService.SaveResult> rejectedResults = service.createMetadata( new GFSMetadataService.Metadata[] { rejectedfldUpdate });
+        
+         //Recall Approval Process 
+        GFSMetadataService.WorkflowFieldUpdate fldrecllUpdate = new GFSMetadataService.WorkflowFieldUpdate();
+        fldrecllUpdate.field = 'GFSDR__TA_Approver_Name__c';
+        fldrecllUpdate.name = 'Update_TA_Approver_Name_Prd';
+        fldrecllUpdate.fullName = 'GFSDR__Deployment_Request__c.Update_TA_Approver_Name_Prd';
+        fldrecllUpdate.protected_x = false;
+        fldrecllUpdate.notifyAssignee = false;
+        fldrecllUpdate.operation = 'Formula';
+        fldrecllUpdate.formula = '" "';
+        
+        GFSMetadataService.WorkflowFieldUpdate fldrecllUpdate2 = new GFSMetadataService.WorkflowFieldUpdate();
+        fldrecllUpdate2.field = 'GFSDR__TFA_Approver_Name__c';
+        fldrecllUpdate2.name = 'Update_TFA_Approver_Name_Prd';
+        fldrecllUpdate2.fullName = 'GFSDR__Deployment_Request__c.Update_TFA_Approver_Name_Prd';
+        fldrecllUpdate2.protected_x = false;
+        fldrecllUpdate2.notifyAssignee = false;
+        fldrecllUpdate2.operation = 'Formula';
+        fldrecllUpdate2.formula = '" "';
+        
+        
+        GFSMetadataService.WorkflowFieldUpdate fldrecllUpdate3 = new GFSMetadataService.WorkflowFieldUpdate();
+        fldrecllUpdate3.field = 'GFSDR__Stage_txt__c';
+        fldrecllUpdate3.name = 'Update_Stage_to_Draft_Prd';
+        fldrecllUpdate3.fullName = 'GFSDR__Deployment_Request__c.Update_Stage_to_Draft_Prd';
+        fldrecllUpdate3.protected_x = false;
+        fldrecllUpdate3.notifyAssignee = false;
+        fldrecllUpdate3.operation = 'Formula';
+        fldrecllUpdate3.formula = '"Draft"';
+         
+        if(!Test.isRunningTest()){
+            List<GFSMetadataService.SaveResult> results = service.createMetadata( new GFSMetadataService.Metadata[] {fldrecllUpdate,fldrecllUpdate2,fldrecllUpdate3});
+            system.debug('>>>>>>>results:'+results);
+        }
+        
+                
+        GFSMetadataService.WorkflowActionReference finalApprovalAction = new GFSMetadataService.WorkflowActionReference();
+        finalApprovalAction.name = 'Update_Stage_equals_Approved';
+        finalApprovalAction.type_x = 'FieldUpdate';        
+        GFSMetadataService.ApprovalAction finalappAction = new GFSMetadataService.ApprovalAction();
+        finalappAction.action = new list<GFSMetadataService.WorkflowActionReference>{finalApprovalAction} ;            
+        approvalProcess.finalApprovalActions = finalappAction;
+        
+        GFSMetadataService.WorkflowActionReference finalRejectAction = new GFSMetadataService.WorkflowActionReference();
+        finalRejectAction.name = 'Update_Stage_equals_Rejected';
+        finalRejectAction.type_x = 'FieldUpdate';        
+        GFSMetadataService.ApprovalAction finalrejAction = new GFSMetadataService.ApprovalAction();
+        finalrejAction.action = new list<GFSMetadataService.WorkflowActionReference>{finalRejectAction} ;            
+        approvalProcess.finalRejectionActions = finalrejAction;    
+        
+        //Recall Field Update
+        GFSMetadataService.WorkflowActionReference recllAction = new GFSMetadataService.WorkflowActionReference();
+        recllAction.name = 'Update_TA_Approver_Name_Prd';
+        recllAction.type_x = 'FieldUpdate';
+        
+        GFSMetadataService.WorkflowActionReference recllAction2 = new GFSMetadataService.WorkflowActionReference();
+        recllAction2.name = 'Update_TFA_Approver_Name_Prd';
+        recllAction2.type_x = 'FieldUpdate';
+        
+        GFSMetadataService.WorkflowActionReference recllAction3 = new GFSMetadataService.WorkflowActionReference();
+        recllAction3.name = 'Update_Stage_to_Draft';
+        recllAction3.type_x = 'FieldUpdate';
+        
+        GFSMetadataService.ApprovalAction reappAction = new GFSMetadataService.ApprovalAction();
+        reappAction.action = new list<GFSMetadataService.WorkflowActionReference>{recllAction,recllAction2,recllAction3};
+        
+        approvalProcess.recallActions = reappAction;
+            
+        
+        approvalProcess.approvalStep = new list<GFSMetadataService.ApprovalStep>();
+        integer i = 0, j = 0;
+        
+        for(string key: appNameListOfRoles.keySet())
+            j += appNameListOfRoles.get(key).size();
+        
+        for(string key: appNameListOfRoles.keySet()){
+            for(string role: appNameListOfRoles.get(key)){
+                i++;
+                GFSMetadataService.Approver otherapprover = new GFSMetadataService.Approver();
+                string str = key.replaceAll(' ','_');
+                string srole = role.replace('/','_').toUpperCase();
+                otherapprover.name = 'DR_'+str+'_'+srole;
+                otherapprover.type_x ='queue';
+                
+                GFSMetadataService.ApprovalStepApprover otherstepApprover= new GFSMetadataService.ApprovalStepApprover();
+                otherstepApprover.approver = new list<GFSMetadataService.Approver>{otherapprover};
+                otherstepApprover.whenMultipleApprovers = 'Unanimous';
+    
+                //Entry Criteria
+                GFSMetadataService.FilterItem otherFilterEntry = new GFSMetadataService.FilterItem();
+                if(key == 'Default'){
+                    otherFilterEntry.field = 'GFSDR__Deployment_Request__c.GFSDR__Application_Category_txt__c';
+                    otherFilterEntry.operation = 'equals';
+                    otherFilterEntry.value = 'Standard Apps';            
+                } else {
+                    otherFilterEntry.field = 'GFSDR__Deployment_Request__c.GFSDR__Application_Name_txt__c';
+                    otherFilterEntry.operation = 'equals';
+                    otherFilterEntry.value = key;
+                }
+                
+                GFSMetadataService.ApprovalEntryCriteria otherentry =  new GFSMetadataService.ApprovalEntryCriteria();
+                otherentry.criteriaItems = new list<GFSMetadataService.FilterItem>{otherFilterEntry};
+                    
+                GFSMetadataService.ApprovalStep otherApprovalStep = new GFSMetadataService.ApprovalStep();                
+                otherApprovalStep.name=str+'Approval'+srole;
+                system.debug('>>>>>>>>>>otherApprovalStep.name:'+otherApprovalStep.name);
+                otherApprovalStep.label=key+' Approval '+role;
+                otherApprovalStep.allowDelegate= true;
+                otherApprovalStep.rejectBehavior = taRejectBehave;
+                otherApprovalStep.entryCriteria = otherentry;
+
+                //Approval Step Action
+                system.debug('>>>>>>>>>>>>>role:'+role);
+                //if(role != 'CAB'){
+                GFSMetadataService.WorkflowActionReference fldupdateStepAction = new GFSMetadataService.WorkflowActionReference();
+                GFSMetadataService.WorkflowActionReference fldupdateStepAction1 = new GFSMetadataService.WorkflowActionReference();                
+                GFSMetadataService.WorkflowActionReference fldupdateRjtStepAction = new GFSMetadataService.WorkflowActionReference();
+                
+                
+                if(role == 'EBiZ/FBO'){
+                    fldupdateStepAction1.name = 'Update_Stage_equals_TEST_Review';
+                    fldupdateStepAction.name = 'Update_DR_EBIZ_Reviewer_Prd';
+                    fldupdateStepAction.type_x = 'FieldUpdate';     
+                    fldupdateStepAction1.type_x = 'FieldUpdate'; 
+                    fldupdateRjtStepAction.name = 'Update_Stage_equals_TEST_Review_Rj';
+                    
+                }  
+                if(role == 'TEST'){
+                    fldupdateStepAction1.name = 'Update_Stage_equals_SOD_Review_Prd';                               
+                    fldupdateStepAction.name = 'Update_SOD_Approver_Update_Prd';
+                    fldupdateStepAction.type_x = 'FieldUpdate';     
+                    fldupdateStepAction1.type_x = 'FieldUpdate'; 
+                    fldupdateRjtStepAction.name = 'Update_Stage_equals_SOD_Review_Rj';
+                }               
+                if(role == 'SOD'){
+                    fldupdateStepAction1.name = 'Update_Stage_equals_CAB_Review';
+                    fldupdateStepAction.name = 'Update_Stage_equals_CAB_Review_Appr';
+                    fldupdateStepAction.type_x = 'FieldUpdate';     
+                   fldupdateStepAction1.type_x = 'FieldUpdate'; 
+                    fldupdateRjtStepAction.name = 'Update_Stage_equals_CAB_Review_Rj';
+                }    
+                if(role == 'CAB'){
+                    fldupdateStepAction1.name = 'Update_Stage_equals_Approved'; 
+                    fldupdateStepAction.name = 'Update_Stage_equals_Approved_Appr';   
+                    fldupdateStepAction.type_x = 'FieldUpdate';     
+                   fldupdateStepAction1.type_x = 'FieldUpdate'; 
+                    fldupdateRjtStepAction.name =  'Update_Stage_equals_Approved_Rj';   
+                }                    
+                                        
+                 
+                fldupdateRjtStepAction.type_x = 'FieldUpdate';  
+                 
+                 
+                           
+                GFSMetadataService.ApprovalAction appStepAction = new GFSMetadataService.ApprovalAction();
+                appStepAction.action = new list<GFSMetadataService.WorkflowActionReference>{fldupdateStepAction,fldupdateStepAction1};                                                    
+                GFSMetadataService.ApprovalAction caRjStepAction = new GFSMetadataService.ApprovalAction();
+                caRjStepAction.action = new list<GFSMetadataService.WorkflowActionReference>{fldupdateRjtStepAction};   
+                 
+                otherApprovalStep.approvalActions = appStepAction;   
+                otherApprovalStep.rejectionActions = caRjStepAction ;                           
+                
+                //}
+                if(i != j)
+                    otherApprovalStep.ifCriteriaNotMet = 'GotoNextStep';
+                 
+                otherApprovalStep.assignedApprover = otherstepApprover;
+                approvalProcess.approvalStep.add(otherApprovalStep);                                                                        
+            }
+        } 
+        
+        if(!Test.isRunningTest()){
+            List<GFSMetadataService.SaveResult> results1 = service.createMetadata( new GFSMetadataService.Metadata[] { approvalProcess });
+            Messaging.SingleEmailMessage message = new Messaging.SingleEmailMessage();
+            message.setSubject('Approval Proccess Exception');
+            message.setHtmlBody('Approval process result:'+results1);
+            message.setToAddresses(new list<string>{'anushribhushan.sarwade@globalfoundries.com','ramprakash.rai@globalfoundries.com'});
+           // Messaging.sendEmail(new Messaging.SingleEmailMessage[] { message });
+            system.debug('>>>>>>>results:'+results1);   
+           
+        }
+        
+        //update counter
+        list<Approval_Counter__c> appCounter = [Select Id, Name from Approval_Counter__c limit 1];    
+        integer c = Integer.valueOf(appCounter[0].Name);    
+        appCounter[0].Name = string.valueOf(c + 1);
+        update appCounter; 
+        isProdProcCreated = true;
+        
+        }catch(Exception ex){
+             system.debug('-mssg-'+ex.getmessage()); 
+             Messaging.SingleEmailMessage message = new Messaging.SingleEmailMessage();
+             message.setSubject('Approval Proccess Exception');
+             message.setHtmlBody('Exception:'+ex.getMessage());
+             message.setToAddresses(new list<string>{'anushribhushan.sarwade@globalfoundries.com','ramprakash.rai@globalfoundries.com'});
+         //    Messaging.sendEmail(new Messaging.SingleEmailMessage[] { message });
+        }             
+    }
+    
     
     @future(callout=true)
     public static void createProductionApprovalProcess(string sessionId, integer counter){
@@ -715,6 +1573,9 @@ public class DRConfigurationController1{
          //    Messaging.sendEmail(new Messaging.SingleEmailMessage[] { message });
         }             
     }
+    
+    
+    
     
     
   //  @future(callout=true)
