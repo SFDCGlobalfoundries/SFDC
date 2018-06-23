@@ -596,6 +596,9 @@
         <layout>FeedItem-Feed Item Layout</layout>
     </layoutAssignments>
     <layoutAssignments>
+        <layout>RoleMapping__mdt-RoleMapping Layout</layout>
+    </layoutAssignments>
+    <layoutAssignments>
         <layout>UserAlt-User Profile Layout</layout>
     </layoutAssignments>
     <pageAccesses>
