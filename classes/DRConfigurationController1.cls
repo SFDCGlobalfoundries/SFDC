@@ -463,8 +463,13 @@ public class DRConfigurationController1{
         ft.operation = 'equals';
         ft.value = ApplicationName;
         
+        GFSMetadataService.FilterItem ft1 = new GFSMetadataService.FilterItem();
+        ft1.field = 'GFSDR__Deployment_Request__c.GFSDR__Target_Environment_txt__c';
+        ft1.operation = 'equals';
+        ft1.value = 'UAT';
+
         GFSMetadataService.ApprovalEntryCriteria entry =  new GFSMetadataService.ApprovalEntryCriteria();
-        entry.criteriaItems = new list<GFSMetadataService.FilterItem>{ft};
+        entry.criteriaItems = new list<GFSMetadataService.FilterItem>{ft,ft1};
         approvalProcess.entryCriteria = entry;   
         
         GFSMetadataService.ApprovalSubmitter submitter1 = new GFSMetadataService.ApprovalSubmitter();
@@ -820,7 +825,7 @@ public class DRConfigurationController1{
             else 
                 appNameListOfRoles.get(approver.Application_Name__c).add(approver.Role__c);
         }   
-        updApplicationName = ApplicationName.replaceAll(' ', '_');
+      //  updApplicationName = ApplicationName.replaceAll(' ', '_');
         
         GFSMetadataService.MetadataPort service = new GFSMetadataService.MetadataPort();   
         service.SessionHeader = new GFSMetadataService.SessionHeader_element();
@@ -866,8 +871,13 @@ public class DRConfigurationController1{
         ft.operation = 'equals';
         ft.value = ApplicationName;
         
+        GFSMetadataService.FilterItem ft1 = new GFSMetadataService.FilterItem();
+        ft1.field = 'GFSDR__Deployment_Request__c.GFSDR__Target_Environment_txt__c';
+        ft1.operation = 'equals';
+        ft1.value = 'Production';
+        
         GFSMetadataService.ApprovalEntryCriteria entry =  new GFSMetadataService.ApprovalEntryCriteria();
-        entry.criteriaItems = new list<GFSMetadataService.FilterItem>{ft};
+        entry.criteriaItems = new list<GFSMetadataService.FilterItem>{ft,ft1};
         approvalProcess.entryCriteria = entry;   
         
         GFSMetadataService.ApprovalSubmitter submitter1 = new GFSMetadataService.ApprovalSubmitter();
