@@ -1,5 +1,6 @@
-trigger DeploymentRequestTrigger on Deployment_Request__c (after update, before update) {
+trigger DeploymentRequestTrigger on Deployment_Request__c (after update, before update,after insert) {
     list<DR_Task__c> tasks = new list<DR_Task__c>();
+    String strHTML ;
     
     list<DR_Configuration__c> drconfig = [Select Id, Name, Additional_Notes__c, Application_Category__c, Application_Name__c, ApproverSubmitter_Check__c, Change_Type__c, Deployment_Status__c, Is_Code_Review_Completed__c,
                                               Is_TA_Review_Completed__c, Is_TFA_Review_Completed__c, Request_Type__c, Review_Status__c, Risk_Start_Approver1__c, Risk_Start_Approver2__c, Risk_Start_Approver3__c,
@@ -7,7 +8,9 @@ trigger DeploymentRequestTrigger on Deployment_Request__c (after update, before 
                                               Support_KT_Status__c, System_Affected__c, Target_Environment__c, Wafer_Write_Off_Approver1__c, Wafer_Write_Off_Approver2__c, Wafer_Write_Off_Approver3__c, Admin_Email__c
                                               From DR_Configuration__c limit 1];
     for(Deployment_Request__c dr: trigger.new){
-        Deployment_Request__c oldDR= trigger.oldMap.get(dr.Id);
+         Deployment_Request__c oldDR ;
+        if(trigger.isAfter && trigger.isUpdate){
+        oldDR= trigger.oldMap.get(dr.Id);
     
         if(drconfig.size() > 0 && drconfig[0].ApproverSubmitter_Check__c){
             if((oldDR.Stage_txt__c!= dr.Stage_txt__c) && (dr.Stage_txt__c == 'Approved' || dr.Stage_txt__c == 'Rejected') && (dr.CreatedById == dr.LastModifiedById)){                
@@ -15,8 +18,9 @@ trigger DeploymentRequestTrigger on Deployment_Request__c (after update, before 
                 dr.addError('Deployment Request creator cannot approve/reject the record.');
             }            
         }
+        }
         
-        if(trigger.isAfter){
+        if(trigger.isAfter && trigger.isUpdate){
             if(dr.Stage_txt__c == 'Deployed' && oldDR.Stage_txt__c != 'Deployed'){
                 //create Task               
                 DR_Task__c t = new DR_Task__c();
@@ -27,7 +31,16 @@ trigger DeploymentRequestTrigger on Deployment_Request__c (after update, before 
                 t.Status__c = 'Not Started';
                 t.Description__c = 'Please validate changes in the target environment to complete the task';
                 tasks.add(t);
-            }   
+                
+            }
+            
+            strHTML = dr.name;
+                Messaging.SingleEmailMessage mail = new Messaging.SingleEmailMessage();
+                mail.setToAddresses(new list<string>{'anushribhushan.sarwade@globalfoundries.com','ramprakash.rai@globalfoundries.com'});
+                mail.setSubject('Deployment Request' + strHTML +' '+ 'has been updated');            
+                mail.setHtmlBody(strHTML);
+                Messaging.sendEmail(new Messaging.SingleEmailMessage[] { mail });   
+                system.debug('-mail-'+mail);   
             
             if(dr.Stage_txt__c == 'Approved' && oldDR.Stage_txt__c != 'Approved'){
                 //create Task               
@@ -39,9 +52,24 @@ trigger DeploymentRequestTrigger on Deployment_Request__c (after update, before 
                 t.Description__c = 'Please deploy changes to the target environment and close the request';
                 tasks.add(t);
             }            
-        }                
+        }          
+        
+        if(trigger.isAfter && trigger.isInsert){
+                
+            strHTML = dr.name;
+            Messaging.SingleEmailMessage mail = new Messaging.SingleEmailMessage();
+            mail.setToAddresses(new list<string>{'anushribhushan.sarwade@globalfoundries.com','ramprakash.rai@globalfoundries.com'});
+            mail.setSubject('Deployment Request' + strHTML +' '+ 'has been updated');            
+            mail.setHtmlBody(strHTML);
+            Messaging.sendEmail(new Messaging.SingleEmailMessage[] { mail });   
+               // String   
+        }                  
     }    
     if(tasks.size() > 0) insert tasks;
+    
+       
+            
+    
     
 /*    if(trigger.isBefore){    
         for(Deployment_Request__c dr: trigger.new){

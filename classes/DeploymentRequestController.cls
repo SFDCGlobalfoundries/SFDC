@@ -33,7 +33,7 @@ public class DeploymentRequestController{
                 'Clarity_Project_Id__c','Stage_txt__c','Is_TFA_Review_Completed_txt__c','Short_Description__c','UAT_DR__c','Description__c','Compliance_Review_Required__c',
                 'TFA_Review_User__c','TA_Review_User__c','Code_Review_User__c','Is_TFA_Review_Completed_txt__c','Is_TA_Review_Completed_txt__c','Is_Code_Review_Completed_txt__c',
                 'Support_KT_Date__c','Support_KT_Status_txt__c','Additional_Comments_txt__c','RM_Approval_Date__c','Administrator_to_Deploy__c','Deployment_End_Date_Time__c',
-                'Deployment_Start_Date_Time__c','Submitted_Date__c','Approval_Date__c','Administrator_Comment__c','OwnerId','UAT_Test_Approver__c'  
+                'Deployment_Start_Date_Time__c','Submitted_Date__c','Approval_Date__c','Administrator_Comment__c','OwnerId','UAT_Test_Approver__c','GFSDR__User_1__c','GFSDR__User_2__c','GFSDR__User_3__c','GFSDR__User_4__c'  
             });
         }
         drObject = (Deployment_Request__c)controller.getRecord();
