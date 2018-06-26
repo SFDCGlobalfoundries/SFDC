@@ -15,6 +15,7 @@ public class DeploymentRequestController{
     public list<SelectOption> sourceEnvironment{get; set;}
     public list<SelectOption> stages{get; set;}
     public list<SelectOption> systemAffected{get; set;}
+    public String urlDR{get;set;}
        
 
     public Deployment_Request__c drObject{get; set;}
@@ -36,6 +37,14 @@ public class DeploymentRequestController{
                 'Deployment_Start_Date_Time__c','Submitted_Date__c','Approval_Date__c','Administrator_Comment__c','OwnerId','UAT_Test_Approver__c','GFSDR__User_1__c','GFSDR__User_2__c','GFSDR__User_3__c','GFSDR__User_4__c'  
             });
         }
+        
+        List<GFSDR__DR_Knowledge_Article__mdt> drKnowlgeLst = new List<GFSDR__DR_Knowledge_Article__mdt>();
+        
+         drKnowlgeLst  = [select label,GFSDR__KnwlgeURL__c from GFSDR__DR_Knowledge_Article__mdt where label =:'DRPageMessageURL'];
+         
+         urlDR =  drKnowlgeLst[0].GFSDR__KnwlgeURL__c; 
+         
+        
         drObject = (Deployment_Request__c)controller.getRecord();
         if(drObject.Id == null){
             drObject.Deployment_Status_txt__c = 'Not Started';

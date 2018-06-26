@@ -123,6 +123,10 @@
         <enabled>false</enabled>
     </classAccesses>
     <classAccesses>
+        <apexClass>DRPageMessageContrl</apexClass>
+        <enabled>false</enabled>
+    </classAccesses>
+    <classAccesses>
         <apexClass>DRTaskTriggerTest</apexClass>
         <enabled>false</enabled>
     </classAccesses>
@@ -1076,6 +1080,16 @@
     <fieldPermissions>
         <editable>false</editable>
         <field>DR_Configuration__c.Request_Type__c</field>
+        <readable>false</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>false</editable>
+        <field>DR_FeedMessage__mdt.FeedMessage__c</field>
+        <readable>false</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>false</editable>
+        <field>DR_Knowledge_Article__mdt.KnwlgeURL__c</field>
         <readable>false</readable>
     </fieldPermissions>
     <fieldPermissions>
@@ -2046,6 +2060,12 @@
         <layout>DR_Configuration__c-DR Configuration Layout</layout>
     </layoutAssignments>
     <layoutAssignments>
+        <layout>DR_FeedMessage__mdt-DR FeedMessage Layout</layout>
+    </layoutAssignments>
+    <layoutAssignments>
+        <layout>DR_Knowledge_Article__mdt-DR Knowledge Article Layout</layout>
+    </layoutAssignments>
+    <layoutAssignments>
         <layout>DR_Stage_Mapping__mdt-DR Stage Mapping Layout</layout>
     </layoutAssignments>
     <layoutAssignments>
@@ -2226,6 +2246,10 @@
     </pageAccesses>
     <pageAccesses>
         <apexPage>CommunitiesTemplate</apexPage>
+        <enabled>false</enabled>
+    </pageAccesses>
+    <pageAccesses>
+        <apexPage>DRBanner_Page</apexPage>
         <enabled>false</enabled>
     </pageAccesses>
     <pageAccesses>

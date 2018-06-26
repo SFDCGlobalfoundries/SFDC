@@ -29,6 +29,25 @@ private class DeploymentRequestTest{
     }
     
     static testMethod void testDRhelper(){
+        
+        Account newAccount = new Account (name='XYZ Organization',
+        BillingCity ='TestCity',
+        BillingCountry ='TestCountry',
+        BillingStreet ='TestStreet',
+        BillingPostalCode ='t3stcd3'
+        );
+        
+        insert newAccount;
+        
+        Contact NewContact = new Contact (
+        FirstName = 'xyzFirst',
+        LastName = 'XyZLast',
+        Account = newAccount,
+        Email = 'xyzmail@mail.com'
+        );
+        
+        insert NewContact;
+        
         Deployment_Request__c drObject = new Deployment_Request__c();
         drObject.Request_Type_txt__c = 'Emergency';
         drObject.Application_Category_txt__c = 'SOX compliance Apps';
