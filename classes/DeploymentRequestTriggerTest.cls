@@ -7,6 +7,14 @@ private class DeploymentRequestTriggerTest{
     }
     
     static testMethod void triggerTest(){
+        
+        Account testAccount = new Account();
+        testAccount.Name='Test Account' ;
+        insert testAccount;
+        
+        Contact con = new Contact(accountid=testAccount.id,lastname='test con',email='test@gmail.com');
+        insert con;
+    
         Deployment_Request__c drObject = new Deployment_Request__c();
         drObject.Request_Type_txt__c = 'Emergency';
         drObject.GFSDR__Application_Name_txt__c= 'Test';        

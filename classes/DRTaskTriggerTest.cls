@@ -7,6 +7,14 @@ private class DRTaskTriggerTest{
     }
     
     static testMethod void testDRTask(){  
+    
+        Account testAccount = new Account();
+        testAccount.Name='Test Account' ;
+        insert testAccount;
+        
+        Contact con = new Contact(accountid=testAccount.id,lastname='test con',email='test@gmail.com');
+        insert con;
+        
         Deployment_Request__c drObject = new Deployment_Request__c();
         drObject.Request_Type_txt__c = 'Emergency';
         drObject.Application_Category_txt__c = 'SOX compliance Apps';

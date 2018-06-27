@@ -66,58 +66,70 @@ trigger DeploymentRequestTrigger on Deployment_Request__c (after update, before 
                 t.Description__c = 'Please validate changes in the target environment to complete the task';
                 tasks.add(t);
                 
-            }
-            
-           strHTML = dr.name;
-           
-           String messageBody = '';      
-            messageBody = et[0].HtmlValue;
-             String subject = '';
-             subject = et[0].Subject;
-             subject = subject.replace(' ',Dr.name + ' ' + 'has been Updated');
-            List<Messaging.SingleEmailMessage> lstMsgs = new List<Messaging.SingleEmailMessage>();    
+            }   
+                        
+            Contact c = [select id, Email from Contact where email <> null limit 1];
+
+            List<Messaging.SingleEmailMessage> lstMsgs = new List<Messaging.SingleEmailMessage>();
             
             Messaging.SingleEmailMessage msg = new Messaging.SingleEmailMessage();
-            if(dr.GFSDR__User_1__c != null) {       
-            msg.setTemplateId( [select id from EmailTemplate where DeveloperName='Deployment_Request_Email'].id );
-            msg.setSaveAsActivity(false); 
-         //   msg.setSubject(Dr.name + ' ' + 'has been Updated');
-            msg.setTargetObjectId(dr.GFSDR__User_1__c);
+            msg.setTemplateId( [select id from EmailTemplate where DeveloperName='Deployment_Request_Email_App'].id);
+            msg.setWhatId( dr.id);
+            msg.setTargetObjectId(c.id);
+            msg.setToAddresses(new List<String>{'random_address@opfocus.com'});
             
             lstMsgs.add(msg);
+            
+            // Send the emails in a transaction, then roll it back
+            Savepoint sp = Database.setSavepoint();
+            Messaging.sendEmail(lstMsgs);
+            Database.rollback(sp);
+            
+            List<Messaging.SingleEmailMessage> lstMsgsToSend = new List<Messaging.SingleEmailMessage>();
+            for (Messaging.SingleEmailMessage email : lstMsgs) {
+            Messaging.SingleEmailMessage emailToSend = new Messaging.SingleEmailMessage();
+            Messaging.SingleEmailMessage emailToSend1 = new Messaging.SingleEmailMessage();
+            Messaging.SingleEmailMessage emailToSend2 = new Messaging.SingleEmailMessage();
+            Messaging.SingleEmailMessage emailToSend3 = new Messaging.SingleEmailMessage();
+            
+            if(dr.GFSDR__User_1__c != null) {    
+                emailToSend.setTargetObjectId(dr.GFSDR__User_1__c);
+                emailToSend.setPlainTextBody(email.getPlainTextBody());
+                emailToSend.setHTMLBody(email.getHTMLBody());
+                emailToSend.setSubject(email.getSubject());
+                emailToSend.setSaveAsActivity(false);
+                lstMsgsToSend.add(emailToSend);
             }
             
-            Messaging.SingleEmailMessage msg2 = new Messaging.SingleEmailMessage();
-            if(dr.GFSDR__User_2__c != null) {       
-            msg2.setTemplateId( [select id from EmailTemplate where DeveloperName='Deployment_Request_Email'].id );
-            msg2.setSaveAsActivity(false); 
-          //  msg2.setSubject(Dr.name + ' ' + 'has been Updated');
-            msg2.setTargetObjectId(dr.GFSDR__User_2__c);
-           
-            lstMsgs.add(msg2);
+            if(dr.GFSDR__User_2__c != null) {    
+                emailToSend1.setTargetObjectId(dr.GFSDR__User_2__c);
+                emailToSend1.setPlainTextBody(email.getPlainTextBody());
+                emailToSend1.setHTMLBody(email.getHTMLBody());
+                emailToSend1.setSubject(email.getSubject());
+                emailToSend1.setSaveAsActivity(false);
+                lstMsgsToSend.add(emailToSend1);
             }
             
-            Messaging.SingleEmailMessage msg3 = new Messaging.SingleEmailMessage();
-            if(dr.GFSDR__User_3__c != null) {       
-            msg3.setTemplateId( [select id from EmailTemplate where DeveloperName='Deployment_Request_Email'].id );
-          //  msg3.setSubject(Dr.name + ' ' + 'has been Updated');
-            msg3.setTargetObjectId(dr.GFSDR__User_3__c);
-            msg3.setSaveAsActivity(false); 
-            lstMsgs.add(msg3);
+            if(dr.GFSDR__User_3__c != null) {    
+                emailToSend2.setTargetObjectId(dr.GFSDR__User_3__c);
+                emailToSend2.setPlainTextBody(email.getPlainTextBody());
+                emailToSend2.setHTMLBody(email.getHTMLBody());
+                emailToSend2.setSubject(email.getSubject());
+                emailToSend2.setSaveAsActivity(false);
+                lstMsgsToSend.add(emailToSend2);
             }
             
-            Messaging.SingleEmailMessage msg4 = new Messaging.SingleEmailMessage();
-            if(dr.GFSDR__User_4__c != null) {       
-            msg4.setTemplateId( [select id from EmailTemplate where DeveloperName='Deployment_Request_Email'].id );
-         //   msg4.setSubject(Dr.name + ' ' + 'has been Updated');
-            msg4.setTargetObjectId(dr.GFSDR__User_4__c);
-            msg4.setSaveAsActivity(false); 
-            lstMsgs.add(msg4);
+           if(dr.GFSDR__User_4__c != null) {    
+                emailToSend3.setTargetObjectId(dr.GFSDR__User_4__c);
+                emailToSend3.setPlainTextBody(email.getPlainTextBody());
+                emailToSend3.setHTMLBody(email.getHTMLBody());
+                emailToSend3.setSubject(email.getSubject());
+                emailToSend3.setSaveAsActivity(false);
+                lstMsgsToSend.add(emailToSend3);
+            }          
             }
+            Messaging.sendEmail(lstMsgsToSend);
 
-             Messaging.sendEmail(lstMsgs);
-    
-            
             if(dr.Stage_txt__c == 'Approved' && oldDR.Stage_txt__c != 'Approved'){
                 //create Task               
                 DR_Task__c t = new DR_Task__c();
@@ -171,6 +183,70 @@ trigger DeploymentRequestTrigger on Deployment_Request__c (after update, before 
                 feeditemVar.Body = usrMap.get(usid).name + ' ' +  fedMssgLst[0].GFSDR__FeedMessage__c;   
                  feedLst.add(feeditemVar);                   
             }
+            
+            
+            Contact c = [select id, Email from Contact where email <> null limit 1];
+
+            List<Messaging.SingleEmailMessage> lstMsgs = new List<Messaging.SingleEmailMessage>();
+            
+            Messaging.SingleEmailMessage msg = new Messaging.SingleEmailMessage();
+            msg.setTemplateId( [select id from EmailTemplate where DeveloperName='Deployment_Request_Email_App'].id);
+            msg.setWhatId( dr.id);
+            msg.setTargetObjectId(c.id);
+            msg.setToAddresses(new List<String>{'random_address@opfocus.com'});
+            
+            lstMsgs.add(msg);
+            
+            // Send the emails in a transaction, then roll it back
+            Savepoint sp = Database.setSavepoint();
+            Messaging.sendEmail(lstMsgs);
+            Database.rollback(sp);
+            
+            List<Messaging.SingleEmailMessage> lstMsgsToSend = new List<Messaging.SingleEmailMessage>();
+            for (Messaging.SingleEmailMessage email : lstMsgs) {
+            Messaging.SingleEmailMessage emailToSend = new Messaging.SingleEmailMessage();
+            Messaging.SingleEmailMessage emailToSend1 = new Messaging.SingleEmailMessage();
+            Messaging.SingleEmailMessage emailToSend2 = new Messaging.SingleEmailMessage();
+            Messaging.SingleEmailMessage emailToSend3 = new Messaging.SingleEmailMessage();
+            
+            if(dr.GFSDR__User_1__c != null) {    
+                emailToSend.setTargetObjectId(dr.GFSDR__User_1__c);
+                emailToSend.setPlainTextBody(email.getPlainTextBody());
+                emailToSend.setHTMLBody(email.getHTMLBody());
+                emailToSend.setSubject(email.getSubject());
+                emailToSend.setSaveAsActivity(false);
+                lstMsgsToSend.add(emailToSend);
+            }
+            
+            if(dr.GFSDR__User_2__c != null) {    
+                emailToSend1.setTargetObjectId(dr.GFSDR__User_2__c);
+                emailToSend1.setPlainTextBody(email.getPlainTextBody());
+                emailToSend1.setHTMLBody(email.getHTMLBody());
+                emailToSend1.setSubject(email.getSubject());
+                emailToSend1.setSaveAsActivity(false);
+                lstMsgsToSend.add(emailToSend1);
+            }
+            
+            if(dr.GFSDR__User_3__c != null) {    
+                emailToSend2.setTargetObjectId(dr.GFSDR__User_3__c);
+                emailToSend2.setPlainTextBody(email.getPlainTextBody());
+                emailToSend2.setHTMLBody(email.getHTMLBody());
+                emailToSend2.setSubject(email.getSubject());
+                emailToSend2.setSaveAsActivity(false);
+                lstMsgsToSend.add(emailToSend2);
+            }
+            
+           if(dr.GFSDR__User_4__c != null) {    
+                emailToSend3.setTargetObjectId(dr.GFSDR__User_4__c);
+                emailToSend3.setPlainTextBody(email.getPlainTextBody());
+                emailToSend3.setHTMLBody(email.getHTMLBody());
+                emailToSend3.setSubject(email.getSubject());
+                emailToSend3.setSaveAsActivity(false);
+                lstMsgsToSend.add(emailToSend3);
+            }          
+            }
+            Messaging.sendEmail(lstMsgsToSend);
+            
             
         }                  
     }    
