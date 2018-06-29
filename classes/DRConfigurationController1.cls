@@ -249,7 +249,8 @@ public class DRConfigurationController1{
     public void addRow(){
         DRApproverWrapper wrapper = new DRApproverWrapper();
         wrapper.approverObj = new Application_Approver__c();
-        wrapper.approverObj.Application_Name__c = applicationName;
+        wrapper.approverObj.Application_Name__c = (newAppName != null)?newAppName :applicationName;
+        
         approvers.add(wrapper);
     }
 
@@ -272,12 +273,14 @@ public class DRConfigurationController1{
             }
         }        
         upsert newApprovers;
+       // deleteQueuesAndMembers(queueNames,tobeDeletedApprovers);
         delete tobeDeletedApprovers;
         list<Id> newApproversIds = new list<Id>();
         for(Application_Approver__c approver :newApprovers)
             newApproversIds.add(approver.Id);
             
         createQueuesAndMembers(queueNames,newApproversIds);
+        
         //createUATApprovalProcess();      
        // ApexPages.addmessage(new ApexPages.message(ApexPages.severity.INFO,'Approvers added successfully'));
         PageReference pgRef = new PageReference('/apex/DRConfiguration1');
@@ -1221,6 +1224,11 @@ public class DRConfigurationController1{
              Messaging.sendEmail(new Messaging.SingleEmailMessage[] { message });
         }      
            
+    }
+    
+    @future
+    public static void deleteQueuesAndMembers(set<string> queueNames, list<Id> approverIds){
+    
     }
         
     @future
