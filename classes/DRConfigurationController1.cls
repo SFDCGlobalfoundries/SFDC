@@ -1229,6 +1229,7 @@ public class DRConfigurationController1{
     @future
     public static void deleteQueuesAndMembers(set<string> queueNames, list<Id> approverIds){
     
+        list<Application_Approver__c> newApprovers = [Select Id, name, User__c, Application_Name__c, Role__c from Application_Approver__c where Id IN :approverIds];
     }
         
     @future
