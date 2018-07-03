@@ -261,7 +261,10 @@ public class DRConfigurationController1{
         
         list<Application_Approver__c> newApprovers = new list<Application_Approver__c>();
         list<Application_Approver__c> tobeDeletedApprovers = new list<Application_Approver__c>();
+        set<id> apprvUsId = new set<id>();
         set<string> queueNames = new set<string>();
+        set<string> delqueueNames = new set<string>();
+        
         for(DRApproverWrapper  wrapper :approvers){            
             if(wrapper.approverObj.User__c != null && wrapper.approverObj.Role__c != null){
                 if(wrapper.deleteFlag == false){
@@ -269,11 +272,19 @@ public class DRConfigurationController1{
                     queueNames.add('DR '+wrapper.approverObj.Application_Name__c+' '+wrapper.approverObj.Role__c.toUpperCase());
                 }else {
                     tobeDeletedApprovers.add(wrapper.approverObj);
+                    apprvUsId.add(wrapper.approverObj.GFSDR__User__c);
+                    delqueueNames.add('DR '+wrapper.approverObj.Application_Name__c+' '+wrapper.approverObj.Role__c.toUpperCase());
                 }
             }
         }        
         upsert newApprovers;
        // deleteQueuesAndMembers(queueNames,tobeDeletedApprovers);
+        system.debug('-queueNames-'+queueNames);
+        system.debug('-apprvUsId-'+apprvUsId);
+        deleteQueuesAndMembers(delqueueNames,apprvUsId);
+        system.debug('-queueNames-'+queueNames);
+        system.debug('-apprvUsId-'+apprvUsId);
+           
         delete tobeDeletedApprovers;
         list<Id> newApproversIds = new list<Id>();
         for(Application_Approver__c approver :newApprovers)
@@ -1227,9 +1238,20 @@ public class DRConfigurationController1{
     }
     
     @future
-    public static void deleteQueuesAndMembers(set<string> queueNames, list<Id> approverIds){
-    
-        list<Application_Approver__c> newApprovers = [Select Id, name, User__c, Application_Name__c, Role__c from Application_Approver__c where Id IN :approverIds];
+    public static void deleteQueuesAndMembers(set<string> queueNames, Set<Id> approverIds){
+        Set<id> usrId = new Set<id>();
+        Set<Id> quId = new Set<Id>();
+        
+        for(Application_Approver__c app : [Select Id, name, User__c, Application_Name__c, Role__c from Application_Approver__c where Id IN :approverIds]){
+            usrId.add(app.User__c);
+        }
+        list<Group> extQueues = [Select Id, name from Group where Name in :queueNames];
+        system.debug('-extQueues -'+extQueues );
+        system.debug('-usrId-'+usrId);
+        
+        list<GroupMember> newMembers = [select id from GroupMember where UserOrGroupId in :approverIds and GroupId = :extQueues[0].id ];
+        system.debug('-newMembers-'+newMembers);
+        delete newMembers ;
     }
         
     @future
